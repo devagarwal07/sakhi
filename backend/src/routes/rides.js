@@ -7,7 +7,7 @@ const rideController = require('../controllers/rideController');
 
 const router = Router();
 
-/** GET /rides/estimate — rider or driver may check fare */
+/** GET /rides/:id/estimate — rider or driver may check fare */
 router.get('/estimate',       authMiddleware, roleGuard('rider', 'driver'), rideController.estimateFare);
 
 /** POST /rides — book a new ride (rider only) */
@@ -15,6 +15,9 @@ router.post('/',              authMiddleware, roleGuard('rider'),           ride
 
 /** GET /rides/:id — fetch full ride details */
 router.get('/:id',            authMiddleware,                               rideController.getRide);
+
+/** GET /rides/:id/chat — fetch full chat history */
+router.get('/:id/chat',       authMiddleware, roleGuard('rider', 'driver'), rideController.getChatHistory);
 
 /** PATCH /rides/:id/status — driver updates status */
 router.patch('/:id/status',   authMiddleware, roleGuard('driver'),          rideController.updateStatus);

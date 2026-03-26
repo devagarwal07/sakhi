@@ -1,9 +1,8 @@
 'use strict';
 
 /**
- * Socket emitter utility — used by services to emit events to specific rooms.
- * Requires `io` to be passed (set on app via app.set('io', io)).
- * This module is imported by services that need real-time side effects.
+ * Server-side Socket emitter utility.
+ * Import `io` lazily via param — never hold a stale reference.
  */
 
 function emitToRide(io, rideId, event, data) {
@@ -22,4 +21,8 @@ function emitToAdminRoom(io, event, data) {
   io.of('/rides').to('admin:monitoring').emit(event, data);
 }
 
-module.exports = { emitToRide, emitToDriver, emitToRider, emitToAdminRoom };
+function emitToSos(io, sosId, event, data) {
+  io.of('/sos').to(`sos:${sosId}`).emit(event, data);
+}
+
+module.exports = { emitToRide, emitToDriver, emitToRider, emitToAdminRoom, emitToSos };

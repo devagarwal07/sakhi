@@ -291,4 +291,39 @@ async function rateRide(req, res, next) {
   }
 }
 
-module.exports = { estimateFare, createRide, updateStatus, cancelRide, acceptRide, rejectRide, getRide, rateRide };
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /rides/:id/chat
+// ──────────────────────────────────────────────────────────────────────────────
+async function getChatHistory(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { userId, role } = req.user;
+
+    // Verify access
+    const { data: rides } = await supabase
+      .from('rides')
+      .select('rider_id, driver_id')
+      .eq('id', id)
+      .limit(1);
+
+    const ride = rides?.[0];
+    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
+    if (role !== 'admin' && ride.rider_id !== userId && ride.driver_id !== userId) {
+      throw new AppError('Access denied.', 403, 'FORBIDDEN');
+    }
+
+    const { data: messages, error } = await supabase
+      .from('ride_chat_messages')
+      .select('id, sender_role, message_en, message_kn, sent_at')
+      .eq('ride_id', id)
+      .order('sent_at', { ascending: true });
+
+    if (error) throw new AppError('Failed to fetch chat history.', 500, 'DB_ERROR');
+
+    return res.status(200).json({ ride_id: id, messages: messages || [] });
+  } catch (err) {
+    return handleError(err, res, next);
+  }
+}
+
+module.exports = { estimateFare, createRide, updateStatus, cancelRide, acceptRide, rejectRide, getRide, rateRide, getChatHistory };
