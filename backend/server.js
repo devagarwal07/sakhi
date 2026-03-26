@@ -28,9 +28,11 @@ const io = new SocketIOServer(server, {
 // Make `io` accessible in controllers via app locals
 app.set('io', io);
 
+// ─── Inject io into matching engine singleton ─────────────────────────────────
+require('./src/services/matchingEngine').setIO(io);
+
 // ─── Socket handlers (to be added in subsequent prompts) ─────────────────────
-// require('./src/socket/rideEvents')(io);
-// require('./src/socket/driverEvents')(io);
+// require('./src/socket/index')(io);
 
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
