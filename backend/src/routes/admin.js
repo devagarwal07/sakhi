@@ -140,4 +140,35 @@ router.patch('/users/:id/reject', async (req, res, next) => {
   }
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS — BROADCAST
+// ────────────────────────────────────────────────────────────────────────────
+
+const broadcastSchema = z.object({
+  target: z.enum(['all_riders', 'all_drivers', 'all']),
+  title:  z.string().min(1).max(200),
+  body:   z.string().min(1).max(500),
+  data:   z.record(z.string()).optional(),
+});
+
+/**
+ * POST /admin/notifications/broadcast
+ * Body: { target: 'all_riders'|'all_drivers'|'all', title, body, data? }
+ */
+router.post('/notifications/broadcast', async (req, res, next) => {
+  try {
+    const { target, title, body, data } = broadcastSchema.parse(req.body);
+
+    const result = await fcmService.sendAdminBroadcast(target, { title, body, data: data || {} });
+
+    logger.info('admin — broadcast notification sent', { target, adminId: req.user.userId, ...result });
+    return res.status(200).json({ success: true, target, ...result });
+  } catch (err) {
+    if (err.name === 'ZodError') {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid broadcast payload', details: err.flatten() } });
+    }
+    return next(err);
+  }
+});
+
 module.exports = router;
