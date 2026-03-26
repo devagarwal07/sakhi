@@ -55,14 +55,16 @@ app.get('/health', (_req, res) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/auth',         require('./src/routes/auth'));
-app.use('/auth/verify',  require('./src/routes/verification'));
-app.use('/rides',        require('./src/routes/rides'));
-app.use('/drivers',      require('./src/routes/drivers'));
-app.use('/webhooks',     require('./src/routes/webhooks'));
-app.use('/admin',        require('./src/routes/admin'));
-// app.use('/safety',    require('./src/routes/safety'));
-// app.use('/users',     require('./src/routes/users'));
+app.use('/auth',          require('./src/routes/auth'));
+app.use('/auth/verify',   require('./src/routes/verification'));
+app.use('/rides',         require('./src/routes/rides'));
+app.use('/drivers',       require('./src/routes/drivers'));
+app.use('/subscriptions', require('./src/routes/subscriptions'));
+app.use('/payments',      require('./src/routes/payments'));
+app.use('/webhooks',      require('./src/routes/webhooks'));
+app.use('/admin',         require('./src/routes/admin'));
+// app.use('/safety',     require('./src/routes/safety'));
+// app.use('/users',      require('./src/routes/users'));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
