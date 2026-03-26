@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SOS Alert Confirmed - Sakhi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline": "#7b7487",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-container": "#a15100",
+              "on-error": "#ffffff",
+              "on-surface": "#1c1a25",
+              "surface-variant": "#e5e0ef",
+              "on-primary-fixed": "#25005a",
+              "surface-container-highest": "#e5e0ef",
+              "on-tertiary-fixed-variant": "#713700",
+              "on-secondary": "#ffffff",
+              "inverse-surface": "#312f3a",
+              "on-secondary-fixed-variant": "#4f319c",
+              "primary": "#630ed4",
+              "surface-bright": "#fcf8ff",
+              "primary-container": "#7c3aed",
+              "on-surface-variant": "#4a4455",
+              "on-tertiary-fixed": "#301400",
+              "on-primary-fixed-variant": "#5a00c6",
+              "tertiary-fixed-dim": "#ffb784",
+              "surface-container-low": "#f6f1ff",
+              "on-secondary-fixed": "#21005e",
+              "error": "#ba1a1a",
+              "primary-fixed-dim": "#d2bbff",
+              "on-tertiary-container": "#ffe0cd",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#3f1e8c",
+              "inverse-on-surface": "#f3eefd",
+              "on-error-container": "#93000a",
+              "surface-tint": "#732ee4",
+              "secondary": "#674bb5",
+              "on-primary-container": "#ede0ff",
+              "inverse-primary": "#d2bbff",
+              "secondary-fixed-dim": "#cebdff",
+              "tertiary-fixed": "#ffdcc6",
+              "outline-variant": "#ccc3d8",
+              "on-primary": "#ffffff",
+              "on-background": "#1c1a25",
+              "background": "#fcf8ff",
+              "surface": "#fcf8ff",
+              "secondary-fixed": "#e8ddff",
+              "primary-fixed": "#eaddff",
+              "tertiary": "#7d3d00",
+              "secondary-container": "#ab8ffe",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dcd8e6",
+              "surface-container-high": "#ebe6f5",
+              "surface-container": "#f0ecfa"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-ring {
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-red-800 font-body text-on-primary selection:bg-white/30 overflow-x-hidden">
+<!-- Emergency SOS Top Bar (From JSON Source) -->
+<header class="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 bg-red-600 z-50 shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-white cursor-pointer active:scale-90 transition-transform">arrow_back</span>
+<h1 class="text-lg font-black tracking-tighter text-white font-headline">Emergency SOS</h1>
+</div>
+<span class="material-symbols-outlined text-white cursor-pointer active:scale-90 transition-transform">settings</span>
+</header>
+<main class="min-h-screen pt-24 pb-12 px-6 flex flex-col items-center max-w-[390px] mx-auto">
+<!-- Siren & Pulse Animation Section -->
+<div class="relative w-48 h-48 flex items-center justify-center mb-6">
+<div class="pulse-ring w-32 h-32 opacity-80"></div>
+<div class="pulse-ring w-44 h-44 opacity-40"></div>
+<div class="z-10 bg-white/10 backdrop-blur-md rounded-full p-8 border border-white/20">
+<span class="material-symbols-outlined text-6xl text-white" style="font-variation-settings: 'FILL' 1;">emergency_home</span>
+</div>
+</div>
+<!-- Heading & Subtext -->
+<div class="text-center mb-8">
+<h2 class="text-3xl font-black text-white tracking-tight mb-3">SOS Alert Sent</h2>
+<p class="text-white/80 leading-relaxed font-medium px-2">
+                Your emergency contacts and the Sakhi team have been notified with your live location.
+            </p>
+</div>
+<!-- Confirmation Card -->
+<div class="w-full bg-white rounded-[20px] p-6 mb-6 shadow-[0_16px_32px_rgba(124,58,237,0.12)]">
+<!-- Status Rows -->
+<div class="space-y-4 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-600 text-sm font-bold">check</span>
+</div>
+<span class="text-on-surface font-semibold text-sm">Sakhi Safety Team Notified</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-600 text-sm font-bold">check</span>
+</div>
+<span class="text-on-surface font-semibold text-sm">Live Location Shared with Contacts</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-600 text-sm font-bold">check</span>
+</div>
+<span class="text-on-surface font-semibold text-sm">Trip Details Transmitted</span>
+</div>
+</div>
+<!-- Contacts Section -->
+<div class="space-y-4">
+<h3 class="text-[10px] uppercase tracking-[0.1em] font-bold text-slate-400 mb-2">Your Emergency Contacts</h3>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden ring-2 ring-slate-50">
+<img alt="" class="w-full h-full object-cover" data-alt="Portrait of a family contact woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY-Toc6xxfeE22BACZPeQIADq_3CrFPa-TG4cZKesxmRtvcj79T3oDu2B2GGZEylt3FnGAzsUx4QuLcvNBSp0zBMgzeHNkaJgdW1L1kVWZjuq9unNoCDNjSFTWvTiMftueBftGVxjz4LeNAFQ_B9xt-iVAa7iRCxDwtzB8sh3Fl0HmUomKR9hy05l0zSKABM6oWxJofd04-HtNZkaU7u-V2F3pqUWVv4MwhBlrhnVG647hOZPxnuJ97lf_SlQHNvAwOe7O8dzAN5RQ"/>
+</div>
+<span class="text-on-surface font-bold text-sm">Aisha Sharma</span>
+</div>
+<span class="text-emerald-600 text-[10px] font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-full uppercase">Notified <span class="material-symbols-outlined text-xs">check</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden ring-2 ring-slate-50">
+<img alt="" class="w-full h-full object-cover" data-alt="Portrait of a male emergency contact" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0uQxPnssyFU5B_FQ7sQJpE8GGgLwko8OaYYu0WhRaIZnjzUBm8Sboy-_cusRfVzWGTILJ6JVZ1zlF248rWdFdFerz8SNZhW69CqLPE80F-cxb9rC0GtI6H6c5Jjb2RDF7ami370b-MZCTe3sGEcsopLCd6CNGn0EVIXTjqJX1kSHL750XeaQH4rXbk9po8lMJdVAOQtSjes5f2OtDrAgG_ipqLm3gU4qzJ0OAMzRz9plKo_gv3ca8ljEGGN6pHi4shfCStePjcY-Y"/>
+</div>
+<span class="text-on-surface font-bold text-sm">Rajesh Kumar</span>
+</div>
+<span class="text-emerald-600 text-[10px] font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-full uppercase">Notified <span class="material-symbols-outlined text-xs">check</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden ring-2 ring-slate-50">
+<img alt="" class="w-full h-full object-cover" data-alt="Portrait of a female friend contact" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvY4msLKUhjPjyS6BC3B0IAcU-OkaegcogNPCyZwrl8LF_R6qJI2LD0uRmt9BK6_6xVAo23CMDYx002MYNlqkLV13ZSKeew1-8P9QWbIRhg3EBXmqP3Z29AVxzPN0NugxrOH1Z46aiEZq3M4vY6Y-3ac5hbw0_yOZUlbhUI9kcCeglsrC5pUXFyTrFF_s1cyuSEZwIlkgNHZt6azzUESS_vK2Vv5CARi5akbA201tnbl5sKGVmHGAX2RfmxroR6DWRpO7XOuiLmrwU"/>
+</div>
+<span class="text-on-surface font-bold text-sm">Priya Singh</span>
+</div>
+<span class="text-emerald-600 text-[10px] font-bold flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-full uppercase">Notified <span class="material-symbols-outlined text-xs">check</span></span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="w-full space-y-4">
+<button class="w-full bg-white text-red-700 font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+                Call Emergency Contact
+            </button>
+<button class="w-full bg-transparent border-2 border-white text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+<span class="material-symbols-outlined">chat_bubble</span>
+                Send Text to Contact
+            </button>
+<button class="w-full flex items-center justify-center gap-2 text-white/90 font-medium py-2 active:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-lg">local_police</span>
+<span class="text-sm underline underline-offset-4 decoration-white/40">Contact Authorities (112)</span>
+</button>
+</div>
+<!-- Safe Link -->
+<div class="mt-8 text-center">
+<button class="text-[10px] uppercase tracking-[0.2em] font-bold text-white/60 hover:text-white transition-colors py-4 px-8">
+                Cancel SOS — I'm Safe
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation Suppressed as per instructions (Task-Focused Emergency Journey) -->
+</body></html>

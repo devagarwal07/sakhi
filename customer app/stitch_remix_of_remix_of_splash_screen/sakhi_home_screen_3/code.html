@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi - Luminous Ride</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "surface-variant": "#e5e0ef",
+                        "surface-container-high": "#ebe6f5",
+                        "primary": "#630ed4",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#d2bbff",
+                        "on-surface": "#1c1a25",
+                        "tertiary-container": "#a15100",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-secondary-container": "#3f1e8c",
+                        "surface": "#fcf8ff",
+                        "on-primary-container": "#ede0ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#4a4455",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#ab8ffe",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#eaddff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#d2bbff",
+                        "primary-container": "#7c3aed",
+                        "surface-container": "#f0ecfa",
+                        "secondary-fixed-dim": "#cebdff",
+                        "surface-tint": "#732ee4",
+                        "surface-dim": "#dcd8e6",
+                        "surface-container-low": "#f6f1ff",
+                        "inverse-surface": "#312f3a",
+                        "surface-bright": "#fcf8ff",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#ccc3d8",
+                        "secondary": "#674bb5",
+                        "tertiary-fixed": "#ffdcc6",
+                        "outline": "#7b7487",
+                        "on-background": "#1c1a25",
+                        "tertiary": "#7d3d00",
+                        "on-secondary-fixed": "#21005e",
+                        "background": "#fcf8ff",
+                        "surface-container-highest": "#e5e0ef",
+                        "on-primary-fixed": "#25005a",
+                        "secondary-fixed": "#e8ddff",
+                        "on-tertiary-fixed": "#301400",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "inverse-on-surface": "#f3eefd",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'lavender': '0 16px 32px rgba(124,58,237,0.08)',
+                        'soft-red': '0 8px 20px rgba(186,26,26,0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F5F0FF;
+            font-family: 'Inter', sans-serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface selection:bg-primary-fixed antialiased overflow-hidden h-screen flex flex-col">
+<!-- Top Map Section (58%) -->
+<div class="relative h-[58%] w-full overflow-hidden bg-surface-container-low">
+<!-- Map Canvas Placeholder -->
+<div class="absolute inset-0 grayscale opacity-40 brightness-110 contrast-75 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&amp;fit=crop&amp;q=80&amp;w=1000')]" data-alt="Soft lavender muted pastel map background" data-location="Mumbai, India" style="background-size: cover; background-position: center;">
+</div>
+<!-- Pulse & Location Pin -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+<div class="absolute w-12 h-12 bg-primary/20 rounded-full animate-ping"></div>
+<div class="absolute w-8 h-8 bg-primary/30 rounded-full"></div>
+<div class="relative z-10 w-4 h-4 bg-primary border-2 border-white rounded-full shadow-lg"></div>
+</div>
+<!-- Map Overlays: Header Controls -->
+<div class="absolute top-0 left-0 right-0 p-4 flex flex-col gap-4">
+<div class="flex items-center justify-between w-full">
+<!-- Hamburger Menu -->
+<button class="w-12 h-12 flex items-center justify-center bg-surface-container-lowest rounded-full shadow-lavender active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+</button>
+<!-- Search Bar -->
+<div class="flex-1 mx-3 h-12 bg-surface-container-lowest rounded-full shadow-lavender flex items-center px-4 gap-3">
+<span class="material-symbols-outlined text-primary/60" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm font-medium w-full placeholder:text-outline" placeholder="Where are you going?" type="text"/>
+<span class="material-symbols-outlined text-primary/60" data-icon="mic">mic</span>
+</div>
+<!-- Profile Avatar -->
+<button class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lavender active:scale-95 transition-transform">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="Female user smiling profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuy_XEZuM6VUwQZDphI4BvgyhGTzrirCiMpnZa1VWZaKtaq14bjWiR63BV28u8ni0uBkrNDLkGRmwsMrdkK7lY9vwXgWxYA90no2cc5r-kUfnnywpar4w0z_lE2lP5Lb9EBOt3QXsFAl0lzqf10lr7ksOGw8JYBZeNag8vAhXAEZ1NkcKXqOjJtZ8xwChpxxv0kon6cejPVMevHEyfGlwG9LrFzd_1Xdf6THH7lVckazwDa5NOyggQ5K1YD8XweIJ3JuEBjo24W91z"/>
+</button>
+</div>
+</div>
+<!-- Floating SOS Button -->
+<div class="absolute bottom-6 left-6">
+<button class="w-16 h-16 bg-error rounded-full shadow-soft-red flex flex-col items-center justify-center text-white active:scale-90 transition-all">
+<span class="text-[10px] font-black tracking-widest uppercase">SOS</span>
+<span class="material-symbols-outlined text-xl" data-icon="e911_emergency" style="font-variation-settings: 'FILL' 1;">e911_emergency</span>
+</button>
+</div>
+</div>
+<!-- Bottom Sheet Content (42%) -->
+<div class="relative flex-1 bg-surface-container-lowest rounded-t-3xl shadow-[0_-12px_40px_rgba(0,0,0,0.06)] z-20 flex flex-col">
+<!-- Handlebar -->
+<div class="w-12 h-1 bg-surface-variant rounded-full mx-auto mt-3 mb-5"></div>
+<div class="px-6 space-y-6 overflow-y-auto hide-scrollbar pb-24">
+<!-- Row 1: Greeting & Notification -->
+<div class="flex items-center justify-between">
+<h1 class="text-2xl font-extrabold tracking-tight text-on-background">Good Morning, Priya 👋</h1>
+<button class="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
+</button>
+</div>
+<!-- Row 2: Pill Tabs -->
+<div class="flex gap-3">
+<button class="flex-1 py-3.5 bg-primary-container text-white rounded-xl font-bold text-sm shadow-lavender transition-all active:scale-95">
+                    Book Now
+                </button>
+<button class="flex-1 py-3.5 bg-white border-2 border-primary-container text-primary-container rounded-xl font-bold text-sm transition-all active:scale-95">
+                    Subscribe
+                </button>
+</div>
+<!-- Row 3: Saved Places Chips -->
+<div class="space-y-3">
+<div class="flex overflow-x-auto gap-3 hide-scrollbar pb-1">
+<button class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low rounded-full border border-surface-variant/30 whitespace-nowrap transition-colors hover:bg-primary-fixed-dim">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="home">home</span>
+<span class="text-sm font-semibold text-on-surface-variant">Home</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low rounded-full border border-surface-variant/30 whitespace-nowrap transition-colors hover:bg-primary-fixed-dim">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="work">work</span>
+<span class="text-sm font-semibold text-on-surface-variant">Work</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low rounded-full border border-surface-variant/30 whitespace-nowrap transition-colors hover:bg-primary-fixed-dim">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="history">history</span>
+<span class="text-sm font-semibold text-on-surface-variant">Recent</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low rounded-full border border-dashed border-primary/40 whitespace-nowrap">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="add">add</span>
+<span class="text-sm font-semibold text-primary">Add New</span>
+</button>
+</div>
+</div>
+<!-- Recent Rides -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-black uppercase tracking-[0.15em] text-outline">Recent Rides</span>
+<button class="text-xs font-bold text-primary">View All</button>
+</div>
+<div class="space-y-4">
+<!-- Ride Card 1 -->
+<div class="group p-4 bg-surface-container-low rounded-2xl flex items-center gap-4 transition-all hover:bg-white hover:shadow-lavender cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="local_taxi">local_taxi</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">To: Worli Sea Face</h4>
+<p class="text-xs text-on-surface-variant line-clamp-1">From: Home (Bandra West)</p>
+<p class="text-[10px] text-outline font-medium mt-1">Oct 24 • 09:15 AM</p>
+</div>
+<div class="text-right">
+<span class="text-sm font-black text-on-surface">₹450</span>
+<div class="mt-1 flex items-center gap-1 justify-end">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface-variant">5.0</span>
+</div>
+</div>
+</div>
+<!-- Ride Card 2 -->
+<div class="group p-4 bg-surface-container-low rounded-2xl flex items-center gap-4 transition-all hover:bg-white hover:shadow-lavender cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="directions_car">directions_car</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">To: Jio World Drive</h4>
+<p class="text-xs text-on-surface-variant line-clamp-1">From: Work (BKC)</p>
+<p class="text-[10px] text-outline font-medium mt-1">Oct 22 • 06:40 PM</p>
+</div>
+<div class="text-right">
+<span class="text-sm font-black text-on-surface">₹320</span>
+<div class="mt-1 flex items-center gap-1 justify-end">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface-variant">4.8</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/90 backdrop-blur-lg flex justify-around items-center px-6 pb-8 pt-4 rounded-t-[32px] shadow-[0_-8px_24px_rgba(124,58,237,0.06)]">
+<a class="flex flex-col items-center justify-center text-violet-700 bg-violet-100/50 rounded-2xl px-4 py-1 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="explore" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="text-[10px] font-semibold uppercase tracking-widest mt-1">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-violet-500 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="local_taxi">local_taxi</span>
+<span class="text-[10px] font-semibold uppercase tracking-widest mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-violet-500 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-[10px] font-semibold uppercase tracking-widest mt-1">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-violet-500 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="person">person</span>
+<span class="text-[10px] font-semibold uppercase tracking-widest mt-1">Account</span>
+</a>
+</nav>
+</body></html>

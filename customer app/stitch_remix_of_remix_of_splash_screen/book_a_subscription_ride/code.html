@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi - Book a Subscription Ride</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#7d3d00",
+                        "on-background": "#1c1a25",
+                        "on-primary-fixed": "#25005a",
+                        "on-secondary-fixed": "#21005e",
+                        "surface-dim": "#dcd8e6",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-surface": "#1c1a25",
+                        "secondary-fixed": "#e8ddff",
+                        "inverse-on-surface": "#f3eefd",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "outline-variant": "#ccc3d8",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#4a4455",
+                        "primary-container": "#7c3aed",
+                        "outline": "#7b7487",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#eaddff",
+                        "surface-container-low": "#f6f1ff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "surface-container": "#f0ecfa",
+                        "primary": "#630ed4",
+                        "inverse-surface": "#312f3a",
+                        "inverse-primary": "#d2bbff",
+                        "tertiary-container": "#a15100",
+                        "surface-variant": "#e5e0ef",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-container-highest": "#e5e0ef",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-primary-container": "#ede0ff",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#ebe6f5",
+                        "surface": "#fcf8ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#ab8ffe",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#732ee4",
+                        "background": "#fcf8ff",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "surface-bright": "#fcf8ff",
+                        "secondary": "#674bb5",
+                        "on-tertiary-fixed": "#301400",
+                        "on-secondary-container": "#3f1e8c"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F0FF;
+        }
+        .ios-toggle {
+            appearance: none;
+            width: 44px;
+            height: 24px;
+            background: #ccc3d8;
+            border-radius: 999px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .ios-toggle:checked {
+            background: #7C3AED;
+        }
+        .ios-toggle::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+        }
+        .ios-toggle:checked::before {
+            transform: translateX(20px);
+        }
+        .dashed-connector {
+            background-image: linear-gradient(to bottom, #7b7487 33%, rgba(255,255,255,0) 0%);
+            background-position: left;
+            background-size: 1px 7px;
+            background-repeat: repeat-y;
+            width: 1px;
+            height: 32px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased">
+<!-- Top Navigation Bar -->
+<header class="bg-[#F5F0FF]/80 backdrop-blur-xl fixed top-0 w-full z-50 shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<button aria-label="Go back" class="flex items-center justify-center p-2 rounded-full hover:bg-[#F6F1FF] transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[#1E1B2E]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="font-semibold tracking-tight text-[#1E1B2E] text-center">Book a Subscription Ride</h1>
+<p class="text-[12px] text-[#6B7280] font-medium">Set up your recurring daily rides</p>
+</div>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-[390px] mx-auto min-h-screen">
+<!-- Address Selection Card -->
+<section class="bg-surface-container-lowest rounded-xl shadow-[0_16px_32px_rgba(124,58,237,0.08)] p-5 mb-8">
+<div class="flex flex-col gap-4">
+<!-- Pickup -->
+<div class="flex items-start gap-4">
+<div class="flex flex-col items-center pt-1">
+<div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+<div class="dashed-connector my-1"></div>
+</div>
+<div class="flex-1 border-b border-surface-variant pb-3">
+<label class="block text-[10px] font-bold uppercase tracking-wider text-outline mb-1">Pickup Location</label>
+<div class="text-[#1E1B2E] font-medium text-sm">Koramangala 5th Block</div>
+</div>
+</div>
+<!-- Dropoff -->
+<div class="flex items-start gap-4">
+<div class="pt-1">
+<span class="material-symbols-outlined text-primary-container text-[20px]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div class="flex-1">
+<label class="block text-[10px] font-bold uppercase tracking-wider text-outline mb-1">Drop Location</label>
+<div class="text-[#1E1B2E] font-medium text-sm">MG Road Metro Station</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Configuration Rows -->
+<div class="flex flex-col gap-8">
+<!-- Start Date Row -->
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Start Date</h3>
+<p class="text-[12px] text-subtext">Subscription begins from</p>
+</div>
+<button class="bg-surface-container-lowest rounded-full px-4 py-2 flex items-center gap-2 shadow-[0_8px_16px_rgba(124,58,237,0.04)] active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary-container text-sm">calendar_today</span>
+<span class="text-primary-container font-semibold text-xs">Oct 28, 2024</span>
+</button>
+</div>
+<!-- Morning Pickup Time Row -->
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Morning Pickup Time</h3>
+<p class="text-[12px] text-subtext">Daily departure time</p>
+</div>
+<button class="bg-surface-container-lowest rounded-full px-4 py-2 flex items-center gap-2 shadow-[0_8px_16px_rgba(124,58,237,0.04)] active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary-container text-sm">schedule</span>
+<span class="text-primary-container font-semibold text-xs">08:30 AM</span>
+</button>
+</div>
+<!-- Two-Way Trip Toggle -->
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Add Return Ride?</h3>
+<p class="text-[12px] text-subtext">Set a return pickup time</p>
+</div>
+<input checked="" class="ios-toggle" type="checkbox"/>
+</div>
+<!-- Return Pickup Time Row (Visible when toggle is on) -->
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Return Pickup Time</h3>
+<p class="text-[12px] text-subtext">Office to Home departure</p>
+</div>
+<button class="bg-surface-container-lowest rounded-full px-4 py-2 flex items-center gap-2 shadow-[0_8px_16px_rgba(124,58,237,0.04)] active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary-container text-sm">schedule</span>
+<span class="text-primary-container font-semibold text-xs">05:30 PM</span>
+</button>
+</div>
+<!-- Days of Week Selection -->
+<div>
+<div class="mb-4">
+<h3 class="text-sm font-semibold text-on-surface">Days of Week</h3>
+<p class="text-[12px] text-subtext">Choose your recurring ride days</p>
+</div>
+<div class="flex justify-between items-center gap-1">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-white text-[12px] font-bold">Mon</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-white text-[12px] font-bold">Tue</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-white text-[12px] font-bold">Wed</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-white text-[12px] font-bold">Thu</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-white text-[12px] font-bold">Fri</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-lowest border border-outline-variant text-outline text-[12px] font-bold">Sat</div>
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-lowest border border-outline-variant text-outline text-[12px] font-bold">Sun</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Button -->
+<footer class="fixed bottom-0 w-full p-6 bg-gradient-to-t from-[#F5F0FF] via-[#F5F0FF] to-transparent">
+<button class="w-full h-14 bg-gradient-to-r from-primary-container to-[#630ED4] rounded-xl text-white font-bold text-base shadow-[0_16px_32px_rgba(124,58,237,0.2)] active:scale-[0.98] transition-all">
+            Continue to Plan Selection
+        </button>
+</footer>
+</body></html>

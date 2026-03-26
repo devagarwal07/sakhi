@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Upload Aadhaar Card</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#ffdcc6",
+              "tertiary-container": "#a15100",
+              "surface-container-low": "#f6f1ff",
+              "on-background": "#1c1a25",
+              "on-surface-variant": "#4a4455",
+              "on-primary-fixed-variant": "#5a00c6",
+              "on-tertiary-fixed-variant": "#713700",
+              "tertiary-fixed-dim": "#ffb784",
+              "primary-fixed": "#eaddff",
+              "on-secondary-fixed": "#21005e",
+              "secondary-container": "#ab8ffe",
+              "error-container": "#ffdad6",
+              "primary-container": "#7c3aed",
+              "on-tertiary": "#ffffff",
+              "primary-fixed-dim": "#d2bbff",
+              "on-error-container": "#93000a",
+              "primary": "#630ed4",
+              "surface-dim": "#dcd8e6",
+              "on-tertiary-fixed": "#301400",
+              "on-secondary": "#ffffff",
+              "inverse-surface": "#312f3a",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#1c1a25",
+              "on-tertiary-container": "#ffe0cd",
+              "surface-container": "#f0ecfa",
+              "tertiary": "#7d3d00",
+              "outline-variant": "#ccc3d8",
+              "on-primary-fixed": "#25005a",
+              "background": "#fcf8ff",
+              "on-primary-container": "#ede0ff",
+              "surface-container-high": "#ebe6f5",
+              "surface-container-highest": "#e5e0ef",
+              "surface-tint": "#732ee4",
+              "surface-bright": "#fcf8ff",
+              "surface-variant": "#e5e0ef",
+              "inverse-on-surface": "#f3eefd",
+              "secondary-fixed": "#e8ddff",
+              "on-secondary-container": "#3f1e8c",
+              "surface": "#fcf8ff",
+              "on-primary": "#ffffff",
+              "inverse-primary": "#d2bbff",
+              "outline": "#7b7487",
+              "secondary-fixed-dim": "#cebdff",
+              "secondary": "#674bb5",
+              "on-secondary-fixed-variant": "#4f319c",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F0FF;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            background: rgba(245, 240, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        .editorial-shadow {
+            box-shadow: 0 16px 32px rgba(124, 58, 237, 0.08);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #630ED4 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 glass-header">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#7C3AED] hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline font-semibold tracking-tight text-lg text-[#1E1B2E]">Upload Aadhaar Card</h1>
+</div>
+<div class="w-6"></div> <!-- Spacer for center-ish alignment -->
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-md mx-auto">
+<!-- Subtext Instruction -->
+<div class="mb-8">
+<p class="text-[#6B7280] text-md leading-relaxed">
+                Upload clear photos of both sides of your Aadhaar
+            </p>
+</div>
+<!-- Upload Sections Stack -->
+<div class="space-y-6">
+<!-- Box 1: Front (Empty State) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 editorial-shadow border-2 border-dashed border-[#A78BFA] flex flex-col items-center justify-center text-center">
+<div class="mb-4 bg-[#F5F0FF] p-4 rounded-full">
+<span class="material-symbols-outlined text-[#7C3AED] text-3xl" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<h3 class="text-[#1E1B2E] font-bold text-lg mb-1">Front of Aadhaar</h3>
+<p class="text-[#6B7280] text-sm mb-6">Tap to capture or upload</p>
+<button class="bg-[#F5F0FF] text-[#7C3AED] font-semibold px-6 py-2.5 rounded-full text-sm hover:opacity-80 transition-all active:scale-95">
+                    Upload Photo
+                </button>
+</div>
+<!-- Box 2: Back (Uploaded State) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 editorial-shadow relative overflow-hidden">
+<div class="flex items-start justify-between mb-4">
+<div class="flex flex-col">
+<h3 class="text-[#1E1B2E] font-bold text-lg">Back of Aadhaar</h3>
+<p class="text-[#6B7280] text-sm">File uploaded successfully</p>
+</div>
+<!-- Status Badge -->
+<div class="bg-green-100 p-1.5 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-green-600 text-xl font-bold" data-icon="check" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+</div>
+<!-- Preview Thumbnail Area -->
+<div class="relative w-full aspect-[1.6/1] bg-surface-container-low rounded-lg overflow-hidden border border-[#A78BFA]/20">
+<img alt="Aadhaar Back Preview" class="w-full h-full object-cover opacity-60 grayscale-[30%]" data-alt="Blurred generic government ID card back side illustration" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqEI0tcI-Mc49Ez4tgwwF1RVshY2GuCb2eFwVSTDfrPBarHfsh9whnoBqD4nWIYE00TX7nKBmtbT6vVZ9Wy6DqkBXqe8Db8k8KGn9raCWbqYwKXrwk6IHwuN2fwKGS2DA_IdaOJJeEBX5JODTnsedF1CyvwaK8AU9wk5GpGe1AHcxK4-kOwCROjQnxU00p6C42kPjRyyOscrLI8fNZZ6eCF6uAmCU8mG1YHlKNGpt5rjDzfz7H-ZQ5lXMtpG0-I4CsR957JhO_QDZN"/>
+<div class="absolute inset-0 bg-[#7C3AED]/5 pointer-events-none"></div>
+</div>
+<div class="mt-4 flex justify-center">
+<button class="text-[#7C3AED] font-medium text-sm hover:underline flex items-center gap-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+                        Re-upload
+                    </button>
+</div>
+</div>
+</div>
+<!-- Footer Info & CTA Area -->
+<div class="mt-12 space-y-6">
+<!-- Info Row -->
+<div class="flex items-start gap-3 px-2">
+<span class="material-symbols-outlined text-[#6B7280] text-lg mt-0.5" data-icon="lock">lock</span>
+<p class="text-[#6B7280] text-xs leading-relaxed">
+                    Your Aadhaar data is encrypted and never shared. We only use this for identity verification purposes.
+                </p>
+</div>
+<!-- Primary CTA -->
+<div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-[#F5F0FF] via-[#F5F0FF] to-transparent">
+<div class="max-w-md mx-auto">
+<button class="w-full primary-gradient text-white font-bold py-4 rounded-xl editorial-shadow hover:opacity-90 active:scale-[0.98] transition-all text-lg tracking-tight">
+                        Submit Verification
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed": "#21005e",
+              "surface-container-low": "#f6f1ff",
+              "surface-bright": "#fcf8ff",
+              "on-tertiary-container": "#ffe0cd",
+              "error-container": "#ffdad6",
+              "primary-fixed": "#eaddff",
+              "secondary-fixed-dim": "#cebdff",
+              "on-surface": "#1c1a25",
+              "on-error-container": "#93000a",
+              "background": "#fcf8ff",
+              "on-surface-variant": "#4a4455",
+              "tertiary": "#7d3d00",
+              "surface-container-high": "#ebe6f5",
+              "tertiary-container": "#a15100",
+              "surface-container": "#f0ecfa",
+              "outline": "#7b7487",
+              "inverse-primary": "#d2bbff",
+              "surface-tint": "#732ee4",
+              "on-background": "#1c1a25",
+              "primary": "#630ed4",
+              "tertiary-fixed-dim": "#ffb784",
+              "inverse-on-surface": "#f3eefd",
+              "primary-fixed-dim": "#d2bbff",
+              "primary-container": "#7c3aed",
+              "surface-dim": "#dcd8e6",
+              "on-tertiary-fixed-variant": "#713700",
+              "error": "#ba1a1a",
+              "on-primary-fixed": "#25005a",
+              "tertiary-fixed": "#ffdcc6",
+              "on-primary-fixed-variant": "#5a00c6",
+              "on-tertiary-fixed": "#301400",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#312f3a",
+              "secondary-fixed": "#e8ddff",
+              "surface-container-lowest": "#ffffff",
+              "on-secondary-fixed-variant": "#4f319c",
+              "surface": "#fcf8ff",
+              "secondary": "#674bb5",
+              "on-secondary": "#ffffff",
+              "surface-container-highest": "#e5e0ef",
+              "on-primary-container": "#ede0ff",
+              "surface-variant": "#e5e0ef",
+              "outline-variant": "#ccc3d8",
+              "on-error": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#3f1e8c",
+              "secondary-container": "#ab8ffe"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F0FF; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .lavender-shadow {
+            box-shadow: 0 16px 32px rgba(124, 58, 237, 0.08);
+        }
+        .glass-header {
+            background: rgba(245, 240, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background antialiased min-h-screen pb-32">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 w-full z-50 glass-header shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 text-primary">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline font-semibold tracking-tight text-[#1E1B2E] text-xl">Payment Plans</h1>
+</div>
+<div class="w-10"></div> <!-- Spacer -->
+</div>
+</header>
+<main class="pt-24 px-6 space-y-8 max-w-md mx-auto">
+<!-- Editorial Header -->
+<div class="space-y-2">
+<h2 class="text-[2.5rem] leading-[1.1] font-extrabold tracking-tight text-on-surface">
+                Choose a <br/><span class="text-primary">Payment Plan</span>
+</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed font-medium opacity-80">
+                Select how you'd like to pay your platform fees to stay online.
+            </p>
+</div>
+<!-- Plans Container -->
+<div class="space-y-6">
+<!-- Daily Plan Card -->
+<div class="surface-container-lowest bg-white p-6 rounded-[16px] lavender-shadow flex items-start gap-4 active:scale-[0.98] transition-all cursor-pointer">
+<div class="mt-1 flex-shrink-0">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center"></div>
+</div>
+<div class="flex-grow space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-bold text-xl text-on-surface">Daily Plan</h3>
+<p class="text-primary font-extrabold text-lg tracking-tight mt-1">₹50 / day</p>
+</div>
+</div>
+<ul class="space-y-3">
+<li class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Pay only for the days you drive
+                        </li>
+<li class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Ideal for part-time drivers
+                        </li>
+</ul>
+</div>
+</div>
+<!-- Weekly Plan Card (Selected State) -->
+<div class="surface-container-lowest bg-white p-6 rounded-[16px] lavender-shadow border-2 border-primary/30 flex items-start gap-4 relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer">
+<!-- Badge -->
+<div class="absolute top-0 right-0 bg-primary px-4 py-1 rounded-bl-xl">
+<span class="text-[10px] font-bold tracking-[0.1em] text-white uppercase">MOST POPULAR</span>
+</div>
+<div class="mt-1 flex-shrink-0">
+<div class="w-6 h-6 rounded-full border-2 border-primary bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-white"></div>
+</div>
+</div>
+<div class="flex-grow space-y-4">
+<div>
+<h3 class="font-bold text-xl text-on-surface">Weekly Plan</h3>
+<p class="text-primary font-extrabold text-lg tracking-tight mt-1">₹350 / week</p>
+</div>
+<ul class="space-y-3">
+<li class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Consistent access all week
+                        </li>
+<li class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            No daily payment hassle
+                        </li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Info Box -->
+<div class="surface-container-low bg-[#F6F1FF] p-5 rounded-[16px] flex gap-4 items-start">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<p class="text-sm font-medium text-on-surface-variant leading-relaxed">
+                You can switch your plan anytime at the end of your current cycle.
+            </p>
+</div>
+</main>
+<!-- Fixed Bottom Action Area -->
+<footer class="fixed bottom-0 left-0 w-full px-6 pb-10 pt-6 glass-header z-40">
+<div class="max-w-md mx-auto space-y-6">
+<!-- Main CTA -->
+<button class="w-full h-14 bg-gradient-to-br from-[#7C3AED] to-[#630ED4] text-white font-bold rounded-xl shadow-[0_16px_32px_rgba(124,58,237,0.25)] active:scale-95 transition-transform">
+                Confirm &amp; Proceed
+            </button>
+<!-- BottomNavBar Placeholder Logic -->
+<nav class="flex justify-around items-center h-12">
+<div class="flex flex-col items-center justify-center text-[#6B7280]">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label text-[10px] uppercase tracking-widest font-bold mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280]">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label text-[10px] uppercase tracking-widest font-bold mt-1">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#7C3AED] bg-[#F5F0FF] rounded-xl px-4 py-1">
+<span class="material-symbols-outlined" data-icon="Account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-label text-[10px] uppercase tracking-widest font-bold mt-1">Plans</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280]">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label text-[10px] uppercase tracking-widest font-bold mt-1">Profile</span>
+</div>
+</nav>
+</div>
+</footer>
+</body></html>

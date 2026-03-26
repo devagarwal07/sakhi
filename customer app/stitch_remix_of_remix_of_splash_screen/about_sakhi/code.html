@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-bright": "#fcf8ff",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#e8ddff",
+                        "surface-variant": "#e5e0ef",
+                        "inverse-primary": "#d2bbff",
+                        "primary-fixed": "#eaddff",
+                        "surface-container-low": "#f6f1ff",
+                        "primary-container": "#7c3aed",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-surface-variant": "#4a4455",
+                        "surface-dim": "#dcd8e6",
+                        "on-secondary-container": "#3f1e8c",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#fcf8ff",
+                        "surface-tint": "#732ee4",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "surface-container": "#f0ecfa",
+                        "outline": "#7b7487",
+                        "on-secondary-fixed": "#21005e",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1c1a25",
+                        "primary": "#630ed4",
+                        "on-tertiary-fixed": "#301400",
+                        "secondary": "#674bb5",
+                        "outline-variant": "#ccc3d8",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e5e0ef",
+                        "surface": "#fcf8ff",
+                        "on-primary-container": "#ede0ff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#312f3a",
+                        "surface-container-high": "#ebe6f5",
+                        "primary-fixed-dim": "#d2bbff",
+                        "tertiary": "#7d3d00",
+                        "secondary-container": "#ab8ffe",
+                        "inverse-on-surface": "#f3eefd",
+                        "tertiary-container": "#a15100",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#25005a",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#cebdff",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "on-surface": "#1c1a25"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F0FF;
+            color: #1c1a25;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen max-w-[390px] mx-auto overflow-x-hidden bg-[#F5F0FF]">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 w-full bg-[#F5F0FF]/80 backdrop-blur-xl shadow-[0_16px_32px_rgba(124,58,237,0.08)] flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform duration-200 text-[#7C3AED]">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-[#1E1B2E] text-lg">About Sakhi</h1>
+</div>
+<div class="w-6"></div> <!-- Spacer for balance -->
+</header>
+<main class="flex-1 px-6 pt-8 pb-32 space-y-8 overflow-y-auto no-scrollbar">
+<!-- Logo Section -->
+<section class="flex flex-col items-center text-center">
+<div class="relative w-24 h-24 bg-gradient-to-br from-primary to-primary-container rounded-[24px] flex items-center justify-center shadow-lg shadow-primary/20 mb-3">
+<span class="material-symbols-outlined text-white text-5xl" data-icon="shield" style="font-variation-settings: 'FILL' 1;">shield</span>
+<span class="absolute text-white font-black text-2xl tracking-tighter">S</span>
+</div>
+<h2 class="text-xl font-extrabold tracking-tight text-on-background">Sakhi</h2>
+<p class="text-[12px] font-medium text-outline uppercase tracking-widest mt-1">v1.0.2</p>
+</section>
+<!-- Mission Card -->
+<section class="bg-secondary-fixed p-6 rounded-[20px] shadow-[0_16px_32px_rgba(124,58,237,0.04)]">
+<h3 class="text-on-secondary-fixed text-sm font-bold uppercase tracking-wider mb-2">Our Mission</h3>
+<p class="text-[#6B7280] italic leading-relaxed font-medium">
+                "To make every journey safe, dignified, and empowering for women."
+            </p>
+</section>
+<!-- The Sakhi Story -->
+<section class="bg-surface-container-lowest rounded-[24px] p-6 shadow-[0_16px_32px_rgba(124,58,237,0.08)] space-y-6">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="event">event</span>
+</div>
+<div>
+<h4 class="text-on-surface font-bold text-sm">Founded in 2023</h4>
+<p class="text-outline text-xs mt-1">Born from a vision to revolutionize urban mobility for women.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="female">female</span>
+</div>
+<div>
+<h4 class="text-on-surface font-bold text-sm">Women-Only Platform</h4>
+<p class="text-outline text-xs mt-1">A dedicated safe space exclusive to women riders and drivers.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<h4 class="text-on-surface font-bold text-sm">Verified Professionals</h4>
+<p class="text-outline text-xs mt-1">Multi-level background checks for every driver on our network.</p>
+</div>
+</div>
+</section>
+<!-- Social Links -->
+<section class="flex justify-center items-center gap-6 py-2">
+<button class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="public">public</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="alternate_email">alternate_email</span>
+</button>
+</section>
+<!-- Legal Links -->
+<section class="space-y-1">
+<a class="flex items-center justify-between p-4 bg-surface-container-low/50 rounded-xl active:bg-surface-container transition-colors" href="#">
+<span class="text-on-surface font-medium text-sm">Terms of Service</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="chevron_right">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 bg-surface-container-low/50 rounded-xl active:bg-surface-container transition-colors" href="#">
+<span class="text-on-surface font-medium text-sm">Privacy Policy</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="chevron_right">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 bg-surface-container-low/50 rounded-xl active:bg-surface-container transition-colors" href="#">
+<span class="text-on-surface font-medium text-sm">Cookie Policy</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="chevron_right">chevron_right</span>
+</a>
+</section>
+<!-- Rate Button -->
+<section class="pt-4">
+<button class="w-full flex items-center justify-center gap-3 py-4 border-2 border-primary text-primary font-bold rounded-2xl active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+                Rate Sakhi on Play Store
+            </button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#FFFFFF]/90 backdrop-blur-xl shadow-[0_-8px_24px_rgba(124,58,237,0.06)] rounded-t-[24px]">
+<button class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:text-[#7C3AED] transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium tracking-[0.05em] uppercase mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:text-[#7C3AED] transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-[10px] font-medium tracking-[0.05em] uppercase mt-1">Connect</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:text-[#7C3AED] transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-[10px] font-medium tracking-[0.05em] uppercase mt-1">Resources</span>
+</button>
+<!-- ACTIVE TAB: Profile -->
+<button class="flex flex-col items-center justify-center bg-[#F5F0FF] text-[#7C3AED] rounded-2xl px-5 py-2 active:scale-90 transition-all">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="text-[10px] font-medium tracking-[0.05em] uppercase mt-1">Profile</span>
+</button>
+</nav>
+</body></html>

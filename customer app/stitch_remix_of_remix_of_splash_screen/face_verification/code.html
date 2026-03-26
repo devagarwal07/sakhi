@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#674bb5",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "inverse-primary": "#d2bbff",
+                        "surface-container-high": "#ebe6f5",
+                        "surface": "#fcf8ff",
+                        "on-background": "#1c1a25",
+                        "tertiary": "#7d3d00",
+                        "secondary-container": "#ab8ffe",
+                        "on-tertiary-fixed": "#301400",
+                        "on-secondary-fixed": "#21005e",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#4a4455",
+                        "background": "#fcf8ff",
+                        "surface-dim": "#dcd8e6",
+                        "outline": "#7b7487",
+                        "secondary-fixed-dim": "#cebdff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-primary-container": "#ede0ff",
+                        "surface-container-low": "#f6f1ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-tint": "#732ee4",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#a15100",
+                        "surface-variant": "#e5e0ef",
+                        "secondary-fixed": "#e8ddff",
+                        "primary-container": "#7c3aed",
+                        "surface-bright": "#fcf8ff",
+                        "outline-variant": "#ccc3d8",
+                        "on-surface": "#1c1a25",
+                        "inverse-surface": "#312f3a",
+                        "inverse-on-surface": "#f3eefd",
+                        "surface-container": "#f0ecfa",
+                        "on-primary-fixed": "#25005a",
+                        "on-secondary": "#ffffff",
+                        "primary": "#630ed4",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#eaddff",
+                        "surface-container-highest": "#e5e0ef",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-secondary-container": "#3f1e8c"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanner-ring {
+            box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2), 0 0 20px 2px rgba(167, 139, 250, 0.4);
+        }
+        .camera-overlay {
+            background: radial-gradient(circle at center, transparent 35%, rgba(30, 27, 46, 0.85) 75%);
+        }
+        /* Pulse Simulation */
+        @keyframes custom-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .pulse-effect {
+            animation: custom-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="h-full bg-[#1E1B2E] font-body text-white antialiased overflow-hidden flex flex-col items-center">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 w-full bg-transparent backdrop-blur-md">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white hover:bg-white/10 rounded-full transition-colors p-2 active:scale-95 duration-200">
+                arrow_back
+            </button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-lg text-white">Face Verification</h1>
+</div>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Canvas (390x844 simulated layout) -->
+<main class="relative w-full max-w-[390px] min-h-screen flex flex-col items-center justify-between py-24 px-8 overflow-hidden">
+<!-- Live Camera Background Simulation -->
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 bg-[#1E1B2E]"></div>
+<!-- Mock "Live Feed" Blurred Element -->
+<div class="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&amp;w=390&amp;h=844&amp;auto=format&amp;fit=crop')] bg-cover bg-center grayscale blur-sm" data-alt="Faint grayscale view of a person through a camera lens"></div>
+<div class="absolute inset-0 camera-overlay"></div>
+</div>
+<!-- Camera Viewfinder Section -->
+<div class="relative z-10 flex flex-col items-center w-full mt-8">
+<!-- Outer Pulsing Ring -->
+<div class="relative w-72 h-72 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-2 border-[#A78BFA]/40 pulse-effect"></div>
+<div class="absolute inset-4 rounded-full border border-[#A78BFA]/20"></div>
+<!-- Main Viewfinder Circle -->
+<div class="w-64 h-64 rounded-full border-[3px] border-[#A78BFA] scanner-ring bg-transparent flex items-center justify-center relative overflow-hidden">
+<!-- Face Guide Outline -->
+<div class="w-48 h-60 border-2 border-dashed border-white/40 rounded-[100px] flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-white/20 text-8xl" style="font-variation-settings: 'wght' 100;">
+                            face
+                        </span>
+</div>
+<!-- Scanning Horizontal Line (Decorative) -->
+<div class="absolute w-full h-1 bg-gradient-to-r from-transparent via-[#A78BFA]/50 to-transparent top-1/2 -translate-y-1/2"></div>
+</div>
+</div>
+<!-- Instruction Text -->
+<p class="mt-12 text-center text-white font-medium text-base px-4 leading-relaxed">
+                Position your face within the circle and hold still
+            </p>
+<!-- Status Pill -->
+<div class="mt-8 bg-[#A78BFA] text-[#1E1B2E] px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2 shadow-lg shadow-[#A78BFA]/20">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1E1B2E] opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-[#1E1B2E]"></span>
+</span>
+                Scanning… Please look at the camera
+            </div>
+</div>
+<!-- Bottom UI Controls -->
+<div class="relative z-10 w-full flex flex-col gap-8 pb-4">
+<!-- Tips Card -->
+<div class="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 flex flex-col gap-3">
+<div class="flex items-center gap-3 text-sm text-white/90">
+<span class="material-symbols-outlined text-xs text-[#A78BFA]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Good lighting
+                </div>
+<div class="flex items-center gap-3 text-sm text-white/90">
+<span class="material-symbols-outlined text-xs text-[#A78BFA]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Remove glasses
+                </div>
+<div class="flex items-center gap-3 text-sm text-white/90">
+<span class="material-symbols-outlined text-xs text-[#A78BFA]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Face the camera
+                </div>
+</div>
+<!-- Fallback Action -->
+<div class="flex flex-col gap-4">
+<button class="w-full h-14 rounded-xl border border-white text-white font-semibold tracking-wide hover:bg-white/10 transition-all active:scale-[0.98]">
+                    Use Aadhaar Instead
+                </button>
+</div>
+</div>
+<!-- Minimal Navigation/Indicator (Hidden as per task focus, but kept empty space for mobile bar) -->
+<div class="relative z-10 h-1 w-32 bg-white/20 rounded-full mt-4 self-center"></div>
+</main>
+</body></html>

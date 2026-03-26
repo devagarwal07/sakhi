@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#ab8ffe",
+                        "secondary": "#674bb5",
+                        "primary-fixed": "#eaddff",
+                        "outline-variant": "#ccc3d8",
+                        "tertiary-container": "#a15100",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f3eefd",
+                        "inverse-primary": "#d2bbff",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "surface": "#fcf8ff",
+                        "inverse-surface": "#312f3a",
+                        "surface-variant": "#e5e0ef",
+                        "secondary-fixed": "#e8ddff",
+                        "on-secondary-container": "#3f1e8c",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-tint": "#732ee4",
+                        "primary-container": "#7c3aed",
+                        "on-primary-fixed": "#25005a",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f6f1ff",
+                        "background": "#fcf8ff",
+                        "on-primary": "#ffffff",
+                        "primary": "#630ed4",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "surface-bright": "#fcf8ff",
+                        "on-secondary-fixed": "#21005e",
+                        "on-primary-container": "#ede0ff",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#f0ecfa",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-background": "#1c1a25",
+                        "surface-container-high": "#ebe6f5",
+                        "on-surface": "#1c1a25",
+                        "tertiary": "#7d3d00",
+                        "outline": "#7b7487",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#dcd8e6",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "surface-container-highest": "#e5e0ef",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#4a4455"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F0FF; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .soft-lavender-shadow { shadow-[0_16px_32px_rgba(124,58,237,0.08)]; }
+        .custom-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .custom-toggle input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E0EF; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #7C3AED; }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F5F0FF]/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center justify-between px-6 h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 hover:opacity-80 transition-opacity text-[#7C3AED]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-[#1E1B2E] text-lg">Notifications</h1>
+</div>
+<div class="w-6"></div> <!-- Spacer for symmetry -->
+</div>
+</header>
+<main class="pt-24 pb-32 px-5 max-w-md mx-auto">
+<!-- Main Settings Card -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-[0_16px_32px_rgba(124,58,237,0.08)] overflow-hidden">
+<!-- Section: Ride Notifications -->
+<div class="px-6 pt-6 pb-2">
+<h2 class="text-[11px] font-bold uppercase tracking-wider text-primary mb-4 opacity-70">Ride Notifications</h2>
+<div class="space-y-6">
+<!-- Row -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Driver assigned</span>
+<span class="text-xs text-subtext text-[#6B7280]">Real-time updates on driver matching</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Row -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Driver arrived</span>
+<span class="text-xs text-subtext text-[#6B7280]">When your Sakhi is at the pickup point</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Row -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Trip started</span>
+<span class="text-xs text-subtext text-[#6B7280]">Confirmation as your journey begins</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Row -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Trip completed</span>
+<span class="text-xs text-subtext text-[#6B7280]">Summary of your reached destination</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Row -->
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Ride cancelled</span>
+<span class="text-xs text-subtext text-[#6B7280]">Alerts for any trip changes</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<div class="mx-6 h-[1px] bg-[#F5F0FF] my-4"></div>
+<!-- Section: Subscription -->
+<div class="px-6 py-2">
+<h2 class="text-[11px] font-bold uppercase tracking-wider text-primary mb-4 opacity-70">Subscription</h2>
+<div class="space-y-6">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Upcoming ride reminder</span>
+<span class="text-xs text-subtext text-[#6B7280]">Alert for scheduled daily commutes</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex flex-col gap-1">
+<span class="text-sm font-bold text-on-surface">Daily reminder</span>
+<div class="flex items-center gap-2">
+<span class="bg-[#F5F0FF] text-primary text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-tighter">30 mins before</span>
+</div>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Subscription expiring soon</span>
+<span class="text-xs text-subtext text-[#6B7280]">Notifications to renew your plan</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<div class="mx-6 h-[1px] bg-[#F5F0FF] my-4"></div>
+<!-- Section: Offers -->
+<div class="px-6 py-2">
+<h2 class="text-[11px] font-bold uppercase tracking-wider text-primary mb-4 opacity-70">Offers</h2>
+<div class="space-y-6">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Promotions</span>
+<span class="text-xs text-subtext text-[#6B7280]">Exclusive discounts and festive offers</span>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">App updates</span>
+<span class="text-xs text-subtext text-[#6B7280]">New features and performance improvements</span>
+</div>
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<div class="mx-6 h-[1px] bg-[#F5F0FF] my-4"></div>
+<!-- Section: Emergency -->
+<div class="px-6 py-6 bg-surface-container-low/30">
+<h2 class="text-[11px] font-bold uppercase tracking-wider text-error mb-4 opacity-80">Emergency</h2>
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">SOS Confirmations</span>
+<span class="text-xs text-subtext text-[#6B7280]">Critical safety alerts - cannot be disabled</span>
+</div>
+<div class="flex items-center text-[#6B7280] bg-surface-container rounded-full p-2">
+<span class="material-symbols-outlined text-sm">lock</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Restore Defaults Link -->
+<div class="mt-8 text-center">
+<button class="text-[#6B7280] text-sm font-medium hover:text-primary transition-colors active:scale-95 duration-200">
+                Restore Defaults
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-2xl bg-[#FFFFFF]/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_-8px_24px_rgba(124,58,237,0.06)]">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 px-4 pb-safe">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 hover:text-[#7C3AED] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium mt-1">Home</span>
+</a>
+<!-- Activity -->
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 hover:text-[#7C3AED] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">directions_car</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium mt-1">Activity</span>
+</a>
+<!-- Safety/Inbox replacement logic -->
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 hover:text-[#7C3AED] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium mt-1">Inbox</span>
+</a>
+<!-- Profile (Active) -->
+<a class="flex flex-col items-center justify-center text-[#7C3AED] dark:text-[#A78BFA] font-bold active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium mt-1">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi - My Subscription</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#f4f0f7",
+                        "inverse-surface": "#312f3a",
+                        "primary": "#C0A6D6",
+                        "on-surface-variant": "#4a4455",
+                        "surface-tint": "#C0A6D6",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "tertiary": "#7d3d00",
+                        "secondary-fixed": "#e8ddff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-background": "#1c1a25",
+                        "inverse-primary": "#f0e6ff",
+                        "on-tertiary-fixed": "#301400",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fcfaff",
+                        "surface-container-highest": "#e6e0eb",
+                        "outline": "#7b7487",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#e0d3f2",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#21005e",
+                        "surface-container-high": "#ede8f2",
+                        "surface": "#fcfaff",
+                        "error": "#ba1a1a",
+                        "secondary": "#8c7ba6",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-secondary-container": "#2c1a45",
+                        "primary-container": "#C0A6D6",
+                        "outline-variant": "#ccc3d8",
+                        "tertiary-container": "#a15100",
+                        "on-tertiary-container": "#ffe0cd",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "inverse-on-surface": "#f3eefd",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#ddd8e3",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#2b1445",
+                        "surface-container-low": "#f6f2fb",
+                        "surface-variant": "#e6e0eb",
+                        "on-surface": "#1c1a25",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-primary-fixed": "#25005a",
+                        "surface-bright": "#fcfaff",
+                        "primary-fixed": "#f0e6ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F5FC; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .tonal-shift-no-border { background-color: rgba(248, 245, 252, 0.8); }
+        .soft-lavender-shadow { box-shadow: 0 16px 32px rgba(192, 166, 214, 0.12); }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="text-on-background antialiased min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F8F5FC]/80 backdrop-blur-xl border-b border-[#C0A6D6]/10">
+<div class="flex items-center h-16 px-6 w-full gap-4">
+<button class="active:scale-95 duration-200 text-[#C0A6D6]">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-[#1E1B2E] font-['Inter'] font-bold tracking-tight text-lg">My Subscription</h1>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-[390px] mx-auto">
+<!-- Active Subscription Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 relative shadow-[0_16px_32px_rgba(192,166,214,0.12)] overflow-hidden border border-[#C0A6D6]/10">
+<!-- Left Accent Border Stripe -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#C0A6D6]"></div>
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<h2 class="text-[#1E1B2E] font-bold text-xl leading-tight">Koramangala → MG Road</h2>
+<p class="text-[#6B7280] text-sm mt-1">7:00 AM pickup · Mon–Fri</p>
+</div>
+<span class="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border border-emerald-100/50">
+                    Active 🟢
+                </span>
+</div>
+<div class="mt-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-[#1E1B2E] font-extrabold text-2xl tracking-tight">18 / 30</span>
+<span class="text-[#6B7280] text-xs font-medium uppercase tracking-wider">rides remaining</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-2.5 bg-[#F4F0F7] rounded-full overflow-hidden">
+<div class="h-full bg-[#C0A6D6] rounded-full" style="width: 60%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2 text-[#C0A6D6]">
+<span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
+<span class="text-sm font-semibold">Tomorrow, 8:30 AM</span>
+</div>
+</div>
+</section>
+<!-- Action Buttons -->
+<section class="mt-8 grid grid-cols-3 gap-3">
+<button class="border-2 border-orange-200 text-orange-600 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-transform bg-orange-50/50">
+            Pause
+        </button>
+<button class="border-2 border-[#F4F0F7] text-[#BDBDBD] py-2.5 rounded-full text-xs font-bold cursor-not-allowed bg-[#F9F9FB]">
+            Resume
+        </button>
+<button class="border-2 border-red-200 text-red-600 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-transform bg-red-50/50">
+            Cancel
+        </button>
+</section>
+<!-- Upcoming Rides Section -->
+<section class="mt-12">
+<h3 class="text-[#1E1B2E] font-bold text-lg mb-6">Upcoming Rides</h3>
+<div class="flex flex-col gap-6">
+<!-- Ride Row 1 -->
+<div class="flex items-center justify-between group">
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center min-w-[48px]">
+<span class="text-[#1E1B2E] font-bold">Oct 25</span>
+<span class="text-[#6B7280] text-xs">Wed</span>
+</div>
+<div class="h-8 w-px bg-surface-container"></div>
+<span class="text-[#1E1B2E] font-medium">8:30 AM Pickup</span>
+</div>
+<span class="bg-[#F0E6FF] text-[#C0A6D6] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#C0A6D6]/20">
+                    Scheduled
+                </span>
+</div>
+<!-- Ride Row 2 -->
+<div class="flex items-center justify-between group">
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center min-w-[48px]">
+<span class="text-[#1E1B2E] font-bold">Oct 26</span>
+<span class="text-[#6B7280] text-xs">Thu</span>
+</div>
+<div class="h-8 w-px bg-surface-container"></div>
+<span class="text-[#1E1B2E] font-medium">8:30 AM Pickup</span>
+</div>
+<span class="bg-[#F0E6FF] text-[#C0A6D6] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#C0A6D6]/20">
+                    Scheduled
+                </span>
+</div>
+<!-- Ride Row 3 -->
+<div class="flex items-center justify-between group">
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center min-w-[48px]">
+<span class="text-[#1E1B2E] font-bold">Oct 27</span>
+<span class="text-[#6B7280] text-xs">Fri</span>
+</div>
+<div class="h-8 w-px bg-surface-container"></div>
+<span class="text-[#1E1B2E] font-medium">8:30 AM Pickup</span>
+</div>
+<span class="bg-[#F0E6FF] text-[#C0A6D6] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#C0A6D6]/20">
+                    Scheduled
+                </span>
+</div>
+<!-- Ride Row 4 -->
+<div class="flex items-center justify-between group">
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center min-w-[48px]">
+<span class="text-[#1E1B2E] font-bold">Oct 30</span>
+<span class="text-[#6B7280] text-xs">Mon</span>
+</div>
+<div class="h-8 w-px bg-surface-container"></div>
+<span class="text-[#1E1B2E] font-medium">8:30 AM Pickup</span>
+</div>
+<span class="bg-[#F0E6FF] text-[#C0A6D6] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#C0A6D6]/20">
+                    Scheduled
+                </span>
+</div>
+<!-- Ride Row 5 -->
+<div class="flex items-center justify-between group">
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center min-w-[48px]">
+<span class="text-[#1E1B2E] font-bold">Oct 31</span>
+<span class="text-[#6B7280] text-xs">Tue</span>
+</div>
+<div class="h-8 w-px bg-surface-container"></div>
+<span class="text-[#1E1B2E] font-medium">8:30 AM Pickup</span>
+</div>
+<span class="bg-[#F0E6FF] text-[#C0A6D6] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#C0A6D6]/20">
+                    Scheduled
+                </span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#FFFFFF]/90 backdrop-blur-2xl rounded-t-[32px] z-50 shadow-[0_-16px_32px_rgba(192,166,214,0.12)] border-t border-[#C0A6D6]/5">
+<div class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:bg-[#F0E6FF]/50 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium">Home</span>
+</div>
+<!-- Active Tab: Activity -->
+<div class="flex flex-col items-center justify-center bg-[#F0E6FF] text-[#C0A6D6] rounded-2xl px-5 py-2 active:scale-90 transition-transform duration-200 border border-[#C0A6D6]/10">
+<span class="material-symbols-outlined mb-1" data-icon="insights">insights</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium">Activity</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:bg-[#F0E6FF]/50 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="gpp_good">gpp_good</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium">Safety</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280] px-5 py-2 hover:bg-[#F0E6FF]/50 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-medium">Profile</span>
+</div>
+</nav>
+</body></html>

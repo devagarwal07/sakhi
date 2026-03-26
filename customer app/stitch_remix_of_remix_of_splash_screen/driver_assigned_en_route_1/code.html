@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi - Trip Status</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline": "#7b7487",
+                        "background": "#fcf8ff",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f3eefd",
+                        "surface-container-high": "#ebe6f5",
+                        "primary-container": "#C0A6D6",
+                        "on-primary-container": "#2c1547",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf8ff",
+                        "inverse-primary": "#f0e6ff",
+                        "primary-fixed-dim": "#f0e6ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#4d3a6b",
+                        "tertiary": "#7d3d00",
+                        "secondary-container": "#e4d6f2",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "secondary-fixed": "#e8ddff",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-tertiary-container": "#ffe0cd",
+                        "secondary": "#6a5985",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "on-background": "#1c1a25",
+                        "surface-bright": "#fcf8ff",
+                        "on-secondary-container": "#25143b",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e5e0ef",
+                        "primary": "#C0A6D6",
+                        "on-secondary-fixed": "#21005e",
+                        "surface-tint": "#C0A6D6",
+                        "surface-container-low": "#f6f1ff",
+                        "outline-variant": "#ccc3d8",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-dim": "#dcd8e6",
+                        "on-tertiary-fixed": "#301400",
+                        "inverse-surface": "#312f3a",
+                        "surface-variant": "#e5e0ef",
+                        "tertiary-container": "#a15100",
+                        "on-surface": "#1c1a25",
+                        "on-surface-variant": "#4a4455",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#f0ecfa",
+                        "primary-fixed": "#f2e7ff",
+                        "on-primary-fixed": "#25005a"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-map-placeholder {
+            background-color: #F8F4FF;
+            background-image: radial-gradient(#C0A6D6 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased select-none overflow-hidden">
+<!-- Top App Bar (Shared Component Strategy) -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#1E1B2E]/80 backdrop-blur-lg flex items-center justify-between px-6 py-4 shadow-sm">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#C0A6D6] dark:text-[#D8C7E8]" data-icon="arrow_back">arrow_back</span>
+<h1 class="font-['Inter'] tracking-tight text-lg font-bold text-[#1E1B2E] dark:text-[#F5F0FF]">Trip Status</h1>
+</div>
+<span class="material-symbols-outlined text-[#C0A6D6] dark:text-[#D8C7E8]" data-icon="more_vert">more_vert</span>
+</header>
+<main class="relative h-screen w-full flex flex-col">
+<!-- Live Map Section (55% Height) -->
+<section class="h-[55%] relative bg-map-placeholder overflow-hidden" data-location="Bangalore, India">
+<!-- Simulated Route Line -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" fill="none" viewbox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+<path d="M100 450C150 400 250 350 300 200" stroke="#C0A6D6" stroke-dasharray="1 12" stroke-linecap="round" stroke-width="6"></path>
+<path d="M100 450C150 400 250 350 300 200" stroke="#C0A6D6" stroke-linecap="round" stroke-opacity="0.2" stroke-width="6"></path>
+</svg>
+<!-- Destination Pin -->
+<div class="absolute top-[30%] right-[20%] flex flex-col items-center">
+<div class="w-8 h-8 bg-[#C0A6D6] rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+<span class="material-symbols-outlined text-white text-sm" data-icon="person_pin">person_pin</span>
+</div>
+<div class="bg-white px-3 py-1 rounded-full shadow-md mt-2">
+<span class="text-[10px] font-bold text-on-surface uppercase tracking-wider">Pickup</span>
+</div>
+</div>
+<!-- Moving Driver Icon -->
+<div class="absolute bottom-[30%] left-[25%] flex flex-col items-center">
+<div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border-2 border-secondary-container">
+<span class="material-symbols-outlined text-[#C0A6D6] text-3xl" data-icon="local_taxi">local_taxi</span>
+</div>
+<div class="mt-2 bg-[#C0A6D6] px-2 py-0.5 rounded-full">
+<span class="text-[8px] text-white font-bold">4 MIN</span>
+</div>
+</div>
+<img alt="Map view" class="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-multiply" data-alt="Soft lavender colored stylized street map of a city" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeuC_I4-ZXDI5tWdTItdZ4tf12qLTNojYaQowjdI_UJK_2AcfO9rOXy2-VtEPUAywwi7kHCjWsCOIvGtlcE6OUzieGVtcerpNRSWQQXjG_aHVeYw-voczlMv4meDNQ4h3kbU2gAyTEG4zFtz0nJn10A8EaCw7jV2lvsKut_bhTjxivzrnENCIYGL16_wVu4FSiNRS-egjZRO5X-2IqBMF0BEYL22vr7p3tPV1EEhA-qJeK99TQDaYuG-jOHPGvQb8IB38C7YzfsbSP"/>
+</section>
+<!-- Bottom Sheet (45% Height) -->
+<section class="h-[45%] bg-surface-container-lowest rounded-t-[32px] z-20 shadow-[0_-16px_32px_rgba(192,166,214,0.08)] px-6 pt-3 pb-8 flex flex-col gap-6">
+<!-- Drag Handle -->
+<div class="w-12 h-1.5 bg-surface-container-highest rounded-full mx-auto mb-2"></div>
+<!-- Status Pill -->
+<div class="flex justify-center">
+<div class="inline-flex items-center gap-2 bg-[#F2ECFF] px-4 py-1.5 rounded-full">
+<span class="w-2 h-2 bg-[#10B981] rounded-full animate-pulse"></span>
+<span class="text-[#8E74A8] font-semibold text-sm">Driver is on the way · 4 mins away</span>
+</div>
+</div>
+<!-- Driver Card Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Meena R." class="w-[52px] h-[52px] rounded-full object-cover border-2 border-secondary-container" data-alt="Portrait of a friendly female driver smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXDLS0M1nGev14X2A8sPKAbqbOXezjs3xOTYyJ2Oc-kAEq-8IW2q_fQp2HhCfFrwkz5kVFSFXLBdXEoA9DoFRSZgLq_Oehdx68HBFC8sVyj6zJv1w_2Kt3MyXduXDxNLogqiue05_rixHJn3MKteGIe-Xb0l78ytH8vek6npcp_20yRY_LxAIes4aGtuLrxxX6fv_j9yRpL9fwh-2SYfZgCZZItNmBPodYJJkESw74j1fQ8ogrK4gazzJzuIzqYkvfAR7g1DF8yvG3_Y"/>
+<div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border border-secondary-container">
+<span class="material-symbols-outlined text-[#C0A6D6] text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-bold text-[#1E1B2E] text-lg">Meena R.</h2>
+<div class="flex items-center gap-0.5 bg-surface-container-high px-1.5 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-amber-400 text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface">4.8</span>
+</div>
+</div>
+<p class="text-[#6B7280] text-sm">Auto · KA 05 AB 1234</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="w-11 h-11 rounded-full bg-white shadow-[0_4px_12px_rgba(192,166,214,0.15)] border border-surface-container flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[#8E74A8]" data-icon="call">call</span>
+</button>
+<button class="w-11 h-11 rounded-full bg-white shadow-[0_4px_12px_rgba(192,166,214,0.15)] border border-surface-container flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[#8E74A8]" data-icon="chat_bubble">chat_bubble</span>
+</button>
+</div>
+</div>
+<!-- Progress Stepper -->
+<div class="relative py-4">
+<div class="absolute top-[26px] left-[10%] right-[10%] h-[2px] bg-surface-container-highest"></div>
+<div class="absolute top-[26px] left-[10%] w-[33%] h-[2px] bg-[#C0A6D6]"></div>
+<div class="relative flex justify-between items-start px-2">
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-3 w-1/4">
+<div class="w-4 h-4 rounded-full bg-[#C0A6D6] flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-white text-[10px] font-bold" data-icon="check">check</span>
+</div>
+<span class="text-[10px] text-[#6B7280] font-medium">Assigned</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-3 w-1/4">
+<div class="w-4 h-4 rounded-full bg-[#C0A6D6] ring-4 ring-[#C0A6D6]/20 z-10"></div>
+<span class="text-[10px] text-[#8E74A8] font-bold">En Route</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-3 w-1/4">
+<div class="w-4 h-4 rounded-full border-2 border-surface-container-highest bg-white z-10"></div>
+<span class="text-[10px] text-[#6B7280] font-medium">Arrived</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center gap-3 w-1/4">
+<div class="w-4 h-4 rounded-full border-2 border-surface-container-highest bg-white z-10"></div>
+<span class="text-[10px] text-[#6B7280] font-medium">Started</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons Row -->
+<div class="grid grid-cols-2 gap-4 mt-auto">
+<button class="flex items-center justify-center gap-2 h-14 rounded-xl border-2 border-[#C0A6D6] text-[#8E74A8] font-bold hover:bg-[#F8F4FF] transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+                Share Trip
+            </button>
+<button class="flex items-center justify-center gap-2 h-14 rounded-xl bg-[#EF4444] text-white font-bold shadow-[0_8px_20px_rgba(239,68,68,0.3)] hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+                SOS
+            </button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Shared Component Strategy) -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-white/90 dark:bg-[#1E1B2E]/90 backdrop-blur-2xl shadow-[0_-16px_32px_rgba(192,166,214,0.08)] flex justify-around items-center px-4 pb-6 pt-3 md:hidden">
+<div class="flex flex-col items-center gap-1 text-[#6B7280] hover:text-[#C0A6D6] transition-all">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Home</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-[#8E74A8] bg-[#F2ECFF] rounded-2xl px-4 py-2 translate-y-[-2px] duration-300">
+<span class="material-symbols-outlined" data-icon="local_taxi">local_taxi</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Activity</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-[#6B7280] hover:text-[#C0A6D6] transition-all">
+<span class="material-symbols-outlined" data-icon="shield_with_heart">shield_with_heart</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Safety</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-[#6B7280] hover:text-[#C0A6D6] transition-all">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Profile</span>
+</div>
+</nav>
+</body></html>

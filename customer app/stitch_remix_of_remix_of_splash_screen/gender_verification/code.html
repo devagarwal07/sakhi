@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi - Identity Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#dcd8e6",
+              "outline": "#7b7487",
+              "surface": "#fcf8ff",
+              "on-primary-fixed-variant": "#5a00c6",
+              "surface-container-high": "#ebe6f5",
+              "surface-bright": "#fcf8ff",
+              "on-secondary": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-variant": "#e5e0ef",
+              "tertiary-fixed-dim": "#ffb784",
+              "outline-variant": "#ccc3d8",
+              "inverse-primary": "#d2bbff",
+              "tertiary-container": "#a15100",
+              "on-tertiary-fixed-variant": "#713700",
+              "tertiary-fixed": "#ffdcc6",
+              "on-secondary-fixed-variant": "#4f319c",
+              "surface-tint": "#732ee4",
+              "on-primary-fixed": "#25005a",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed-dim": "#cebdff",
+              "on-tertiary-container": "#ffe0cd",
+              "secondary-fixed": "#e8ddff",
+              "surface-container-low": "#f6f1ff",
+              "on-tertiary-fixed": "#301400",
+              "on-error-container": "#93000a",
+              "inverse-on-surface": "#f3eefd",
+              "on-primary": "#ffffff",
+              "surface-container": "#f0ecfa",
+              "on-surface": "#1c1a25",
+              "primary-fixed-dim": "#d2bbff",
+              "on-error": "#ffffff",
+              "primary": "#630ed4",
+              "secondary-container": "#ab8ffe",
+              "on-secondary-fixed": "#21005e",
+              "inverse-surface": "#312f3a",
+              "tertiary": "#7d3d00",
+              "secondary": "#674bb5",
+              "background": "#fcf8ff",
+              "error": "#ba1a1a",
+              "on-tertiary": "#ffffff",
+              "on-surface-variant": "#4a4455",
+              "on-primary-container": "#ede0ff",
+              "on-background": "#1c1a25",
+              "primary-container": "#7c3aed",
+              "surface-container-highest": "#e5e0ef",
+              "primary-fixed": "#eaddff",
+              "on-secondary-container": "#3f1e8c"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0 16px 32px rgba(124,58,237,0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-low min-h-screen font-body text-on-surface flex flex-col items-center">
+<!-- Top Navigation Anchor -->
+<header class="bg-[#F5F0FF]/80 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#F6F1FF] transition-all cursor-pointer active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#7C3AED]" data-icon="arrow_back">arrow_back</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#7C3AED] text-xl" data-icon="shield">shield</span>
+<span class="font-headline tracking-[-0.02em] font-bold text-[#1E1B2E]">Verification</span>
+</div>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<main class="w-full max-w-[390px] px-6 pt-8 pb-32 flex flex-col gap-8">
+<!-- Hero Editorial Section -->
+<section class="flex flex-col gap-3">
+<h1 class="text-[2rem] leading-tight font-extrabold font-headline tracking-[-0.03em] text-[#1E1B2E]">
+                Verify Your Identity
+            </h1>
+<p class="text-[#6B7280] text-md leading-relaxed">
+                Sakhi is a women-only platform. Please complete identity verification to activate your account.
+            </p>
+</section>
+<!-- Options Container -->
+<div class="flex flex-col gap-6">
+<!-- Card 1: Selected State -->
+<div class="relative bg-[#EDE9FE] editorial-shadow rounded-xl p-6 flex items-center gap-5 ring-2 ring-[#7C3AED] transition-all cursor-pointer">
+<!-- Checkmark Badge -->
+<div class="absolute -top-3 -right-3 bg-[#7C3AED] text-white rounded-full p-1 editorial-shadow">
+<span class="material-symbols-outlined text-sm block" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[#7C3AED] text-3xl" data-icon="badge">badge</span>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<h3 class="font-bold text-[#1E1B2E]">Upload Aadhaar</h3>
+<p class="text-sm text-[#6B7280] leading-snug">Upload front &amp; back of your Aadhaar card</p>
+</div>
+<span class="material-symbols-outlined text-[#7C3AED]" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Card 2: Default State -->
+<div class="bg-surface-container-lowest editorial-shadow rounded-xl p-6 flex items-center gap-5 hover:bg-[#F6F1FF] transition-all cursor-pointer active:scale-98 duration-200">
+<div class="w-14 h-14 rounded-xl bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[#A78BFA] text-3xl" data-icon="face">face</span>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<h3 class="font-bold text-[#1E1B2E]">Face Scan</h3>
+<p class="text-sm text-[#6B7280] leading-snug">Quick camera-based identity verification</p>
+</div>
+<span class="material-symbols-outlined text-[#6B7280]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Editorial Graphic Space -->
+<div class="mt-4 opacity-40">
+<div class="w-full h-[120px] bg-gradient-to-br from-[#A78BFA]/20 to-transparent rounded-full blur-3xl absolute -z-10"></div>
+</div>
+</main>
+<!-- Bottom Action Anchor -->
+<footer class="fixed bottom-0 left-0 w-full px-6 pt-4 bg-white/90 backdrop-blur-lg flex flex-col items-center gap-6 pb-8">
+<button class="w-full max-w-[342px] bg-gradient-to-br from-[#7C3AED] to-[#630ED4] text-white font-bold py-4 rounded-xl editorial-shadow active:scale-[0.98] transition-all">
+            Continue
+        </button>
+<!-- Navigation Shell Placeholder Logic -->
+</footer>
+</body></html>
