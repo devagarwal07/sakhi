@@ -3,15 +3,16 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
-const supabase = require('../config/supabase');
-const fcmService = require('../services/fcmService');
-const logger = require('../utils/logger');
+const roleGuard      = require('../middleware/roleGuard');
+const supabase       = require('../config/supabase');
+const fcmService     = require('../services/fcmService');
+const logger         = require('../utils/logger');
+const { adminLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
 
-// All admin routes require auth + admin role
-router.use(authMiddleware, roleGuard('admin'));
+// All admin routes: rate limit + auth + admin role
+router.use(adminLimiter, authMiddleware, roleGuard('admin'));
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 const reasonSchema = z.object({ reason: z.string().min(1) });

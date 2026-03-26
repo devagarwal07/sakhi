@@ -1,14 +1,18 @@
 'use strict';
 
 const { Router } = require('express');
-const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
-const rideController = require('../controllers/rideController');
+const authMiddleware  = require('../middleware/authMiddleware');
+const roleGuard       = require('../middleware/roleGuard');
+const rideController  = require('../controllers/rideController');
+const { estimateLimiter, apiLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
 
-/** GET /rides/:id/estimate — rider or driver may check fare */
-router.get('/estimate',       authMiddleware, roleGuard('rider', 'driver'), rideController.estimateFare);
+// General API rate limit on all ride routes
+router.use(apiLimiter);
+
+/** GET /rides/estimate — rider or driver may check fare */
+router.get('/estimate',       authMiddleware, roleGuard('rider', 'driver'), estimateLimiter, rideController.estimateFare);
 
 /** POST /rides — book a new ride (rider only) */
 router.post('/',              authMiddleware, roleGuard('rider'),           rideController.createRide);

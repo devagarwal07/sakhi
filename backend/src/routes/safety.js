@@ -1,14 +1,18 @@
 'use strict';
 
 const { Router } = require('express');
-const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
-const safetyController = require('../controllers/safetyController');
+const authMiddleware    = require('../middleware/authMiddleware');
+const roleGuard         = require('../middleware/roleGuard');
+const safetyController  = require('../controllers/safetyController');
+const { sosLimiter, apiLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
 
+// General API rate limit
+router.use(apiLimiter);
+
 // ── SOS ───────────────────────────────────────────────────────────────────────
-router.post('/sos',                    authMiddleware, roleGuard('rider', 'driver'), safetyController.triggerSOS);
+router.post('/sos',                    authMiddleware, roleGuard('rider', 'driver'), sosLimiter, safetyController.triggerSOS);
 
 // ── Emergency Contacts ────────────────────────────────────────────────────────
 router.get('/emergency-contacts',      authMiddleware, roleGuard('rider'),           safetyController.getEmergencyContacts);
