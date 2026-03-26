@@ -34,8 +34,9 @@ require('./src/services/matchingEngine').setIO(io);
 // ─── Socket setup ─────────────────────────────────────────────────────────────
 require('./src/socket/index')(io);
 
-// ─── Anomaly detection (global 60s poll) ──────────────────────────────────────
+// ─── Inject io into service singletons ────────────────────────────────────────
 require('./src/services/anomalyService').startGlobalAnomalyMonitor(io);
+require('./src/services/sosService').setIO(io);
 
 // ─── Subscription cron worker ──────────────────────────────────────────────────
 require('./src/workers/SubscriptionRideScheduler').startScheduler(io);

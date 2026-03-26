@@ -61,10 +61,14 @@ app.use('/rides',         require('./src/routes/rides'));
 app.use('/drivers',       require('./src/routes/drivers'));
 app.use('/subscriptions', require('./src/routes/subscriptions'));
 app.use('/payments',      require('./src/routes/payments'));
+app.use('/safety',        require('./src/routes/safety'));
 app.use('/webhooks',      require('./src/routes/webhooks'));
 app.use('/admin',         require('./src/routes/admin'));
-// app.use('/safety',     require('./src/routes/safety'));
 // app.use('/users',      require('./src/routes/users'));
+
+// ─── Public — live trip tracking (no auth) ────────────────────────────────────
+const safetyController = require('./src/controllers/safetyController');
+app.get('/track/:token', safetyController.getLiveTrack);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
