@@ -119,6 +119,24 @@ async function getSubscriptionStatus(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ── GET /subscriptions/pending-payment (ITEM 13) ─────────────────────────────
+// Returns subscriptions in 'pending_payment' status for the current rider.
+// Used when payment verification fails — rider can retry from this data.
+async function getPendingPayment(req, res, next) {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id, pickup_address, drop_address, pickup_time, start_date, plan_rides, total_cost, created_at')
+      .eq('rider_id', req.user.userId)
+      .eq('status', 'pending_payment')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (error) throw new AppError('Failed to fetch pending subscriptions.', 500, 'DB_ERROR');
+    return res.status(200).json({ pending: data || [] });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   listSubscriptions,
   getSubscription,
@@ -126,4 +144,5 @@ module.exports = {
   resumeSubscription,
   cancelSubscription,
   getSubscriptionStatus,
+  getPendingPayment,
 };

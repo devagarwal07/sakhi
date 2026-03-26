@@ -30,6 +30,26 @@ async function triggerSOS(req, res, next) {
     const { ride_id, lat, lng } = sosSchema.parse(req.body);
     const { userId, role } = req.user;
 
+    // Item 10 — Block SOS on terminal ride statuses
+    if (ride_id) {
+      const { data: rideRows } = await supabase
+        .from('rides')
+        .select('status')
+        .eq('id', ride_id)
+        .limit(1);
+
+      const rideStatus = rideRows?.[0]?.status;
+      if (rideStatus && ['completed', 'cancelled', 'no_drivers_available'].includes(rideStatus)) {
+        return res.status(422).json({
+          error: {
+            code:    'RIDE_NOT_ACTIVE',
+            message: 'SOS can only be triggered during an active ride.',
+            details: { ride_id, status: rideStatus },
+          },
+        });
+      }
+    }
+
     const result = await sosService.triggerSOS(userId, role, ride_id || null, lat, lng);
     return res.status(201).json(result);
   } catch (err) { return handleError(err, res, next); }

@@ -1,11 +1,16 @@
 'use strict';
 
 const { Router } = require('express');
-const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
-const subscriptionController = require('../controllers/subscriptionController');
+const authMiddleware            = require('../middleware/authMiddleware');
+const roleGuard                 = require('../middleware/roleGuard');
+const subscriptionController    = require('../controllers/subscriptionController');
+const { apiLimiter }            = require('../middleware/rateLimiter');
 
 const router = Router();
+router.use(apiLimiter);
+
+// Item 13 — Pending-payment retry (must be before /:id to avoid conflict)
+router.get('/pending-payment', authMiddleware, roleGuard('rider'), subscriptionController.getPendingPayment);
 
 router.get('/',            authMiddleware, roleGuard('rider'), subscriptionController.listSubscriptions);
 router.get('/:id',         authMiddleware, roleGuard('rider'), subscriptionController.getSubscription);

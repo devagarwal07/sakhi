@@ -167,6 +167,24 @@ async function createSubscription(riderId, payload, paymentId) {
     throw new AppError('Complete identity verification to create subscriptions.', 403, 'VERIFICATION_REQUIRED');
   }
 
+  // 1b. ITEM 12 — Overlap validation: no existing active subscription on same days+time
+  const { data: existingSubs } = await supabase
+    .from('subscriptions')
+    .select('id, days_of_week, pickup_time')
+    .eq('rider_id', riderId)
+    .in('status', ['active', 'paused']);
+
+  for (const existing of existingSubs || []) {
+    const dayOverlap = (payload.days_of_week || []).some((d) => (existing.days_of_week || []).includes(d));
+    if (dayOverlap && existing.pickup_time === payload.pickup_time) {
+      throw new AppError(
+        'You already have an active subscription that overlaps with this schedule.',
+        422,
+        'SUBSCRIPTION_OVERLAP'
+      );
+    }
+  }
+
   // 2. Calculate fare
   const { distance_km, duration_min } = await mapsService.getDistanceMatrix(
     payload.pickup_lat, payload.pickup_lng, payload.drop_lat, payload.drop_lng

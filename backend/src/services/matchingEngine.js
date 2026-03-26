@@ -304,7 +304,20 @@ class MatchingEngine extends EventEmitter {
         return;
       }
 
-      // 2. Clear timeout
+      // 2a. EDGE CASE #5 — Guard: driver must not already be on an active ride
+      const { count: activeCount } = await supabase
+        .from('rides')
+        .select('id', { count: 'exact', head: true })
+        .eq('driver_id', driverId)
+        .in('status', ['assigned', 'driver_en_route', 'arrived', 'in_progress']);
+
+      if (activeCount > 0) {
+        logger.warn('MatchingEngine.handleDriverAccept — driver already on active ride', { rideId, driverId });
+        this._emitToDriver(driverId, 'ride_already_assigned', { ride_id: rideId, reason: 'already_on_ride' });
+        return;
+      }
+
+      // 2b. Clear timeout
       if (session?.timeoutHandle) clearTimeout(session.timeoutHandle);
 
       // 3. Optimistic-lock UPDATE — only succeeds if status is still 'searching'

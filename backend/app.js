@@ -132,6 +132,7 @@ app.use('/drivers',       require('./src/routes/drivers'));
 app.use('/subscriptions', require('./src/routes/subscriptions'));
 app.use('/payments',      require('./src/routes/payments'));
 app.use('/safety',        require('./src/routes/safety'));
+app.use('/notifications', require('./src/routes/notifications'));
 app.use('/webhooks',      require('./src/routes/webhooks'));
 app.use('/admin',         require('./src/routes/admin'));
 
