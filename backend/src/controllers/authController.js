@@ -5,6 +5,7 @@ const otpService = require('../services/otpService');
 const jwtService = require('../services/jwtService');
 const authService = require('../services/authService');
 const logger = require('../utils/logger');
+const { blockJti } = require('../middleware/authMiddleware');
 
 // ── Zod Schemas ────────────────────────────────────────────────────────────────
 const phoneSchema = z.string().regex(/^\+[1-9]\d{1,14}$/, 'Phone must be in E.164 format');
@@ -118,7 +119,15 @@ async function refreshToken(req, res, next) {
  */
 async function logout(req, res, next) {
   try {
+    // Revoke all refresh tokens
     await jwtService.revokeAllTokens(req.user.userId);
+    // Immediately block current access token's jti
+    if (req.user.jti) {
+      // Decode to get exp (we trust it since it already passed verify)
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.decode(req.headers.authorization.slice(7));
+      blockJti(req.user.jti, decoded?.exp || Math.floor(Date.now() / 1000) + 604800);
+    }
     return res.status(200).json({ message: 'Logged out' });
   } catch (err) {
     return next(err);

@@ -1,13 +1,15 @@
 'use strict';
 
-const { Router } = require('express');
+const { Router }   = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
+const roleGuard    = require('../middleware/roleGuard');
 const { uploadDriverDocs, uploadSelfie } = require('../middleware/upload');
-const kycService = require('../services/kycService');
+const kycService   = require('../services/kycService');
 const driverController = require('../controllers/driverController');
+const { apiLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
+router.use(apiLimiter);
 
 // ── Helper: wrap multer errors ────────────────────────────────────────────────
 function multerErrorHandler(upload) {

@@ -172,4 +172,84 @@ router.post('/notifications/broadcast', async (req, res, next) => {
   }
 });
 
+// ── GAP 7: Listing endpoints for admin dashboard ────────────────────────────
+
+/**
+ * GET /admin/drivers
+ * Query params: page, limit, status (online|offline), verification_status, search
+ */
+router.get('/drivers', async (req, res, next) => {
+  try {
+    const page   = Math.max(1, parseInt(req.query.page  || '1', 10));
+    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const from   = (page - 1) * limit;
+
+    let query = supabase
+      .from('drivers')
+      .select(
+        'id, name, phone, email, vehicle_type, vehicle_reg_no, kyc_status, verification_status, is_active, is_online, avg_rating, total_rides, created_at',
+        { count: 'exact' }
+      );
+
+    if (req.query.verification_status) query = query.eq('verification_status', req.query.verification_status);
+    if (req.query.status === 'online')  query = query.eq('is_online', true);
+    if (req.query.status === 'offline') query = query.eq('is_online', false);
+    if (req.query.search) {
+      query = query.or(`name.ilike.%${req.query.search}%,phone.ilike.%${req.query.search}%,vehicle_reg_no.ilike.%${req.query.search}%`);
+    }
+
+    const { data, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, from + limit - 1);
+
+    if (error) return next(error);
+
+    return res.status(200).json({
+      drivers:     data || [],
+      total:       count || 0,
+      page,
+      limit,
+      total_pages: Math.ceil((count || 0) / limit) || 1,
+    });
+  } catch (err) { return next(err); }
+});
+
+/**
+ * GET /admin/users
+ * Query params: page, limit, verification_status, search
+ */
+router.get('/users', async (req, res, next) => {
+  try {
+    const page   = Math.max(1, parseInt(req.query.page  || '1', 10));
+    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const from   = (page - 1) * limit;
+
+    let query = supabase
+      .from('users')
+      .select(
+        'id, name, phone, gender, gender_verified, verification_status, is_active, created_at, referral_code',
+        { count: 'exact' }
+      );
+
+    if (req.query.verification_status) query = query.eq('verification_status', req.query.verification_status);
+    if (req.query.search) {
+      query = query.or(`name.ilike.%${req.query.search}%,phone.ilike.%${req.query.search}%`);
+    }
+
+    const { data, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, from + limit - 1);
+
+    if (error) return next(error);
+
+    return res.status(200).json({
+      users:       data || [],
+      total:       count || 0,
+      page,
+      limit,
+      total_pages: Math.ceil((count || 0) / limit) || 1,
+    });
+  } catch (err) { return next(err); }
+});
+
 module.exports = router;

@@ -167,17 +167,46 @@ function registerRideSocket(io) {
     socket.on('disconnect', async (reason) => {
       logger.info('rideSocket — disconnected', { userId, role, reason });
 
-      // If driver, set offline only if NOT on an active ride
       if (role === 'driver') {
-        const { data: activeRide } = await supabase
+        const { data: activeRides } = await supabase
           .from('rides')
-          .select('id')
+          .select('id, rider_id, status')
           .eq('driver_id', userId)
           .in('status', ['assigned', 'driver_en_route', 'arrived', 'in_progress'])
           .limit(1);
 
-        if (!activeRide?.length) {
+        const activeRide = activeRides?.[0];
+
+        if (!activeRide) {
+          // No active ride — mark driver offline immediately
           await supabase.from('drivers').update({ is_online: false }).eq('id', userId);
+        } else {
+          // GAP 8 — Grace period: notify rider and give driver 30s to reconnect
+          const riderRoom = `rider:${activeRide.rider_id}`;
+          ridesNs.to(riderRoom).emit('driver_reconnecting', {
+            ride_id:  activeRide.id,
+            message:  "Your driver's connection was interrupted. Waiting for reconnect…",
+            timeout_s: 30,
+          });
+
+          const gracePeriodMs = 30_000;
+          const gracetHandle = setTimeout(async () => {
+            // Check if driver has reconnected (any socket in their room)
+            const driverSockets = await ridesNs.in(`driver:${userId}`).allSockets();
+            if (driverSockets.size === 0) {
+              // Driver still offline after grace period
+              ridesNs.to(riderRoom).emit('driver_disconnected', {
+                ride_id: activeRide.id,
+                message: "Your driver is unreachable. Support has been notified.",
+              });
+              logger.warn('rideSocket — driver did not reconnect within grace period', {
+                driverId: userId, rideId: activeRide.id,
+              });
+            }
+          }, gracePeriodMs);
+
+          // Store handle on socket to cancel if reconnect occurs before timeout
+          socket._gracePeriodHandle = gracetHandle;
         }
       }
     });
