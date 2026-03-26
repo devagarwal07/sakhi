@@ -7,6 +7,7 @@ const matchingEngine = require('./matchingEngine');
 const supabase = require('../config/supabase');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
+const referralService = require('./referralService');
 
 // Lazy-load anomalyService to avoid circular deps
 const getAnomalyService = () => require('./anomalyService');
@@ -228,6 +229,9 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
       payment_collected: paymentCollected,
       timestamp: new Date().toISOString(),
     });
+
+    // 8. Driver referral programme — non-blocking check
+    setImmediate(() => referralService.checkDriverReferral(driverId));
 
     logger.info('rideService.updateRideStatus — completed', { rideId, driverId, finalFare, commission });
 

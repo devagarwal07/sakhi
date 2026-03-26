@@ -41,6 +41,10 @@ require('./src/services/sosService').setIO(io);
 // ─── Subscription cron worker ──────────────────────────────────────────────────
 require('./src/workers/SubscriptionRideScheduler').startScheduler(io);
 
+// ─── Driver timeout & loyalty workers ─────────────────────────────────────────
+require('./src/workers/DriverTimeoutWorker').startDriverTimeoutWorker();
+require('./src/workers/LoyaltyMilestoneWorker').startLoyaltyMilestoneWorker();
+
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
 
