@@ -34,6 +34,9 @@ require('./src/services/matchingEngine').setIO(io);
 // ─── Socket setup ─────────────────────────────────────────────────────────────
 require('./src/socket/index')(io);
 
+// ─── Anomaly detection (global 60s poll) ──────────────────────────────────────
+require('./src/services/anomalyService').startGlobalAnomalyMonitor(io);
+
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
 
