@@ -54,10 +54,10 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── API Routes (to be added in subsequent prompts) ──────────────────────────
-// app.use('/api/v1/auth',   require('./src/routes/auth'));
-// app.use('/api/v1/rides',  require('./src/routes/rides'));
-// app.use('/api/v1/drivers', require('./src/routes/drivers'));
+// ─── API Routes ───────────────────────────────────────────────────────────────
+app.use('/auth', require('./src/routes/auth'));
+// app.use('/rides',    require('./src/routes/rides'));
+// app.use('/drivers',  require('./src/routes/drivers'));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
