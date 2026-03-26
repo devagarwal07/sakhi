@@ -57,10 +57,10 @@ app.get('/health', (_req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/auth',         require('./src/routes/auth'));
 app.use('/auth/verify',  require('./src/routes/verification'));
+app.use('/rides',        require('./src/routes/rides'));
 app.use('/drivers',      require('./src/routes/drivers'));
 app.use('/webhooks',     require('./src/routes/webhooks'));
 app.use('/admin',        require('./src/routes/admin'));
-// app.use('/rides',     require('./src/routes/rides'));
 // app.use('/safety',    require('./src/routes/safety'));
 // app.use('/users',     require('./src/routes/users'));
 
