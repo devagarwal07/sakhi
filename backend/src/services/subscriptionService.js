@@ -363,6 +363,129 @@ async function getOwnedSubscription(riderId, subscriptionId, allowedStatuses = [
   return sub;
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// reassignSubscriptionRide (fallback on missed pickup)
+// ──────────────────────────────────────────────────────────────────────────────
+async function reassignSubscriptionRide(subscriptionRideId, io) {
+  const { data: srRows } = await supabase
+    .from('subscription_rides')
+    .select('*, subscriptions!inner(*)')
+    .eq('id', subscriptionRideId)
+    .limit(1);
+
+  const sr = srRows?.[0];
+  if (!sr) return;
+
+  const sub = sr.subscriptions;
+  const missedDriverId = sr.assigned_driver_id;
+
+  // Find a replacement driver, excluding the one who missed
+  const { data: candidates } = await supabase
+    .from('drivers')
+    .select('id, name, fcm_token, driver_locations(lat, lng)')
+    .eq('subscription_opt_in', true)
+    .eq('is_active', true)
+    .eq('gender_verified', true)
+    .eq('verification_status', 'approved')
+    .eq('kyc_status', 'verified')
+    .neq('id', missedDriverId);
+
+  // Filter by proximity (5km), no time conflicts
+  const { data: conflicts } = await supabase
+    .from('subscriptions')
+    .select('driver_id, days_of_week, pickup_time')
+    .eq('status', 'active')
+    .not('driver_id', 'is', null);
+
+  const conflictSet = new Set();
+  for (const c of conflicts || []) {
+    const hasOverlap = (sub.days_of_week || []).some((d) => (c.days_of_week || []).includes(d));
+    if (hasOverlap && c.pickup_time === sub.pickup_time) conflictSet.add(c.driver_id);
+  }
+
+  const ranked = (candidates || [])
+    .filter((d) => !conflictSet.has(d.id))
+    .map((d) => {
+      const loc = Array.isArray(d.driver_locations) ? d.driver_locations[0] : d.driver_locations;
+      if (!loc) return null;
+      const dist = haversine(sub.pickup_lat, sub.pickup_lng, loc.lat, loc.lng);
+      return { ...d, distance_m: dist };
+    })
+    .filter(Boolean)
+    .filter((d) => d.distance_m <= 5000)
+    .sort((a, b) => a.distance_m - b.distance_m);
+
+  const fallback = ranked[0] || null;
+
+  if (!fallback) {
+    logger.warn('subscriptionService.reassignSubscriptionRide — no fallback driver found', { subscriptionRideId });
+    fcmService.sendToUser(sub.rider_id, 'rider', {
+      title: 'No Driver Available',
+      body: 'We could not find a replacement driver for your scheduled ride. Please contact support.',
+      data: { type: 'SUBSCRIPTION_NO_DRIVER', subscription_ride_id: subscriptionRideId },
+    }).catch(() => {});
+    return;
+  }
+
+  // Update this ride + all future rides for this subscription
+  const todayStr = new Date().toISOString().slice(0, 10);
+  await Promise.all([
+    supabase.from('subscription_rides').update({ assigned_driver_id: fallback.id, status: 'reassigned' }).eq('id', subscriptionRideId),
+    supabase.from('subscription_rides')
+      .update({ assigned_driver_id: fallback.id })
+      .eq('subscription_id', sub.id)
+      .eq('status', 'scheduled')
+      .gte('scheduled_date', todayStr),
+    supabase.from('subscriptions').update({ driver_id: fallback.id }).eq('id', sub.id),
+  ]);
+
+  // Immediately create a ride with the fallback driver
+  let distance_km = 0, duration_min = 0;
+  try {
+    const dist = await mapsService.getDistanceMatrix(sub.pickup_lat, sub.pickup_lng, sub.drop_lat, sub.drop_lng);
+    distance_km = dist.distance_km;
+    duration_min = dist.duration_min;
+  } catch { /* non-fatal */ }
+
+  const { data: rideRows } = await supabase.from('rides').insert({
+    rider_id:        sub.rider_id,
+    driver_id:       fallback.id,
+    subscription_id: sub.id,
+    pickup_lat:      sub.pickup_lat,
+    pickup_lng:      sub.pickup_lng,
+    pickup_address:  sub.pickup_address,
+    drop_lat:        sub.drop_lat,
+    drop_lng:        sub.drop_lng,
+    drop_address:    sub.drop_address,
+    estimated_fare:  sub.per_ride_fare,
+    status:          'assigned',
+    payment_method:  'cash',
+    distance_km,
+    duration_min,
+  }).select('id').single();
+
+  if (rideRows?.id) {
+    await supabase.from('subscription_rides').update({ ride_id: rideRows.id }).eq('id', subscriptionRideId);
+
+    if (io) {
+      io.of('/rides').to(`rider:${sub.rider_id}`).emit('ride_assigned', { ride_id: rideRows.id, status: 'assigned' });
+      io.of('/rides').to(`driver:${fallback.id}`).emit('ride_assigned', { ride_id: rideRows.id, status: 'assigned' });
+    }
+  }
+
+  fcmService.sendToUser(sub.rider_id, 'rider', {
+    title: 'New Driver Found 🚖',
+    body: `${fallback.name} is on the way to pick you up!`,
+    data: { type: 'SUBSCRIPTION_REASSIGNED', ride_id: rideRows?.id },
+  }).catch(() => {});
+
+  logger.info('subscriptionService.reassignSubscriptionRide — reassigned', {
+    subscriptionRideId,
+    newDriverId: fallback.id,
+    rideId: rideRows?.id,
+  });
+}
+
 module.exports = {
   createSubscription,
   generateSubscriptionRides,
@@ -370,4 +493,6 @@ module.exports = {
   pauseSubscription,
   resumeSubscription,
   cancelSubscription,
+  reassignSubscriptionRide,
 };
+
