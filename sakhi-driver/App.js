@@ -11,9 +11,11 @@ import { Colors } from './src/utils/theme';
 // ── Screens ──────────────────────────────────────────────────────────────────
 import DriverSplashScreen from './src/screens/Auth/DriverSplashScreen';
 
-// Auth screens (Prompt 3 will fill these in)
-const DriverLoginScreen       = () => null; // placeholder
-const DriverOtpScreen         = () => null; // placeholder
+// Auth screens
+import DriverLoginScreen            from './src/screens/Auth/DriverLoginScreen';
+import DriverOtpVerificationScreen  from './src/screens/Auth/DriverOtpVerificationScreen';
+import ChangePhoneNumberInputScreen from './src/screens/Auth/ChangePhoneNumberInputScreen';
+import ChangePhoneNumberOtpVerificationScreen from './src/screens/Auth/ChangePhoneNumberOtpVerificationScreen';
 
 // Onboarding screens (Prompt 4 will fill these in)
 const GenderVerificationScreen  = () => null;
@@ -34,7 +36,9 @@ function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="DriverLogin"       component={DriverLoginScreen}  />
-      <Stack.Screen name="DriverOtp"         component={DriverOtpScreen}    />
+      <Stack.Screen name="DriverOtp"         component={DriverOtpVerificationScreen} />
+      <Stack.Screen name="ChangePhoneInput"  component={ChangePhoneNumberInputScreen} />
+      <Stack.Screen name="ChangePhoneOtp"    component={ChangePhoneNumberOtpVerificationScreen} />
     </Stack.Navigator>
   );
 }
