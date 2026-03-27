@@ -2,8 +2,8 @@ import apiClient from './client';
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const sendOtp = (phone) => apiClient.post('/auth/send-otp', { phone });
-export const verifyOtp = (phone, otp) => apiClient.post('/auth/verify-otp', { phone, otp });
-export const refreshToken = (refreshToken) => apiClient.post('/auth/refresh-token', { refreshToken });
+export const verifyOtp = (phone, otp) => apiClient.post('/auth/verify-otp', { phone, otp, role: 'rider' });
+export const refreshToken = (token) => apiClient.post('/auth/refresh-token', { refreshToken: token });
 export const logout = () => apiClient.post('/auth/logout');
 
 // ── KYC ───────────────────────────────────────────────────────────────────

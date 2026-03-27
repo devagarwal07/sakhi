@@ -108,7 +108,7 @@ export default function FareSummaryScreen() {
                 {/* Route summary */}
                 <View style={styles.routeCard}>
                     <View style={styles.routeRow}>
-                        <View style={styles.routeDot} style={[styles.routeDot, { backgroundColor: '#16a34a' }]} />
+                        <View style={[styles.routeDot, { backgroundColor: '#16a34a' }]} />
                         <Text style={styles.routeAddr} numberOfLines={1}>{ride.pickup?.address || 'Pickup'}</Text>
                     </View>
                     <View style={styles.routeLine} />
