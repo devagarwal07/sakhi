@@ -17,14 +17,14 @@ import DriverOtpVerificationScreen  from './src/screens/Auth/DriverOtpVerificati
 import ChangePhoneNumberInputScreen from './src/screens/Auth/ChangePhoneNumberInputScreen';
 import ChangePhoneNumberOtpVerificationScreen from './src/screens/Auth/ChangePhoneNumberOtpVerificationScreen';
 
-// Onboarding screens (Prompt 4 will fill these in)
-const GenderVerificationScreen  = () => null;
-const DriverKycUploadScreen     = () => null;
-const VehicleDetailsEntryScreen = () => null;
-const VerificationLoadingScreen = () => null;
-const DocumentUnderReviewScreen = () => null;
-const DocumentReUploadScreen    = () => null;
-const AccountApprovedScreen     = () => null;
+// Onboarding screens
+import DriverGenderVerificationScreen  from './src/screens/Onboarding/DriverGenderVerificationScreen';
+import DriverKycUploadScreen           from './src/screens/Onboarding/DriverKycUploadScreen';
+import VehicleDetailsEntryScreen       from './src/screens/Onboarding/VehicleDetailsEntryScreen';
+import DriverVerificationLoadingScreen from './src/screens/Onboarding/DriverVerificationLoadingScreen';
+import DocumentUnderReviewScreen       from './src/screens/Onboarding/DocumentUnderReviewScreen';
+import DocumentReUploadScreen          from './src/screens/Onboarding/DocumentReUploadScreen';
+import AccountApprovedScreen           from './src/screens/Onboarding/AccountApprovedScreen';
 
 // Main Tab / Home (Prompt 5 will fill this in)
 const DriverHomeScreen = () => null;
@@ -46,13 +46,13 @@ function AuthStack() {
 function OnboardingStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="GenderVerification"   component={GenderVerificationScreen}  />
-      <Stack.Screen name="DriverKycUpload"      component={DriverKycUploadScreen}      />
-      <Stack.Screen name="VehicleDetailsEntry"  component={VehicleDetailsEntryScreen}  />
-      <Stack.Screen name="VerificationLoading"  component={VerificationLoadingScreen}  />
-      <Stack.Screen name="DocumentUnderReview"  component={DocumentUnderReviewScreen}  />
-      <Stack.Screen name="DocumentReUpload"     component={DocumentReUploadScreen}     />
-      <Stack.Screen name="AccountApproved"      component={AccountApprovedScreen}      />
+      <Stack.Screen name="GenderVerification"   component={DriverGenderVerificationScreen}  />
+      <Stack.Screen name="DriverKycUpload"      component={DriverKycUploadScreen}           />
+      <Stack.Screen name="VehicleDetailsEntry"  component={VehicleDetailsEntryScreen}       />
+      <Stack.Screen name="VerificationLoading"  component={DriverVerificationLoadingScreen} />
+      <Stack.Screen name="DocumentUnderReview"  component={DocumentUnderReviewScreen}       />
+      <Stack.Screen name="DocumentReUpload"     component={DocumentReUploadScreen}          />
+      <Stack.Screen name="AccountApproved"      component={AccountApprovedScreen}           />
     </Stack.Navigator>
   );
 }
