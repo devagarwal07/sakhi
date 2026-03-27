@@ -23,9 +23,17 @@ router.delete('/emergency-contacts/:id', authMiddleware, roleGuard('rider'),    
 router.post('/share-trip/:ride_id',    authMiddleware, roleGuard('rider'),           safetyController.shareTrip);
 
 // ── Masked Calling ────────────────────────────────────────────────────────────
+// Named param variant (driver app): /safety/call/:ride_id
 router.post('/call/:ride_id',          authMiddleware, roleGuard('rider', 'driver'), safetyController.initiateCall);
+// Body variant (customer app): POST /safety/call  { rideId }
+router.post('/call',                   authMiddleware, roleGuard('rider', 'driver'), (req, res, next) => {
+  req.params.ride_id = req.body.rideId; // normalise for controller
+  safetyController.initiateCall(req, res, next);
+});
 
 // ── Battery Low (REST fallback) ───────────────────────────────────────────────
 router.post('/battery-low',            authMiddleware, roleGuard('rider', 'driver'), safetyController.batteryLow);
+// Alias used by customer app
+router.post('/battery-alert',          authMiddleware, roleGuard('rider', 'driver'), safetyController.batteryLow);
 
 module.exports = router;

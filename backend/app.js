@@ -125,16 +125,18 @@ app.get('/health', async (_req, res) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/auth',          require('./src/routes/auth'));
-app.use('/auth/verify',   require('./src/routes/verification'));
-app.use('/rides',         require('./src/routes/rides'));
-app.use('/drivers',       require('./src/routes/drivers'));
-app.use('/subscriptions', require('./src/routes/subscriptions'));
-app.use('/payments',      require('./src/routes/payments'));
-app.use('/safety',        require('./src/routes/safety'));
-app.use('/notifications', require('./src/routes/notifications'));
-app.use('/webhooks',      require('./src/routes/webhooks'));
-app.use('/admin',         require('./src/routes/admin'));
+app.use('/auth',               require('./src/routes/auth'));
+app.use('/auth/verify',        require('./src/routes/verification'));
+app.use('/auth/change-phone',  require('./src/routes/changePhone'));
+app.use('/users',              require('./src/routes/users'));
+app.use('/rides',              require('./src/routes/rides'));
+app.use('/drivers',            require('./src/routes/drivers'));
+app.use('/subscriptions',      require('./src/routes/subscriptions'));
+app.use('/payments',           require('./src/routes/payments'));
+app.use('/safety',             require('./src/routes/safety'));
+app.use('/notifications',      require('./src/routes/notifications'));
+app.use('/webhooks',           require('./src/routes/webhooks'));
+app.use('/admin',              require('./src/routes/admin'));
 
 // ─── Public — live trip tracking (no auth) ────────────────────────────────────
 const safetyController = require('./src/controllers/safetyController');
