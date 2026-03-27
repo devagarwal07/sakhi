@@ -1,4 +1,5 @@
 import { registerRootComponent } from 'expo';
+import './global.css';
 
 // ⚠️ Location background task MUST be imported at the top level before App mounts.
 // expo-task-manager scans for defineTask calls at module init time.

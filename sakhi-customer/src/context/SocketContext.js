@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
+import { API_BASE_URL, STORAGE_KEYS, DEV_BYPASS_AUTH } from '../utils/constants';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
@@ -12,6 +12,12 @@ export function SocketProvider({ children }) {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
+        // Skip real socket connection in dev bypass mode
+        if (DEV_BYPASS_AUTH) {
+            console.log('[DEV] SocketProvider — skipping connection in bypass mode');
+            return;
+        }
+
         if (!isAuthenticated) {
             // Disconnect if the user logs out
             if (socketRef.current) {
@@ -61,7 +67,12 @@ export function SocketProvider({ children }) {
         };
     }, [isAuthenticated]);
 
+    // In dev mode, emit/on/off are no-ops (just log)
     const emit = (event, data) => {
+        if (DEV_BYPASS_AUTH) {
+            console.log('[DEV Socket] emit:', event, data);
+            return;
+        }
         if (socketRef.current?.connected) {
             socketRef.current.emit(event, data);
         } else {
@@ -70,11 +81,11 @@ export function SocketProvider({ children }) {
     };
 
     const on = (event, callback) => {
-        socketRef.current?.on(event, callback);
+        if (!DEV_BYPASS_AUTH) socketRef.current?.on(event, callback);
     };
 
     const off = (event, callback) => {
-        socketRef.current?.off(event, callback);
+        if (!DEV_BYPASS_AUTH) socketRef.current?.off(event, callback);
     };
 
     return (

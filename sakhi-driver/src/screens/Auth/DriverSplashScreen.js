@@ -41,8 +41,7 @@ export default function DriverSplashScreen({ navigation }) {
 
     // Navigate after splash
     const timer = setTimeout(() => {
-      // Will be replaced to check auth in Prompt 2
-      // navigation.replace('DriverLogin');
+      navigation.replace('RootShell');
     }, 2500);
 
     return () => clearTimeout(timer);

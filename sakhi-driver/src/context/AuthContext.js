@@ -5,13 +5,40 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import * as SecureStore from 'expo-secure-store';
 
 import client, {
   saveTokens,
   clearTokens,
   getAccessToken,
 } from '../api/client';
+
+import { DEV_BYPASS_AUTH } from '../utils/constants';
+
+// ---------------------------------------------------------------------------
+// Mock driver — used when DEV_BYPASS_AUTH = true
+// ---------------------------------------------------------------------------
+const MOCK_DRIVER = {
+  id: 'dev-driver-001',
+  name: 'Dev Driver',
+  phone: '+91 8888888888',
+  email: 'dev.driver@sakhi.app',
+  avatar: null,
+  gender: 'male',
+  onboarding_status: 'approved',   // skips onboarding stack
+  is_online: false,                 // start offline; toggle from home screen
+  rating: 4.7,
+  total_rides: 128,
+  wallet_balance: 1250.00,
+  vehicle: {
+    type: 'auto',
+    make: 'Bajaj',
+    model: 'RE',
+    color: 'Yellow',
+    plate: 'DL 01 AB 1234',
+    year: 2022,
+  },
+  created_at: new Date().toISOString(),
+};
 
 // ---------------------------------------------------------------------------
 // Context
@@ -28,13 +55,20 @@ export function useAuth() {
 // Provider
 // ---------------------------------------------------------------------------
 export function AuthProvider({ children }) {
-  const [driver, setDriver]               = useState(null);
-  const [isLoading, setIsLoading]         = useState(true);   // true on initial mount
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [driver, setDriver]               = useState(DEV_BYPASS_AUTH ? MOCK_DRIVER : null);
+  const [isLoading, setIsLoading]         = useState(false);   // no loading flash in dev
+  const [isAuthenticated, setIsAuthenticated] = useState(DEV_BYPASS_AUTH);
 
   // ─── checkAuth ────────────────────────────────────────────────────────────
-  // Runs on app start. Verifies stored token and loads fresh driver profile.
   const checkAuth = useCallback(async () => {
+    // In dev bypass mode, return mock driver instantly
+    if (DEV_BYPASS_AUTH) {
+      setDriver(MOCK_DRIVER);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const token = await getAccessToken();
@@ -58,12 +92,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    checkAuth();
+    if (!DEV_BYPASS_AUTH) {
+      checkAuth();
+    }
   }, [checkAuth]);
 
   // ─── login ────────────────────────────────────────────────────────────────
-  // Verifies OTP with the backend (driver role).
   const login = useCallback(async (phone, otp) => {
+    if (DEV_BYPASS_AUTH) {
+      console.log('[DEV] login skipped — using mock driver');
+      setDriver(MOCK_DRIVER);
+      setIsAuthenticated(true);
+      return { success: true, driver: MOCK_DRIVER };
+    }
+
     setIsLoading(true);
     try {
       const { data } = await client.post('/auth/verify-otp', {
@@ -89,6 +131,10 @@ export function AuthProvider({ children }) {
 
   // ─── logout ───────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
+    if (DEV_BYPASS_AUTH) {
+      console.log('[DEV] logout skipped in bypass mode');
+      return;
+    }
     try {
       await client.post('/auth/logout');
     } catch {
@@ -101,7 +147,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   // ─── updateDriver ─────────────────────────────────────────────────────────
-  // Call this whenever the driver profile changes locally (e.g., after KYC).
   const updateDriver = useCallback((updates) => {
     setDriver((prev) => (prev ? { ...prev, ...updates } : updates));
   }, []);
