@@ -47,14 +47,6 @@ export default function RootLayout() {
                                     options={{ animation: 'slide_from_right' }}
                                 />
                                 <Stack.Screen
-                                    name="location-search"
-                                    options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
-                                />
-                                <Stack.Screen
-                                    name="ride-estimate"
-                                    options={{ animation: 'slide_from_bottom' }}
-                                />
-                                <Stack.Screen
                                     name="notifications"
                                     options={{ animation: 'slide_from_right' }}
                                 />
