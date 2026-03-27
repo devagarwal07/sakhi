@@ -1,66 +1,117 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
 
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { Colors } from './src/utils/theme';
+
+// ── Screens ──────────────────────────────────────────────────────────────────
 import DriverSplashScreen from './src/screens/Auth/DriverSplashScreen';
 
-// ---------------------------------------------------------------------------
-// Auth Context (placeholder — will be fully implemented in Prompt 2)
-// ---------------------------------------------------------------------------
-const AuthContext = createContext(null);
+// Auth screens (Prompt 3 will fill these in)
+const DriverLoginScreen       = () => null; // placeholder
+const DriverOtpScreen         = () => null; // placeholder
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+// Onboarding screens (Prompt 4 will fill these in)
+const GenderVerificationScreen  = () => null;
+const DriverKycUploadScreen     = () => null;
+const VehicleDetailsEntryScreen = () => null;
+const VerificationLoadingScreen = () => null;
+const DocumentUnderReviewScreen = () => null;
+const DocumentReUploadScreen    = () => null;
+const AccountApprovedScreen     = () => null;
 
-export function AuthProvider({ children }) {
-  const [driver, setDriver] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+// Main Tab / Home (Prompt 5 will fill this in)
+const DriverHomeScreen = () => null;
 
-  const value = {
-    driver,
-    isLoading,
-    isAuthenticated,
-    setDriver,
-    setIsLoading,
-    setIsAuthenticated,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Root Navigator
-// ---------------------------------------------------------------------------
+// ── Navigators ────────────────────────────────────────────────────────────────
 const Stack = createNativeStackNavigator();
 
-function RootNavigator() {
+function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DriverSplash" component={DriverSplashScreen} />
+      <Stack.Screen name="DriverLogin"       component={DriverLoginScreen}  />
+      <Stack.Screen name="DriverOtp"         component={DriverOtpScreen}    />
     </Stack.Navigator>
   );
 }
 
-// ---------------------------------------------------------------------------
-// App Root
-// ---------------------------------------------------------------------------
+function OnboardingStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="GenderVerification"   component={GenderVerificationScreen}  />
+      <Stack.Screen name="DriverKycUpload"      component={DriverKycUploadScreen}      />
+      <Stack.Screen name="VehicleDetailsEntry"  component={VehicleDetailsEntryScreen}  />
+      <Stack.Screen name="VerificationLoading"  component={VerificationLoadingScreen}  />
+      <Stack.Screen name="DocumentUnderReview"  component={DocumentUnderReviewScreen}  />
+      <Stack.Screen name="DocumentReUpload"     component={DocumentReUploadScreen}     />
+      <Stack.Screen name="AccountApproved"      component={AccountApprovedScreen}      />
+    </Stack.Navigator>
+  );
+}
+
+function MainStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ── Root navigator — picks stack based on auth state ─────────────────────────
+function RootNavigator() {
+  const { isLoading, isAuthenticated, driver } = useAuth();
+
+  // Show full-screen loader while checkAuth() is running
+  if (isLoading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={Colors.primaryContainer} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthStack />;
+  }
+
+  // Authenticated but onboarding not complete → Onboarding flow
+  const onboardingComplete = driver?.onboarding_status === 'approved';
+  if (!onboardingComplete) {
+    return <OnboardingStack />;
+  }
+
+  // Fully approved driver → Main app
+  return <MainStack />;
+}
+
+// ── App root ──────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <NavigationContainer>
           <StatusBar style="dark" />
-          <RootNavigator />
+          {/* Splash screen sits outside the RootNavigator so it always
+              shows first before checkAuth completes */}
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Splash"    component={DriverSplashScreen} />
+            <Stack.Screen name="RootShell" component={RootNavigator}       />
+          </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
