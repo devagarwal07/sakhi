@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { SocketProvider } from './src/context/SocketContext';
 import { Colors } from './src/utils/theme';
 
 // ── Screens ──────────────────────────────────────────────────────────────────
@@ -26,8 +27,36 @@ import DocumentUnderReviewScreen       from './src/screens/Onboarding/DocumentUn
 import DocumentReUploadScreen          from './src/screens/Onboarding/DocumentReUploadScreen';
 import AccountApprovedScreen           from './src/screens/Onboarding/AccountApprovedScreen';
 
-// Main Tab / Home (Prompt 5 will fill this in)
-const DriverHomeScreen = () => null;
+// Main screens
+import DriverHomeScreen          from './src/screens/Home/DriverHomeScreen';
+import IncomingRideRequestScreen from './src/screens/Home/IncomingRideRequestScreen';
+
+// Ride flow screens
+import EnRouteToPickupScreen from './src/screens/Ride/EnRouteToPickupScreen';
+import ArrivedWaitingScreen  from './src/screens/Ride/ArrivedWaitingScreen';
+import TripInProgressScreen  from './src/screens/Ride/TripInProgressScreen';
+import PaymentDetailsScreen  from './src/screens/Ride/PaymentDetailsScreen';
+
+// Earnings screens
+import MyEarningsDashboardScreen      from './src/screens/Earnings/MyEarningsDashboardScreen';
+import DailyCommissionPaymentScreen   from './src/screens/Earnings/DailyCommissionPaymentScreen';
+import WeeklyCommissionPaymentScreen  from './src/screens/Earnings/WeeklyCommissionPaymentScreen';
+import CommissionPaidConfirmationScreen from './src/screens/Earnings/CommissionPaidConfirmationScreen';
+
+// Subscription screens
+import SubscriptionRidesOverviewScreen   from './src/screens/Subscriptions/SubscriptionRidesOverviewScreen';
+import WeeklyCalendarViewScreen          from './src/screens/Subscriptions/WeeklyCalendarViewScreen';
+import SubscriptionAssignmentDetailsScreen from './src/screens/Subscriptions/SubscriptionAssignmentDetailsScreen';
+
+// Profile / Settings screens
+import MyProfileScreen                 from './src/screens/Profile/MyProfileScreen';
+import MyDocumentsScreen               from './src/screens/Profile/MyDocumentsScreen';
+import MyComplaintsScreen              from './src/screens/Profile/MyComplaintsScreen';
+import RaiseAComplaintScreen           from './src/screens/Profile/RaiseAComplaintScreen';
+import NotificationSettingsScreen      from './src/screens/Profile/NotificationSettingsScreen';
+import NotificationsScreen             from './src/screens/Profile/NotificationsScreen';
+import TransactionHistoryScreen        from './src/screens/Profile/TransactionHistoryScreen';
+import SakhiLogoutConfirmationSheet    from './src/screens/Profile/SakhiLogoutConfirmationSheet';
 
 // ── Navigators ────────────────────────────────────────────────────────────────
 const Stack = createNativeStackNavigator();
@@ -59,9 +88,36 @@ function OnboardingStack() {
 
 function MainStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
-    </Stack.Navigator>
+    <SocketProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="DriverHome"      component={DriverHomeScreen}      />
+        <Stack.Screen name="ActiveTrip"      component={EnRouteToPickupScreen} />
+        <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} />
+        <Stack.Screen name="ArrivedWaiting"  component={ArrivedWaitingScreen}  />
+        <Stack.Screen name="TripInProgress"  component={TripInProgressScreen}  />
+        <Stack.Screen name="PaymentDetails"  component={PaymentDetailsScreen}  />
+        {/* Earnings */}
+        <Stack.Screen name="MyEarnings"                component={MyEarningsDashboardScreen}      />
+        <Stack.Screen name="DailyCommissionPayment"    component={DailyCommissionPaymentScreen}   />
+        <Stack.Screen name="WeeklyCommissionPayment"   component={WeeklyCommissionPaymentScreen}  />
+        <Stack.Screen name="CommissionPaidConfirmation" component={CommissionPaidConfirmationScreen} />
+        {/* Subscriptions */}
+        <Stack.Screen name="SubscriptionRides"              component={SubscriptionRidesOverviewScreen}      />
+        <Stack.Screen name="WeeklyCalendarView"             component={WeeklyCalendarViewScreen}             />
+        <Stack.Screen name="SubscriptionAssignmentDetails"  component={SubscriptionAssignmentDetailsScreen}  />
+        {/* Profile & Settings */}
+        <Stack.Screen name="MyProfile"              component={MyProfileScreen}             />
+        <Stack.Screen name="MyDocuments"            component={MyDocumentsScreen}           />
+        <Stack.Screen name="MyComplaints"           component={MyComplaintsScreen}          />
+        <Stack.Screen name="RaiseAComplaint"        component={RaiseAComplaintScreen}       />
+        <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}  />
+        <Stack.Screen name="Notifications"          component={NotificationsScreen}         />
+        <Stack.Screen name="TransactionHistory"     component={TransactionHistoryScreen}    />
+        <Stack.Screen name="LogoutConfirmation"     component={SakhiLogoutConfirmationSheet} options={{ presentation: 'transparentModal', animation: 'fade' }} />
+      </Stack.Navigator>
+      {/* Incoming ride overlay — rendered on top of whatever screen is active */}
+      <IncomingRideRequestScreen />
+    </SocketProvider>
   );
 }
 
