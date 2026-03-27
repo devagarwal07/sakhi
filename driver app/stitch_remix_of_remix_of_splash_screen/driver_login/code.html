@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi Driver - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-tertiary-container": "#ffe0cd",
+                        "tertiary-container": "#a15100",
+                        "outline-variant": "#ccc3d8",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3eefd",
+                        "on-primary-container": "#ede0ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dcd8e6",
+                        "surface-bright": "#fcf8ff",
+                        "primary-fixed": "#eaddff",
+                        "primary-fixed-dim": "#d2bbff",
+                        "on-primary-fixed": "#25005a",
+                        "surface-variant": "#e5e0ef",
+                        "on-surface": "#1c1a25",
+                        "surface-container-low": "#f6f1ff",
+                        "surface-tint": "#732ee4",
+                        "primary": "#630ed4",
+                        "on-surface-variant": "#4a4455",
+                        "inverse-surface": "#312f3a",
+                        "surface-container": "#f0ecfa",
+                        "on-tertiary-fixed": "#301400",
+                        "inverse-primary": "#d2bbff",
+                        "on-background": "#1c1a25",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "tertiary": "#7d3d00",
+                        "secondary-fixed": "#e8ddff",
+                        "on-secondary-fixed": "#21005e",
+                        "secondary-container": "#ab8ffe",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e5e0ef",
+                        "outline": "#7b7487",
+                        "error-container": "#ffdad6",
+                        "background": "#fcf8ff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "primary-container": "#7c3aed",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-secondary-container": "#3f1e8c",
+                        "secondary": "#674bb5",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf8ff",
+                        "surface-container-high": "#ebe6f5"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F0FF; }
+        .shadow-lavender { shadow-[0_16px_32px_rgba(124,58,237,0.08)]; }
+        .glass-header { backdrop-filter: blur(20px); }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input:focus { outline: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#F5F0FF] text-on-surface min-h-screen flex flex-col items-center">
+<!-- TopAppBar (Predicted Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-[#F5F0FF] dark:bg-slate-950 backdrop-blur-xl bg-opacity-80 flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#7C3AED] dark:text-[#A78BFA] hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+<div class="text-xl font-bold text-[#1E1B2E] dark:text-white font-['Inter'] tracking-tight">
+            Sakhi Driver
+        </div>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="w-full max-w-[390px] min-h-[844px] flex flex-col pt-16 pb-12 px-6">
+<!-- Illustration Section (Top 30%) -->
+<section class="w-full aspect-[4/3] flex items-center justify-center mb-8 mt-4 overflow-hidden rounded-3xl bg-surface-container-low">
+<img alt="Woman driver in purple auto-rickshaw" class="w-full h-full object-cover opacity-90" data-alt="Pastel illustration of woman driving purple auto-rickshaw" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUyhWZ2D2nxCoripLiH7lPWuoy_civKLhv0HFoKn-cteDX2dsPXY9_uAOH6QfMNsaIJ8SoryhNOzpWmEDGOUXD4fIInq30c8-KlOPyiNJgws2maDxSZBCvziS4vOM9PpvkO1x2O0woOHKYplnWABEH-NCSTKnouIpZDmV3bIMCFmkWRhpJCL1vdG8G2lVZdYLywtWUFz8GM3oEENMHJRB9Q6P37f6ujhYgwNmi42khBL7zez_pVvOmcZ_xIxaYXpI4Sd5vrxzfSOQo"/>
+</section>
+<!-- Content Section -->
+<div class="flex flex-col flex-grow">
+<!-- Header Text -->
+<div class="mb-8">
+<h1 class="text-[2rem] font-extrabold text-[#1E1B2E] leading-tight tracking-tight mb-2">
+                    Welcome, Driver
+                </h1>
+<p class="text-[#6B7280] text-md font-body leading-relaxed">
+                    Log in or register to start driving with Sakhi
+                </p>
+</div>
+<!-- Input Form -->
+<div class="space-y-6">
+<div class="group relative">
+<div class="flex items-center bg-white rounded-xl h-14 px-4 transition-all duration-300 shadow-[0_16px_32px_rgba(124,58,237,0.08)] border-2 border-transparent focus-within:border-[#A78BFA]">
+<!-- Country Code / Flag Placeholder -->
+<div class="flex items-center pr-3 mr-3 border-r border-outline-variant/30">
+<span class="material-symbols-outlined text-[#7C3AED] mr-2" style="font-variation-settings: 'FILL' 1;">flag</span>
+<span class="text-[#6B7280] font-medium">+91</span>
+</div>
+<!-- Phone Input -->
+<input class="bg-transparent w-full h-full text-[#1E1B2E] font-medium placeholder:text-outline/50 border-none p-0 focus:ring-0" maxlength="10" placeholder="Phone number" type="tel"/>
+</div>
+</div>
+<!-- Primary CTA -->
+<button class="w-full h-14 bg-gradient-to-br from-[#7C3AED] to-[#630ed4] text-white font-bold rounded-xl shadow-[0_16px_32px_rgba(124,58,237,0.08)] hover:opacity-90 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
+<span>Send OTP via SMS</span>
+<span class="material-symbols-outlined text-sm" data-icon="send">send</span>
+</button>
+</div>
+<!-- Social/Alt Login (Optional Editorial Touch) -->
+<div class="mt-10 flex flex-col items-center">
+<div class="w-full flex items-center gap-4 mb-8">
+<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+<span class="text-xs font-label uppercase tracking-widest text-[#6B7280]">Verification</span>
+<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-auto pt-8 text-center px-4">
+<p class="text-[11px] leading-5 text-[#6B7280] font-medium">
+                By continuing, you agree to our 
+                <a class="text-[#7C3AED] underline underline-offset-2 decoration-1" href="#">Terms of Service</a> 
+                &amp; 
+                <a class="text-[#7C3AED] underline underline-offset-2 decoration-1" href="#">Privacy Policy</a>
+</p>
+</footer>
+</main>
+<!-- Suppressed BottomNavBar as per logic: Login is transactional -->
+</body></html>

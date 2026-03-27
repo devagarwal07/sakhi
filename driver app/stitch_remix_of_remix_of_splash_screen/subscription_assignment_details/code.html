@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Subscription Details - Sakhi Driver</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#e5e0ef",
+              "on-error": "#ffffff",
+              "tertiary": "#7d3d00",
+              "on-surface-variant": "#4a4455",
+              "on-secondary-fixed": "#21005e",
+              "background": "#fcf8ff",
+              "on-secondary": "#ffffff",
+              "surface-container-highest": "#e5e0ef",
+              "tertiary-fixed": "#ffdcc6",
+              "error": "#ba1a1a",
+              "surface-bright": "#fcf8ff",
+              "on-background": "#1c1a25",
+              "secondary-fixed": "#e8ddff",
+              "primary-fixed": "#eaddff",
+              "primary-fixed-dim": "#d2bbff",
+              "on-tertiary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-container": "#a15100",
+              "secondary-container": "#ab8ffe",
+              "on-tertiary-fixed": "#301400",
+              "on-secondary-container": "#3f1e8c",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed-variant": "#4f319c",
+              "surface-container-low": "#f6f1ff",
+              "primary": "#630ed4",
+              "outline-variant": "#ccc3d8",
+              "inverse-primary": "#d2bbff",
+              "surface-tint": "#732ee4",
+              "secondary-fixed-dim": "#cebdff",
+              "outline": "#7b7487",
+              "on-primary-fixed-variant": "#5a00c6",
+              "on-surface": "#1c1a25",
+              "surface-dim": "#dcd8e6",
+              "surface-container-high": "#ebe6f5",
+              "error-container": "#ffdad6",
+              "surface-container": "#f0ecfa",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#312f3a",
+              "primary-container": "#7c3aed",
+              "on-tertiary-container": "#ffe0cd",
+              "on-tertiary-fixed-variant": "#713700",
+              "secondary": "#674bb5",
+              "on-primary-fixed": "#25005a",
+              "inverse-on-surface": "#f3eefd",
+              "tertiary-fixed-dim": "#ffb784",
+              "surface": "#fcf8ff",
+              "on-primary-container": "#ede0ff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-lavender-shadow {
+            shadow-color: rgba(124, 58, 237, 0.08);
+            box-shadow: 0 16px 32px rgba(124, 58, 237, 0.08);
+        }
+        .dashed-line {
+            background-image: linear-gradient(to bottom, #7C3AED 50%, rgba(255, 255, 255, 0) 0%);
+            background-position: left;
+            background-size: 2px 10px;
+            background-repeat: repeat-y;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#F5F0FF] text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F5F0FF] dark:bg-slate-950 backdrop-blur-xl bg-opacity-80 shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-[#7C3AED] dark:text-[#A78BFA] text-2xl" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-lg text-[#1E1B2E] dark:text-slate-100">Subscription Details</h1>
+</div>
+<button class="active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#6B7280]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<main class="pt-20 px-6 space-y-6 max-w-[390px] mx-auto">
+<!-- Rider Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 soft-lavender-shadow flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary-container/20">
+<img alt="Priya S." class="w-full h-full object-cover" data-alt="Portrait of a friendly woman smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCK6sLu_k7rx3Ql47NlNxfjkYrfGxUx9ysROtpEw3Wm9YayrtqxpmLWgLEq3qusKanQYfl_xCGZfgKLAcEGApwQnmDeGtjbo1oY1cPMYOZwKK_tqMzercCui6OJVTBkKoFdOrOyxcru68-hETvoufAsON9F1E-KxuTjBH-urh7w_9g4o_QgcY6sFJ8NiGwkQWhpYbIWjciH0ieiBc62_g29Jhm-itKIHvodwiI9yt8tYvTNwVjfNlEmn5zO2HmoPLZcxRP9RviQFc9J"/>
+</div>
+<div class="space-y-0.5">
+<h2 class="font-bold text-on-surface text-lg">Priya S.</h2>
+<div class="flex items-center gap-2">
+<span class="flex items-center text-sm font-medium text-amber-500">
+                            4.7 <span class="material-symbols-outlined text-sm ml-0.5" style="font-variation-settings: 'FILL' 1;">star</span>
+</span>
+<span class="bg-[#F5F0FF] text-primary-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Regular Rider</span>
+</div>
+</div>
+</div>
+<button class="w-10 h-10 rounded-full bg-secondary-container/10 flex items-center justify-center text-primary-container active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+</section>
+<!-- Route Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 soft-lavender-shadow space-y-4">
+<div class="relative pl-8 space-y-6">
+<!-- Decorative dashed line -->
+<div class="absolute left-3 top-3 bottom-3 w-0.5 dashed-line"></div>
+<div class="relative">
+<div class="absolute -left-7 top-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+</div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">Pickup</p>
+<p class="font-bold text-on-surface leading-tight">Greenwood Heights, Block C, 402</p>
+</div>
+<div class="relative">
+<div class="absolute -left-8 top-0 text-primary-container">
+<span class="material-symbols-outlined text-2xl" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">Drop</p>
+<p class="font-bold text-on-surface leading-tight">Tech Park South Wing, Gate 2</p>
+</div>
+</div>
+<div class="w-full h-[180px] rounded-xl overflow-hidden mt-4 relative border border-surface-variant">
+<img alt="Map Route" class="w-full h-full object-cover grayscale opacity-50" data-alt="Stylized map showing a purple path across a city" data-location="Mumbai" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfZOmTi4gZyqShanbleZOCHLHlbqXOm8mFjNQEOaUSB17I7SW7PeflODQ4bFERMDYEQFQAiItabdm_W5ZbZR1LrVtb4QsNJ6Q3Pymb6_p5x81H7aen7wvyubrd62oBrZya8wzOBUqnBYZKJHoHhp8C_bk-2JuhDY9q77bNsOHnVXbCDUIlVPWBRSwr74SOfjxov_0OQMg5K9f1f0iiuIKf6ZaruUVbNsHG9n1N7GMQgCJcGPE0OW_Yz8BhnGXwbMeaBmvNhYEndTXR"/>
+<div class="absolute inset-0 bg-primary/10"></div>
+<!-- Mock Route Path -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" viewbox="0 0 400 180">
+<path d="M50,140 Q150,120 200,80 T350,40" fill="none" stroke="#7C3AED" stroke-dasharray="8 4" stroke-linecap="round" stroke-width="4"></path>
+<circle cx="50" cy="140" fill="#10b981" r="6"></circle>
+<circle cx="350" cy="40" fill="#7C3AED" r="6"></circle>
+</svg>
+</div>
+</section>
+<!-- Subscription Info Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 soft-lavender-shadow space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">Subscription Plan</p>
+<p class="font-extrabold text-primary text-xl">30 Rides</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">Frequency</p>
+<p class="font-bold text-on-surface">Mon–Fri</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-4 border-t border-surface-variant/30">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold mb-1">Morning Pickup</p>
+<div class="flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="wb_sunny">wb_sunny</span>
+<span class="font-bold">8:30 AM</span>
+</div>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold mb-1">Return Pickup</p>
+<div class="flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="nights_stay">nights_stay</span>
+<span class="font-bold">6:00 PM</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-4 border-t border-surface-variant/30">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">Start Date</p>
+<p class="font-semibold text-on-surface">1 Mar 2026</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-subtext font-semibold">End Date</p>
+<p class="font-semibold text-on-surface">30 Mar 2026</p>
+</div>
+</div>
+</section>
+<!-- Progress Row -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 soft-lavender-shadow space-y-3">
+<div class="flex justify-between items-end">
+<h3 class="text-on-surface font-bold">Rides Completed</h3>
+<span class="text-primary font-extrabold text-lg">18 / 30</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container" style="width: 60%;"></div>
+</div>
+<p class="text-[11px] text-subtext text-center font-medium">12 rides remaining in this cycle</p>
+</section>
+<!-- Upcoming Rides List -->
+<section class="space-y-4">
+<h3 class="font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="calendar_month">calendar_month</span>
+                Upcoming Rides
+            </h3>
+<div class="space-y-3">
+<!-- Ride 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-primary/10 w-12 h-12 rounded-lg flex flex-col items-center justify-center text-primary">
+<span class="text-[10px] font-bold uppercase">Mar</span>
+<span class="text-lg font-extrabold">12</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Tomorrow</p>
+<p class="text-xs text-subtext font-medium">8:30 AM &amp; 6:00 PM</p>
+</div>
+</div>
+<span class="bg-[#F5F0FF] text-primary-container text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Upcoming</span>
+</div>
+<!-- Ride 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex items-center justify-between opacity-80">
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high w-12 h-12 rounded-lg flex flex-col items-center justify-center text-subtext">
+<span class="text-[10px] font-bold uppercase">Mar</span>
+<span class="text-lg font-extrabold">13</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Friday</p>
+<p class="text-xs text-subtext font-medium">8:30 AM &amp; 6:00 PM</p>
+</div>
+</div>
+<span class="bg-surface-container-high text-subtext text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Upcoming</span>
+</div>
+<!-- Ride 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex items-center justify-between opacity-80">
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high w-12 h-12 rounded-lg flex flex-col items-center justify-center text-subtext">
+<span class="text-[10px] font-bold uppercase">Mar</span>
+<span class="text-lg font-extrabold">16</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Monday</p>
+<p class="text-xs text-subtext font-medium">8:30 AM &amp; 6:00 PM</p>
+</div>
+</div>
+<span class="bg-surface-container-high text-subtext text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Upcoming</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full p-6 bg-[#FFFFFF] dark:bg-slate-900 backdrop-blur-lg bg-opacity-90 rounded-t-3xl shadow-[0_-8px_24px_rgba(124,58,237,0.06)] z-50">
+<button class="w-full py-4 rounded-xl border-2 border-primary-container text-primary-container font-bold flex items-center justify-center gap-2 active:scale-95 transition-all duration-300">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+            Contact Rider
+        </button>
+<p class="text-center text-[10px] text-subtext mt-3 font-medium uppercase tracking-widest">Calls are masked for privacy</p>
+</div>
+<!-- Bottom Navigation Mock (Only if needed, but the prompt emphasizes the specific Detail screen focus) -->
+<nav class="hidden md:flex fixed bottom-0 left-0 w-full justify-around items-center px-4 py-3 pb-safe bg-[#FFFFFF] dark:bg-slate-900 backdrop-blur-lg bg-opacity-90 rounded-t-2xl shadow-[0_-8px_24px_rgba(124,58,237,0.06)] z-[60]">
+<div class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 font-medium hover:bg-[#F5F0FF] dark:hover:bg-slate-800 rounded-xl transition-colors px-4 py-2">
+<span class="material-symbols-outlined" data-icon="home_app_logo">home_app_logo</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#7C3AED] dark:text-[#A78BFA] font-bold hover:bg-[#F5F0FF] dark:hover:bg-slate-800 rounded-xl transition-colors px-4 py-2">
+<span class="material-symbols-outlined" data-icon="directions_car" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Routes</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 font-medium hover:bg-[#F5F0FF] dark:hover:bg-slate-800 rounded-xl transition-colors px-4 py-2">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-500 font-medium hover:bg-[#F5F0FF] dark:hover:bg-slate-800 rounded-xl transition-colors px-4 py-2">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Profile</span>
+</div>
+</nav>
+</body></html>

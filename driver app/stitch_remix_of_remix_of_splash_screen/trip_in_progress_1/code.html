@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trip In Progress - Driver Navigation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-surface": "#312f3a",
+              "background": "#fcf8ff",
+              "surface-bright": "#fcf8ff",
+              "primary-container": "#7c3aed",
+              "inverse-on-surface": "#f3eefd",
+              "on-background": "#1c1a25",
+              "surface": "#fcf8ff",
+              "surface-container-highest": "#e5e0ef",
+              "outline-variant": "#ccc3d8",
+              "inverse-primary": "#d2bbff",
+              "outline": "#7b7487",
+              "on-surface": "#1c1a25",
+              "error": "#ba1a1a",
+              "surface-dim": "#dcd8e6",
+              "on-primary-fixed-variant": "#5a00c6",
+              "secondary": "#674bb5",
+              "on-primary-fixed": "#25005a",
+              "on-secondary": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-variant": "#e5e0ef",
+              "surface-tint": "#732ee4",
+              "on-secondary-container": "#3f1e8c",
+              "tertiary-container": "#a15100",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#ebe6f5",
+              "on-secondary-fixed-variant": "#4f319c",
+              "secondary-fixed-dim": "#cebdff",
+              "primary-fixed": "#eaddff",
+              "on-tertiary-container": "#ffe0cd",
+              "on-tertiary": "#ffffff",
+              "primary-fixed-dim": "#d2bbff",
+              "primary": "#630ed4",
+              "secondary-fixed": "#e8ddff",
+              "on-primary-container": "#ede0ff",
+              "tertiary-fixed": "#ffdcc6",
+              "on-tertiary-fixed": "#301400",
+              "surface-container": "#f0ecfa",
+              "surface-container-low": "#f6f1ff",
+              "on-tertiary-fixed-variant": "#713700",
+              "tertiary-fixed-dim": "#ffb784",
+              "secondary-container": "#ab8ffe",
+              "on-surface-variant": "#4a4455",
+              "on-secondary-fixed": "#21005e",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-primary": "#ffffff",
+              "tertiary": "#7d3d00"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .map-gradient-overlay {
+        background: linear-gradient(to bottom, rgba(245,240,255,0.4) 0%, rgba(245,240,255,0) 20%, rgba(245,240,255,0) 80%, rgba(245,240,255,1) 100%);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased selection:bg-primary-container/30">
+<!-- Mobile Container (390x844 simulated) -->
+<main class="relative mx-auto h-[844px] w-[390px] overflow-hidden bg-surface shadow-2xl">
+<!-- Map Section (Top 62%) -->
+<section class="absolute inset-0 h-[62%] w-full overflow-hidden bg-surface-dim">
+<div class="relative h-full w-full">
+<!-- Mock Map Image -->
+<img class="h-full w-full object-cover" data-alt="Modern minimalist city map with purple route line" data-location="Broadway, New York" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlyO8IFhP9b_gJQ3yKO4aNSpmv_b4XCdToRlgzHRELb5d-HZVyW-T3mFGdlUyik-GWejvwwW8GmKGPZB48DJO86scOEfxkyCinZ8UrrtW3QBUf1-NzI_Us1plFtUgXd2vwHcUji-yFpIVOKzG2HJXYkmaAOTcqLt-fNzk_bvQuYbcD1QnEMtOKu8MiIacDFnmDxMdPxTLKrsGhrZgYZAm6CnVZoR5tl4bPugdPupWUJgCvx1fXyBA89yYXi_dVoEpEiyZxtjsZYTRp"/>
+<!-- Map Overlays -->
+<div class="map-gradient-overlay absolute inset-0"></div>
+<!-- SOS Floating Pill -->
+<button class="absolute bottom-6 left-6 z-10 flex items-center gap-2 rounded-full bg-error px-4 py-2 text-on-error shadow-lg shadow-error/20 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">emergency</span>
+<span class="font-label text-xs font-bold tracking-wider uppercase">SOS</span>
+</button>
+</div>
+</section>
+<!-- Top Navigation Banner (Shared Component: TopAppBar logic applied) -->
+<nav class="fixed top-4 left-4 right-4 z-50 rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg shadow-violet-500/10 flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+<span class="material-symbols-outlined" data-icon="navigation">navigation</span>
+</div>
+<div>
+<h1 class="font-inter font-bold tracking-tight text-lg text-violet-900">Heading North on Broadway</h1>
+<p class="text-xs text-slate-500">Straight for 1.2km on Broadway</p>
+</div>
+</div>
+<button class="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-violet-50 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined text-slate-500" data-icon="close">close</span>
+</button>
+</nav>
+<!-- Bottom Sheet (38% Height) -->
+<section class="absolute bottom-0 left-0 z-20 h-[38%] w-full rounded-t-[32px] bg-surface-container-lowest shadow-[0_-16px_48px_rgba(124,58,237,0.12)]">
+<div class="flex h-full flex-col p-8">
+<!-- Drag Handle (Visual decoration) -->
+<div class="mx-auto mb-6 h-1 w-12 rounded-full bg-surface-container-highest"></div>
+<!-- Rider & Status Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="h-14 w-14 rounded-2xl object-cover shadow-sm" data-alt="Close up portrait of Priya S smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBA20xuSg4IlgvC4XJhDKyghfPJP-fwAwrH4f3tU4OAHfIvOFH9jF0XUW2ZjyRiO9cDUbgUs8gCkdEIhziU8AaAo3JuwyE2Pkoyx0_B_Opys7pNOfhyEqD11ot9mZMtEpnUrBpNqWxK7sD_Vo9ze7zSuyZB449mAhqQC0KgGgoBH0agwDeGBi3vZXVnEXqWtd3iwyhBB3p4EHkk-lvK8I8hGUwRMvt63drKPWMcpSVi8t635OV2OAwG3zQcHCZE6sLm6aaDvczi33Li"/>
+<div class="absolute -bottom-1 -right-1 flex h-6 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-[10px] font-bold text-on-surface-variant shadow-sm">
+                                4.7 ★
+                            </div>
+</div>
+<div>
+<h2 class="font-headline text-xl font-extrabold tracking-tight text-on-surface">Priya S.</h2>
+<div class="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                Trip In Progress
+                            </div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-container-low text-primary transition-all hover:bg-primary-fixed-dim active:scale-90">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+</div>
+</div>
+<!-- Trip Details Section -->
+<div class="mt-8 flex-1">
+<div class="flex items-start gap-4 rounded-2xl bg-surface-container-low p-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-primary">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<div>
+<span class="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Destination</span>
+<p class="font-headline font-semibold text-on-surface">MG Road Metro Station</p>
+</div>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="mt-auto">
+<button class="w-full rounded-xl bg-gradient-to-br from-primary to-primary-container py-4 font-headline text-base font-bold text-on-primary shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+                        Complete Trip
+                    </button>
+</div>
+</div>
+</section>
+<!-- Bottom Navigation (Shared Component Shell Logic) -->
+<!-- Suppressed because this is a focused task/transactional screen (Trip In Progress) -->
+</main>
+<!-- Material Symbols Injection -->
+<script>
+        document.querySelectorAll('[data-icon]').forEach(el => {
+            const iconName = el.getAttribute('data-icon');
+            const weight = el.getAttribute('data-weight');
+            const span = document.createElement('span');
+            span.className = 'material-symbols-outlined';
+            span.textContent = iconName;
+            if (weight === 'fill') {
+                span.style.fontVariationSettings = "'FILL' 1";
+            }
+            el.innerHTML = '';
+            el.appendChild(span);
+        });
+    </script>
+</body></html>
