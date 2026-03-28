@@ -1,137 +1,260 @@
 import React from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    View, Text, Image, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
 
 export default function KYCIntroScreen() {
     const router = useRouter();
 
     return (
         <View style={styles.container}>
-            <View style={styles.glowTop} />
+            {/* Decorative gradient blur — top */}
+            <View style={styles.gradientBlur} />
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Icon */}
-                <View style={styles.iconBg}>
-                    <Text style={styles.iconEmoji}>🛡️</Text>
+            {/* Header — Top Navigation */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Text style={styles.backIcon}>←</Text>
+                </TouchableOpacity>
+                <View style={styles.headerRight}>
+                    <Text style={styles.shieldIcon}>🛡️</Text>
+                    <Text style={styles.headerTitle}>Verification</Text>
+                </View>
+            </View>
+
+            {/* Main Content */}
+            <View style={styles.main}>
+                {/* Hero Editorial Section */}
+                <View style={styles.heroSection}>
+                    <Text style={styles.title}>Verify Your Identity</Text>
+                    <Text style={styles.subtitle}>
+                        Sakhi is a women-only platform. Please complete identity verification to activate your account.
+                    </Text>
                 </View>
 
-                <Text style={styles.title}>Verify Your Identity</Text>
-                <Text style={styles.subtitle}>
-                    Sakhi is a women-only platform. To protect all our riders, we require a one-time
-                    identity verification before you can book rides.
-                </Text>
-
-                {/* Options */}
+                {/* Options Container */}
                 <View style={styles.optionsContainer}>
-                    <Text style={styles.optionsLabel}>Choose Verification Method</Text>
-
+                    {/* Card: Upload Aadhaar — Selected State */}
                     <TouchableOpacity
                         style={styles.optionCard}
                         onPress={() => router.push('/(kyc)/aadhaar')}
                         activeOpacity={0.85}
                     >
-                        <View style={styles.optionIconBg}>
-                            <Text style={{ fontSize: 28 }}>🪪</Text>
-                        </View>
-                        <View style={styles.optionBody}>
-                            <Text style={styles.optionTitle}>Aadhaar Card</Text>
-                            <Text style={styles.optionDesc}>Upload front & back photos of your Aadhaar card</Text>
-                        </View>
-                        <Text style={styles.optionArrow}>→</Text>
-                    </TouchableOpacity>
+                        {/* Selected border ring */}
+                        <View style={styles.cardBorderRing} />
 
-                    <TouchableOpacity
-                        style={styles.optionCard}
-                        onPress={() => router.push('/(kyc)/face')}
-                        activeOpacity={0.85}
-                    >
+                        {/* Icon */}
                         <View style={styles.optionIconBg}>
-                            <Text style={{ fontSize: 28 }}>🤳</Text>
+                            <Image
+                                source={require('../../assets/aadhar-verification.jpeg')}
+                                style={styles.optionIconImage}
+                                resizeMode="contain"
+                            />
                         </View>
+
+                        {/* Text */}
                         <View style={styles.optionBody}>
-                            <Text style={styles.optionTitle}>Selfie Verification</Text>
-                            <Text style={styles.optionDesc}>Take a clear selfie matched against your Aadhaar</Text>
+                            <Text style={styles.optionTitle}>Upload Aadhaar</Text>
+                            <Text style={styles.optionDesc}>
+                                Upload front & back of your Aadhaar card
+                            </Text>
                         </View>
-                        <Text style={styles.optionArrow}>→</Text>
+
+                        {/* Arrow */}
+                        <Text style={styles.optionArrow}>›</Text>
                     </TouchableOpacity>
                 </View>
+            </View>
 
-                {/* Trust badges */}
-                <View style={styles.trustRow}>
-                    {[
-                        { icon: '🔒', label: '256-bit Encryption' },
-                        { icon: '✅', label: 'DPDP Compliant' },
-                        { icon: '🗑️', label: 'Auto-deleted after verification' },
-                    ].map((item, i) => (
-                        <View key={i} style={styles.trustBadge}>
-                            <Text style={styles.trustIcon}>{item.icon}</Text>
-                            <Text style={styles.trustLabel}>{item.label}</Text>
-                        </View>
-                    ))}
-                </View>
-            </ScrollView>
+            {/* Footer — Bottom Action */}
+            <View style={styles.footer}>
+                <TouchableOpacity
+                    style={styles.ctaButton}
+                    onPress={() => router.push('/(kyc)/aadhaar')}
+                    activeOpacity={0.88}
+                >
+                    <Text style={styles.ctaButtonText}>Continue</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
-    glowTop: {
-        position: 'absolute', top: -60, left: -60,
-        width: 200, height: 200, borderRadius: 100,
-        backgroundColor: 'rgba(124,58,237,0.07)',
+    container: {
+        flex: 1,
+        backgroundColor: '#F6F1FF',
     },
-    content: {
-        paddingHorizontal: 24, paddingTop: 80, paddingBottom: 40, alignItems: 'center',
+
+    // Decorative gradient blur — top
+    gradientBlur: {
+        position: 'absolute',
+        width: 390,
+        height: 120,
+        left: 0,
+        top: 0,
+        backgroundColor: 'rgba(167, 139, 250, 0.06)',
+        borderRadius: 9999,
     },
-    iconBg: {
-        width: 88, height: 88, borderRadius: 28,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 24, ...Shadows.editorial,
+
+    // Header — glassmorphic
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'ios' ? 52 : 16,
+        paddingBottom: 16,
+        height: Platform.OS === 'ios' ? 92 : 72,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
-    iconEmoji: { fontSize: 40 },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 9999,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    backIcon: {
+        fontSize: 18,
+        color: '#C0A6D6',
+        fontWeight: '600',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    shieldIcon: {
+        fontSize: 16,
+        color: '#C0A6D6',
+    },
+    headerTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1E1B2E',
+        letterSpacing: -0.32,
+        lineHeight: 24,
+    },
+
+    // Main content
+    main: {
+        flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        gap: 32,
+    },
+
+    // Hero section
+    heroSection: {
+        gap: 12,
+    },
     title: {
-        ...Typography.headlineMedium, color: Colors.onBackground,
-        textAlign: 'center', marginBottom: 12,
+        fontSize: 32,
+        fontWeight: '800',
+        color: '#1E1B2E',
+        letterSpacing: -0.96,
+        lineHeight: 40,
     },
     subtitle: {
-        ...Typography.bodyLarge, color: Colors.onSurfaceVariant,
-        textAlign: 'center', lineHeight: 24, marginBottom: 32,
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 26,
     },
-    optionsContainer: { width: '100%', marginBottom: 28 },
-    optionsLabel: {
-        fontSize: 12, fontWeight: '600',
-        color: Colors.onSurfaceVariant, textTransform: 'uppercase',
-        letterSpacing: 0.8, marginBottom: 12,
+
+    // Options
+    optionsContainer: {
+        gap: 24,
     },
+
+    // Card — selected state: #EDE9FE bg, 2px #7C3AED border
     optionCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 14,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 16, padding: 16, marginBottom: 10,
-        ...Shadows.card,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 24,
+        gap: 20,
+        backgroundColor: '#EDE9FE',
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#7C3AED',
     },
+    cardBorderRing: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        borderRadius: 12,
+    },
+
+    // Icon bg — 56×56, white, radius 12
     optionIconBg: {
-        width: 52, height: 52, borderRadius: 16,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
+        width: 56,
+        height: 56,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    optionBody: { flex: 1 },
-    optionTitle: { ...Typography.titleSmall, color: Colors.onBackground, marginBottom: 2 },
-    optionDesc: { ...Typography.bodySmall, color: Colors.onSurfaceVariant, lineHeight: 16 },
+    optionIconImage: {
+        width: 25,
+        height: 25,
+        tintColor: '#C0A6D6',
+    },
+
+    // Text
+    optionBody: {
+        flex: 1,
+        gap: 4,
+    },
+    optionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1E1B2E',
+        lineHeight: 24,
+    },
+    optionDesc: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 19,
+    },
+
+    // Arrow
     optionArrow: {
-        fontSize: 18, color: Colors.primaryContainer, fontWeight: '700',
+        fontSize: 18,
+        color: '#C0A6D6',
+        fontWeight: '600',
     },
-    trustRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
-    trustBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: Colors.surfaceContainer,
-        borderRadius: BorderRadius.full,
-        paddingHorizontal: 10, paddingVertical: 6,
+
+    // Footer — sticky bottom
+    footer: {
+        paddingHorizontal: 24,
+        paddingTop: 16,
+        paddingBottom: 32,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        alignItems: 'center',
     },
-    trustIcon: { fontSize: 12 },
-    trustLabel: { fontSize: 11, color: Colors.onSurfaceVariant, fontWeight: '500' },
+    ctaButton: {
+        width: '100%',
+        maxWidth: 342,
+        height: 56,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
+    },
+    ctaButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        lineHeight: 24,
+    },
 });

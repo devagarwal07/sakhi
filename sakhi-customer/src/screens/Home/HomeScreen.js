@@ -1,26 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Dimensions,
-    Alert,
-    Animated,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    Dimensions, Alert, Platform, Animated,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { Colors, BorderRadius, Shadows } from '../../utils/theme';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../api/endpoints';
 
-const { width, height } = Dimensions.get('window');
-const ASPECT_RATIO = width / height;
+const { width } = Dimensions.get('window');
 const LATITUDE_DELTA = 0.012;
-const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+const LONGITUDE_DELTA = LATITUDE_DELTA * (width / 884);
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -28,191 +20,238 @@ export default function HomeScreen() {
     const { setPickup, setDropoff } = useRide();
     const [currentLocation, setCurrentLocation] = useState(null);
     const [savedPlaces, setSavedPlaces] = useState([]);
+    const [activeTab, setActiveTab] = useState('book');
     const mapRef = useRef(null);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         (async () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert(
-                    'Location Required',
-                    'Sakhi needs your location to find nearby drivers. Please enable location access.',
-                );
+                Alert.alert('Location Required', 'Sakhi needs your location to find nearby drivers.');
                 return;
             }
-
             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            const coords = {
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-            };
+            const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
             setCurrentLocation(coords);
             setPickup({ ...coords, address: 'Current Location' });
-
             mapRef.current?.animateToRegion({
-                ...coords,
-                latitudeDelta: LATITUDE_DELTA,
-                longitudeDelta: LONGITUDE_DELTA,
+                ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
             });
         })();
 
-        // Load saved addresses
         getAddresses()
             .then(({ data }) => setSavedPlaces(data.addresses || []))
             .catch(() => { });
+
+        // Pulse animation for location pin
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, { toValue: 1.5, duration: 1200, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+            ])
+        ).start();
     }, []);
 
-    const handleWhereToPress = () => {
-        router.push('/location-search');
+    const greetingName = user?.name ? user.name.split(' ')[0] : 'Priya';
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
     };
 
-    const greetingName = user?.name ? user.name.split(' ')[0] : 'there';
+    // Mock recent rides
+    const recentRides = [
+        {
+            id: 1, to: 'Worli Sea Face', from: 'Home (Bandra West)',
+            date: 'Oct 24 • 09:15 AM', price: '₹450', rating: '5.0',
+        },
+        {
+            id: 2, to: 'Jio World Drive', from: 'Work (BKC)',
+            date: 'Oct 22 • 06:40 PM', price: '₹320', rating: '4.8',
+        },
+    ];
 
     return (
         <View style={styles.container}>
-            {/* Full-screen Map */}
-            <MapView
-                ref={mapRef}
-                style={StyleSheet.absoluteFill}
-                provider={PROVIDER_GOOGLE}
-                showsUserLocation={false}
-                showsMyLocationButton={false}
-                initialRegion={{
-                    latitude: currentLocation?.latitude || 12.9716,
-                    longitude: currentLocation?.longitude || 77.5946,
-                    latitudeDelta: LATITUDE_DELTA,
-                    longitudeDelta: LONGITUDE_DELTA,
-                }}
-                customMapStyle={mapStyle}
-            >
-                {currentLocation && (
-                    <Marker coordinate={currentLocation}>
-                        <View style={styles.userMarker}>
-                            <View style={styles.userMarkerInner} />
-                            <View style={styles.userMarkerPulse} />
-                        </View>
-                    </Marker>
-                )}
-            </MapView>
+            {/* Top Map Section — 58% */}
+            <View style={styles.mapSection}>
+                <MapView
+                    ref={mapRef}
+                    style={StyleSheet.absoluteFill}
+                    provider={PROVIDER_GOOGLE}
+                    showsUserLocation={false}
+                    showsMyLocationButton={false}
+                    initialRegion={{
+                        latitude: currentLocation?.latitude || 19.0760,
+                        longitude: currentLocation?.longitude || 72.8777,
+                        latitudeDelta: LATITUDE_DELTA,
+                        longitudeDelta: LONGITUDE_DELTA,
+                    }}
+                    customMapStyle={mapStyle}
+                >
+                    {currentLocation && (
+                        <Marker coordinate={currentLocation}>
+                            <View style={styles.pinWrapper}>
+                                {/* Pulse rings */}
+                                <Animated.View
+                                    style={[styles.pulseOuter, { transform: [{ scale: pulseAnim }] }]}
+                                />
+                                <View style={styles.pulseInner} />
+                                <View style={styles.pinDot} />
+                            </View>
+                        </Marker>
+                    )}
+                </MapView>
 
-            {/* Top Bar */}
-            <View style={styles.topBar}>
-                <View style={styles.topBarCard}>
-                    <TouchableOpacity
-                        style={styles.menuBtn}
-                        onPress={() => router.push('/profile')}
-                    >
+                {/* Map overlay controls */}
+                <View style={styles.mapOverlay}>
+                    {/* Hamburger */}
+                    <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/(tabs)/profile')}>
                         <Text style={styles.menuIcon}>☰</Text>
                     </TouchableOpacity>
-                    <View style={styles.greetingBlock}>
-                        <Text style={styles.greetingText}>Good morning, {greetingName} 👋</Text>
-                        <Text style={styles.greetingSubtext}>Where are you going today?</Text>
-                    </View>
+
+                    {/* Search Bar */}
                     <TouchableOpacity
-                        style={styles.notifBtn}
-                        onPress={() => router.push('/notifications')}
+                        style={styles.searchBar}
+                        onPress={() => router.push('/location-search')}
+                        activeOpacity={0.9}
                     >
-                        <Text style={styles.notifIcon}>🔔</Text>
+                        <Text style={styles.searchIcon}>🔍</Text>
+                        <View style={styles.searchInput}>
+                            <Text style={styles.searchPlaceholder}>Where are you going?</Text>
+                        </View>
+                        <Text style={styles.micIcon}>🎤</Text>
                     </TouchableOpacity>
+
+                    {/* Profile avatar */}
+                    <View style={styles.avatarBtn}>
+                        <Text style={styles.avatarEmoji}>👤</Text>
+                    </View>
                 </View>
+
+                {/* Floating SOS */}
+                <TouchableOpacity style={styles.sosBtn} onPress={() => router.push('/sos')}>
+                    <Text style={styles.sosText}>SOS</Text>
+                </TouchableOpacity>
             </View>
 
-            {/* Bottom Booking Sheet */}
+            {/* Bottom Sheet Content — 42% */}
             <View style={styles.bottomSheet}>
-                {/* Where to? */}
-                <TouchableOpacity
-                    style={styles.whereToCard}
-                    onPress={handleWhereToPress}
-                    activeOpacity={0.85}
-                >
-                    <View style={styles.whereToRow}>
-                        <View style={styles.dotColumn}>
-                            <View style={styles.dotGreen} />
-                            <View style={styles.dotLine} />
-                            <View style={styles.dotViolet} />
-                        </View>
-                        <View style={styles.whereToInputs}>
-                            <View style={styles.locationInput}>
-                                <Text style={styles.locationInputLabel} numberOfLines={1}>
-                                    {currentLocation ? 'Current Location' : 'Getting your location…'}
-                                </Text>
-                            </View>
-                            <View style={styles.inputDivider} />
-                            <View style={[styles.locationInput, styles.destinationInput]}>
-                                <Text style={styles.destinationPlaceholder}>Where to?</Text>
-                            </View>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Saved Places Chips */}
-                {savedPlaces.length > 0 && (
-                    <>
-                        <Text style={styles.savedPlacesLabel}>Saved Places</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-                            {savedPlaces.map((place) => (
-                                <TouchableOpacity
-                                    key={place.id}
-                                    style={styles.chip}
-                                    onPress={() => {
-                                        setDropoff({
-                                            latitude: place.latitude,
-                                            longitude: place.longitude,
-                                            address: place.address,
-                                        });
-                                        router.push('/ride-estimate');
-                                    }}
-                                >
-                                    <Text style={styles.chipIcon}>
-                                        {place.type === 'home' ? '🏠' : place.type === 'work' ? '💼' : '📍'}
-                                    </Text>
-                                    <Text style={styles.chipLabel}>{place.label || place.type}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </>
-                )}
-
-                {/* Quick actions */}
-                <View style={styles.quickActions}>
-                    <TouchableOpacity
-                        style={styles.quickAction}
-                        onPress={() => router.push('/subscriptions')}
-                    >
-                        <View style={styles.quickActionIcon}>
-                            <Text style={{ fontSize: 20 }}>🔄</Text>
-                        </View>
-                        <Text style={styles.quickActionLabel}>Subscription</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.quickAction}
-                        onPress={() => router.push('/ride-history')}
-                    >
-                        <View style={styles.quickActionIcon}>
-                            <Text style={{ fontSize: 20 }}>📋</Text>
-                        </View>
-                        <Text style={styles.quickActionLabel}>History</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.quickAction}
-                        onPress={() => router.push('/safety')}
-                    >
-                        <View style={[styles.quickActionIcon, styles.sosQuickIcon]}>
-                            <Text style={{ fontSize: 20 }}>🛡️</Text>
-                        </View>
-                        <Text style={styles.quickActionLabel}>Safety</Text>
-                    </TouchableOpacity>
+                {/* Handlebar */}
+                <View style={styles.handlebarRow}>
+                    <View style={styles.handlebar} />
                 </View>
+
+                <ScrollView
+                    contentContainerStyle={styles.sheetContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Row 1: Greeting & Notification */}
+                    <View style={styles.greetingRow}>
+                        <Text style={styles.greetingText}>
+                            {getGreeting()}, {greetingName} 👋
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.notifBtn}
+                            onPress={() => router.push('/notifications')}
+                        >
+                            <Text style={styles.notifIcon}>🔔</Text>
+                            <View style={styles.notifDot} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 2: Pill Tabs */}
+                    <View style={styles.pillTabs}>
+                        <TouchableOpacity
+                            style={[styles.pillTab, activeTab === 'book' && styles.pillTabActive]}
+                            onPress={() => {
+                                setActiveTab('book');
+                                router.push('/location-search');
+                            }}
+                        >
+                            <Text style={[styles.pillTabText, activeTab === 'book' && styles.pillTabTextActive]}>
+                                Book Now
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.pillTab, activeTab === 'subscribe' && styles.pillTabActive,
+                            activeTab !== 'subscribe' && styles.pillTabOutline]}
+                            onPress={() => {
+                                setActiveTab('subscribe');
+                                router.push('/subscription-setup');
+                            }}
+                        >
+                            <Text style={[styles.pillTabText, activeTab !== 'subscribe' && styles.pillTabTextOutline]}>
+                                Subscribe
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 3: Saved Places Chips */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.chipsRow}
+                    >
+                        <TouchableOpacity style={styles.chip}>
+                            <Text style={styles.chipIcon}>🏠</Text>
+                            <Text style={styles.chipLabel}>Home</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.chip}>
+                            <Text style={styles.chipIcon}>💼</Text>
+                            <Text style={styles.chipLabel}>Work</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.chip}>
+                            <Text style={styles.chipIcon}>🕐</Text>
+                            <Text style={styles.chipLabel}>Recent</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.chip, styles.chipDashed]}>
+                            <Text style={[styles.chipIcon, { color: '#BEA3D8' }]}>+</Text>
+                            <Text style={[styles.chipLabel, { color: '#BEA3D8' }]}>Add New</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+
+                    {/* Recent Rides */}
+                    <View style={styles.recentSection}>
+                        <View style={styles.recentHeader}>
+                            <Text style={styles.recentLabel}>RECENT RIDES</Text>
+                            <TouchableOpacity>
+                                <Text style={styles.viewAllText}>View All</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {recentRides.map((ride) => (
+                            <View key={ride.id} style={styles.rideCard}>
+                                <View style={styles.rideIconBox}>
+                                    <Text style={styles.rideIcon}>🚗</Text>
+                                </View>
+                                <View style={styles.rideInfo}>
+                                    <Text style={styles.rideTo}>To: {ride.to}</Text>
+                                    <Text style={styles.rideFrom}>From: {ride.from}</Text>
+                                    <Text style={styles.rideDate}>{ride.date}</Text>
+                                </View>
+                                <View style={styles.rideRight}>
+                                    <Text style={styles.ridePrice}>{ride.price}</Text>
+                                    <View style={styles.rideRatingRow}>
+                                        <Text style={styles.rideStar}>⭐</Text>
+                                        <Text style={styles.rideRating}>{ride.rating}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </ScrollView>
             </View>
         </View>
     );
 }
 
-// Minimal light map style (pink/lavender tones to match brand)
 const mapStyle = [
-    { elementType: 'geometry', stylers: [{ color: '#f5f0ff' }] },
+    { elementType: 'geometry', stylers: [{ color: '#f6f1ff' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#4a4455' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f0ff' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#f6f1ff' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
     { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ebe6f5' }] },
     { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#dcd8e6' }] },
@@ -221,146 +260,392 @@ const mapStyle = [
 ];
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    topBar: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        paddingTop: 52,
-        paddingHorizontal: 16,
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F0FF',
     },
-    topBarCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(252,248,255,0.95)',
-        borderRadius: 16,
-        padding: 12,
-        gap: 12,
-        ...Shadows.card,
+
+    // Map section — top ~36%
+    mapSection: {
+        height: 312,
+        backgroundColor: '#F6F1FF',
     },
-    menuBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer,
+
+    // Location pin
+    pinWrapper: {
+        width: 48,
+        height: 48,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    menuIcon: { fontSize: 18, color: Colors.onSurfaceVariant },
-    greetingBlock: { flex: 1 },
-    greetingText: {
+    pulseOuter: {
+        position: 'absolute',
+        width: 48,
+        height: 48,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(190, 163, 216, 0.2)',
+    },
+    pulseInner: {
+        position: 'absolute',
+        width: 32,
+        height: 32,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(190, 163, 216, 0.3)',
+    },
+    pinDot: {
+        width: 16,
+        height: 16,
+        borderRadius: 9999,
+        backgroundColor: '#BEA3D8',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+    },
+
+    // Map overlay controls
+    mapOverlay: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 52 : 16,
+        left: 16,
+        right: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 0,
+    },
+
+    // Hamburger — 48px white circle
+    menuBtn: {
+        width: 48,
+        height: 48,
+        borderRadius: 9999,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
+    },
+    menuIcon: {
+        fontSize: 16,
+        color: '#BEA3D8',
+    },
+
+    // Search bar — white pill
+    searchBar: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 48,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 9999,
+        marginHorizontal: 12,
+        paddingHorizontal: 16,
+        gap: 12,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
+    },
+    searchIcon: {
+        fontSize: 16,
+        opacity: 0.6,
+    },
+    searchInput: {
+        flex: 1,
+    },
+    searchPlaceholder: {
         fontSize: 14,
         fontWeight: '700',
-        color: Colors.onBackground,
+        color: '#7B7487',
+        lineHeight: 17,
     },
-    greetingSubtext: {
-        fontSize: 12,
-        color: Colors.onSurfaceVariant,
-        marginTop: 1,
+    micIcon: {
+        fontSize: 16,
+        opacity: 0.6,
+    },
+
+    // Profile avatar — 48px circle
+    avatarBtn: {
+        width: 48,
+        height: 48,
+        borderRadius: 9999,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        backgroundColor: '#EDE9FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
+    },
+    avatarEmoji: {
+        fontSize: 22,
+    },
+
+    // SOS button
+    sosBtn: {
+        position: 'absolute',
+        left: 24,
+        bottom: 24,
+        width: 64,
+        height: 64,
+        borderRadius: 9999,
+        backgroundColor: '#EF4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    sosText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        letterSpacing: 1,
+    },
+
+    // Bottom sheet — white, radius 24
+    bottomSheet: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -12 },
+        shadowOpacity: 0.06,
+        shadowRadius: 40,
+        elevation: 8,
+    },
+
+    // Handlebar
+    handlebarRow: {
+        alignItems: 'center',
+        paddingTop: 12,
+        paddingBottom: 20,
+    },
+    handlebar: {
+        width: 48,
+        height: 4,
+        borderRadius: 9999,
+        backgroundColor: '#E5E0EF',
+    },
+
+    sheetContent: {
+        paddingBottom: 120,
+    },
+
+    // Greeting row
+    greetingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        marginBottom: 24,
+    },
+    greetingText: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1C1A25',
+        letterSpacing: -0.6,
+        lineHeight: 32,
     },
     notifBtn: {
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.primaryFixed,
+        borderRadius: 9999,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    notifIcon: { fontSize: 16 },
-    bottomSheet: {
+    notifIcon: {
+        fontSize: 18,
+        color: '#4A4455',
+    },
+    notifDot: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 32,
-        ...Shadows.editorial,
+        top: 8,
+        right: 8,
+        width: 8,
+        height: 8,
+        borderRadius: 9999,
+        backgroundColor: '#BEA3D8',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
     },
-    whereToCard: {
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: Colors.outlineVariant,
+
+    // Pill tabs
+    pillTabs: {
+        flexDirection: 'row',
+        paddingHorizontal: 24,
+        gap: 12,
+        marginBottom: 24,
     },
-    whereToRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-    dotColumn: { alignItems: 'center', gap: 4, paddingVertical: 4 },
-    dotGreen: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#16a34a' },
-    dotLine: { width: 2, height: 20, backgroundColor: Colors.outlineVariant },
-    dotViolet: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primaryContainer },
-    whereToInputs: { flex: 1 },
-    locationInput: { paddingVertical: 6 },
-    locationInputLabel: { fontSize: 14, color: Colors.onSurfaceVariant, fontWeight: '500' },
-    inputDivider: { height: 1, backgroundColor: Colors.outlineVariant, marginVertical: 4 },
-    destinationInput: {},
-    destinationPlaceholder: {
-        fontSize: 15,
-        color: Colors.outline,
-        fontWeight: '500',
+    pillTab: {
+        flex: 1,
+        height: 52,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    savedPlacesLabel: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: Colors.onSurfaceVariant,
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
+    pillTabActive: {
+        backgroundColor: '#BEA3D8',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
+    },
+    pillTabOutline: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#BEA3D8',
+    },
+    pillTabText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        lineHeight: 20,
+    },
+    pillTabTextActive: {
+        color: '#FFFFFF',
+    },
+    pillTabTextOutline: {
+        color: '#BEA3D8',
+    },
+
+    // Saved places chips
+    chipsRow: {
+        paddingHorizontal: 24,
         marginBottom: 8,
     },
-    chipsRow: { marginBottom: 16 },
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: BorderRadius.full,
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        marginRight: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: '#F6F1FF',
+        borderRadius: 9999,
         borderWidth: 1,
-        borderColor: Colors.outlineVariant,
+        borderColor: 'rgba(229, 224, 239, 0.3)',
+        marginRight: 12,
+        gap: 8,
     },
-    chipIcon: { fontSize: 14 },
-    chipLabel: { fontSize: 13, color: Colors.onSurface, fontWeight: '500' },
-    quickActions: {
+    chipDashed: {
+        borderStyle: 'dashed',
+        borderColor: 'rgba(190, 163, 216, 0.4)',
+    },
+    chipIcon: {
+        fontSize: 14,
+        color: '#BEA3D8',
+    },
+    chipLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4A4455',
+        lineHeight: 20,
+    },
+
+    // Recent rides
+    recentSection: {
+        paddingHorizontal: 24,
+        gap: 16,
+        marginTop: 28,
+    },
+    recentHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    quickAction: { alignItems: 'center', gap: 6 },
-    quickActionIcon: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: Colors.surfaceContainerLow,
+    recentLabel: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#7B7487',
+        letterSpacing: 1.65,
+        textTransform: 'uppercase',
+        lineHeight: 16,
+    },
+    viewAllText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#BEA3D8',
+        lineHeight: 16,
+    },
+
+    // Ride card — #F6F1FF, radius 16
+    rideCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#F6F1FF',
+        borderRadius: 16,
+        gap: 16,
+    },
+    rideIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: 'rgba(190, 163, 216, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: Colors.outlineVariant,
     },
-    sosQuickIcon: {
-        backgroundColor: '#fff1f2',
-        borderColor: '#fca5a5',
+    rideIcon: {
+        fontSize: 18,
     },
-    quickActionLabel: { fontSize: 11, color: Colors.onSurfaceVariant, fontWeight: '500' },
-    userMarker: { alignItems: 'center', justifyContent: 'center', width: 24, height: 24 },
-    userMarkerInner: {
-        position: 'absolute',
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: Colors.primaryContainer,
-        borderWidth: 2,
-        borderColor: Colors.onPrimary,
+    rideInfo: {
+        flex: 1,
     },
-    userMarkerPulse: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: 'rgba(124, 58, 237, 0.2)',
+    rideTo: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1C1A25',
+        lineHeight: 20,
+    },
+    rideFrom: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4A4455',
+        lineHeight: 16,
+    },
+    rideDate: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#7B7487',
+        lineHeight: 15,
+        marginTop: 4,
+    },
+    rideRight: {
+        alignItems: 'flex-end',
+        gap: 4.5,
+    },
+    ridePrice: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#1C1A25',
+        lineHeight: 20,
+    },
+    rideRatingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    rideStar: {
+        fontSize: 10,
+        color: '#EAB308',
+    },
+    rideRating: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#4A4455',
+        lineHeight: 15,
     },
 });

@@ -2,12 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
+    Image,
     StyleSheet,
     Animated,
     Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography } from '../../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,12 +16,11 @@ export default function SplashScreen() {
     const progressAnim = useRef(new Animated.Value(0)).current;
     const logoScale = useRef(new Animated.Value(0.7)).current;
     const logoOpacity = useRef(new Animated.Value(0)).current;
-    const textOpacity = useRef(new Animated.Value(0)).current;
-    const subtitleOpacity = useRef(new Animated.Value(0)).current;
+    const taglineOpacity = useRef(new Animated.Value(0)).current;
+    const footerOpacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.sequence([
-            // Logo entrance
             Animated.parallel([
                 Animated.spring(logoScale, {
                     toValue: 1,
@@ -35,28 +34,24 @@ export default function SplashScreen() {
                     useNativeDriver: true,
                 }),
             ]),
-            // Text fade-in
-            Animated.timing(textOpacity, {
+            Animated.timing(taglineOpacity, {
                 toValue: 1,
                 duration: 400,
                 useNativeDriver: true,
             }),
-            // Subtitle fade-in
-            Animated.timing(subtitleOpacity, {
+            Animated.timing(footerOpacity, {
                 toValue: 1,
                 duration: 300,
                 useNativeDriver: true,
             }),
         ]).start();
 
-        // Progress bar
         Animated.timing(progressAnim, {
             toValue: 1,
             duration: 2800,
             useNativeDriver: false,
         }).start();
 
-        // Navigate after splash
         const timer = setTimeout(() => {
             router.replace('/(auth)/login');
         }, 3200);
@@ -71,48 +66,55 @@ export default function SplashScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Background glow circles */}
+            {/* Gradient simulation — bottom half is slightly darker */}
+            <View style={styles.gradientBottom} />
+
+            {/* Decorative glow — top-left */}
             <View style={styles.glowTopLeft} />
+            {/* Decorative glow — bottom-right */}
             <View style={styles.glowBottomRight} />
 
-            {/* Brand cluster */}
+            {/* Center Brand Cluster */}
             <View style={styles.brandCluster}>
-                {/* Logo */}
+                {/* Sakhi logo image — 169×118 from CSS */}
                 <Animated.View
                     style={[
                         styles.logoWrapper,
                         { transform: [{ scale: logoScale }], opacity: logoOpacity },
                     ]}
                 >
-                    <View style={styles.logoBg}>
-                        <View style={styles.logoGlow} />
-                        <View style={styles.logoPolygon}>
-                            <Text style={styles.logoLetter}>S</Text>
-                        </View>
-                    </View>
+                    <Image
+                        source={require('../../../assets/sakhi.jpeg')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
                 </Animated.View>
 
-                {/* Brand name */}
-                <Animated.View style={{ opacity: textOpacity, alignItems: 'center', marginTop: 24 }}>
-                    <Text style={styles.brandName}>Sakhi</Text>
-                    <Animated.Text style={[styles.tagline, { opacity: subtitleOpacity }]}>
-                        Safe Rides, Every Time
-                    </Animated.Text>
-                </Animated.View>
+                {/* Tagline — "Safe Rides, Every Time" */}
+                <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
+                    Safe Rides, Every Time
+                </Animated.Text>
             </View>
 
-            {/* Progress indicator */}
-            <View style={styles.footer}>
+            {/* Editorial Spacing Layer — dots + progress + text */}
+            <Animated.View style={[styles.footer, { opacity: footerOpacity }]}>
+                {/* Abstract dot pattern — 6px, gap 8px, opacity 0.2 */}
                 <View style={styles.dotsRow}>
-                    {[0, 1, 2].map((i) => (
-                        <View key={i} style={styles.dot} />
-                    ))}
+                    <View style={styles.dot} />
+                    <View style={styles.dot} />
+                    <View style={styles.dot} />
                 </View>
-                <View style={styles.progressTrack}>
-                    <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+
+                {/* Loading indicator — 48px margin-top from dots */}
+                <View style={styles.loadingSection}>
+                    {/* Progress track — 4px, #E5E0EF bg */}
+                    <View style={styles.progressTrack}>
+                        <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+                    </View>
+                    {/* "EMPOWERING WOMEN" */}
+                    <Text style={styles.empoweringText}>EMPOWERING WOMEN</Text>
                 </View>
-                <Text style={styles.empoweringText}>EMPOWERING WOMEN</Text>
-            </View>
+            </Animated.View>
         </View>
     );
 }
@@ -124,26 +126,38 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 96,
+        paddingHorizontal: 32,
         overflow: 'hidden',
     },
+    // Simulate linear-gradient bottom portion
+    gradientBottom: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: height * 0.5,
+        backgroundColor: '#EDE9FE',
+        opacity: 0.6,
+    },
+    // Decorative glow — top left
     glowTopLeft: {
         position: 'absolute',
-        top: -80,
-        left: -80,
-        width: 256,
-        height: 256,
-        borderRadius: 128,
+        left: '-10%',
+        top: '-10%',
+        width: width * 0.66,
+        height: width * 0.66,
+        borderRadius: 9999,
         backgroundColor: 'rgba(99, 14, 212, 0.05)',
-        // blur simulated via large radius
     },
+    // Decorative glow — bottom right
     glowBottomRight: {
         position: 'absolute',
-        bottom: 20,
-        right: -100,
-        width: 320,
-        height: 320,
-        borderRadius: 160,
-        backgroundColor: 'rgba(103, 75, 181, 0.08)',
+        right: '-10%',
+        bottom: '5%',
+        width: width * 0.82,
+        height: width * 0.82,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(103, 75, 181, 0.1)',
     },
     brandCluster: {
         flex: 1,
@@ -154,90 +168,67 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    logoBg: {
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'center',
+    // Logo: 169×118 from CSS
+    logoImage: {
+        width: 169,
+        height: 118,
     },
-    logoGlow: {
-        position: 'absolute',
-        width: 128,
-        height: 128,
-        borderRadius: 64,
-        backgroundColor: 'rgba(124, 58, 237, 0.2)',
-        transform: [{ translateY: 16 }],
-    },
-    logoPolygon: {
-        width: 128,
-        height: 128,
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: Colors.primaryContainer,
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.3,
-        shadowRadius: 32,
-        elevation: 20,
-        // Polygon shape approximated with borderRadius
-        borderTopLeftRadius: 48,
-        borderTopRightRadius: 16,
-        borderBottomRightRadius: 48,
-        borderBottomLeftRadius: 16,
-    },
-    logoLetter: {
-        fontSize: 72,
-        fontWeight: '700',
-        color: Colors.onPrimary,
-        lineHeight: 82,
-    },
-    brandName: {
-        fontSize: 52,
-        fontWeight: '700',
-        color: Colors.onBackground,
-        letterSpacing: -2,
-    },
+    // Tagline: Inter 300, 18px, #C0A6D6, letter-spacing 0.45
     tagline: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '300',
-        color: Colors.secondary,
-        letterSpacing: 1,
-        marginTop: 8,
+        color: '#C0A6D6',
+        letterSpacing: 0.45,
+        lineHeight: 28,
+        textAlign: 'center',
+        marginTop: 32,
     },
     footer: {
         alignItems: 'center',
-        width: '100%',
+        width: 200,
         maxWidth: 200,
-        gap: 16,
     },
+    // Dots: 6px, #C0A6D6, gap 8px, opacity 0.2
     dotsRow: {
         flexDirection: 'row',
-        gap: 6,
-        opacity: 0.25,
+        gap: 8,
+        opacity: 0.2,
     },
     dot: {
         width: 6,
         height: 6,
-        borderRadius: 3,
-        backgroundColor: Colors.primary,
+        borderRadius: 9999,
+        backgroundColor: '#C0A6D6',
     },
+    // 48px gap between dots and loading indicator
+    loadingSection: {
+        width: 200,
+        marginTop: 48,
+        gap: 16,
+        alignItems: 'center',
+    },
+    // Progress track: 4px, #E5E0EF bg
     progressTrack: {
-        width: '100%',
+        width: 200,
         height: 4,
-        backgroundColor: Colors.surfaceContainerHighest,
-        borderRadius: 2,
+        backgroundColor: '#E5E0EF',
+        borderRadius: 9999,
         overflow: 'hidden',
     },
+    // Progress bar fill: #C0A6D6
     progressBar: {
         height: '100%',
-        backgroundColor: Colors.secondary,
-        borderRadius: 2,
+        backgroundColor: '#C0A6D6',
+        borderRadius: 9999,
     },
+    // Text: Inter 400, 10px, #7B7487, letter-spacing 2px, uppercase
     empoweringText: {
         fontSize: 10,
-        fontWeight: '500',
-        color: Colors.outline,
-        letterSpacing: 3,
+        fontWeight: '400',
+        color: '#7B7487',
+        letterSpacing: 2,
+        lineHeight: 15,
+        textAlign: 'center',
         textTransform: 'uppercase',
     },
 });

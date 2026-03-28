@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    Image,
-    ScrollView,
-    ActivityIndicator,
-    Pressable,
+    View, Text, StyleSheet, TouchableOpacity, Alert, Image,
+    ScrollView, ActivityIndicator, Pressable, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../utils/theme';
 import { uploadAadhaar } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 
@@ -29,14 +21,10 @@ export default function AadhaarUploadScreen() {
             Alert.alert('Permission Required', 'We need photo library access to upload your Aadhaar.');
             return;
         }
-
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [16, 10],
-            quality: 0.85,
+            allowsEditing: true, aspect: [16, 10], quality: 0.85,
         });
-
         if (!result.canceled && result.assets[0]) {
             if (side === 'front') setFrontImage(result.assets[0]);
             else setBackImage(result.assets[0]);
@@ -49,13 +37,9 @@ export default function AadhaarUploadScreen() {
             Alert.alert('Permission Required', 'We need camera access to capture your Aadhaar.');
             return;
         }
-
         const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [16, 10],
-            quality: 0.85,
+            allowsEditing: true, aspect: [16, 10], quality: 0.85,
         });
-
         if (!result.canceled && result.assets[0]) {
             if (side === 'front') setFrontImage(result.assets[0]);
             else setBackImage(result.assets[0]);
@@ -75,21 +59,15 @@ export default function AadhaarUploadScreen() {
             Alert.alert('Missing Photos', 'Please upload both the front and back of your Aadhaar card.');
             return;
         }
-
         setLoading(true);
         try {
             const formData = new FormData();
             formData.append('front', {
-                uri: frontImage.uri,
-                name: 'aadhaar_front.jpg',
-                type: 'image/jpeg',
+                uri: frontImage.uri, name: 'aadhaar_front.jpg', type: 'image/jpeg',
             });
             formData.append('back', {
-                uri: backImage.uri,
-                name: 'aadhaar_back.jpg',
-                type: 'image/jpeg',
+                uri: backImage.uri, name: 'aadhaar_back.jpg', type: 'image/jpeg',
             });
-
             await uploadAadhaar(formData);
             updateUser({ verification_status: 'pending' });
             router.replace('/(kyc)/pending');
@@ -101,90 +79,126 @@ export default function AadhaarUploadScreen() {
         }
     };
 
-    const UploadBox = ({ side, image, label }) => (
-        <View style={[styles.uploadBox, image && styles.uploadBoxFilled]}>
-            {image ? (
-                <>
-                    <View style={styles.uploadedHeader}>
-                        <View>
-                            <Text style={styles.uploadLabel}>{label}</Text>
-                            <Text style={styles.uploadedSubtitle}>File uploaded successfully</Text>
-                        </View>
-                        <View style={styles.successBadge}>
-                            <Text style={styles.successCheck}>✓</Text>
-                        </View>
-                    </View>
-                    <View style={styles.previewContainer}>
-                        <Image source={{ uri: image.uri }} style={styles.previewImage} resizeMode="cover" />
-                    </View>
-                    <TouchableOpacity style={styles.reuploadBtn} onPress={() => showImageOptions(side)}>
-                        <Text style={styles.reuploadText}>↻  Re-upload</Text>
-                    </TouchableOpacity>
-                </>
-            ) : (
-                <>
-                    <View style={styles.uploadIconBg}>
-                        <Text style={styles.uploadIcon}>☁️</Text>
-                    </View>
-                    <Text style={styles.uploadLabel}>{label}</Text>
-                    <Text style={styles.uploadHint}>Tap to capture or upload</Text>
-                    <TouchableOpacity style={styles.uploadBtn} onPress={() => showImageOptions(side)}>
-                        <Text style={styles.uploadBtnText}>Upload Photo</Text>
-                    </TouchableOpacity>
-                </>
-            )}
+    // Empty upload box
+    const EmptyBox = ({ side, label }) => (
+        <TouchableOpacity
+            style={styles.emptyBox}
+            onPress={() => showImageOptions(side)}
+            activeOpacity={0.85}
+        >
+            {/* Cloud icon */}
+            <View style={styles.cloudIconBg}>
+                <Text style={styles.cloudIcon}>☁️</Text>
+            </View>
+            {/* Title */}
+            <Text style={styles.boxTitle}>{label}</Text>
+            {/* Hint */}
+            <Text style={styles.boxHint}>Tap to capture or upload</Text>
+            {/* Upload Photo pill */}
+            <View style={styles.uploadPill}>
+                <Text style={styles.uploadPillText}>Upload Photo</Text>
+            </View>
+        </TouchableOpacity>
+    );
+
+    // Uploaded box with preview
+    const UploadedBox = ({ side, image, label }) => (
+        <View style={styles.uploadedBox}>
+            {/* Header row */}
+            <View style={styles.uploadedHeader}>
+                <View>
+                    <Text style={styles.uploadedTitle}>{label}</Text>
+                    <Text style={styles.uploadedSubtext}>File uploaded successfully</Text>
+                </View>
+                <View style={styles.successBadge}>
+                    <Text style={styles.successCheck}>✓</Text>
+                </View>
+            </View>
+
+            {/* Preview */}
+            <View style={styles.previewContainer}>
+                <Image source={{ uri: image.uri }} style={styles.previewImage} resizeMode="cover" />
+                <View style={styles.previewOverlay} />
+            </View>
+
+            {/* Re-upload */}
+            <TouchableOpacity
+                style={styles.reuploadRow}
+                onPress={() => showImageOptions(side)}
+            >
+                <Text style={styles.reuploadText}>↻ Re-upload</Text>
+            </TouchableOpacity>
         </View>
     );
 
     return (
-        <View style={styles.flex}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>Upload Aadhaar Card</Text>
-                <View style={{ width: 40 }} />
+                <View style={styles.headerRow}>
+                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                        <Text style={styles.backIcon}>←</Text>
+                    </Pressable>
+                    <Text style={styles.headerTitle}>Upload Aadhaar Card</Text>
+                </View>
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.container}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Step indicator */}
+                <Text style={styles.stepText}>Step 1 of 2</Text>
+
+                {/* Subtitle */}
                 <Text style={styles.subtitle}>
                     Upload clear photos of both sides of your Aadhaar
                 </Text>
 
+                {/* Upload sections */}
                 <View style={styles.uploadStack}>
-                    <UploadBox side="front" image={frontImage} label="Front of Aadhaar" />
-                    <UploadBox side="back" image={backImage} label="Back of Aadhaar" />
+                    {/* Front */}
+                    {frontImage ? (
+                        <UploadedBox side="front" image={frontImage} label="Front of Aadhaar" />
+                    ) : (
+                        <EmptyBox side="front" label="Front of Aadhaar" />
+                    )}
+
+                    {/* Back */}
+                    {backImage ? (
+                        <UploadedBox side="back" image={backImage} label="Back of Aadhaar" />
+                    ) : (
+                        <EmptyBox side="back" label="Back of Aadhaar" />
+                    )}
                 </View>
 
-                {/* Privacy note */}
-                <View style={styles.privacyNote}>
-                    <Text style={styles.lockIcon}>🔒</Text>
+                {/* Step complete text */}
+                <Text style={styles.stepCompleteText}>Step 1 of 2 Complete</Text>
+
+                {/* Privacy notice */}
+                <View style={styles.privacyRow}>
+                    <Text style={styles.privacyIcon}>🔒</Text>
                     <Text style={styles.privacyText}>
-                        Your Aadhaar data is encrypted and never shared. We only use this for identity
-                        verification purposes.
+                        Your Aadhaar data is encrypted and never shared. We only use this for identity verification purposes.
                     </Text>
                 </View>
             </ScrollView>
 
-            {/* Floating CTA */}
-            <View style={styles.footerCTA}>
+            {/* Bottom CTA */}
+            <View style={styles.footer}>
                 <TouchableOpacity
                     style={[
-                        styles.submitBtn,
-                        (!frontImage || !backImage || loading) && styles.submitBtnDisabled,
+                        styles.ctaButton,
+                        (!frontImage || !backImage || loading) && styles.ctaButtonDisabled,
                     ]}
                     onPress={handleSubmit}
                     disabled={!frontImage || !backImage || loading}
                     activeOpacity={0.88}
                 >
                     {loading ? (
-                        <ActivityIndicator color={Colors.onPrimary} />
+                        <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                        <Text style={styles.submitBtnText}>Submit Verification</Text>
+                        <Text style={styles.ctaButtonText}>Submit Verification</Text>
                     )}
                 </TouchableOpacity>
             </View>
@@ -193,160 +207,280 @@ export default function AadhaarUploadScreen() {
 }
 
 const styles = StyleSheet.create({
-    flex: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F0FF',
+    },
+
+    // Header — glassmorphic, 60px
     header: {
+        paddingTop: Platform.OS === 'ios' ? 52 : 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
+    },
+    headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 56,
         paddingHorizontal: 24,
-        paddingBottom: 16,
-        backgroundColor: 'rgba(245,240,255,0.9)',
+        paddingVertical: 16,
+        gap: 16,
     },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer,
+    backButton: {
+        width: 16,
+        height: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
+    backIcon: {
+        fontSize: 16,
+        color: '#C0A6D6',
+        fontWeight: '600',
+    },
     headerTitle: {
-        ...Typography.titleMedium,
-        color: Colors.brandPurpleDark,
+        fontSize: 18,
+        fontWeight: '400',
+        color: '#1E1B2E',
+        letterSpacing: -0.45,
+        lineHeight: 28,
     },
-    container: {
+
+    // Scroll
+    scrollContent: {
+        paddingBottom: 140,
+    },
+
+    // Step text — bold
+    stepText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#6B7280',
+        lineHeight: 26,
         paddingHorizontal: 24,
-        paddingBottom: 120,
-        paddingTop: 8,
+        paddingTop: 16,
     },
+
+    // Subtitle
     subtitle: {
-        ...Typography.bodyMedium,
-        color: Colors.brandGray,
-        marginBottom: 20,
-        lineHeight: 22,
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 26,
+        paddingHorizontal: 24,
+        paddingTop: 8,
+        paddingBottom: 24,
     },
-    uploadStack: { gap: 16 },
-    uploadBox: {
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 16,
-        padding: 24,
+
+    // Upload stack
+    uploadStack: {
+        paddingHorizontal: 24,
+        gap: 24,
+    },
+
+    // Empty box — white, dashed #A78BFA, radius 12
+    emptyBox: {
+        backgroundColor: '#FFFFFF',
         borderWidth: 2,
         borderStyle: 'dashed',
         borderColor: '#A78BFA',
+        borderRadius: 12,
+        padding: 24,
         alignItems: 'center',
-        ...Shadows.editorial,
+        justifyContent: 'center',
+        height: 236,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 2,
     },
-    uploadBoxFilled: {
-        borderStyle: 'solid',
-        borderColor: Colors.outlineVariant,
-        alignItems: 'stretch',
+
+    // Cloud icon bg — #F5F0FF circle
+    cloudIconBg: {
+        width: 52,
+        height: 52,
+        borderRadius: 9999,
+        backgroundColor: '#F5F0FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
     },
+    cloudIcon: {
+        fontSize: 22,
+    },
+
+    // Box title — 18px 400
+    boxTitle: {
+        fontSize: 18,
+        fontWeight: '400',
+        color: '#1E1B2E',
+        lineHeight: 28,
+        textAlign: 'center',
+        marginBottom: 4,
+    },
+
+    // Box hint
+    boxHint: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 20,
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+
+    // Upload Photo pill — #F5F0FF bg
+    uploadPill: {
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        backgroundColor: '#F5F0FF',
+        borderRadius: 9999,
+    },
+    uploadPillText: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#BEA3D8',
+        lineHeight: 20,
+    },
+
+    // Uploaded box — white, solid, radius 12
+    uploadedBox: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 24,
+        gap: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 2,
+    },
+
+    // Uploaded header row
     uploadedHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12,
     },
-    uploadLabel: {
-        ...Typography.titleSmall,
-        color: Colors.brandPurpleDark,
-        marginBottom: 4,
+    uploadedTitle: {
+        fontSize: 18,
+        fontWeight: '400',
+        color: '#1E1B2E',
+        lineHeight: 28,
     },
-    uploadedSubtitle: {
-        ...Typography.bodySmall,
-        color: Colors.brandGray,
+    uploadedSubtext: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 20,
     },
+
+    // Success badge — #DCFCE7
     successBadge: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#dcfce7',
+        width: 27,
+        height: 23,
+        borderRadius: 9999,
+        backgroundColor: '#DCFCE7',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    successCheck: { color: '#16a34a', fontWeight: '700', fontSize: 16 },
+    successCheck: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#16A34A',
+    },
+
+    // Preview
     previewContainer: {
         width: '100%',
-        aspectRatio: 1.6,
-        borderRadius: 10,
+        height: 184,
+        borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: Colors.surfaceContainerLow,
-        marginBottom: 12,
+        backgroundColor: '#F6F1FF',
+        borderWidth: 1,
+        borderColor: 'rgba(167, 139, 250, 0.2)',
     },
-    previewImage: { width: '100%', height: '100%', opacity: 0.85 },
-    reuploadBtn: {
-        alignSelf: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+    previewImage: {
+        width: '100%',
+        height: '100%',
+        opacity: 0.6,
+    },
+    previewOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(124, 58, 237, 0.05)',
+    },
+
+    // Re-upload
+    reuploadRow: {
+        alignItems: 'center',
     },
     reuploadText: {
-        color: Colors.primaryContainer,
-        fontWeight: '600',
-        fontSize: 13,
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#BEA3D8',
+        lineHeight: 20,
     },
-    uploadIconBg: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: '#F5F0FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 12,
-    },
-    uploadIcon: { fontSize: 28 },
-    uploadHint: {
-        ...Typography.bodySmall,
-        color: Colors.brandGray,
-        marginBottom: 16,
-        marginTop: 4,
-    },
-    uploadBtn: {
-        backgroundColor: '#F5F0FF',
+
+    // Step complete text — opacity 0.6
+    stepCompleteText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#4A4455',
+        lineHeight: 20,
+        textAlign: 'center',
+        opacity: 0.6,
+        marginTop: 24,
         paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: BorderRadius.full,
     },
-    uploadBtnText: {
-        color: Colors.primaryContainer,
-        fontWeight: '600',
-        fontSize: 13,
-    },
-    privacyNote: {
+
+    // Privacy row
+    privacyRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: 10,
-        marginTop: 24,
-        paddingHorizontal: 4,
+        paddingHorizontal: 32,
+        paddingTop: 16,
+        gap: 12,
     },
-    lockIcon: { fontSize: 16, marginTop: 1 },
+    privacyIcon: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginTop: 2,
+    },
     privacyText: {
         flex: 1,
-        fontSize: 11,
-        color: Colors.brandGray,
-        lineHeight: 16,
+        fontSize: 12,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 20,
     },
-    footerCTA: {
+
+    // Footer
+    footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
         padding: 24,
-        backgroundColor: 'rgba(245,240,255,0.95)',
+        backgroundColor: 'rgba(245, 240, 255, 0.95)',
     },
-    submitBtn: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md,
-        paddingVertical: 18,
+    ctaButton: {
+        height: 60,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 12,
         alignItems: 'center',
-        ...Shadows.editorial,
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
     },
-    submitBtnDisabled: { opacity: 0.5 },
-    submitBtnText: {
-        color: Colors.onPrimary,
-        fontSize: 17,
-        fontWeight: '700',
-        letterSpacing: -0.3,
+    ctaButtonDisabled: {
+        opacity: 0.5,
+    },
+    ctaButtonText: {
+        fontSize: 18,
+        fontWeight: '400',
+        color: '#FFFFFF',
+        lineHeight: 28,
+        letterSpacing: -0.45,
     },
 });

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
+    Image,
     StyleSheet,
     TextInput,
     TouchableOpacity,
@@ -11,10 +12,12 @@ import {
     Platform,
     ScrollView,
     Animated,
+    Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../utils/theme';
 import { useAuth } from '../../context/AuthContext';
+
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -67,50 +70,70 @@ export default function LoginScreen() {
             style={styles.flex}
         >
             <ScrollView
-                contentContainerStyle={styles.container}
+                contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                {/* Background decorators */}
-                <View style={styles.glowTop} />
-                <View style={styles.glowBottom} />
+                {/* Decorative glow — top right */}
+                <View style={styles.glowTopRight} />
 
-                {/* Logo */}
-                <View style={styles.logoSection}>
-                    <View style={styles.logoPolygon}>
-                        <Text style={styles.logoLetter}>S</Text>
-                    </View>
-                    <Text style={styles.appName}>Sakhi</Text>
-                    <Text style={styles.appTagline}>Safe Rides, Every Time</Text>
+                {/* Header — glassmorphic top bar */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Text style={styles.backArrow}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Sakhi</Text>
+                    <View style={{ width: 18 }} />
                 </View>
 
-                {/* Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Welcome back 👋</Text>
-                    <Text style={styles.cardSubtitle}>
-                        Enter your mobile number to sign in or create an account.
-                    </Text>
+                {/* Hero Image — women illustration */}
+                <View style={styles.heroContainer}>
+                    <Image
+                        source={require('../../../assets/LoginPeople.jpeg')}
+                        style={styles.heroImage}
+                        resizeMode="cover"
+                    />
+                </View>
 
-                    {/* Phone Input */}
+                {/* Welcome text */}
+                <View style={styles.welcomeSection}>
+                    <Text style={styles.welcomeTitle}>Welcome to Sakhi</Text>
+                    <Text style={styles.welcomeSubtitle}>
+                        Reliable & Safe rides for women.{'\n'}
+                        Community-driven transport for peace of mind.
+                    </Text>
+                </View>
+
+                {/* Phone input section */}
+                <View style={styles.inputSection}>
+                    {/* Label */}
+                    <Text style={styles.inputLabel}>Phone Number</Text>
+
+                    {/* Input field */}
                     <Animated.View
                         style={[styles.inputWrapper, { transform: [{ translateX: shakeAnim }] }]}
                     >
-                        <View style={styles.countryCode}>
-                            <Text style={styles.countryCodeText}>🇮🇳  +91</Text>
+                        {/* Country code area */}
+                        <View style={styles.countryCodeArea}>
+                            <Text style={styles.flagText}>🇮🇳</Text>
+                            <Text style={styles.countryCodeText}>+91</Text>
+                            <Text style={styles.dropdownArrow}>▾</Text>
                         </View>
+                        {/* Vertical divider */}
+                        <View style={styles.verticalDivider} />
+                        {/* Input */}
                         <TextInput
-                            style={styles.input}
-                            placeholder="Mobile Number"
-                            placeholderTextColor={Colors.outline}
+                            style={styles.phoneInput}
+                            placeholder="Phone Number"
+                            placeholderTextColor="#94A3B8"
                             keyboardType="phone-pad"
                             maxLength={10}
                             value={phone}
                             onChangeText={setPhone}
-                            autoFocus
                         />
                     </Animated.View>
 
-                    {/* Send OTP Button */}
+                    {/* Get OTP button */}
                     <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                         <TouchableOpacity
                             style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
@@ -121,25 +144,31 @@ export default function LoginScreen() {
                             activeOpacity={0.9}
                         >
                             {loading ? (
-                                <ActivityIndicator color={Colors.onPrimary} />
+                                <ActivityIndicator color="#FFFFFF" />
                             ) : (
-                                <Text style={styles.ctaButtonText}>Send OTP</Text>
+                                <View style={styles.ctaInner}>
+                                    <Text style={styles.ctaButtonText}>Get OTP</Text>
+                                    <Text style={styles.ctaArrow}>→</Text>
+                                </View>
                             )}
                         </TouchableOpacity>
                     </Animated.View>
+                </View>
 
-                    {/* Disclaimer */}
-                    <Text style={styles.disclaimer}>
+                {/* Terms */}
+                <View style={styles.termsSection}>
+                    <Text style={styles.termsText}>
                         By continuing, you agree to Sakhi's{' '}
-                        <Text style={styles.disclaimerLink}>Terms of Service</Text> and{' '}
-                        <Text style={styles.disclaimerLink}>Privacy Policy</Text>.
+                        <Text style={styles.termsLink}>Terms of Service</Text>
+                        {'\n'}and <Text style={styles.termsLink}>Privacy Policy</Text>
                     </Text>
                 </View>
 
-                {/* Women-only badge */}
-                <View style={styles.badge}>
-                    <Text style={styles.badgeIcon}>🛡️</Text>
-                    <Text style={styles.badgeText}>Exclusively for women. Safe, verified, trusted.</Text>
+                {/* OR LOGIN WITH divider */}
+                <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>OR LOGIN WITH</Text>
+                    <View style={styles.dividerLine} />
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -147,158 +176,217 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-    flex: { flex: 1, backgroundColor: '#F5F0FF' },
-    container: {
+    flex: { flex: 1, backgroundColor: '#FCF8FF' },
+    scrollContent: {
         flexGrow: 1,
-        backgroundColor: '#F5F0FF',
-        alignItems: 'center',
-        paddingHorizontal: 24,
+        backgroundColor: '#FCF8FF',
         paddingBottom: 40,
-        overflow: 'hidden',
     },
-    glowTop: {
+
+    // Decorative glow — top right
+    glowTopRight: {
         position: 'absolute',
-        top: -100,
-        right: -100,
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: 'rgba(124, 58, 237, 0.08)',
+        right: -39,
+        top: -80,
+        width: 256,
+        height: 256,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(109, 0, 255, 0.05)',
     },
-    glowBottom: {
-        position: 'absolute',
-        bottom: 0,
-        left: -60,
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        backgroundColor: 'rgba(103, 75, 181, 0.06)',
-    },
-    logoSection: {
+
+    // Header — glassmorphic
+    header: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 72,
-        marginBottom: 40,
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'ios' ? 56 : 16,
+        paddingBottom: 12,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
-    logoPolygon: {
-        width: 80,
-        height: 80,
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: 20,
-        borderTopLeftRadius: 32,
-        borderBottomRightRadius: 32,
+    backButton: {
+        width: 18,
+        height: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        ...Shadows.editorial,
-        marginBottom: 16,
     },
-    logoLetter: {
-        fontSize: 42,
+    backArrow: {
+        fontSize: 20,
+        color: '#BDA3D4',
+        fontWeight: '600',
+    },
+    headerTitle: {
+        fontSize: 24,
         fontWeight: '700',
-        color: Colors.onPrimary,
-        lineHeight: 50,
+        color: '#BDA3D4',
+        letterSpacing: -1.2,
     },
-    appName: {
-        fontSize: 32,
+
+    // Hero image — 326×256, border-radius 48
+    heroContainer: {
+        paddingHorizontal: 32,
+        paddingTop: 16,
+    },
+    heroImage: {
+        width: width - 64,
+        height: 256,
+        borderRadius: 48,
+        backgroundColor: '#F0E8D8',
+    },
+
+    // Welcome section
+    welcomeSection: {
+        paddingHorizontal: 64,
+        paddingTop: 24,
+        alignItems: 'center',
+    },
+    welcomeTitle: {
+        fontSize: 24,
         fontWeight: '700',
-        color: Colors.onBackground,
-        letterSpacing: -1,
+        color: '#0F172A',
+        letterSpacing: -0.6,
+        lineHeight: 30,
+        textAlign: 'center',
     },
-    appTagline: {
-        fontSize: 13,
-        color: Colors.secondary,
-        marginTop: 4,
-        letterSpacing: 0.5,
-    },
-    card: {
-        width: '100%',
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 24,
-        padding: 24,
-        ...Shadows.editorial,
-    },
-    cardTitle: {
-        ...Typography.headlineSmall,
-        color: Colors.onBackground,
-        marginBottom: 6,
-    },
-    cardSubtitle: {
-        ...Typography.bodyMedium,
-        color: Colors.onSurfaceVariant,
-        marginBottom: 24,
+    welcomeSubtitle: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#475569',
         lineHeight: 20,
+        textAlign: 'center',
+        marginTop: 8,
     },
+
+    // Input section
+    inputSection: {
+        paddingHorizontal: 40,
+        paddingTop: 40,
+        gap: 24,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#334155',
+        lineHeight: 20,
+        paddingLeft: 4,
+    },
+
+    // Phone input — white bg, #E2E8F0 border, radius 16
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: BorderRadius.md,
-        borderWidth: 1.5,
-        borderColor: Colors.outlineVariant,
-        marginBottom: 20,
-        overflow: 'hidden',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 16,
+        height: 56,
+        marginTop: -16,
     },
-    countryCode: {
-        paddingHorizontal: 14,
-        paddingVertical: 16,
-        borderRightWidth: 1,
-        borderRightColor: Colors.outlineVariant,
-        backgroundColor: Colors.surfaceContainer,
+    countryCodeArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: 17,
+        paddingRight: 12,
+        gap: 4,
+    },
+    flagText: {
+        fontSize: 16,
     },
     countryCodeText: {
-        fontSize: 15,
-        color: Colors.onSurface,
+        fontSize: 16,
         fontWeight: '500',
+        color: '#0F172A',
+        lineHeight: 24,
     },
-    input: {
+    dropdownArrow: {
+        fontSize: 10,
+        color: '#94A3B8',
+        marginLeft: 2,
+    },
+    verticalDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#E2E8F0',
+    },
+    phoneInput: {
         flex: 1,
         fontSize: 16,
-        color: Colors.onSurface,
-        paddingHorizontal: 14,
-        paddingVertical: 16,
-        letterSpacing: 1.5,
+        fontWeight: '500',
+        color: '#0F172A',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        lineHeight: 19,
     },
+
+    // CTA button — #BEA3D8 bg, radius 12, shadow
     ctaButton: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md,
-        paddingVertical: 16,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 12,
+        paddingVertical: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        ...Shadows.editorial,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+        elevation: 8,
     },
     ctaButtonDisabled: {
         opacity: 0.7,
     },
-    ctaButtonText: {
-        color: Colors.onPrimary,
-        fontSize: 17,
-        fontWeight: '700',
-        letterSpacing: -0.3,
-    },
-    disclaimer: {
-        fontSize: 11,
-        color: Colors.outline,
-        textAlign: 'center',
-        marginTop: 16,
-        lineHeight: 16,
-    },
-    disclaimerLink: {
-        color: Colors.primary,
-        fontWeight: '600',
-    },
-    badge: {
+    ctaInner: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginTop: 24,
-        backgroundColor: Colors.primaryFixed,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: BorderRadius.full,
     },
-    badgeIcon: { fontSize: 14 },
-    badgeText: {
-        fontSize: 12,
-        color: Colors.onPrimaryFixed,
+    ctaButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        lineHeight: 24,
+    },
+    ctaArrow: {
+        color: '#FFFFFF',
+        fontSize: 18,
         fontWeight: '500',
+    },
+
+    // Terms — 12px, #64748B
+    termsSection: {
+        paddingHorizontal: 40,
+        paddingTop: 24,
+        alignItems: 'center',
+    },
+    termsText: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: '#64748B',
+        lineHeight: 20,
+        textAlign: 'center',
+    },
+    termsLink: {
+        color: '#BDA3D4',
+        fontWeight: '500',
+    },
+
+    // OR LOGIN WITH divider
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        paddingTop: 24,
+        gap: 12,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E2E8F0',
+    },
+    dividerText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#94A3B8',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
     },
 });

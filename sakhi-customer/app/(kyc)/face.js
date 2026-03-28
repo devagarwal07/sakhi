@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Alert, ActivityIndicator, Pressable,
+    Alert, ActivityIndicator, Pressable, Platform, Animated,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
 import { uploadFaceSelfie } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
 
@@ -15,19 +14,59 @@ export default function FaceVerificationScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [captured, setCaptured] = useState(null);
     const [loading, setLoading] = useState(false);
-    const cameraRef = React.useRef(null);
+    const [scanProgress, setScanProgress] = useState(0);
+    const cameraRef = useRef(null);
+    const scanLineAnim = useRef(new Animated.Value(0)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
 
-    if (!permission) return <View style={{ flex: 1, backgroundColor: '#F5F0FF' }} />;
+    // Animate scanning line
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(scanLineAnim, {
+                    toValue: 1,
+                    duration: 2500,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scanLineAnim, {
+                    toValue: 0,
+                    duration: 2500,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, []);
+
+    // Simulate progress
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setScanProgress(prev => {
+                if (prev >= 65) {
+                    clearInterval(interval);
+                    return 65;
+                }
+                return prev + 1;
+            });
+        }, 60);
+        return () => clearInterval(interval);
+    }, []);
+
+    const scanTranslateY = scanLineAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-150, 150],
+    });
+
+    if (!permission) return <View style={{ flex: 1, backgroundColor: '#121121' }} />;
 
     if (!permission.granted) {
         return (
             <View style={styles.permissionContainer}>
                 <Text style={styles.permissionTitle}>Camera Access Required</Text>
                 <Text style={styles.permissionSubtitle}>
-                    We need your camera to take a selfie for verification.
+                    We need your camera to verify your identity.
                 </Text>
-                <TouchableOpacity style={styles.ctaButton} onPress={requestPermission}>
-                    <Text style={styles.ctaButtonText}>Grant Camera Access</Text>
+                <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
+                    <Text style={styles.permissionBtnText}>Grant Camera Access</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -62,131 +101,429 @@ export default function FaceVerificationScreen() {
 
     return (
         <View style={styles.container}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
-                <Text style={styles.backArrow}>←</Text>
-            </Pressable>
+            {/* Camera background */}
+            <CameraView
+                ref={cameraRef}
+                style={StyleSheet.absoluteFill}
+                facing="front"
+            />
 
-            {captured ? (
-                // Preview state
-                <View style={styles.previewContainer}>
-                    <View style={styles.previewFrame}>
-                        <View style={styles.capturedBadge}>
-                            <Text style={styles.capturedCheck}>✓</Text>
-                            <Text style={styles.capturedText}>Selfie Captured</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.previewHint}>
-                        Make sure your face is clearly visible, well-lit, and matches your Aadhaar photo.
-                    </Text>
-                    <View style={styles.previewActions}>
-                        <TouchableOpacity
-                            style={styles.retakeBtn}
-                            onPress={() => setCaptured(null)}
-                        >
-                            <Text style={styles.retakeBtnText}>↻  Retake</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.ctaButton, { flex: 1 }, loading && { opacity: 0.7 }]}
-                            onPress={handleSubmit}
-                            disabled={loading}
-                        >
-                            {loading
-                                ? <ActivityIndicator color={Colors.onPrimary} />
-                                : <Text style={styles.ctaButtonText}>Submit Selfie</Text>
-                            }
-                        </TouchableOpacity>
+            {/* Dark overlay */}
+            <View style={styles.darkOverlay} />
+
+            {/* Top Navigation */}
+            <View style={styles.topNav}>
+                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                    <Text style={styles.backIcon}>←</Text>
+                </Pressable>
+                <Text style={styles.navTitle}>Identity Verification</Text>
+                <Text style={styles.stepBadge}>Step 2 of 2</Text>
+            </View>
+
+            {/* Main Scanning Area */}
+            <View style={styles.scanArea}>
+                {/* Face guide frame */}
+                <View style={styles.faceFrame}>
+                    {/* Oval dashed frame */}
+                    <View style={styles.ovalDashed} />
+
+                    {/* Scanning line */}
+                    <Animated.View
+                        style={[
+                            styles.scanLine,
+                            { transform: [{ translateY: scanTranslateY }] },
+                        ]}
+                    />
+
+                    {/* Corner indicators */}
+                    <View style={styles.cornersWrapper}>
+                        <View style={[styles.corner, styles.cornerTL]} />
+                        <View style={[styles.corner, styles.cornerTR]} />
+                        <View style={[styles.corner, styles.cornerBL]} />
+                        <View style={[styles.corner, styles.cornerBR]} />
                     </View>
                 </View>
-            ) : (
-                // Camera viewfinder
-                <View style={styles.cameraContainer}>
-                    <Text style={styles.cameraTitle}>Face Verification</Text>
-                    <Text style={styles.cameraSubtitle}>
-                        Position your face within the oval and ensure good lighting
-                    </Text>
-                    <View style={styles.ovalFrame}>
-                        <CameraView
-                            ref={cameraRef}
-                            style={StyleSheet.absoluteFill}
-                            facing="front"
-                        />
-                        {/* Oval overlay */}
-                        <View style={styles.ovalOverlay} pointerEvents="none" />
+
+                {/* Instruction text */}
+                <View style={styles.instructionBlock}>
+                    <Text style={styles.instructionTitle}>Hold still, scanning...</Text>
+                    <Text style={styles.instructionSub}>Position your face within the frame</Text>
+                </View>
+            </View>
+
+            {/* Bottom Controls */}
+            <View style={styles.bottomControls}>
+                {/* Progress Indicator */}
+                <View style={styles.progressSection}>
+                    <View style={styles.progressLabelRow}>
+                        <Text style={styles.progressLabel}>SCANNING PROGRESS</Text>
+                        <Text style={styles.progressPercent}>{scanProgress}%</Text>
                     </View>
-                    <TouchableOpacity style={styles.captureBtn} onPress={takeSelfie}>
-                        <View style={styles.captureBtnInner} />
+                    <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${scanProgress}%` }]} />
+                    </View>
+                </View>
+
+                {/* Shutter & Controls Row */}
+                <View style={styles.controlsRow}>
+                    {/* Flash button */}
+                    <TouchableOpacity style={styles.sideBtn}>
+                        <Text style={styles.sideBtnIcon}>💡</Text>
+                    </TouchableOpacity>
+
+                    {/* Large Shutter Button */}
+                    <TouchableOpacity
+                        style={styles.shutterOuter}
+                        onPress={captured ? handleSubmit : takeSelfie}
+                        disabled={loading}
+                        activeOpacity={0.9}
+                    >
+                        <View style={styles.shutterInner}>
+                            {loading ? (
+                                <ActivityIndicator color="#0F172A" size="small" />
+                            ) : (
+                                <Text style={styles.shutterIcon}>📷</Text>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Gallery button */}
+                    <TouchableOpacity style={styles.sideBtn}>
+                        <Text style={styles.sideBtnIcon}>🖼️</Text>
                     </TouchableOpacity>
                 </View>
-            )}
+
+                {/* Security Badge */}
+                <View style={styles.securityBadge}>
+                    <Text style={styles.securityIcon}>🔒</Text>
+                    <Text style={styles.securityText}>SECURE VERIFICATION BY SAKHI SAFETY</Text>
+                </View>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#1E1B2E', paddingTop: 56 },
-    backBtn: {
-        position: 'absolute', top: 56, left: 24, zIndex: 10,
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        alignItems: 'center', justifyContent: 'center',
+    container: {
+        flex: 1,
+        backgroundColor: '#121121',
     },
-    backArrow: { fontSize: 20, color: '#fff', fontWeight: '700' },
+
+    // Permission fallback
     permissionContainer: {
-        flex: 1, backgroundColor: '#F5F0FF',
-        alignItems: 'center', justifyContent: 'center', padding: 32,
-    },
-    permissionTitle: { ...Typography.headlineSmall, color: Colors.onBackground, textAlign: 'center', marginBottom: 12 },
-    permissionSubtitle: { ...Typography.bodyLarge, color: Colors.onSurfaceVariant, textAlign: 'center', marginBottom: 28 },
-    cameraContainer: { flex: 1, alignItems: 'center', paddingHorizontal: 24 },
-    cameraTitle: { ...Typography.titleLarge, color: '#fff', textAlign: 'center', marginTop: 16, marginBottom: 8 },
-    cameraSubtitle: { ...Typography.bodyMedium, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginBottom: 32 },
-    ovalFrame: {
-        width: 260, height: 320, borderRadius: 130,
-        overflow: 'hidden', borderWidth: 3, borderColor: Colors.primaryFixed,
-        marginBottom: 40,
-    },
-    ovalOverlay: {
-        position: 'absolute', inset: 0,
-        borderRadius: 130,
-        borderWidth: 3, borderColor: 'rgba(210,187,255,0.5)',
-    },
-    captureBtn: {
-        width: 72, height: 72, borderRadius: 36,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center', justifyContent: 'center',
-    },
-    captureBtnInner: {
-        width: 56, height: 56, borderRadius: 28,
-        backgroundColor: Colors.primaryFixed,
-    },
-    previewContainer: {
-        flex: 1, backgroundColor: '#F5F0FF',
-        paddingHorizontal: 24, paddingTop: 48, alignItems: 'center',
-    },
-    previewFrame: {
-        width: 240, height: 300, borderRadius: 120,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 24, ...Shadows.editorial,
-    },
-    capturedBadge: { alignItems: 'center', gap: 8 },
-    capturedCheck: { fontSize: 48, color: Colors.primaryContainer },
-    capturedText: { ...Typography.titleSmall, color: Colors.primary },
-    previewHint: {
-        ...Typography.bodySmall, color: Colors.onSurfaceVariant,
-        textAlign: 'center', lineHeight: 18, marginBottom: 28, paddingHorizontal: 8,
-    },
-    previewActions: { flexDirection: 'row', gap: 12, width: '100%' },
-    retakeBtn: {
-        borderWidth: 1.5, borderColor: Colors.outlineVariant,
-        borderRadius: BorderRadius.md, paddingVertical: 16, paddingHorizontal: 20,
+        flex: 1,
+        backgroundColor: '#121121',
         alignItems: 'center',
+        justifyContent: 'center',
+        padding: 32,
     },
-    retakeBtnText: { color: Colors.primaryContainer, fontWeight: '600', fontSize: 14 },
-    ctaButton: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md, paddingVertical: 16,
-        alignItems: 'center', ...Shadows.editorial,
+    permissionTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        marginBottom: 12,
     },
-    ctaButtonText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '700' },
+    permissionSubtitle: {
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#CBD5E1',
+        textAlign: 'center',
+        marginBottom: 28,
+    },
+    permissionBtn: {
+        backgroundColor: '#C0A6D6',
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+    },
+    permissionBtnText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+
+    // Dark overlay
+    darkOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+
+    // Top Navigation
+    topNav: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: Platform.OS === 'ios' ? 56 : 24,
+        paddingHorizontal: 24,
+        paddingBottom: 16,
+        zIndex: 10,
+    },
+    backBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(30, 41, 59, 0.6)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    backIcon: {
+        fontSize: 14,
+        color: '#FFFFFF',
+        fontWeight: '600',
+    },
+    navTitle: {
+        flex: 1,
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        letterSpacing: -0.45,
+        lineHeight: 28,
+    },
+    stepBadge: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        lineHeight: 26,
+    },
+
+    // Main Scanning Area
+    scanArea: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 120,
+        bottom: 236,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+
+    // Face guide frame — 300×420
+    faceFrame: {
+        width: 300,
+        height: 420,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    // Oval dashed — 4px dashed rgba border, radius 180
+    ovalDashed: {
+        width: 300,
+        height: 420,
+        borderRadius: 180,
+        borderWidth: 4,
+        borderStyle: 'dashed',
+        borderColor: 'rgba(192, 166, 214, 0.6)',
+    },
+
+    // Scanning line — gradient-like glow
+    scanLine: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        height: 4,
+        backgroundColor: '#C0A6D6',
+        opacity: 0.8,
+        shadowColor: 'rgba(80, 72, 229, 1)',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 15,
+    },
+
+    // Corner indicators — 0.4 opacity
+    cornersWrapper: {
+        position: 'absolute',
+        left: -16,
+        right: -16,
+        top: -16,
+        bottom: -16,
+        opacity: 0.4,
+    },
+    corner: {
+        position: 'absolute',
+        width: 32,
+        height: 32,
+    },
+    cornerTL: {
+        top: 0,
+        left: 0,
+        borderTopWidth: 2,
+        borderLeftWidth: 2,
+        borderColor: '#C0A6D6',
+        borderTopLeftRadius: 32,
+    },
+    cornerTR: {
+        top: 0,
+        right: 0,
+        borderTopWidth: 2,
+        borderRightWidth: 2,
+        borderColor: '#C0A6D6',
+        borderTopRightRadius: 32,
+    },
+    cornerBL: {
+        bottom: 0,
+        left: 0,
+        borderBottomWidth: 2,
+        borderLeftWidth: 2,
+        borderColor: '#C0A6D6',
+        borderBottomLeftRadius: 32,
+    },
+    cornerBR: {
+        bottom: 0,
+        right: 0,
+        borderBottomWidth: 2,
+        borderRightWidth: 2,
+        borderColor: '#C0A6D6',
+        borderBottomRightRadius: 32,
+    },
+
+    // Instruction text
+    instructionBlock: {
+        alignItems: 'center',
+        paddingTop: 48,
+        gap: 8,
+    },
+    instructionTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: -0.6,
+        lineHeight: 32,
+        textAlign: 'center',
+    },
+    instructionSub: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#CBD5E1',
+        lineHeight: 20,
+        textAlign: 'center',
+    },
+
+    // Bottom Controls
+    bottomControls: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: Platform.OS === 'ios' ? 48 : 24,
+        gap: 32,
+    },
+
+    // Progress section
+    progressSection: {
+        width: 320,
+        maxWidth: 320,
+        gap: 12,
+    },
+    progressLabelRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+    },
+    progressLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#C0A6D6',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        lineHeight: 16,
+    },
+    progressPercent: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        lineHeight: 20,
+    },
+    progressTrack: {
+        height: 6,
+        backgroundColor: 'rgba(30, 41, 59, 0.8)',
+        borderRadius: 9999,
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: 6,
+        backgroundColor: '#C0A6D6',
+        borderRadius: 9999,
+    },
+
+    // Shutter controls row
+    controlsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 40,
+    },
+
+    // Side buttons — 48px
+    sideBtn: {
+        width: 48,
+        height: 48,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(30, 41, 59, 0.4)',
+        borderWidth: 1,
+        borderColor: 'rgba(51, 65, 85, 0.5)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sideBtnIcon: {
+        fontSize: 18,
+        color: '#FFFFFF',
+    },
+
+    // Large shutter — 96px outer, 80px inner
+    shutterOuter: {
+        width: 96,
+        height: 96,
+        borderRadius: 9999,
+        borderWidth: 4,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 4,
+    },
+    shutterInner: {
+        width: 80,
+        height: 80,
+        borderRadius: 9999,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    shutterIcon: {
+        fontSize: 28,
+        color: '#0F172A',
+    },
+
+    // Security badge — pill
+    securityBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 8,
+        backgroundColor: 'rgba(192, 166, 214, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(192, 166, 214, 0.2)',
+        borderRadius: 9999,
+    },
+    securityIcon: {
+        fontSize: 10,
+        color: '#C0A6D6',
+    },
+    securityText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#C0A6D6',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        lineHeight: 15,
+    },
 });

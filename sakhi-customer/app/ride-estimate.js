@@ -1,353 +1,233 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Animated, Alert, ActivityIndicator,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    Dimensions, Platform, Image,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
+import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useRide } from '../src/context/RideContext';
-import { useSocket } from '../src/context/SocketContext';
-import { estimateFare, bookRide } from '../src/api/endpoints';
 
-const VEHICLE_OPTIONS = [
-    { id: 'auto', label: 'Auto', emoji: '🛺', capacity: 'Up to 3 passengers', badge: 'FASTER' },
-    { id: 'cab', label: 'Cab', emoji: '🚗', capacity: 'Up to 4 passengers', badge: null },
+const { width } = Dimensions.get('window');
+
+// Mock data for vehicles
+const VEHICLES = [
+    {
+        id: 'sakhi_mini',
+        name: 'Sakhi Mini',
+        desc: 'Quick, easy & reliable',
+        price: '₹142',
+        time: '3 min away',
+        icon: '🚗', 
+        capacity: 4,
+    },
+    {
+        id: 'sakhi_prime',
+        name: 'Sakhi Prime',
+        desc: 'Spacious & premium comfort',
+        price: '₹185',
+        time: '5 min away',
+        icon: '🚘',
+        capacity: 4,
+    },
+    {
+        id: 'sakhi_auto',
+        name: 'Sakhi Auto',
+        desc: 'Eco-friendly and fast',
+        price: '₹98',
+        time: '2 min away',
+        icon: '🛺',
+        capacity: 3,
+    },
 ];
 
 export default function RideEstimateScreen() {
     const router = useRouter();
-    const { ride, setPickup, setDropoff, startRide, setPolyline } = useRide();
-    const { emit } = useSocket();
-    const [estimate, setEstimate] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [booking, setBooking] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = useState('auto');
-    const [promoCode, setPromoCode] = useState('');
-    const [fareExpanded, setFareExpanded] = useState(false);
-    const sheetAnim = useRef(new Animated.Value(400)).current;
+    const { ride } = useRide();
+    const [selectedVehicle, setSelectedVehicle] = React.useState('sakhi_mini');
 
-    useEffect(() => {
-        // Slide up the bottom sheet
-        Animated.spring(sheetAnim, {
-            toValue: 0, tension: 55, friction: 10, useNativeDriver: true,
-        }).start();
-
-        if (ride.pickup && ride.dropoff) {
-            fetchEstimate();
-        }
-    }, []);
-
-    const fetchEstimate = async () => {
-        setLoading(true);
-        try {
-            const { data } = await estimateFare(ride.pickup, ride.dropoff);
-            setEstimate(data);
-            if (data.polyline) setPolyline(data.polyline);
-        } catch (err) {
-            Alert.alert('Error', 'Could not get fare estimate. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleBook = async () => {
-        setBooking(true);
-        try {
-            const { data } = await bookRide({
-                pickup_lat: ride.pickup.latitude,
-                pickup_lng: ride.pickup.longitude,
-                pickup_address: ride.pickup.address,
-                dropoff_lat: ride.dropoff.latitude,
-                dropoff_lng: ride.dropoff.longitude,
-                dropoff_address: ride.dropoff.address,
-                vehicle_type: selectedVehicle,
-                promo_code: promoCode || undefined,
-            });
-
-            // Emit socket event to notify backend ride is confirmed
-            emit('ride:new', { rideId: data.ride.id });
-            startRide(data.ride.id, null, data.ride.fare);
-            router.replace('/searching');
-        } catch (err) {
-            const msg = err?.response?.data?.message || 'Booking failed. Please try again.';
-            Alert.alert('Booking Failed', msg);
-        } finally {
-            setBooking(false);
-        }
-    };
-
-    const selectedEstimate = estimate?.vehicles?.[selectedVehicle];
+    // Mock route coordinates
+    const routeCoordinates = [
+        { latitude: 28.5494, longitude: 77.2001 },
+        { latitude: 28.5286, longitude: 77.2189 },
+    ];
 
     return (
         <View style={styles.container}>
-            {/* Map with route */}
-            <MapView
-                style={styles.map}
-                provider={PROVIDER_GOOGLE}
-                initialRegion={{
-                    latitude: ride.pickup?.latitude || 12.9716,
-                    longitude: ride.pickup?.longitude || 77.5946,
-                    latitudeDelta: 0.04,
-                    longitudeDelta: 0.04,
-                }}
-                customMapStyle={[
-                    { elementType: 'geometry', stylers: [{ color: '#f5f0ff' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ccc3d8' }] },
-                ]}
-            >
-                {ride.pickup && <Marker coordinate={ride.pickup}><Text style={{ fontSize: 20 }}>📍</Text></Marker>}
-                {ride.dropoff && <Marker coordinate={ride.dropoff}><Text style={{ fontSize: 20 }}>🏁</Text></Marker>}
-                {ride.polyline?.length > 1 && (
+            {/* Map Preview */}
+            <View style={styles.mapContainer}>
+                <MapView
+                    style={StyleSheet.absoluteFill}
+                    provider={PROVIDER_GOOGLE}
+                    initialRegion={{
+                        latitude: 28.5390,
+                        longitude: 77.2095,
+                        latitudeDelta: 0.04,
+                        longitudeDelta: 0.04,
+                    }}
+                    customMapStyle={mapStyle}
+                >
+                    <Marker coordinate={routeCoordinates[0]}>
+                        <View style={styles.pickDot} />
+                    </Marker>
+                    <Marker coordinate={routeCoordinates[1]}>
+                        <View style={styles.dropPin}>
+                            <Text style={styles.pinSmall}>📍</Text>
+                        </View>
+                    </Marker>
                     <Polyline
-                        coordinates={ride.polyline}
-                        strokeColor={Colors.primaryContainer}
+                        coordinates={routeCoordinates}
+                        strokeColor="#BEA3D8"
                         strokeWidth={4}
                     />
-                )}
-            </MapView>
+                </MapView>
 
-            {/* Back button */}
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <Text style={styles.backArrow}>←</Text>
-            </TouchableOpacity>
-
-            {/* Bottom sheet */}
-            <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}>
-                {/* Route pill */}
-                <View style={styles.routePill}>
-                    <View style={styles.routePillRoute}>
-                        <View style={styles.routeDotGreen} />
-                        <Text style={styles.routeAddr} numberOfLines={1}>{ride.pickup?.address || 'Pickup'}</Text>
-                    </View>
-                    <Text style={styles.routeArrow}>→</Text>
-                    <View style={styles.routePillRoute}>
-                        <View style={styles.routeDotViolet} />
-                        <Text style={styles.routeAddr} numberOfLines={1}>{ride.dropoff?.address || 'Dropoff'}</Text>
+                {/* Header Overlay */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Text style={styles.backIcon}>←</Text>
+                    </TouchableOpacity>
+                    <View style={styles.addressPill}>
+                        <Text style={styles.addressText} numberOfLines={1}>
+                            Worli Sea Face, Mumbai
+                        </Text>
                     </View>
                 </View>
+            </View>
 
-                {loading ? (
-                    <View style={styles.loadingBlock}>
-                        <ActivityIndicator size="large" color={Colors.primaryContainer} />
-                        <Text style={styles.loadingText}>Getting best fares…</Text>
-                    </View>
-                ) : (
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        {/* Distance + time pill */}
-                        <View style={styles.metaPill}>
-                            <Text style={styles.metaText}>
-                                {estimate?.distance_km?.toFixed(1) || '—'} km  ·  ~{estimate?.duration_min || '—'} min ride
-                            </Text>
-                        </View>
+            {/* Selection Sheet */}
+            <View style={styles.bottomSheet}>
+                <View style={styles.handlebar} />
+                
+                <Text style={styles.title}>CHOOSE A RIDE</Text>
 
-                        {/* Vehicle options */}
-                        <Text style={styles.sectionLabel}>Select Ride</Text>
-                        {VEHICLE_OPTIONS.map((v) => {
-                            const vEst = estimate?.vehicles?.[v.id];
-                            const selected = selectedVehicle === v.id;
-                            return (
-                                <TouchableOpacity
-                                    key={v.id}
-                                    style={[styles.vehicleCard, selected && styles.vehicleCardSelected]}
-                                    onPress={() => setSelectedVehicle(v.id)}
-                                    activeOpacity={0.85}
-                                >
-                                    {selected && (
-                                        <View style={styles.selectedBadge}><Text style={styles.selectedCheck}>✓</Text></View>
-                                    )}
-                                    <View style={[styles.vehicleIconBg, selected && styles.vehicleIconBgSelected]}>
-                                        <Text style={{ fontSize: 28 }}>{v.emoji}</Text>
-                                    </View>
-                                    <View style={styles.vehicleInfo}>
-                                        <View style={styles.vehicleNameRow}>
-                                            <Text style={styles.vehicleName}>{v.label}</Text>
-                                            {v.badge && (
-                                                <View style={styles.vehicleBadge}>
-                                                    <Text style={styles.vehicleBadgeText}>{v.badge}</Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                        <Text style={styles.vehicleCapacity}>{v.capacity}</Text>
-                                    </View>
-                                    <View style={styles.vehiclePricing}>
-                                        <Text style={styles.vehiclePrice}>
-                                            {vEst ? `₹${vEst.min}–₹${vEst.max}` : 'Loading…'}
-                                        </Text>
-                                        <Text style={styles.vehicleETA}>
-                                            {vEst?.eta_min ? `${vEst.eta_min} min away` : ''}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-
-                        {/* Fare breakdown */}
-                        {selectedEstimate && (
-                            <View style={styles.fareCard}>
-                                <TouchableOpacity
-                                    style={styles.fareToggle}
-                                    onPress={() => setFareExpanded(!fareExpanded)}
-                                >
-                                    <Text style={styles.fareToggleText}>Fare Breakdown</Text>
-                                    <Text style={styles.fareToggleChevron}>{fareExpanded ? '▲' : '▼'}</Text>
-                                </TouchableOpacity>
-                                {fareExpanded && (
-                                    <View style={styles.fareRows}>
-                                        {[
-                                            { label: 'Base Fare', value: selectedEstimate.base },
-                                            { label: `Distance (${estimate?.distance_km?.toFixed(1)} km)`, value: selectedEstimate.distance },
-                                            { label: 'Waiting (if any)', value: 0 },
-                                        ].map((row, i) => (
-                                            <View key={i} style={styles.fareRow}>
-                                                <Text style={styles.fareRowLabel}>{row.label}</Text>
-                                                <Text style={styles.fareRowValue}>₹{row.value?.toFixed(0) || 0}</Text>
-                                            </View>
-                                        ))}
-                                        <View style={styles.fareTotalRow}>
-                                            <Text style={styles.fareTotalLabel}>Total Estimate</Text>
-                                            <Text style={styles.fareTotalValue}>₹{selectedEstimate.min}</Text>
-                                        </View>
-                                    </View>
-                                )}
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {VEHICLES.map((v) => (
+                        <TouchableOpacity
+                            key={v.id}
+                            style={[
+                                styles.vehicleCard,
+                                selectedVehicle === v.id && styles.vehicleCardActive
+                            ]}
+                            onPress={() => setSelectedVehicle(v.id)}
+                        >
+                            <View style={styles.vehicleIconBg}>
+                                <Text style={styles.vehicleEmoji}>{v.icon}</Text>
                             </View>
-                        )}
+                            <View style={styles.vehicleInfo}>
+                                <View style={styles.nameRow}>
+                                    <Text style={styles.vehicleName}>{v.name}</Text>
+                                    <View style={styles.capacityRow}>
+                                        <Text style={styles.capacityIcon}>‍👤</Text>
+                                        <Text style={styles.capacityText}>{v.capacity}</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.vehicleDesc}>{v.desc}</Text>
+                                <Text style={styles.vehicleTime}>{v.time}</Text>
+                            </View>
+                            <Text style={styles.vehiclePrice}>{v.price}</Text>
+                        </TouchableOpacity>
+                    ))}
 
-                        <View style={{ height: 24 }} />
-                    </ScrollView>
-                )}
+                    <TouchableOpacity style={styles.paymentMethod}>
+                        <Text style={styles.paymentIcon}>💳</Text>
+                        <Text style={styles.paymentText}>Personal • **** 4242</Text>
+                        <Text style={styles.paymentArrow}>›</Text>
+                    </TouchableOpacity>
+                </ScrollView>
 
-                {/* Book CTA */}
-                <TouchableOpacity
-                    style={[styles.bookBtn, (loading || booking) && { opacity: 0.6 }]}
-                    onPress={handleBook}
-                    disabled={loading || booking}
-                    activeOpacity={0.88}
-                >
-                    {booking ? (
-                        <ActivityIndicator color={Colors.onPrimary} />
-                    ) : (
-                        <Text style={styles.bookBtnText}>
-                            Book {selectedVehicle === 'auto' ? '🛺 Auto' : '🚗 Cab'}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            </Animated.View>
+                <View style={styles.footer}>
+                    <TouchableOpacity 
+                        style={styles.requestButton}
+                        onPress={() => router.push('/ride-finding')}
+                    >
+                        <Text style={styles.requestText}>REQUEST SAKHI</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
         </View>
     );
 }
 
+const mapStyle = [
+    { elementType: 'geometry', stylers: [{ color: '#f5f0ff' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ccc3d8' }] },
+];
+
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    map: { flex: 1 },
+    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    mapContainer: { height: '45%' },
+    header: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 52 : 16,
+        left: 16, right: 16,
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+    },
     backBtn: {
-        position: 'absolute', top: 56, left: 16,
         width: 44, height: 44, borderRadius: 22,
-        backgroundColor: Colors.surfaceContainerLowest,
-        alignItems: 'center', justifyContent: 'center',
-        ...Shadows.card,
+        backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    sheet: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        paddingHorizontal: 20, paddingTop: 16, paddingBottom: 28,
-        maxHeight: '68%',
-        ...Shadows.editorial,
+    backIcon: { fontSize: 20, color: '#BEA3D8' },
+    addressPill: {
+        flex: 1, height: 44, backgroundColor: '#FFFFFF',
+        borderRadius: 22, paddingHorizontal: 20, justifyContent: 'center',
+        shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
     },
-    routePill: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: 12, padding: 12, marginBottom: 14,
-        borderWidth: 1, borderColor: Colors.outlineVariant,
+    addressText: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+    pickDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#10B981', borderWidth: 2, borderColor: '#FFF' },
+    dropPin: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+    pinSmall: { fontSize: 24 },
+
+    bottomSheet: {
+        flex: 1, backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 32, borderTopRightRadius: 32,
+        marginTop: -32, paddingHorizontal: 24, paddingTop: 12,
     },
-    routePillRoute: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-    routeDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#16a34a' },
-    routeDotViolet: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primaryContainer },
-    routeAddr: { flex: 1, fontSize: 12, color: Colors.onSurface, fontWeight: '500' },
-    routeArrow: { fontSize: 14, color: Colors.outline },
-    loadingBlock: { paddingVertical: 32, alignItems: 'center', gap: 12 },
-    loadingText: { ...Typography.bodyMedium, color: Colors.onSurfaceVariant },
-    metaPill: {
-        alignSelf: 'center', backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: BorderRadius.full, paddingHorizontal: 16, paddingVertical: 6,
-        marginBottom: 16,
+    handlebar: {
+        width: 40, height: 4, backgroundColor: '#E5E0EF',
+        borderRadius: 2, alignSelf: 'center', marginBottom: 24,
     },
-    metaText: {
-        fontSize: 11, fontWeight: '700', color: Colors.onSurfaceVariant,
-        textTransform: 'uppercase', letterSpacing: 1,
-    },
-    sectionLabel: {
-        fontSize: 11, fontWeight: '700', color: Colors.onSurfaceVariant,
-        textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10,
+    title: {
+        fontSize: 11, fontWeight: '900', color: '#7B7487',
+        letterSpacing: 1.5, marginBottom: 16,
     },
     vehicleCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: 16, padding: 14, marginBottom: 10,
-        borderWidth: 2, borderColor: 'transparent',
-        position: 'relative',
+        flexDirection: 'row', alignItems: 'center', padding: 16,
+        borderRadius: 16, marginBottom: 12, backgroundColor: '#F9F7FF',
+        borderWidth: 1, borderColor: 'transparent',
     },
-    vehicleCardSelected: {
-        backgroundColor: '#EDE9FE',
-        borderColor: Colors.primaryContainer,
+    vehicleCardActive: {
+        borderColor: '#BEA3D8', backgroundColor: '#F5F0FF',
     },
-    selectedBadge: {
-        position: 'absolute', top: -8, right: -8,
-        width: 24, height: 24, borderRadius: 12,
-        backgroundColor: Colors.primaryContainer,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    selectedCheck: { color: '#fff', fontWeight: '700', fontSize: 12 },
     vehicleIconBg: {
-        width: 56, height: 56, borderRadius: 14,
-        backgroundColor: Colors.surfaceContainerLowest,
+        width: 60, height: 60, borderRadius: 12,
+        backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+    },
+    vehicleEmoji: { fontSize: 32 },
+    vehicleInfo: { flex: 1, marginLeft: 16 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    vehicleName: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
+    capacityRow: { flexDirection: 'row', alignItems: 'center' },
+    capacityIcon: { fontSize: 10 },
+    capacityText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+    vehicleDesc: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+    vehicleTime: { fontSize: 12, fontWeight: '600', color: '#BEA3D8', marginTop: 4 },
+    vehiclePrice: { fontSize: 18, fontWeight: '800', color: '#1C1A25' },
+
+    paymentMethod: {
+        flexDirection: 'row', alignItems: 'center', paddingVertical: 16,
+        borderTopWidth: 1, borderTopColor: '#F0EBF8', marginTop: 8,
+    },
+    paymentIcon: { fontSize: 18 },
+    paymentText: { flex: 1, marginLeft: 12, fontSize: 14, fontWeight: '600', color: '#4A4455' },
+    paymentArrow: { fontSize: 20, color: '#CCC3D8' },
+
+    footer: { paddingBottom: Platform.OS === 'ios' ? 34 : 24, paddingTop: 12 },
+    requestButton: {
+        height: 56, backgroundColor: '#BEA3D8', borderRadius: 16,
         alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#BEA3D8', shadowOpacity: 0.3, shadowRadius: 15, elevation: 5,
     },
-    vehicleIconBgSelected: { backgroundColor: '#F5F0FF' },
-    vehicleInfo: { flex: 1 },
-    vehicleNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-    vehicleName: { fontSize: 16, fontWeight: '700', color: Colors.onBackground },
-    vehicleBadge: {
-        backgroundColor: 'rgba(124,58,237,0.1)',
-        borderRadius: BorderRadius.full, paddingHorizontal: 8, paddingVertical: 2,
-    },
-    vehicleBadgeText: { fontSize: 9, fontWeight: '700', color: Colors.primaryContainer },
-    vehicleCapacity: { fontSize: 12, color: Colors.onSurfaceVariant },
-    vehiclePricing: { alignItems: 'flex-end' },
-    vehiclePrice: { fontSize: 16, fontWeight: '800', color: Colors.primaryContainer },
-    vehicleETA: { fontSize: 11, color: '#16a34a', fontWeight: '600', marginTop: 2 },
-    fareCard: {
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 14, overflow: 'hidden',
-        borderWidth: 1, borderColor: Colors.outlineVariant,
-        marginTop: 4,
-    },
-    fareToggle: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        padding: 14, alignItems: 'center',
-    },
-    fareToggleText: { fontSize: 13, fontWeight: '700', color: Colors.onSurfaceVariant },
-    fareToggleChevron: { fontSize: 12, color: Colors.outline },
-    fareRows: { paddingHorizontal: 14, paddingBottom: 14 },
-    fareRow: {
-        flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8,
-    },
-    fareRowLabel: { fontSize: 13, color: Colors.onSurfaceVariant },
-    fareRowValue: { fontSize: 13, fontWeight: '600', color: Colors.onSurface },
-    fareTotalRow: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.outlineVariant,
-        marginTop: 4,
-    },
-    fareTotalLabel: { fontSize: 14, fontWeight: '700', color: Colors.onBackground },
-    fareTotalValue: { fontSize: 18, fontWeight: '800', color: Colors.primaryContainer },
-    bookBtn: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md, paddingVertical: 18,
-        alignItems: 'center', marginTop: 12, ...Shadows.editorial,
-    },
-    bookBtnText: { color: Colors.onPrimary, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+    requestText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1 },
 });

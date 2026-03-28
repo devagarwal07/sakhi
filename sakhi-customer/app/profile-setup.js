@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator, Alert, Pressable, Image,
+    ScrollView, ActivityIndicator, Alert, Pressable, Image, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useAuth } from '../src/context/AuthContext';
 import { updateProfile } from '../src/api/endpoints';
 
@@ -54,104 +53,127 @@ export default function ProfileSetupScreen() {
         }
     };
 
-    const InputField = ({ label, value, onChangeText, placeholder, keyboardType, editable = true, icon }) => (
-        <View style={styles.fieldWrapper}>
-            <Text style={styles.fieldLabel}>{label}</Text>
-            <View style={[styles.fieldInputRow, !editable && styles.fieldInputDisabled]}>
-                {icon && <Text style={styles.fieldIcon}>{icon}</Text>}
-                <TextInput
-                    style={styles.fieldInput}
-                    value={value}
-                    onChangeText={onChangeText}
-                    placeholder={placeholder}
-                    placeholderTextColor={Colors.outline}
-                    keyboardType={keyboardType || 'default'}
-                    editable={editable}
-                />
-            </View>
-        </View>
-    );
-
     return (
         <View style={styles.container}>
-            {/* Background decorators */}
+            {/* Decorative blurs */}
             <View style={styles.glowBL} />
             <View style={styles.glowTR} />
 
-            {/* Header */}
+            {/* Header — glassmorphic */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
-                    <Text style={styles.backArrow}>←</Text>
+                <Pressable onPress={() => router.back()} style={styles.backButton}>
+                    <Text style={styles.backIcon}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Set Up Your Profile</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.content}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                <Text style={styles.subtitle}>Tell us a bit about yourself</Text>
+                {/* Hero subtext */}
+                <View style={styles.heroSubtext}>
+                    <Text style={styles.subtitleText}>Tell us a bit about yourself</Text>
+                </View>
 
-                {/* Avatar */}
+                {/* Avatar upload */}
                 <View style={styles.avatarSection}>
-                    <TouchableOpacity style={styles.avatarWrapper} onPress={pickAvatar} activeOpacity={0.85}>
+                    <TouchableOpacity style={styles.avatarContainer} onPress={pickAvatar} activeOpacity={0.85}>
                         {avatar ? (
                             <Image source={{ uri: avatar.uri }} style={styles.avatarImage} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
-                                <Text style={{ fontSize: 48, color: Colors.primaryContainer }}>👤</Text>
+                                <Text style={styles.avatarPersonIcon}>👤</Text>
                             </View>
                         )}
-                        <View style={styles.cameraBtn}>
-                            <Text style={{ fontSize: 14 }}>📷</Text>
+                        {/* Camera action button */}
+                        <View style={styles.cameraButton}>
+                            <Text style={styles.cameraEmoji}>📷</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
 
                 {/* Form fields */}
                 <View style={styles.form}>
-                    <InputField
-                        label="Full Name"
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="Enter your full name"
-                        icon="👤"
-                    />
-                    <InputField
-                        label="Email Address"
-                        value={email}
-                        onChangeText={setEmail}
-                        placeholder="Enter your email"
-                        keyboardType="email-address"
-                        icon="✉️"
-                    />
-                    <InputField
-                        label="Phone Number"
-                        value={user?.phone || ''}
-                        editable={false}
-                        icon="📞"
-                    />
-                    <InputField
-                        label="Home Address"
-                        value={homeAddress}
-                        onChangeText={setHomeAddress}
-                        placeholder="Add your home location"
-                        icon="🏠"
-                    />
+                    {/* Full Name */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>FULL NAME</Text>
+                        <View style={styles.inputContainer}>
+                            <View style={styles.inputIconWrapper}>
+                                <Text style={styles.inputIcon}>👤</Text>
+                            </View>
+                            <TextInput
+                                style={styles.textInput}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Enter your full name"
+                                placeholderTextColor="rgba(107, 114, 128, 0.4)"
+                            />
+                        </View>
+                    </View>
+
+                    {/* Email Address */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
+                        <View style={styles.inputContainer}>
+                            <View style={styles.inputIconWrapper}>
+                                <Text style={styles.inputIcon}>✉️</Text>
+                            </View>
+                            <TextInput
+                                style={styles.textInput}
+                                value={email}
+                                onChangeText={setEmail}
+                                placeholder="Enter your email"
+                                placeholderTextColor="rgba(107, 114, 128, 0.4)"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+                        </View>
+                    </View>
+
+                    {/* Phone Number — non-editable */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
+                        <View style={styles.inputContainerDisabled}>
+                            <View style={styles.inputIconWrapper}>
+                                <Text style={[styles.inputIcon, { opacity: 0.4 }]}>📞</Text>
+                            </View>
+                            <Text style={styles.phoneText}>{user?.phone || '+91XXXXXXXXXX'}</Text>
+                        </View>
+                    </View>
+
+                    {/* Home Address */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>HOME ADDRESS</Text>
+                        <View style={styles.inputContainer}>
+                            <View style={styles.inputIconWrapper}>
+                                <Text style={styles.inputIcon}>📍</Text>
+                            </View>
+                            <TextInput
+                                style={styles.textInput}
+                                value={homeAddress}
+                                onChangeText={setHomeAddress}
+                                placeholder="Add your location"
+                                placeholderTextColor="rgba(107, 114, 128, 0.4)"
+                            />
+                        </View>
+                    </View>
                 </View>
 
+                {/* Save & Continue button */}
                 <TouchableOpacity
-                    style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+                    style={[styles.ctaButton, saving && { opacity: 0.7 }]}
                     onPress={handleSave}
                     disabled={saving}
                     activeOpacity={0.88}
                 >
-                    {saving
-                        ? <ActivityIndicator color={Colors.onPrimary} />
-                        : <Text style={styles.saveBtnText}>Save & Continue</Text>
-                    }
+                    {saving ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                        <Text style={styles.ctaButtonText}>Save & Continue</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </View>
@@ -159,70 +181,230 @@ export default function ProfileSetupScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F0FF',
+    },
+
+    // Decorative blurs
     glowBL: {
-        position: 'absolute', bottom: -80, left: -80,
-        width: 256, height: 256, borderRadius: 128,
-        backgroundColor: 'rgba(99,14,212,0.05)',
+        position: 'absolute',
+        bottom: -80,
+        left: -80,
+        width: 256,
+        height: 256,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(190, 163, 216, 0.05)',
     },
     glowTR: {
-        position: 'absolute', top: -80, right: -80,
-        width: 256, height: 256, borderRadius: 128,
-        backgroundColor: 'rgba(103,75,181,0.05)',
+        position: 'absolute',
+        top: -80,
+        right: -80,
+        width: 256,
+        height: 256,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(190, 163, 216, 0.05)',
     },
+
+    // Header — glassmorphic
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 24, paddingBottom: 12,
-        backgroundColor: 'rgba(245,240,255,0.85)',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'ios' ? 52 : 16,
+        paddingBottom: 12,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer,
-        alignItems: 'center', justifyContent: 'center',
+    backButton: {
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.brandPurpleDark },
-    content: { paddingHorizontal: 24, paddingBottom: 48, paddingTop: 16 },
-    subtitle: { ...Typography.bodyMedium, color: Colors.brandGray, textAlign: 'center', marginBottom: 28 },
-    avatarSection: { alignItems: 'center', marginBottom: 32 },
-    avatarWrapper: { position: 'relative' },
+    backIcon: {
+        fontSize: 18,
+        color: '#BEA3D8',
+        fontWeight: '600',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1E1B2E',
+        letterSpacing: -0.45,
+        lineHeight: 28,
+    },
+
+    // Scroll content
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: 56,
+        gap: 40,
+    },
+
+    // Hero subtext
+    heroSubtext: {
+        alignItems: 'center',
+    },
+    subtitleText: {
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 26,
+        textAlign: 'center',
+    },
+
+    // Avatar section — 96×96
+    avatarSection: {
+        alignItems: 'center',
+    },
+    avatarContainer: {
+        width: 96,
+        height: 96,
+    },
     avatarImage: {
-        width: 96, height: 96, borderRadius: 48,
-        borderWidth: 3, borderColor: Colors.primaryFixed,
+        width: 96,
+        height: 96,
+        borderRadius: 9999,
     },
     avatarPlaceholder: {
-        width: 96, height: 96, borderRadius: 48,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
-        ...Shadows.editorial,
+        width: 96,
+        height: 96,
+        borderRadius: 9999,
+        backgroundColor: '#EDE9FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4,
     },
-    cameraBtn: {
-        position: 'absolute', bottom: 0, right: 0,
-        width: 32, height: 32, borderRadius: 16,
-        backgroundColor: Colors.surfaceContainerLowest,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: Colors.outlineVariant,
-        ...Shadows.card,
+    avatarPersonIcon: {
+        fontSize: 32,
+        color: '#BEA3D8',
     },
-    form: { gap: 16, marginBottom: 28 },
-    fieldWrapper: { gap: 6 },
+
+    // Camera button — 32×32, white, bottom-right
+    cameraButton: {
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        width: 32,
+        height: 32,
+        borderRadius: 9999,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#F6F1FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    cameraEmoji: {
+        fontSize: 13,
+    },
+
+    // Form
+    form: {
+        gap: 24,
+        paddingTop: 8,
+    },
+
+    // Field group
+    fieldGroup: {
+        gap: 8,
+    },
     fieldLabel: {
-        fontSize: 11, fontWeight: '600', color: Colors.brandGray,
-        textTransform: 'uppercase', letterSpacing: 0.8, paddingLeft: 4,
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#6B7280',
+        lineHeight: 18,
+        letterSpacing: 0.6,
+        textTransform: 'uppercase',
+        paddingLeft: 4,
     },
-    fieldInputRow: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-        ...Shadows.card,
+
+    // Input container — white bg, radius 12, shadow
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        height: 55,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 2,
     },
-    fieldInputDisabled: { backgroundColor: 'rgba(246,241,255,0.5)', opacity: 0.7 },
-    fieldIcon: { fontSize: 18 },
-    fieldInput: { flex: 1, fontSize: 15, color: Colors.onSurface },
-    saveBtn: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md, paddingVertical: 17,
-        alignItems: 'center', ...Shadows.editorial,
+
+    // Disabled (phone) — faded bg
+    inputContainerDisabled: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(246, 241, 255, 0.5)',
+        borderRadius: 12,
+        height: 56,
+        opacity: 0.8,
     },
-    saveBtnText: { color: Colors.onPrimary, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+
+    inputIconWrapper: {
+        paddingLeft: 16,
+        width: 48,
+        alignItems: 'center',
+    },
+    inputIcon: {
+        fontSize: 16,
+        color: '#BEA3D8',
+        opacity: 0.6,
+    },
+
+    // Text input — 16px, left padding 48
+    textInput: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#1E1B2E',
+        paddingRight: 16,
+        paddingVertical: 18,
+        lineHeight: 19,
+    },
+
+    // Phone text (non-editable)
+    phoneText: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 24,
+    },
+
+    // CTA button — #BEA3D8, radius 12, 56px
+    ctaButton: {
+        height: 56,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    ctaButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        lineHeight: 24,
+    },
 });

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
+    Image,
     StyleSheet,
     TextInput,
     TouchableOpacity,
@@ -9,13 +10,18 @@ import {
     Alert,
     Animated,
     Pressable,
+    Platform,
+    Dimensions,
+    Keyboard,
+    KeyboardAvoidingView,
+    ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../utils/theme';
 import { useAuth } from '../../context/AuthContext';
 import { VERIFICATION_STATUSES } from '../../utils/constants';
 
 const OTP_LENGTH = 6;
+const { width } = Dimensions.get('window');
 
 export default function OtpScreen() {
     const router = useRouter();
@@ -24,10 +30,10 @@ export default function OtpScreen() {
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(30);
+    const [focusedIndex, setFocusedIndex] = useState(0);
     const inputRefs = useRef([]);
     const shakeAnim = useRef(new Animated.Value(0)).current;
 
-    // Countdown timer for resend
     useEffect(() => {
         const interval = setInterval(() => {
             setResendTimer((t) => (t > 0 ? t - 1 : 0));
@@ -48,10 +54,12 @@ export default function OtpScreen() {
         const updated = [...otp];
         updated[index] = value;
         setOtp(updated);
-
-        // Auto-advance to next box
         if (value && index < OTP_LENGTH - 1) {
             inputRefs.current[index + 1]?.focus();
+        }
+        // Dismiss keyboard when all digits are filled
+        if (value && index === OTP_LENGTH - 1) {
+            Keyboard.dismiss();
         }
     };
 
@@ -75,7 +83,6 @@ export default function OtpScreen() {
         setLoading(true);
         try {
             const user = await login(phone, code);
-            // Navigate based on verification status
             if (
                 user.verification_status === VERIFICATION_STATUSES.NOT_SUBMITTED ||
                 user.verification_status === VERIFICATION_STATUSES.REJECTED
@@ -97,54 +104,103 @@ export default function OtpScreen() {
         }
     };
 
-    const maskedPhone = phone
-        ? `${phone.slice(0, 3)} XXXXX ${phone.slice(-2)}`
-        : '•••••••••••';
+    // Format phone: "+91 98765 43210"
+    const displayPhone = phone
+        ? `${phone.slice(0, 3)} ${phone.slice(3, 8)} ${phone.slice(8)}`
+        : '+91 XXXXX XXXXX';
+
+    const timerDisplay = `0:${resendTimer < 10 ? '0' : ''}${resendTimer}`;
 
     return (
         <View style={styles.container}>
-            <View style={styles.glowTop} />
+            {/* Decorative glows */}
+            <View style={styles.glowTopRight} />
+            <View style={styles.glowBottomLeft} />
 
-            {/* Header */}
+            {/* Header — glassmorphic */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
+                <Text style={styles.headerTitle}>Sakhi</Text>
+                <View style={{ width: 18 }} />
             </View>
 
-            {/* Content */}
-            <View style={styles.content}>
-                <View style={styles.iconBadge}>
-                    <Text style={styles.iconEmoji}>📱</Text>
+            {/* Main Content */}
+            <View style={styles.mainContent}>
+                {/* Heading Section */}
+                <View style={styles.headingSection}>
+                    <Text style={styles.title}>Verify Your Number</Text>
+                    <View style={styles.subtitleArea}>
+                        <Text style={styles.subtitle}>We sent a 6-digit code to</Text>
+                        <View style={styles.phoneRow}>
+                            <Text style={styles.phoneText}>{displayPhone}</Text>
+                            <Text style={styles.phoneDot}> · </Text>
+                            <Pressable onPress={() => router.back()}>
+                                <Text style={styles.editLink}>Edit</Text>
+                            </Pressable>
+                        </View>
+                    </View>
                 </View>
 
-                <Text style={styles.title}>Enter OTP</Text>
-                <Text style={styles.subtitle}>
-                    We've sent a 6-digit code to{'\n'}
-                    <Text style={styles.phoneHighlight}>{maskedPhone}</Text>
-                </Text>
-
-                {/* OTP Boxes */}
+                {/* OTP Inputs Grid — 6 boxes, 48×56, gap 10 */}
                 <Animated.View
                     style={[styles.otpRow, { transform: [{ translateX: shakeAnim }] }]}
                 >
-                    {otp.map((digit, i) => (
-                        <TextInput
-                            key={i}
-                            ref={(ref) => (inputRefs.current[i] = ref)}
-                            style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
-                            value={digit}
-                            onChangeText={(val) => handleOtpChange(val.slice(-1), i)}
-                            onKeyPress={(e) => handleKeyPress(e, i)}
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            autoFocus={i === 0}
-                            selectTextOnFocus
-                        />
-                    ))}
+                    {otp.map((digit, i) => {
+                        const isFocused = focusedIndex === i;
+                        const isFilled = !!digit;
+                        return (
+                            <TextInput
+                                key={i}
+                                ref={(ref) => (inputRefs.current[i] = ref)}
+                                style={[
+                                    styles.otpBox,
+                                    isFocused && styles.otpBoxFocused,
+                                    isFilled && styles.otpBoxFilled,
+                                ]}
+                                value={digit}
+                                onChangeText={(val) => handleOtpChange(val.slice(-1), i)}
+                                onKeyPress={(e) => handleKeyPress(e, i)}
+                                onFocus={() => setFocusedIndex(i)}
+                                keyboardType="number-pad"
+                                maxLength={1}
+                                autoFocus={i === 0}
+                                selectTextOnFocus
+                            />
+                        );
+                    })}
                 </Animated.View>
 
-                {/* Verify Button */}
+                {/* Countdown — clock icon + text */}
+                <View style={styles.countdownRow}>
+                    <Text style={styles.clockIcon}>⏱</Text>
+                    <Text style={styles.countdownText}>
+                        {resendTimer > 0
+                            ? `Resend OTP in ${timerDisplay}`
+                            : ''}
+                    </Text>
+                    {resendTimer === 0 && (
+                        <Pressable onPress={() => setResendTimer(30)}>
+                            <Text style={styles.resendLink}>Resend OTP</Text>
+                        </Pressable>
+                    )}
+                </View>
+
+                {/* Lock illustration */}
+                <View style={styles.illustrationSection}>
+                    <View style={styles.illustrationCircle}>
+                        <Image
+                            source={require('../../../assets/lock-icon.jpeg')}
+                            style={styles.lockIcon}
+                            resizeMode="contain"
+                        />
+                    </View>
+                </View>
+            </View>
+
+            {/* Footer — sticky CTA */}
+            <View style={styles.footer}>
                 <TouchableOpacity
                     style={[styles.ctaButton, loading && { opacity: 0.7 }]}
                     onPress={handleVerify}
@@ -152,23 +208,17 @@ export default function OtpScreen() {
                     activeOpacity={0.88}
                 >
                     {loading ? (
-                        <ActivityIndicator color={Colors.onPrimary} />
+                        <ActivityIndicator color="#FFFFFF" />
                     ) : (
                         <Text style={styles.ctaButtonText}>Verify & Continue</Text>
                     )}
                 </TouchableOpacity>
 
-                {/* Resend */}
-                <View style={styles.resendRow}>
-                    <Text style={styles.resendText}>Didn't receive the code? </Text>
-                    {resendTimer > 0 ? (
-                        <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
-                    ) : (
-                        <Pressable onPress={() => setResendTimer(30)}>
-                            <Text style={styles.resendLink}>Resend OTP</Text>
-                        </Pressable>
-                    )}
-                </View>
+                <Text style={styles.termsText}>
+                    By continuing, you agree to Sakhi's{' '}
+                    <Text style={styles.termsLink}>Terms of Service</Text>
+                    {'\n'}and <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Text>
             </View>
         </View>
     );
@@ -177,118 +227,221 @@ export default function OtpScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F0FF',
-        paddingHorizontal: 24,
+        backgroundColor: '#FCF8FF',
     },
-    glowTop: {
+
+    // Decorative glows
+    glowTopRight: {
         position: 'absolute',
+        right: -39,
         top: -80,
-        right: -80,
-        width: 240,
-        height: 240,
-        borderRadius: 120,
-        backgroundColor: 'rgba(124, 58, 237, 0.07)',
+        width: 256,
+        height: 256,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(99, 14, 212, 0.05)',
     },
+    glowBottomLeft: {
+        position: 'absolute',
+        left: -58,
+        bottom: 40,
+        width: 320,
+        height: 320,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(103, 75, 181, 0.1)',
+    },
+
+    // Header — glassmorphic
     header: {
-        paddingTop: 56,
-        marginBottom: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'ios' ? 56 : 16,
+        paddingBottom: 12,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer,
+    backButton: {
+        width: 18,
+        height: 18,
         alignItems: 'center',
         justifyContent: 'center',
     },
     backArrow: {
         fontSize: 20,
-        color: Colors.primaryContainer,
+        color: '#C0A6D6',
+        fontWeight: '600',
+    },
+    headerTitle: {
+        fontSize: 24,
         fontWeight: '700',
+        color: '#C0A6D6',
+        letterSpacing: -1.2,
     },
-    content: {
+
+    // Main content
+    mainContent: {
         flex: 1,
-        paddingTop: 32,
-    },
-    iconBadge: {
-        width: 64,
-        height: 64,
-        borderRadius: 20,
-        backgroundColor: Colors.primaryFixed,
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
+        paddingTop: 60,
+        paddingHorizontal: 32,
     },
-    iconEmoji: { fontSize: 30 },
+
+    // Heading section
+    headingSection: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
     title: {
-        ...Typography.headlineMedium,
-        color: Colors.onBackground,
-        marginBottom: 8,
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#1C1A25',
+        letterSpacing: -0.8,
+        lineHeight: 48,
+        textAlign: 'center',
+    },
+    subtitleArea: {
+        alignItems: 'center',
+        marginTop: 12,
     },
     subtitle: {
-        ...Typography.bodyLarge,
-        color: Colors.onSurfaceVariant,
-        lineHeight: 24,
-        marginBottom: 36,
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6B7280',
+        lineHeight: 26,
+        textAlign: 'center',
     },
-    phoneHighlight: {
-        fontWeight: '700',
-        color: Colors.primary,
+    phoneRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
+    phoneText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#6B7280',
+        lineHeight: 26,
+    },
+    phoneDot: {
+        fontSize: 16,
+        color: '#6B7280',
+    },
+    editLink: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#C0A6D6',
+        lineHeight: 26,
+    },
+
+    // OTP boxes — 48×56, gap 10, radius 12
     otpRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 36,
+        justifyContent: 'center',
         gap: 10,
+        marginBottom: 32,
     },
     otpBox: {
-        flex: 1,
-        height: 60,
-        borderRadius: BorderRadius.md,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderWidth: 2,
-        borderColor: Colors.outlineVariant,
+        width: 48,
+        height: 56,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: 'rgba(204, 195, 216, 0.3)',
+        borderRadius: 12,
         textAlign: 'center',
         fontSize: 24,
         fontWeight: '700',
-        color: Colors.onSurface,
+        color: '#1C1A25',
+    },
+    otpBoxFocused: {
+        borderWidth: 2,
+        borderColor: '#C0A6D6',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 4,
     },
     otpBoxFilled: {
-        borderColor: Colors.primaryContainer,
-        backgroundColor: Colors.primaryFixed,
-        color: Colors.primary,
+        borderWidth: 2,
+        borderColor: '#C0A6D6',
     },
-    ctaButton: {
-        backgroundColor: Colors.primaryContainer,
-        borderRadius: BorderRadius.md,
-        paddingVertical: 17,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...Shadows.editorial,
-    },
-    ctaButtonText: {
-        color: Colors.onPrimary,
-        fontSize: 17,
-        fontWeight: '700',
-        letterSpacing: -0.3,
-    },
-    resendRow: {
+
+    // Countdown
+    countdownRow: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 20,
+        alignItems: 'center',
+        gap: 8,
     },
-    resendText: {
+    clockIcon: {
         fontSize: 14,
-        color: Colors.onSurfaceVariant,
+        color: '#6B7280',
     },
-    resendTimer: {
+    countdownText: {
         fontSize: 14,
-        color: Colors.outline,
         fontWeight: '500',
+        color: '#6B7280',
+        letterSpacing: 0.35,
+        lineHeight: 20,
     },
     resendLink: {
         fontSize: 14,
-        color: Colors.primary,
         fontWeight: '600',
+        color: '#C0A6D6',
+    },
+
+    // Lock illustration — 128px circle, opacity 0.4
+    illustrationSection: {
+        marginTop: 64,
+        alignItems: 'center',
+    },
+    illustrationCircle: {
+        width: 128,
+        height: 128,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(99, 14, 212, 0.08)',
+        opacity: 0.6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    lockIcon: {
+        width: 48,
+        height: 48,
+    },
+
+    // Footer — sticky CTA
+    footer: {
+        paddingHorizontal: 32,
+        paddingBottom: 40,
+        paddingTop: 32,
+        gap: 24,
+        alignItems: 'center',
+    },
+    ctaButton: {
+        width: '100%',
+        backgroundColor: '#BEA3D8',
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+        elevation: 8,
+    },
+    ctaButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
+        lineHeight: 28,
+    },
+    termsText: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: '#64748B',
+        lineHeight: 20,
+        textAlign: 'center',
+    },
+    termsLink: {
+        color: '#C0A6D6',
+        fontWeight: '500',
     },
 });
