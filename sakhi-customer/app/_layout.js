@@ -19,6 +19,10 @@ export default function RootLayout() {
                                 <Stack.Screen name="(kyc)" />
                                 <Stack.Screen name="(tabs)" />
                                 <Stack.Screen
+                                    name="sidebar"
+                                    options={{ presentation: 'transparentModal', animation: 'none' }}
+                                />
+                                <Stack.Screen
                                     name="location-search"
                                     options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
                                 />
@@ -98,6 +102,20 @@ export default function RootLayout() {
                                     name="wallet"
                                     options={{ animation: 'slide_from_right' }}
                                 />
+                                {/* Newly registered routes for complete stack consistency */}
+                                <Stack.Screen name="payment" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="payment-success" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="emergency-contacts" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="sos-settings" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="sos-warning" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="sos-active" options={{ animation: 'none', presentation: 'fullScreenModal' }} />
+                                <Stack.Screen name="ride-finding" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="driver-arrived" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="active-trip" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="trip-status" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="ride-summary" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="subscription-plans" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="subscription-ride" options={{ animation: 'slide_from_right' }} />
                             </Stack>
                         </RideProvider>
                     </SocketProvider>

@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Dimensions, Alert, Platform, Animated,
 } from 'react-native';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
@@ -108,7 +109,7 @@ export default function HomeScreen() {
                 {/* Map overlay controls */}
                 <View style={styles.mapOverlay}>
                     {/* Hamburger */}
-                    <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/(tabs)/profile')}>
+                    <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/sidebar')}>
                         <Text style={styles.menuIcon}>☰</Text>
                     </TouchableOpacity>
 
@@ -131,20 +132,17 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Floating SOS */}
-                <TouchableOpacity style={styles.sosBtn} onPress={() => router.push('/sos')}>
-                    <Text style={styles.sosText}>SOS</Text>
-                </TouchableOpacity>
             </View>
 
-            {/* Bottom Sheet Content — 42% */}
-            <View style={styles.bottomSheet}>
-                {/* Handlebar */}
-                <View style={styles.handlebarRow}>
-                    <View style={styles.handlebar} />
-                </View>
-
-                <ScrollView
+            {/* Interactive Bottom Sheet */}
+            <BottomSheet
+                snapPoints={['42%', '85%']}
+                index={0}
+                backgroundStyle={{ backgroundColor: '#FFFFFF', borderRadius: 32 }}
+                handleIndicatorStyle={{ backgroundColor: '#E5E0EF', width: 48, height: 6 }}
+                style={styles.bottomSheetShadow}
+            >
+                <BottomSheetScrollView
                     contentContainerStyle={styles.sheetContent}
                     showsVerticalScrollIndicator={false}
                 >
@@ -180,7 +178,7 @@ export default function HomeScreen() {
                             activeTab !== 'subscribe' && styles.pillTabOutline]}
                             onPress={() => {
                                 setActiveTab('subscribe');
-                                router.push('/subscription-setup');
+                                router.push('/subscription-ride');
                             }}
                         >
                             <Text style={[styles.pillTabText, activeTab !== 'subscribe' && styles.pillTabTextOutline]}>
@@ -195,19 +193,19 @@ export default function HomeScreen() {
                         showsHorizontalScrollIndicator={false}
                         style={styles.chipsRow}
                     >
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => router.push('/location-search')}>
                             <Text style={styles.chipIcon}>🏠</Text>
                             <Text style={styles.chipLabel}>Home</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => router.push('/location-search')}>
                             <Text style={styles.chipIcon}>💼</Text>
                             <Text style={styles.chipLabel}>Work</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => router.push('/location-search')}>
                             <Text style={styles.chipIcon}>🕐</Text>
                             <Text style={styles.chipLabel}>Recent</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.chip, styles.chipDashed]}>
+                        <TouchableOpacity style={[styles.chip, styles.chipDashed]} onPress={() => router.push('/saved-places')}>
                             <Text style={[styles.chipIcon, { color: '#BEA3D8' }]}>+</Text>
                             <Text style={[styles.chipLabel, { color: '#BEA3D8' }]}>Add New</Text>
                         </TouchableOpacity>
@@ -217,13 +215,13 @@ export default function HomeScreen() {
                     <View style={styles.recentSection}>
                         <View style={styles.recentHeader}>
                             <Text style={styles.recentLabel}>RECENT RIDES</Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/ride-history')}>
                                 <Text style={styles.viewAllText}>View All</Text>
                             </TouchableOpacity>
                         </View>
 
                         {recentRides.map((ride) => (
-                            <View key={ride.id} style={styles.rideCard}>
+                            <TouchableOpacity key={ride.id} style={styles.rideCard} onPress={() => router.push('/ride-details')}>
                                 <View style={styles.rideIconBox}>
                                     <Text style={styles.rideIcon}>🚗</Text>
                                 </View>
@@ -239,11 +237,11 @@ export default function HomeScreen() {
                                         <Text style={styles.rideRating}>{ride.rating}</Text>
                                     </View>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))}
                     </View>
-                </ScrollView>
-            </View>
+                </BottomSheetScrollView>
+            </BottomSheet>
         </View>
     );
 }
@@ -265,9 +263,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF',
     },
 
-    // Map section — top ~36%
+    // Map section — full background
     mapSection: {
-        height: 312,
+        ...StyleSheet.absoluteFillObject,
         backgroundColor: '#F6F1FF',
     },
 
@@ -414,34 +412,16 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
 
-    // Bottom sheet — white, radius 24
-    bottomSheet: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        marginTop: -24,
+    // Interactive Bottom Sheet Overrides
+    bottomSheetShadow: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -12 },
         shadowOpacity: 0.06,
         shadowRadius: 40,
         elevation: 8,
     },
-
-    // Handlebar
-    handlebarRow: {
-        alignItems: 'center',
-        paddingTop: 12,
-        paddingBottom: 20,
-    },
-    handlebar: {
-        width: 48,
-        height: 4,
-        borderRadius: 9999,
-        backgroundColor: '#E5E0EF',
-    },
-
     sheetContent: {
+        paddingTop: 16,
         paddingBottom: 120,
     },
 
