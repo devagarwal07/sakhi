@@ -1,221 +1,330 @@
-import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView,
-    ActivityIndicator, TouchableOpacity, Pressable,
+import React from 'react';
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    SafeAreaView, Image, Platform 
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { getRideDetails } from '../src/api/endpoints';
-import { format, parseISO } from 'date-fns';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function RideDetailsScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
-    const [ride, setRide] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const params = useLocalSearchParams();
 
-    useEffect(() => {
-        if (!id) { setLoading(false); return; }
-        getRideDetails(id)
-            .then(({ data }) => setRide(data.ride || data))
-            .catch(() => { })
-            .finally(() => setLoading(false));
-    }, [id]);
-
-    if (loading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={Colors.primaryContainer} />
-            </View>
-        );
-    }
-
-    if (!ride) {
-        return (
-            <View style={styles.centered}>
-                <Text style={styles.emptyText}>Ride details not found.</Text>
-                <TouchableOpacity onPress={() => router.back()} style={styles.smallBackBtn}>
-                    <Text style={styles.smallBackBtnText}>← Go Back</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
-
-    const date = ride.created_at
-        ? format(parseISO(ride.created_at), 'EEEE, dd MMM yyyy • hh:mm a')
-        : 'Unknown date';
+    // Mock data for display based on design spec
+    const ride = {
+        date: "Monday, 15 Mar 2026, 08:30 AM",
+        duration: "14 mins",
+        distance: "3.2 km",
+        pickup: "12, Green Park Avenue, New Delhi",
+        dropoff: "Hauz Khas Social, New Delhi",
+        fare: {
+            base: 30,
+            dist: 55,
+            wait: 2,
+            total: 87
+        },
+        paymentMethod: "Cash",
+        driver: {
+            name: "Meena R.",
+            vehicle: "Auto · KA 05 AB 1234",
+            rating: "4.8"
+        },
+        userReview: {
+            rating: 5,
+            comment: "\"Very safe and comfortable ride.\""
+        },
+        isSubscription: false // Set to true to see the SUB badge
+    };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>Ride Details</Text>
-                <View style={{ width: 40 }} />
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                
+                {/* Header App Bar */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()} activeOpacity={0.7}>
+                        <Text style={styles.headerIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Ride Details</Text>
+                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+                        <Text style={styles.headerIcon}>🔗</Text> 
+                    </TouchableOpacity>
+                </View>
+
+                {/* Main Content Area */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Simulated Map Background Area */}
+                    <View style={styles.mapSection}>
+                        {/* A light placeholder for the map */}
+                        <View style={styles.mapPlaceholder}>
+                            <View style={styles.mapRouteLine}>
+                                <View style={styles.mapStartDot} />
+                                <View style={styles.mapEndPin} />
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Central Detail Card Cluster */}
+                    <View style={styles.cardClusterWrap}>
+                        <View style={styles.mainCard}>
+                            
+                            {/* Date & Meta */}
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.dateText}>{ride.date}</Text>
+                                <View style={styles.metaRow}>
+                                    <View style={styles.metaBadge}>
+                                        <Text style={styles.metaBadgeText}>{ride.duration} · {ride.distance}</Text>
+                                    </View>
+                                </View>
+                                {ride.isSubscription && (
+                                    <View style={styles.subBadge}>
+                                        <Text style={styles.subBadgeText}>SUB</Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Route Visualizer */}
+                            <View style={styles.routeSection}>
+                                <View style={styles.routeRow}>
+                                    <View style={styles.dotGreen} />
+                                    <Text style={styles.routeAddressText}>{ride.pickup}</Text>
+                                </View>
+                                <View style={styles.routeVertLineWrap}>
+                                    <View style={styles.routeVertLine} />
+                                </View>
+                                <View style={styles.routeRow}>
+                                    <View style={styles.pinPurpleWrap}>
+                                        <Text style={styles.pinPurple}>📍</Text>
+                                    </View>
+                                    <Text style={styles.routeAddressText}>{ride.dropoff}</Text>
+                                </View>
+                            </View>
+
+                            {/* Fare Breakdown */}
+                            <View style={styles.fareBox}>
+                                <View style={styles.fareRow}>
+                                    <Text style={styles.fareLabel}>Base Fare</Text>
+                                    <Text style={styles.fareValue}>₹{ride.fare.base}</Text>
+                                </View>
+                                <View style={styles.fareRow}>
+                                    <Text style={styles.fareLabel}>Distance ({ride.distance})</Text>
+                                    <Text style={styles.fareValue}>₹{ride.fare.dist}</Text>
+                                </View>
+                                <View style={styles.fareRow}>
+                                    <Text style={styles.fareLabel}>Waiting</Text>
+                                    <Text style={styles.fareValue}>₹{ride.fare.wait}</Text>
+                                </View>
+                                
+                                <View style={styles.fareDivider} />
+                                
+                                <View style={styles.fareTotalRow}>
+                                    <Text style={styles.fareTotalLabel}>Total</Text>
+                                    <Text style={styles.fareTotalValue}>₹{ride.fare.total}</Text>
+                                </View>
+                                
+                                <View style={styles.paymentMetaRow}>
+                                    <Text style={styles.paymentMetaIcon}>💵</Text>
+                                    <Text style={styles.paymentMetaText}>Paid via {ride.paymentMethod}</Text>
+                                </View>
+                            </View>
+
+                            {/* Driver Profile */}
+                            <View style={styles.driverSection}>
+                                <View style={styles.driverLeft}>
+                                    <View style={styles.driverImgWrap}>
+                                        {/* Placeholder for driver image */}
+                                        <Text style={{fontSize: 24}}>👩🏽</Text>
+                                    </View>
+                                    <View style={styles.driverInfo}>
+                                        <Text style={styles.driverName}>{ride.driver.name}</Text>
+                                        <Text style={styles.driverVehicle}>{ride.driver.vehicle}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.driverRatingRow}>
+                                    <Text style={styles.driverRatingText}>{ride.driver.rating}</Text>
+                                    <Text style={styles.starIcon}>★</Text>
+                                </View>
+                            </View>
+
+                            {/* User Review / Rating given */}
+                            <View style={styles.reviewSection}>
+                                <View style={styles.reviewScoreRow}>
+                                    <Text style={styles.reviewLabel}>Your Rating:</Text>
+                                    <View style={styles.starsWrap}>
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Text key={i} style={[styles.starIcon, { fontSize: 14 }]}>
+                                                {i < ride.userReview.rating ? '★' : '☆'}
+                                            </Text>
+                                        ))}
+                                    </View>
+                                </View>
+                                <Text style={styles.reviewComment}>{ride.userReview.comment}</Text>
+                            </View>
+                            
+                        </View>
+                    </View>
+
+                </ScrollView>
+
+                {/* Fixed Bottom Action */}
+                <View style={styles.bottomFixedWrap}>
+                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+                        <Text style={styles.actionBtnText}>Book Same Route</Text>
+                    </TouchableOpacity>
+                </View>
+
             </View>
-
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Date */}
-                <Text style={styles.dateText}>{date}</Text>
-
-                {/* Route card */}
-                <View style={styles.routeCard}>
-                    <View style={styles.routeRow}>
-                        <View style={[styles.routeDot, { backgroundColor: '#16a34a' }]} />
-                        <Text style={styles.routeAddr}>{ride.pickup_address || 'Pickup'}</Text>
-                    </View>
-                    <View style={styles.routeVertLine} />
-                    <View style={styles.routeRow}>
-                        <View style={[styles.routeDot, { backgroundColor: Colors.primaryContainer }]} />
-                        <Text style={styles.routeAddr}>{ride.dropoff_address || 'Destination'}</Text>
-                    </View>
-                </View>
-
-                {/* Fare card */}
-                {ride.fare && (
-                    <View style={styles.fareCard}>
-                        <Text style={styles.fareCardTitle}>Fare Breakdown</Text>
-                        {[
-                            { label: 'Base Fare', value: ride.fare.base },
-                            { label: 'Distance Charge', value: ride.fare.distance },
-                            { label: 'Waiting Charge', value: ride.fare.waiting },
-                            { label: 'Promo Discount', value: ride.fare.promo, isDiscount: true },
-                        ].map((row, i) => row.value != null ? (
-                            <View key={i} style={styles.fareRow}>
-                                <Text style={styles.fareLabel}>{row.label}</Text>
-                                <Text style={[styles.fareValue, row.isDiscount && { color: Colors.success }]}>
-                                    {row.isDiscount ? '−' : ''}₹{(row.value || 0).toFixed(2)}
-                                </Text>
-                            </View>
-                        ) : null)}
-                        <View style={styles.fareDivider} />
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total</Text>
-                            <Text style={styles.totalValue}>₹{(ride.fare.total || 0).toFixed(2)}</Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* Driver */}
-                {ride.driver && (
-                    <View style={styles.driverCard}>
-                        <View style={styles.driverAvatar}>
-                            <Text style={{ fontSize: 24 }}>👩</Text>
-                        </View>
-                        <View style={styles.driverInfo}>
-                            <Text style={styles.driverName}>{ride.driver.name}</Text>
-                            <Text style={styles.driverSub}>{ride.driver.vehicle} · {ride.driver.plate}</Text>
-                        </View>
-                        {ride.driver.rating && (
-                            <View style={styles.ratingBadge}>
-                                <Text style={styles.ratingText}>⭐ {ride.driver.rating.toFixed(1)}</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {/* Meta pills */}
-                <View style={styles.metaRow}>
-                    <View style={styles.metaPill}>
-                        <Text style={styles.metaIcon}>🛺</Text>
-                        <Text style={styles.metaText}>{ride.vehicle_type || 'Auto'}</Text>
-                    </View>
-                    <View style={styles.metaPill}>
-                        <Text style={styles.metaIcon}>💵</Text>
-                        <Text style={styles.metaText}>{ride.payment_method === 'online' ? 'Online' : 'Cash'}</Text>
-                    </View>
-                    <View style={styles.metaPill}>
-                        <Text style={styles.metaIcon}>📏</Text>
-                        <Text style={styles.metaText}>{ride.distance_km?.toFixed(1) || '–'} km</Text>
-                    </View>
-                </View>
-
-                {/* Rating (if given) */}
-                {ride.customer_rating && (
-                    <View style={styles.ratingCard}>
-                        <Text style={styles.ratingCardLabel}>Your Rating</Text>
-                        <View style={styles.starsRow}>
-                            {[1, 2, 3, 4, 5].map((s) => (
-                                <Text key={s} style={[styles.starIcon, s <= ride.customer_rating && styles.starIconActive]}>★</Text>
-                            ))}
-                        </View>
-                        {ride.customer_comment && (
-                            <Text style={styles.ratingComment}>"{ride.customer_comment}"</Text>
-                        )}
-                    </View>
-                )}
-            </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F0FF' },
-    emptyText: { ...Typography.bodyLarge, color: Colors.onSurfaceVariant, marginBottom: 16 },
-    smallBackBtn: { padding: 10 },
-    smallBackBtnText: { color: Colors.primaryContainer, fontWeight: '600' },
+    safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: { flex: 1 },
+    
+    /* Header AppBar */
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.95)',
+        zIndex: 10,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
+    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
+    headerIcon: { fontSize: 22, color: '#BEA3D8', fontWeight: 'bold' },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45, position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 },
+
+    scrollContent: {
+        paddingBottom: 140, // Avoid bottom button overlap
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
-    content: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
-    dateText: { fontSize: 12, color: Colors.onSurfaceVariant, fontWeight: '500' },
-    routeCard: {
-        backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 16, ...Shadows.card,
+
+    /* Map Area Placeholder */
+    mapSection: {
+        width: '100%', height: 236,
+        backgroundColor: '#EBE6F5', // Soft map placeholder bg
+        overflow: 'hidden',
     },
-    routeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    routeDot: { width: 10, height: 10, borderRadius: 5 },
-    routeVertLine: { width: 2, height: 16, backgroundColor: Colors.outlineVariant, marginLeft: 4, marginVertical: 4 },
-    routeAddr: { flex: 1, fontSize: 13, color: Colors.onSurface, fontWeight: '500' },
-    fareCard: {
-        backgroundColor: Colors.surfaceContainerLowest, borderRadius: 16, padding: 16, ...Shadows.card,
+    mapPlaceholder: {
+        flex: 1, opacity: 0.6,
+        justifyContent: 'center', alignItems: 'center',
     },
-    fareCardTitle: { ...Typography.titleSmall, color: Colors.onBackground, marginBottom: 12 },
-    fareRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    fareLabel: { fontSize: 13, color: Colors.onSurfaceVariant },
-    fareValue: { fontSize: 13, fontWeight: '600', color: Colors.onSurface },
-    fareDivider: { height: 1, backgroundColor: Colors.outlineVariant, marginVertical: 10 },
-    totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    totalLabel: { fontSize: 15, fontWeight: '700', color: Colors.onBackground },
-    totalValue: { fontSize: 20, fontWeight: '800', color: Colors.primaryContainer },
-    driverCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: Colors.surfaceContainerLowest, borderRadius: 14, padding: 14, ...Shadows.card,
+    mapRouteLine: {
+        width: 140, height: 80, 
+        borderLeftWidth: 3, borderBottomWidth: 3, borderColor: '#AE74E6',
+        borderRadius: 20,
+        justifyContent: 'space-between'
     },
-    driverAvatar: {
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: Colors.primaryFixed, alignItems: 'center', justifyContent: 'center',
+    mapStartDot: {
+        width: 16, height: 16, borderRadius: 8, backgroundColor: '#22C55E', borderWidth: 2, borderColor: '#FFF',
+        position: 'absolute', top: -8, left: -9,
     },
-    driverInfo: { flex: 1 },
-    driverName: { fontSize: 15, fontWeight: '700', color: Colors.onBackground },
-    driverSub: { fontSize: 12, color: Colors.onSurfaceVariant },
-    ratingBadge: {
-        backgroundColor: Colors.surfaceContainerLow, borderRadius: BorderRadius.full,
-        paddingHorizontal: 10, paddingVertical: 4,
+    mapEndPin: {
+        width: 16, height: 16, borderRadius: 8, backgroundColor: '#9641E7',
+        position: 'absolute', bottom: -8, right: -8,
     },
-    ratingText: { fontSize: 13, fontWeight: '600', color: Colors.onSurface },
-    metaRow: { flexDirection: 'row', gap: 8 },
-    metaPill: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 10, padding: 10, justifyContent: 'center', ...Shadows.card,
+
+    /* Card Cluster Overlay */
+    cardClusterWrap: {
+        marginTop: -40, // Overlap the map
+        paddingHorizontal: 20,
     },
-    metaIcon: { fontSize: 14 },
-    metaText: { fontSize: 12, color: Colors.onSurface, fontWeight: '500' },
-    ratingCard: {
-        backgroundColor: Colors.surfaceContainerLowest, borderRadius: 14, padding: 16, ...Shadows.card,
+    mainCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 24,
+        paddingTop: 23,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        gap: 24,
     },
-    ratingCardLabel: { fontSize: 12, fontWeight: '700', color: Colors.onSurfaceVariant, marginBottom: 8 },
-    starsRow: { flexDirection: 'row', gap: 4, marginBottom: 8 },
-    starIcon: { fontSize: 24, color: Colors.outlineVariant },
-    starIconActive: { color: '#f59e0b' },
-    ratingComment: { fontSize: 13, color: Colors.onSurfaceVariant, fontStyle: 'italic' },
+
+    /* Date & Meta Section */
+    cardHeader: { gap: 8 },
+    dateText: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', lineHeight: 22 },
+    metaRow: { flexDirection: 'row', alignItems: 'center' },
+    metaBadge: {
+        backgroundColor: '#EBE6F5',
+        paddingHorizontal: 12, paddingVertical: 4,
+        borderRadius: 9999,
+    },
+    metaBadgeText: { fontSize: 12, fontWeight: '500', color: '#4A4455' },
+    subBadge: {
+        position: 'absolute', top: 0, right: 0,
+        backgroundColor: '#EADDFF',
+        paddingHorizontal: 10, paddingVertical: 2,
+        borderRadius: 9999,
+    },
+    subBadgeText: { fontSize: 10, fontWeight: '700', color: '#25005A', letterSpacing: 0.5, textTransform: 'uppercase' },
+
+    /* Route Visualizer */
+    routeSection: { gap: 4 },
+    routeRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    dotGreen: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981', marginLeft: 2 },
+    routeAddressText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 18 },
+    routeVertLineWrap: { paddingLeft: 6, marginVertical: 2 },
+    routeVertLine: { width: 2, height: 24, backgroundColor: '#BEA3D8', opacity: 0.3 },
+    pinPurpleWrap: { width: 14, alignItems: 'center' },
+    pinPurple: { fontSize: 14, color: '#BEA3D8' },
+
+    /* Fare Box */
+    fareBox: {
+        backgroundColor: '#F6F1FF',
+        borderRadius: 8,
+        padding: 16, paddingTop: 24,
+        gap: 12,
+    },
+    fareRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    fareLabel: { fontSize: 14, color: '#4A4455' },
+    fareValue: { fontSize: 14, color: '#4A4455' },
+    fareDivider: { height: 1, backgroundColor: 'rgba(204, 195, 216, 0.3)', marginVertical: 4 },
+    fareTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    fareTotalLabel: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
+    fareTotalValue: { fontSize: 20, fontWeight: '700', color: '#BEA3D8' },
+    paymentMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+    paymentMetaIcon: { fontSize: 12 },
+    paymentMetaText: { fontSize: 12, color: '#1C1A25' },
+
+    /* Driver Profile */
+    driverSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    driverLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    driverImgWrap: { 
+        width: 48, height: 48, borderRadius: 24, 
+        borderWidth: 2, borderColor: '#EADDFF', 
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#F5F0FF'
+    },
+    driverInfo: { gap: 2 },
+    driverName: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
+    driverVehicle: { fontSize: 12, color: '#1C1A25' },
+    driverRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    driverRatingText: { fontSize: 16, fontWeight: '700', color: '#F59E0B' },
+    starIcon: { fontSize: 14, color: '#F59E0B' },
+
+    /* User Review Area */
+    reviewSection: { 
+        borderTopWidth: 1, borderTopColor: 'rgba(204, 195, 216, 0.2)',
+        paddingTop: 16, gap: 4 
+    },
+    reviewScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    reviewLabel: { fontSize: 12, fontWeight: '500', color: '#4A4455' },
+    starsWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    reviewComment: { fontSize: 12, color: '#1C1A25', fontStyle: 'italic', marginTop: 4 },
+
+    /* Fixed Bottom Action */
+    bottomFixedWrap: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 108, padding: 24,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: 'rgba(245, 240, 255, 0.9)',
+    },
+    actionBtn: {
+        width: '100%', height: 60,
+        borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+    },
+    actionBtnText: {
+        fontSize: 16, fontWeight: '700', color: '#BEA3D8',
+    },
 });
