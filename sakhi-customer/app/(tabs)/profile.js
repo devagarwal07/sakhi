@@ -1,237 +1,341 @@
-import React, { useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView,
-    TouchableOpacity, Alert, ActivityIndicator, Pressable,
+import React from 'react';
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    SafeAreaView, Image, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
 import { useAuth } from '../../src/context/AuthContext';
-import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../../src/api/endpoints';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
-    const [contacts, setContacts] = useState([]);
-    const [loadingContacts, setLoadingContacts] = useState(true);
 
-    useEffect(() => {
-        getEmergencyContacts()
-            .then(({ data }) => setContacts(data.contacts || []))
-            .catch(() => { })
-            .finally(() => setLoadingContacts(false));
-    }, []);
-
-    const handleLogout = () => {
-        Alert.alert('Log Out', 'Are you sure you want to log out?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Log Out',
-                style: 'destructive',
-                onPress: async () => {
-                    await logout();
-                    router.replace('/(auth)/login');
-                },
-            },
-        ]);
+    const handleLogout = async () => {
+        await logout();
+        router.replace('/(auth)/login');
     };
 
-    const handleDeleteContact = async (id) => {
-        Alert.alert('Remove Contact', 'Remove this emergency contact?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Remove', style: 'destructive',
-                onPress: async () => {
-                    await deleteEmergencyContact(id);
-                    setContacts((c) => c.filter((x) => x.id !== id));
-                },
-            },
-        ]);
-    };
-
-    const MenuRow = ({ emoji, label, onPress, destructive }) => (
-        <Pressable style={styles.menuRow} onPress={onPress}>
-            <View style={[styles.menuIconBg, destructive && styles.menuIconBgRed]}>
-                <Text style={{ fontSize: 18 }}>{emoji}</Text>
-            </View>
-            <Text style={[styles.menuLabel, destructive && { color: Colors.error }]}>{label}</Text>
-            <Text style={styles.menuChevron}>›</Text>
-        </Pressable>
+    const SettingRow = ({ icon, label, onPress, isLast = false }) => (
+        <View style={styles.settingRowContainer}>
+            <TouchableOpacity style={styles.settingRow} onPress={onPress} activeOpacity={0.7}>
+                <View style={styles.settingIconBg}>
+                    <Text style={styles.settingIcon}>{icon}</Text>
+                </View>
+                <Text style={styles.settingLabel}>{label}</Text>
+                <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+            {!isLast && <View style={styles.divider} />}
+        </View>
     );
 
     return (
-        <View style={styles.container}>
-            {/* Header hero */}
-            <View style={styles.hero}>
-                <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarInitial}>
-                        {user?.name ? user.name[0].toUpperCase() : '?'}
-                    </Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                
+                {/* Header App Bar */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                        <Text style={styles.headerIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Settings</Text>
+                    <TouchableOpacity style={styles.iconBtn}>
+                        <Text style={styles.headerDots}>⋮</Text>
+                    </TouchableOpacity>
                 </View>
-                <Text style={styles.heroName}>{user?.name || 'Sakhi User'}</Text>
-                <Text style={styles.heroPhone}>{user?.phone || ''}</Text>
-                <View style={styles.heroBadge}>
-                    <Text style={styles.heroBadgeText}>
-                        {user?.verification_status === 'approved' ? '✅  Verified' : '⏳  Pending Verification'}
-                    </Text>
-                </View>
-            </View>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Emergency Contacts */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-                    <Text style={styles.sectionSubtitle}>
-                        Added during SOS — up to 3 contacts
-                    </Text>
-
-                    {loadingContacts ? (
-                        <ActivityIndicator color={Colors.primaryContainer} style={{ marginVertical: 12 }} />
-                    ) : contacts.length === 0 ? (
-                        <View style={styles.emptyContacts}>
-                            <Text style={styles.emptyContactsText}>No emergency contacts added yet.</Text>
+                {/* Main Scrollable Content */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Profile Hero Card */}
+                    <View style={styles.heroCard}>
+                        <View style={styles.avatarImg}>
+                            <Text style={styles.avatarInitial}>
+                                {user?.name ? user.name[0].toUpperCase() : 'P'}
+                            </Text>
                         </View>
-                    ) : (
-                        contacts.map((c) => (
-                            <View key={c.id} style={styles.contactCard}>
-                                <View style={styles.contactIconBg}>
-                                    <Text style={{ fontSize: 20 }}>👤</Text>
+                        
+                        <View style={styles.heroInfo}>
+                            <View style={styles.heroNameRow}>
+                                <Text style={styles.heroName}>{user?.name || 'Priya Sharma'}</Text>
+                                <View style={styles.verifiedBadge}>
+                                    <Text style={styles.verifiedCheck}>✓</Text>
+                                    <Text style={styles.verifiedText}>VERIFIED</Text>
                                 </View>
-                                <View style={styles.contactInfo}>
-                                    <Text style={styles.contactName}>{c.name}</Text>
-                                    <Text style={styles.contactPhone}>{c.phone}</Text>
-                                </View>
-                                <Pressable
-                                    onPress={() => handleDeleteContact(c.id)}
-                                    style={styles.deleteContactBtn}
-                                >
-                                    <Text style={styles.deleteContactIcon}>🗑️</Text>
-                                </Pressable>
                             </View>
-                        ))
-                    )}
-
-                    {contacts.length < 3 && (
-                        <TouchableOpacity
-                            style={styles.addContactBtn}
-                            onPress={() => router.push('/add-contact')}
-                        >
-                            <Text style={styles.addContactBtnText}>+ Add Emergency Contact</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Account Settings */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account</Text>
-                    <View style={styles.menuCard}>
-                        <MenuRow emoji="✏️" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="📱" label="Change Phone Number" onPress={() => router.push('/change-phone')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="💳" label="Wallet & Referrals" onPress={() => router.push('/wallet')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="🏠" label="Saved Places" onPress={() => router.push('/saved-places')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="🔔" label="Notification Settings" onPress={() => router.push('/notifications')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="🎫" label="Subscriptions" onPress={() => router.push('/(tabs)/subscriptions')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="📋" label="Ride History" onPress={() => router.push('/(tabs)/ride-history')} />
+                            <Text style={styles.heroPhone}>{user?.phone || '+91 98765 43210'}</Text>
+                            <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
+                                <Text style={styles.editText}>Edit Profile</Text>
+                                <Text style={styles.editArrow}>→</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
 
-                {/* Support */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Help & Support</Text>
-                    <View style={styles.menuCard}>
-                        <MenuRow emoji="🆘" label="Raise a Complaint" onPress={() => router.push('/complaint')} />
-                        <View style={styles.menuDivider} />
-                        <MenuRow emoji="ℹ️" label="About Sakhi" onPress={() => router.push('/about')} />
+                    {/* My Account Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeading}>MY ACCOUNT</Text>
+                        <View style={styles.cardGroup}>
+                            <SettingRow icon="📍" label="Saved Places" onPress={() => router.push('/saved-places')} />
+                            <SettingRow icon="🕐" label="Ride History" onPress={() => router.push('/(tabs)/ride-history')} />
+                            <SettingRow icon="📇" label="Emergency Contacts" onPress={() => router.push('/emergency-contacts')} />
+                            <SettingRow icon="💵" label="Payment Methods" onPress={() => router.push('/payment')} isLast />
+                        </View>
                     </View>
-                </View>
 
-                {/* Logout */}
-                <View style={styles.section}>
-                    <View style={styles.menuCard}>
-                        <MenuRow emoji="🚪" label="Log Out" onPress={handleLogout} destructive />
+                    {/* Safety Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeading}>SAFETY</Text>
+                        <View style={styles.cardGroup}>
+                            <SettingRow icon="✳️" label="SOS Settings" onPress={() => router.push('/sos-settings')} />
+                            <SettingRow icon="🎯" label="Live Trip Sharing" isLast />
+                        </View>
                     </View>
-                </View>
 
-                <Text style={styles.versionText}>Sakhi v1.0.0  •  sakhirides.in</Text>
-            </ScrollView>
-        </View>
+                    {/* App Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeading}>APP</Text>
+                        <View style={styles.cardGroup}>
+                            <SettingRow icon="🔔" label="Notifications" onPress={() => router.push('/notifications')} />
+                            <SettingRow icon="❓" label="Help & Support" onPress={() => router.push('/complaint')} />
+                            <SettingRow icon="ℹ️" label="About Sakhi" onPress={() => router.push('/about')} />
+                            <SettingRow icon="🛡️" label="Terms & Privacy" onPress={() => router.push('/about')} isLast />
+                        </View>
+                    </View>
+
+                    {/* Logout Button */}
+                    <TouchableOpacity style={styles.logoutCard} onPress={handleLogout} activeOpacity={0.8}>
+                        <View style={styles.logoutIconBg}>
+                            <Text style={styles.logoutIcon}>🚪</Text>
+                        </View>
+                        <Text style={styles.logoutText}>Log Out</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
-    hero: {
-        backgroundColor: Colors.primaryContainer,
-        paddingTop: 56, paddingBottom: 28, paddingHorizontal: 24,
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#F5F0FF',
+    },
+    container: {
+        flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        backgroundColor: '#F5F0FF',
+        zIndex: 10,
+    },
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarCircle: {
-        width: 72, height: 72, borderRadius: 36,
-        backgroundColor: 'rgba(255,255,255,0.25)',
-        alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-        borderWidth: 3, borderColor: 'rgba(255,255,255,0.4)',
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: '500',
     },
-    avatarInitial: { fontSize: 30, fontWeight: '700', color: '#fff' },
-    heroName: { fontSize: 20, fontWeight: '700', color: '#fff', marginBottom: 2 },
-    heroPhone: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 10 },
-    heroBadge: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: BorderRadius.full, paddingHorizontal: 14, paddingVertical: 5,
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
+        letterSpacing: -0.5,
     },
-    heroBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-    content: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20, gap: 20 },
-    section: { gap: 8 },
-    sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.8 },
-    sectionSubtitle: { fontSize: 12, color: Colors.outline, marginTop: -4 },
-    emptyContacts: {
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 12, padding: 14, ...Shadows.card,
+    headerDots: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: '800',
     },
-    emptyContactsText: { fontSize: 13, color: Colors.outline, textAlign: 'center' },
-    contactCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 12, padding: 12, ...Shadows.card, marginBottom: 6,
+
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 40,
+        gap: 24,
     },
-    contactIconBg: {
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
+
+    /* Hero Card */
+    heroCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        gap: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 6,
     },
-    contactInfo: { flex: 1 },
-    contactName: { fontSize: 14, fontWeight: '600', color: Colors.onBackground },
-    contactPhone: { fontSize: 12, color: Colors.onSurfaceVariant },
-    deleteContactBtn: { padding: 8 },
-    deleteContactIcon: { fontSize: 16 },
-    addContactBtn: {
-        borderWidth: 1.5, borderColor: Colors.primaryContainer,
-        borderStyle: 'dashed', borderRadius: 12,
-        paddingVertical: 12, alignItems: 'center', marginTop: 4,
+    avatarImg: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#BEA3D8',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    addContactBtnText: { color: Colors.primaryContainer, fontWeight: '600', fontSize: 14 },
-    menuCard: {
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 16, overflow: 'hidden', ...Shadows.card,
+    avatarInitial: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
-    menuRow: {
-        flexDirection: 'row', alignItems: 'center', gap: 14,
-        paddingVertical: 14, paddingHorizontal: 16,
+    heroInfo: {
+        flex: 1,
+        gap: 4,
     },
-    menuIconBg: {
-        width: 38, height: 38, borderRadius: 10,
-        backgroundColor: Colors.surfaceContainerLow,
-        alignItems: 'center', justifyContent: 'center',
+    heroNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
-    menuIconBgRed: { backgroundColor: '#fff1f2' },
-    menuLabel: { flex: 1, fontSize: 15, color: Colors.onSurface, fontWeight: '500' },
-    menuChevron: { fontSize: 20, color: Colors.outline },
-    menuDivider: { height: 1, backgroundColor: Colors.outlineVariant, marginLeft: 68 },
-    versionText: {
-        textAlign: 'center', fontSize: 11, color: Colors.outline, marginTop: 8,
+    heroName: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1E1B2E',
+    },
+    verifiedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ECFDF5',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#D1FAE5',
+        gap: 4,
+    },
+    verifiedCheck: {
+        fontSize: 10,
+        color: '#059669',
+        fontWeight: 'bold',
+    },
+    verifiedText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#059669',
+        letterSpacing: 0.5,
+    },
+    heroPhone: {
+        fontSize: 14,
+        color: '#1C1A25',
+        opacity: 0.8,
+        marginBottom: 2,
+    },
+    editBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    editText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#BEA3D8',
+    },
+    editArrow: {
+        fontSize: 14,
+        color: '#BEA3D8',
+        fontWeight: 'bold',
+    },
+
+    /* Sections */
+    section: {
+        gap: 12,
+    },
+    sectionHeading: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#1C1A25',
+        letterSpacing: 1.1,
+        textTransform: 'uppercase',
+        paddingHorizontal: 4,
+    },
+    cardGroup: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 24,
+        elevation: 3,
+        overflow: 'hidden',
+    },
+    
+    /* Rows */
+    settingRowContainer: {
+        width: '100%',
+    },
+    settingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 16,
+    },
+    settingIconBg: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F5F0FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    settingIcon: {
+        fontSize: 18,
+    },
+    settingLabel: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1E1B2E',
+    },
+    chevron: {
+        fontSize: 22,
+        color: '#CCC3D8',
+        paddingBottom: 2,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F5F0FF',
+    },
+
+    /* Logout Block */
+    logoutCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        gap: 16,
+        shadowColor: 'rgba(186, 26, 26, 1)',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 24,
+        elevation: 4,
+        marginTop: 8,
+    },
+    logoutIconBg: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 218, 214, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    logoutIcon: {
+        fontSize: 18,
+    },
+    logoutText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#BA1A1A',
     },
 });

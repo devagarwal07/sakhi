@@ -1,201 +1,276 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, Pressable, Image,
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    SafeAreaView, TextInput, Image, KeyboardAvoidingView, Platform
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { useAuth } from '../src/context/AuthContext';
-import { updateProfile } from '../src/api/endpoints';
-import Input from '../src/components/Input';
-import Button from '../src/components/Button';
 
 export default function EditProfileScreen() {
     const router = useRouter();
-    const { user, updateUser } = useAuth();
-    const [name, setName] = useState(user?.name || '');
-    const [email, setEmail] = useState(user?.email || '');
-    const [accessibilityNotes, setAccessibilityNotes] = useState(user?.accessibility_notes || '');
-    const [avatar, setAvatar] = useState(null);
-    const [saving, setSaving] = useState(false);
-    const [errors, setErrors] = useState({});
 
-    const validate = () => {
-        const e = {};
-        if (!name.trim()) e.name = 'Name is required';
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Invalid email address';
-        setErrors(e);
-        return Object.keys(e).length === 0;
+    const [name, setName] = useState("Priya Sharma");
+    const [email, setEmail] = useState("priya.sharma@example.com");
+
+    const handleSave = () => {
+        router.back();
     };
-
-    const pickAvatar = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') return;
-        const result = await ImagePicker.launchImageLibraryAsync({
-            allowsEditing: true, aspect: [1, 1], quality: 0.8,
-        });
-        if (!result.canceled) setAvatar(result.assets[0]);
-    };
-
-    const handleSave = async () => {
-        if (!validate()) return;
-        setSaving(true);
-        try {
-            const formData = new FormData();
-            formData.append('name', name.trim());
-            if (email.trim()) formData.append('email', email.trim());
-            if (accessibilityNotes.trim()) formData.append('accessibility_notes', accessibilityNotes.trim());
-            if (avatar) {
-                formData.append('avatar', {
-                    uri: avatar.uri, name: 'avatar.jpg', type: 'image/jpeg',
-                });
-            }
-            const { data } = await updateProfile(formData);
-            updateUser(data.user || { name, email, accessibility_notes: accessibilityNotes });
-            Alert.alert('✅ Saved', 'Your profile has been updated.', [
-                { text: 'OK', onPress: () => router.back() },
-            ]);
-        } catch (err) {
-            Alert.alert('Error', err?.response?.data?.message || 'Failed to update profile.');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const initials = name.trim() ? name.trim()[0].toUpperCase() : (user?.name?.[0]?.toUpperCase() || '?');
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>Edit Profile</Text>
-                <Pressable style={styles.saveTextBtn} onPress={handleSave} disabled={saving}>
-                    <Text style={[styles.saveText, saving && { opacity: 0.5 }]}>Save</Text>
-                </Pressable>
-            </View>
-
-            <ScrollView
-                contentContainerStyle={styles.content}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView 
+                style={styles.keyboardView} 
+                behavior={Platform.OS === 'ios' ? 'padding' : null}
             >
-                {/* Avatar */}
-                <TouchableOpacity style={styles.avatarWrapper} onPress={pickAvatar} activeOpacity={0.85}>
-                    {avatar ? (
-                        <Image source={{ uri: avatar.uri }} style={styles.avatarImg} />
-                    ) : user?.avatar_url ? (
-                        <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />
-                    ) : (
-                        <View style={styles.avatarCircle}>
-                            <Text style={styles.avatarInitial}>{initials}</Text>
-                        </View>
-                    )}
-                    <View style={styles.cameraOverlay}>
-                        <Text style={{ fontSize: 14 }}>📷</Text>
+                {/* Header AppBar */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeftWrap}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
-                <Text style={styles.changePhotoHint}>Tap to change photo</Text>
-
-                {/* Form */}
-                <Input
-                    label="Full Name"
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Your full name"
-                    icon="👤"
-                    error={errors.name}
-                />
-
-                <Input
-                    label="Email Address"
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="youremail@example.com"
-                    keyboardType="email-address"
-                    icon="✉️"
-                    error={errors.email}
-                />
-
-                <Input
-                    label="Phone Number"
-                    value={user?.phone || ''}
-                    editable={false}
-                    icon="📞"
-                />
-
-                <Input
-                    label="Accessibility / Special Notes"
-                    value={accessibilityNotes}
-                    onChangeText={setAccessibilityNotes}
-                    placeholder="E.g. wheelchair user, prefer ground floor pickup…"
-                    multiline
-                    numberOfLines={3}
-                    icon="♿"
-                />
-
-                <View style={styles.infoCard}>
-                    <Text style={styles.infoIcon}>🔒</Text>
-                    <Text style={styles.infoText}>
-                        Your phone number is linked to your account and cannot be changed here. Contact support if needed.
-                    </Text>
+                    <Text style={styles.headerTitle}>Edit Profile</Text>
+                    <View style={styles.headerRightWrap}>
+                        <TouchableOpacity style={styles.saveTopBtn} onPress={handleSave}>
+                            <Text style={styles.saveTopText}>Save</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
-                <Button
-                    title="Save Changes"
-                    onPress={handleSave}
-                    loading={saving}
-                    size="lg"
-                    style={{ marginTop: 8 }}
-                />
-            </ScrollView>
-        </View>
+                {/* Main Content Area */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Avatar Header */}
+                    <View style={styles.avatarSection}>
+                        <View style={styles.avatarWrap}>
+                            {/* Simple simulated graphic placeholder for avatar. Can use a real Image here too. */}
+                            <View style={styles.avatarImagePlaceholder}>
+                                <Text style={{fontSize: 40}}>👩🏽</Text>
+                            </View>
+                            <TouchableOpacity style={styles.avatarEditBtn} activeOpacity={0.8}>
+                                <Text style={styles.avatarEditIcon}>📷</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Main Form Card */}
+                    <View style={styles.formCard}>
+                        
+                        {/* Name Field */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>FULL NAME</Text>
+                            <View style={styles.inputWrap}>
+                                <TextInput 
+                                    style={styles.input}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="Enter full name"
+                                    placeholderTextColor="#7B7487"
+                                />
+                            </View>
+                        </View>
+
+                        {/* Email Field */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>EMAIL</Text>
+                            <View style={styles.inputWrap}>
+                                <TextInput 
+                                    style={styles.input}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    placeholder="Enter email address"
+                                    placeholderTextColor="#7B7487"
+                                    keyboardType="email-address"
+                                />
+                            </View>
+                        </View>
+
+                        {/* Phone Field (Read Only style mostly, with link inside) */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>PHONE</Text>
+                            <View style={[styles.inputWrap, styles.inputRow]}>
+                                <Text style={styles.inputText}>+91 98765 43210</Text>
+                                <TouchableOpacity>
+                                    <Text style={styles.changeLinkText}>Change Number <Text style={{fontSize: 12}}>→</Text></Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* Date of Birth Field (Simulated Picker) */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>DATE OF BIRTH</Text>
+                            <TouchableOpacity style={[styles.inputWrap, styles.inputRow]} activeOpacity={0.7}>
+                                <Text style={styles.inputText}>12/05/1995</Text>
+                                <Text style={styles.inputEndIcon}>📅</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Preferred Language Field (Simulated Dropdown) */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>PREFERRED LANGUAGE</Text>
+                            <TouchableOpacity style={[styles.inputWrap, styles.inputRow]} activeOpacity={0.7}>
+                                <Text style={styles.inputText}>English</Text>
+                                <Text style={[styles.inputEndIcon, { fontSize: 14 }]}>▼</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Verification Status Area */}
+                        <View style={styles.verificationBox}>
+                            <View style={styles.verifyRow}>
+                                <View style={styles.verifyIconWrap}>
+                                    <Text style={styles.verifyIcon}>✓</Text>
+                                </View>
+                                <Text style={styles.verifyLabel}>Aadhaar Verified</Text>
+                            </View>
+                            <View style={styles.verifyRow}>
+                                <View style={styles.verifyIconWrap}>
+                                    <Text style={styles.verifyIcon}>✓</Text>
+                                </View>
+                                <Text style={styles.verifyLabel}>Gender Verified</Text>
+                            </View>
+                        </View>
+
+                    </View>
+
+                </ScrollView>
+
+                {/* Fixed Bottom Save Action */}
+                <View style={styles.bottomFixedWrap}>
+                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={handleSave}>
+                        <Text style={styles.actionBtnText}>Save Changes</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
+    keyboardView: { flex: 1 },
+    
+    /* Header AppBar */
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 24, paddingVertical: 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.9)',
+        zIndex: 10,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
+    headerLeftWrap: { width: 60, alignItems: 'flex-start' },
+    headerRightWrap: { width: 60, alignItems: 'flex-end' },
+    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'flex-start' },
+    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
+    headerTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45, textAlign: 'center' },
+    saveTopBtn: { paddingVertical: 4 },
+    saveTopText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8' },
+
+    /* Scroll Payload */
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 32, 
+        paddingBottom: 140, // Space for the fixed bottom save button
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
-    saveTextBtn: { paddingHorizontal: 4 },
-    saveText: { fontSize: 15, fontWeight: '700', color: Colors.primaryContainer },
-    content: { paddingHorizontal: 20, paddingBottom: 48, gap: 16, alignItems: 'center' },
-    avatarWrapper: { position: 'relative', marginBottom: 4 },
-    avatarImg: {
-        width: 96, height: 96, borderRadius: 48,
-        borderWidth: 3, borderColor: Colors.primaryFixed,
+
+    /* Avatar Element */
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: 32,
     },
-    avatarCircle: {
-        width: 96, height: 96, borderRadius: 48,
-        backgroundColor: Colors.primaryContainer,
-        alignItems: 'center', justifyContent: 'center',
-        ...Shadows.editorial,
+    avatarWrap: {
+        position: 'relative',
+        width: 100, height: 100,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 50,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 4, borderColor: '#FFFFFF',
+        shadowColor: 'rgba(0, 0, 0, 0.1)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4,
     },
-    avatarInitial: { fontSize: 36, fontWeight: '700', color: '#fff' },
-    cameraOverlay: {
-        position: 'absolute', bottom: 0, right: 0,
-        width: 32, height: 32, borderRadius: 16,
-        backgroundColor: Colors.surfaceContainerLowest,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: Colors.outlineVariant,
-        ...Shadows.card,
+    avatarImagePlaceholder: {
+        width: '100%', height: '100%',
+        backgroundColor: '#FFDAC1', // Simulated skin tone aesthetic
+        borderRadius: 50,
+        justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
     },
-    changePhotoHint: { fontSize: 11, color: Colors.onSurfaceVariant, marginBottom: 8 },
-    infoCard: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-        backgroundColor: Colors.surfaceContainerLow,
-        borderRadius: 12, padding: 14, alignSelf: 'stretch',
+    avatarEditBtn: {
+        position: 'absolute', right: -4, bottom: 0,
+        width: 32, height: 32,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 16,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 2, borderColor: '#FFFFFF',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
     },
-    infoIcon: { fontSize: 16 },
-    infoText: { flex: 1, fontSize: 12, color: Colors.onSurfaceVariant, lineHeight: 18 },
+    avatarEditIcon: { fontSize: 14, color: '#FFF' },
+
+    /* Main Form Area */
+    formCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 24, gap: 24,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
+    },
+    fieldGroup: { gap: 6 },
+    fieldLabel: {
+        fontSize: 12, fontWeight: '700', color: '#7B7487', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 4,
+    },
+    inputWrap: {
+        backgroundColor: '#F6F1FF',
+        borderRadius: 12,
+        paddingHorizontal: 16, paddingVertical: 12,
+        minHeight: 48, justifyContent: 'center',
+    },
+    inputRow: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    },
+    input: {
+        fontSize: 16, fontWeight: '500', color: '#1C1A25',
+        flex: 1, padding: 0, margin: 0,
+    },
+    inputText: {
+        fontSize: 16, fontWeight: '500', color: '#1C1A25',
+    },
+    changeLinkText: {
+        fontSize: 14, fontWeight: '700', color: '#BEA3D8',
+    },
+    inputEndIcon: {
+        fontSize: 16, color: '#7B7487',
+    },
+
+    /* Verified Box Segment */
+    verificationBox: {
+        backgroundColor: '#F6F1FF',
+        borderRadius: 12,
+        padding: 20, gap: 16,
+        marginTop: 8,
+    },
+    verifyRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+    },
+    verifyIconWrap: {
+        width: 18, height: 18, borderRadius: 9, backgroundColor: '#059669',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    verifyIcon: { fontSize: 10, fontWeight: 'bold', color: '#FFF' },
+    verifyLabel: { fontSize: 14, fontWeight: '600', color: '#059669' },
+
+    /* Fixed Bottom Form Action */
+    bottomFixedWrap: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 104, padding: 24,
+        alignItems: 'center',
+        backgroundColor: '#F5F0FF',
+        // Slight simulated shadow up
+        shadowColor: '#F5F0FF', shadowOffset: { width: 0, height: -20 }, shadowOpacity: 1, shadowRadius: 20, elevation: 10,
+    },
+    actionBtn: {
+        width: '100%', height: 56,
+        backgroundColor: '#9867D9', // To simulate linear-grad: linear-gradient(90deg, #9867D9 0%, #BEA3D8 100%)
+        borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: 'rgba(0,0,0,0.1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 1, shadowRadius: 15, elevation: 5,
+    },
+    actionBtnText: {
+        fontSize: 16, fontWeight: '700', color: '#FFFFFF',
+    },
 });

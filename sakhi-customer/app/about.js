@@ -1,155 +1,193 @@
 import React from 'react';
-import {
-    View, Text, StyleSheet, ScrollView,
-    Linking, TouchableOpacity, Pressable,
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    SafeAreaView, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, Shadows } from '../src/utils/theme';
 
 export default function AboutScreen() {
     const router = useRouter();
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>About Sakhi</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Brand hero */}
-                <View style={styles.brandHero}>
-                    <View style={styles.logoCircle}>
-                        <Text style={{ fontSize: 44 }}>🛺</Text>
-                    </View>
-                    <Text style={styles.brandName}>Sakhi</Text>
-                    <Text style={styles.brandTagline}>India's First Women-Only Ride Platform</Text>
-                    <View style={styles.versionBadge}>
-                        <Text style={styles.versionText}>Version 1.0.0</Text>
-                    </View>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                
+                {/* Header App Bar */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                        <Text style={styles.headerIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>About Sakhi</Text>
+                    {/* Empty view for flex-between balance */}
+                    <View style={styles.iconBtn} /> 
                 </View>
 
-                {/* Mission */}
-                <View style={styles.missionCard}>
-                    <Text style={styles.missionTitle}>Our Mission</Text>
-                    <Text style={styles.missionText}>
-                        Sakhi exists to make every woman's journey safe, comfortable, and dignified. We connect
-                        women passengers exclusively with verified women drivers — creating a community of trust
-                        on every road.
-                    </Text>
-                </View>
-
-                {/* Stats */}
-                <View style={styles.statsRow}>
-                    {[
-                        { num: '50K+', label: 'Rides Completed' },
-                        { num: '5K+', label: 'Verified Drivers' },
-                        { num: '4.9⭐', label: 'Avg Rating' },
-                    ].map((s, i) => (
-                        <View key={i} style={styles.statCard}>
-                            <Text style={styles.statNum}>{s.num}</Text>
-                            <Text style={styles.statLabel}>{s.label}</Text>
+                {/* Main Scrollable Content */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* App Logo & Version */}
+                    <View style={styles.logoSection}>
+                        <View style={styles.logoBlock}>
+                            <View style={styles.logoGradientBox}>
+                                <Text style={styles.shieldIcon}>🛡️</Text>
+                            </View>
                         </View>
-                    ))}
-                </View>
+                        <Text style={styles.appName}>Sakhi</Text>
+                        <Text style={styles.appVersion}>V1.0.2</Text>
+                    </View>
 
-                {/* Safety */}
-                <View style={styles.safetyCard}>
-                    <Text style={styles.safetyTitle}>🛡️ Safety First</Text>
-                    <Text style={styles.safetyText}>
-                        All drivers undergo rigorous Aadhaar + facial verification and background checks.
-                        Our real-time SOS system connects you to emergency contacts instantly.
-                    </Text>
-                </View>
+                    {/* Mission Card */}
+                    <View style={styles.missionCard}>
+                        <Text style={styles.missionLabel}>OUR MISSION</Text>
+                        <Text style={styles.missionText}>
+                            "To make every journey safe,{'\n'}dignified, and empowering for{'\n'}women."
+                        </Text>
+                    </View>
 
-                {/* Links */}
-                <View style={styles.linksCard}>
-                    {[
-                        { label: 'Privacy Policy', url: 'https://sakhirides.in/privacy' },
-                        { label: 'Terms of Service', url: 'https://sakhirides.in/terms' },
-                        { label: 'Support', url: 'mailto:support@sakhirides.in' },
-                        { label: 'Website', url: 'https://sakhirides.in' },
-                    ].map((link, i) => (
-                        <React.Fragment key={link.label}>
-                            <TouchableOpacity
-                                style={styles.linkRow}
-                                onPress={() => Linking.openURL(link.url)}
-                            >
-                                <Text style={styles.linkText}>{link.label}</Text>
-                                <Text style={styles.linkChevron}>›</Text>
-                            </TouchableOpacity>
-                            {i < 3 && <View style={styles.linkDivider} />}
-                        </React.Fragment>
-                    ))}
-                </View>
+                    {/* Features List */}
+                    <View style={styles.featuresCard}>
+                        {/* Feature 1 */}
+                        <View style={styles.featureRow}>
+                            <View style={styles.featureIconBox}>
+                                <Text style={styles.featureIcon}>📅</Text>
+                            </View>
+                            <View style={styles.featureTextCol}>
+                                <Text style={styles.featureTitle}>Founded in 2023</Text>
+                                <Text style={styles.featureSub}>Born from a vision to revolutionize urban mobility for women.</Text>
+                            </View>
+                        </View>
 
-                <Text style={styles.copyright}>© 2025 Sakhi Technologies Pvt. Ltd.</Text>
-                <Text style={styles.madeWithLove}>Made with ❤️ for women, by women.</Text>
-            </ScrollView>
-        </View>
+                        {/* Feature 2 */}
+                        <View style={styles.featureRow}>
+                            <View style={styles.featureIconBox}>
+                                <Text style={styles.featureIcon}>♀️</Text>
+                            </View>
+                            <View style={styles.featureTextCol}>
+                                <Text style={styles.featureTitle}>Women-Only Platform</Text>
+                                <Text style={styles.featureSub}>A dedicated safe space exclusive to women riders and drivers.</Text>
+                            </View>
+                        </View>
+
+                        {/* Feature 3 */}
+                        <View style={styles.featureRow}>
+                            <View style={styles.featureIconBox}>
+                                <Text style={styles.featureIcon}>✅</Text>
+                            </View>
+                            <View style={styles.featureTextCol}>
+                                <Text style={styles.featureTitle}>Verified Professionals</Text>
+                                <Text style={styles.featureSub}>Multi-level background checks for every driver on our network.</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Social Share Icons */}
+                    <View style={styles.socialRow}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                            <Text style={styles.socialIcon}>🔗</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                            <Text style={styles.socialIcon}>🌍</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                            <Text style={styles.socialIcon}>✉️</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Legal Links */}
+                    <View style={styles.legalSection}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                            <Text style={styles.legalLabel}>Terms of Service</Text>
+                            <Text style={styles.legalChevron}>›</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                            <Text style={styles.legalLabel}>Privacy Policy</Text>
+                            <Text style={styles.legalChevron}>›</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                            <Text style={styles.legalLabel}>Cookie Policy</Text>
+                            <Text style={styles.legalChevron}>›</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Rate Button */}
+                    <TouchableOpacity style={styles.rateBtn} activeOpacity={0.7}>
+                        <Text style={styles.rateIcon}>★</Text>
+                        <Text style={styles.rateText}>Rate Sakhi on Play Store</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: { flex: 1 },
+    
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.95)', // Simulated translucency
+        zIndex: 10,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
+    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'flex-start' },
+    headerIcon: { fontSize: 24, color: '#7C3AED', fontWeight: 'bold' },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45, position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 },
+
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: 40,
+        alignItems: 'center',
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
-    content: { paddingHorizontal: 20, paddingBottom: 48, gap: 16, alignItems: 'center' },
-    brandHero: { alignItems: 'center', gap: 8, marginBottom: 8 },
-    logoCircle: {
-        width: 96, height: 96, borderRadius: 28,
-        backgroundColor: Colors.primaryFixed,
-        alignItems: 'center', justifyContent: 'center',
-        ...Shadows.editorial,
+
+    /* Logo Block */
+    logoSection: { alignItems: 'center', marginBottom: 32, width: '100%' },
+    logoBlock: {
+        width: 96, height: 96,
+        borderRadius: 24,
+        backgroundColor: '#D8B4E2', // Fallback for gradient
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: 'rgba(99, 14, 212, 1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8,
+        marginBottom: 12,
     },
-    brandName: { fontSize: 28, fontWeight: '800', color: Colors.primaryContainer, letterSpacing: -1 },
-    brandTagline: { fontSize: 14, color: Colors.onSurfaceVariant, textAlign: 'center' },
-    versionBadge: {
-        backgroundColor: Colors.surfaceContainerLow, borderRadius: 12,
-        paddingHorizontal: 12, paddingVertical: 4,
-    },
-    versionText: { fontSize: 12, color: Colors.outline, fontWeight: '500' },
-    missionCard: {
-        width: '100%', backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 16, padding: 18, ...Shadows.card,
-    },
-    missionTitle: { ...Typography.titleSmall, color: Colors.primaryContainer, marginBottom: 8 },
-    missionText: { fontSize: 14, color: Colors.onSurfaceVariant, lineHeight: 22 },
-    statsRow: { flexDirection: 'row', gap: 10, width: '100%' },
-    statCard: {
-        flex: 1, backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 14, padding: 14, alignItems: 'center', ...Shadows.card,
-    },
-    statNum: { fontSize: 18, fontWeight: '800', color: Colors.primaryContainer, marginBottom: 2 },
-    statLabel: { fontSize: 10, color: Colors.onSurfaceVariant, fontWeight: '500', textAlign: 'center' },
-    safetyCard: {
-        width: '100%', backgroundColor: Colors.primaryFixed,
-        borderRadius: 16, padding: 18, ...Shadows.card,
-    },
-    safetyTitle: { fontSize: 16, fontWeight: '700', color: Colors.primaryContainer, marginBottom: 8 },
-    safetyText: { fontSize: 13, color: Colors.onPrimaryFixed, lineHeight: 20 },
-    linksCard: {
-        width: '100%', backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 16, overflow: 'hidden', ...Shadows.card,
-    },
-    linkRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: 18, paddingVertical: 16,
-    },
-    linkText: { fontSize: 14, color: Colors.onSurface, fontWeight: '500' },
-    linkChevron: { fontSize: 20, color: Colors.outline },
-    linkDivider: { height: 1, backgroundColor: Colors.outlineVariant },
-    copyright: { fontSize: 11, color: Colors.outline, textAlign: 'center' },
-    madeWithLove: { fontSize: 12, color: Colors.onSurfaceVariant, fontWeight: '500', textAlign: 'center' },
+    logoGradientBox: { width: '100%', height: '100%', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+    shieldIcon: { fontSize: 40, color: '#FFFFFF' },
+    appName: { fontSize: 20, fontWeight: '800', color: '#1C1A25', letterSpacing: -0.5 },
+    appVersion: { fontSize: 12, fontWeight: '500', color: '#7B7487', marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
+
+    /* Mission */
+    missionCard: { width: '100%', backgroundColor: '#E8DDFF', borderRadius: 20, padding: 24, marginBottom: 24, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.04, shadowRadius: 32, elevation: 2 },
+    missionLabel: { fontSize: 14, fontWeight: '700', color: '#21005E', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 8 },
+    missionText: { fontSize: 16, fontWeight: '500', color: '#6B7280', lineHeight: 26 },
+
+    /* Features */
+    featuresCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, gap: 24, marginBottom: 32, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 },
+    featureRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+    featureIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' },
+    featureIcon: { fontSize: 16 },
+    featureTextCol: { flex: 1, gap: 4 },
+    featureTitle: { fontSize: 14, fontWeight: '700', color: '#1C1A25', lineHeight: 20 },
+    featureSub: { fontSize: 12, fontWeight: '400', color: '#7B7487', lineHeight: 16 },
+
+    /* Social Links */
+    socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 32 },
+    socialBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EBE6F5', justifyContent: 'center', alignItems: 'center' },
+    socialIcon: { fontSize: 18 },
+
+    /* Legal Links */
+    legalSection: { width: '100%', gap: 4, marginBottom: 32 },
+    legalLink: { width: '100%', height: 52, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(246, 241, 255, 0.5)', borderRadius: 12 },
+    legalLabel: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+    legalChevron: { fontSize: 18, color: '#7B7487', fontWeight: '300' },
+
+    /* Rate Button */
+    rateBtn: { width: '100%', height: 60, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 16 },
+    rateIcon: { fontSize: 20, color: '#BEA3D8' },
+    rateText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8' },
+
 });
