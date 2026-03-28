@@ -4,7 +4,7 @@ import {
     FlatList, ActivityIndicator, Pressable, Keyboard, Platform,
     ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import apiClient from '../src/api/client';
 
@@ -34,11 +34,14 @@ const RECENT_SEARCHES = [
 
 export default function LocationSearchScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const { setDropoff, ride } = useRide();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const searchTimer = React.useRef(null);
+
+    const returnRoute = params?.returnRoute || '/ride-estimate';
 
     const handleSearch = (text) => {
         setQuery(text);
@@ -83,19 +86,19 @@ export default function LocationSearchScreen() {
                 ...coords,
                 address: place.description || place.main,
             });
-            router.replace('/ride-estimate');
+            router.replace(returnRoute);
         } catch {
             setDropoff({
                 latitude: 28.6139,
                 longitude: 77.2090,
                 address: place.description || place.main,
             });
-            router.replace('/ride-estimate');
+            router.replace(returnRoute);
         }
     };
 
     const handleConfirm = () => {
-        router.replace('/ride-estimate');
+        router.replace(returnRoute);
     };
 
     return (

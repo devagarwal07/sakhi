@@ -13,6 +13,15 @@ const initialState = {
     waitingSeconds: 0,
     waitingCharge: 0,
     polyline: [],
+    subscription: {
+        startDate: 'Oct 28, 2024',
+        morningTime: '08:30 AM',
+        isTwoWay: true,
+        returnTime: '05:30 PM',
+        days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        plan: 7, // 7, 14, 21, 30
+        price: 364
+    }
 };
 
 export function RideProvider({ children }) {
@@ -44,6 +53,10 @@ export function RideProvider({ children }) {
 
     const setPolyline = useCallback((polyline) => setRide((r) => ({ ...r, polyline })), []);
 
+    const updateSubscription = useCallback((updates) => {
+        setRide((r) => ({ ...r, subscription: { ...r.subscription, ...updates } }));
+    }, []);
+
     const clearRide = useCallback(() => setRide(initialState), []);
 
     return (
@@ -58,6 +71,7 @@ export function RideProvider({ children }) {
                 tickWaiting,
                 updateFare,
                 setPolyline,
+                updateSubscription,
                 clearRide,
             }}
         >
