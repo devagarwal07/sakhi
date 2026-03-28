@@ -4,8 +4,8 @@ import {
     TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { getSubscriptions } from '../src/api/endpoints';
+import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
+import { getSubscriptions } from '../../src/api/endpoints';
 import { format, parseISO } from 'date-fns';
 
 export default function SubscriptionsScreen() {

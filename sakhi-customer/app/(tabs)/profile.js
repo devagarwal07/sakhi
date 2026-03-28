@@ -4,9 +4,9 @@ import {
     TouchableOpacity, Alert, ActivityIndicator, Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { useAuth } from '../src/context/AuthContext';
-import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../src/api/endpoints';
+import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
+import { useAuth } from '../../src/context/AuthContext';
+import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../../src/api/endpoints';
 
 export default function ProfileScreen() {
     const router = useRouter();

@@ -4,8 +4,8 @@ import {
     TouchableOpacity, ActivityIndicator, Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { getRideHistory } from '../src/api/endpoints';
+import { Colors, Typography, BorderRadius, Shadows } from '../../src/utils/theme';
+import { getRideHistory } from '../../src/api/endpoints';
 import { format, parseISO } from 'date-fns';
 
 export default function RideHistoryScreen() {
