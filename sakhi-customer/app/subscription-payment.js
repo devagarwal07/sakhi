@@ -1,260 +1,391 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ActivityIndicator, Alert, Pressable, ScrollView,
+    Dimensions, ScrollView, Platform, TextInput, Alert, ActivityIndicator
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import { createSubscriptionOrder, verifyPayment } from '../src/api/endpoints';
+import { useRouter } from 'expo-router';
+import { useRide } from '../src/context/RideContext';
 
-/**
- * Subscription Payment Screen (Prompt 11 — CheckoutScreen).
- *
- * Integrates with backend Razorpay order creation:
- *   1. POST /payments/order → get Razorpay order_id & amount
- *   2. Open Razorpay checkout (via react-native-razorpay if installed, else open WebView)
- *   3. On success → POST /payments/verify with signature
- */
+const { width } = Dimensions.get('window');
+
 export default function SubscriptionPaymentScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
-    const [loading, setLoading] = useState(false);
-    const [order, setOrder] = useState(null);
-    const [creating, setCreating] = useState(false);
+    const { ride } = useRide();
+    const sub = ride.subscription || {};
+    
+    const [selectedMethod, setSelectedMethod] = useState('UPI'); 
+    const [upiId, setUpiId] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    // Order details from params (passed from subscription-setup)
-    const planDays = parseInt(params.days || '30', 10);
-    const vehicleType = params.vehicle || 'auto';
-    const farePerDay = parseFloat(params.fare_per_day || '150');
-    const totalAmount = (farePerDay * planDays).toFixed(2);
-    const discountPct = planDays >= 30 ? 20 : planDays >= 21 ? 15 : planDays >= 14 ? 10 : 5;
-    const discountedAmount = (parseFloat(totalAmount) * (1 - discountPct / 100)).toFixed(2);
-    const savings = (parseFloat(totalAmount) - parseFloat(discountedAmount)).toFixed(2);
+    const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
+    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
+    
+    // Formatting days: 'Mon' and 'Fri' -> 'Mon–Fri' gracefully
+    const daysRange = sub.days?.length > 3 
+        ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}` 
+        : (sub.days?.join(', ') || 'Mon–Fri');
 
-    const createOrder = async () => {
-        setCreating(true);
-        try {
-            const { data } = await createSubscriptionOrder({
-                plan_days: planDays,
-                vehicle_type: vehicleType,
-                amount: parseFloat(discountedAmount),
-            });
-            setOrder(data.order);
-        } catch (err) {
-            Alert.alert('Error', err?.response?.data?.message || 'Could not create payment order.');
-        } finally {
-            setCreating(false);
+    const handlePay = () => {
+        if (selectedMethod === 'UPI' && upiId.trim() === '') {
+            Alert.alert('UPI ID Required', 'Please enter your UPI ID to verify and proceed.');
+            return;
         }
-    };
-
-    useEffect(() => {
-        createOrder();
-    }, []);
-
-    const openRazorpay = async () => {
-        if (!order) return;
-        setLoading(true);
-
-        // Try to use react-native-razorpay if available
-        try {
-            const RazorpayCheckout = require('react-native-razorpay').default;
-            const options = {
-                description: `Sakhi ${planDays}-Day Subscription`,
-                image: 'https://sakhirides.in/logo.png',
-                currency: 'INR',
-                key: process.env.EXPO_PUBLIC_RAZORPAY_KEY || 'rzp_test_placeholder',
-                amount: (parseFloat(discountedAmount) * 100).toString(), // paise
-                name: 'Sakhi',
-                order_id: order.razorpay_order_id,
-                prefill: {
-                    name: 'Sakhi User',
-                    email: '',
-                    contact: '',
-                },
-                theme: { color: '#630ed4' },
-            };
-
-            const paymentData = await RazorpayCheckout.open(options);
-            await handlePaymentSuccess(paymentData);
-        } catch (err) {
-            if (err?.code === 'payment_cancelled') {
-                // User cancelled — no action needed
-            } else if (err?.code === 'MODULE_NOT_FOUND') {
-                // react-native-razorpay not installed — simulate success for dev
-                Alert.alert(
-                    '⚠️ Dev Mode',
-                    'react-native-razorpay is not installed.\n\nIn production, add it via:\nnpx expo install react-native-razorpay\n\nSimulating successful payment for testing.',
-                    [{ text: 'OK', onPress: handleDevSuccess }],
-                );
-            } else {
-                Alert.alert('Payment Failed', 'Please try again or use a different payment method.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handlePaymentSuccess = async (paymentData) => {
-        try {
-            await verifyPayment({
-                razorpay_payment_id: paymentData.razorpay_payment_id,
-                razorpay_order_id: paymentData.razorpay_order_id,
-                razorpay_signature: paymentData.razorpay_signature,
-                subscription_order_id: order.id,
-            });
-            router.replace('/(tabs)/subscriptions');
-        } catch (err) {
-            Alert.alert('Verification Failed', 'Payment was received but verification failed. Please contact support.');
-        }
-    };
-
-    const handleDevSuccess = async () => {
-        // Development simulation of a completed payment
-        router.replace('/(tabs)/subscriptions');
+        setIsProcessing(true);
+        setTimeout(() => {
+            setIsProcessing(false);
+            router.replace('/payment-success');
+        }, 3000); // Simulate API call and payment processing wait
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>Payment</Text>
-                <View style={{ width: 40 }} />
+            {/* Top Navigation Bar */}
+            <View style={styles.topNav}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Text style={styles.backIcon}>←</Text>
+                </TouchableOpacity>
+
+                <View style={styles.headerTitles}>
+                    <Text style={styles.title}>Complete Payment</Text>
+                </View>
+                <View style={{ width: 32 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Plan summary */}
-                <View style={styles.planCard}>
-                    <View style={styles.planHeader}>
-                        <Text style={styles.planIcon}>📅</Text>
-                        <View>
-                            <Text style={styles.planTitle}>{planDays}-Day Subscription</Text>
-                            <Text style={styles.planSub}>{vehicleType === 'auto' ? '🛺 Auto' : '🚗 Cab'} · {planDays} rides</Text>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Order Summary Card */}
+                <View style={styles.orderCard}>
+                    {/* Route Timeline */}
+                    <View style={styles.routeRow}>
+                        <View style={styles.timelineCol}>
+                            <View style={styles.dotSolid} />
+                            <View style={styles.verticalDivider} />
+                            <View style={styles.dotOutline} />
+                        </View>
+                        <View style={styles.routeTextCol}>
+                            <Text style={styles.routeLabel} numberOfLines={1}>{pickupName}</Text>
+                            <Text style={styles.routeLabel} numberOfLines={1}>{dropoffName}</Text>
                         </View>
                     </View>
-                    <View style={styles.planDivider} />
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Total before discount</Text>
-                        <Text style={styles.priceStrike}>₹{totalAmount}</Text>
+
+                    {/* Meta Specs */}
+                    <View style={styles.specsRow}>
+                        <View style={styles.specBox}>
+                            <Text style={styles.specTitle}>PLAN</Text>
+                            <Text style={styles.specValue}>{sub.plan || 7} Rides · {daysRange}</Text>
+                        </View>
+                        <View style={styles.specBox}>
+                            <Text style={styles.specTitle}>START DATE</Text>
+                            <Text style={styles.specValue}>{sub.startDate || '15 March 2026'}</Text>
+                        </View>
                     </View>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Plan discount ({discountPct}%)</Text>
-                        <Text style={styles.priceSavings}>− ₹{savings}</Text>
+
+                    <View style={styles.timingsRow}>
+                        <Text style={styles.specTitle}>TIMINGS</Text>
+                        <Text style={styles.specValue}>
+                            Morning: {sub.morningTime || '8:30 AM'} 
+                            {sub.isTwoWay ? `  |  Return: ${sub.returnTime || '6:00 PM'}` : ''}
+                        </Text>
                     </View>
-                    <View style={styles.planDivider} />
+
+                    <View style={styles.dividerLight} />
+
+                    {/* Total */}
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>You Pay</Text>
-                        <Text style={styles.totalAmount}>₹{discountedAmount}</Text>
-                    </View>
-                    <View style={styles.savingsBadge}>
-                        <Text style={styles.savingsBadgeText}>🎉 You save ₹{savings} with this plan!</Text>
+                        <View style={styles.totalTextCol}>
+                            <Text style={styles.totalSub}>Total Amount</Text>
+                            <Text style={styles.totalGst}>GST included</Text>
+                        </View>
+                        <Text style={styles.totalAmt}>₹{sub.price || 364}</Text>
                     </View>
                 </View>
 
-                {/* Payment note */}
-                <View style={styles.noteCard}>
-                    <Text style={styles.noteIcon}>🔐</Text>
-                    <Text style={styles.noteText}>
-                        Payments are secured by Razorpay. We support UPI, credit/debit cards, and net banking.
+                {/* Payment Methods */}
+                <View style={styles.paymentSection}>
+                    <Text style={styles.sectionHeader}>PAY VIA</Text>
+
+                    {/* UPI Option */}
+                    <View style={[styles.payMethodCard, selectedMethod === 'UPI' && styles.payMethodCardActive]}>
+                        <TouchableOpacity 
+                            style={styles.payMethodRow}
+                            onPress={() => setSelectedMethod('UPI')}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.payMethodLeft}>
+                                <View style={selectedMethod === 'UPI' ? styles.radioSelected : styles.radioUnselected}>
+                                    {selectedMethod === 'UPI' && <View style={styles.radioInner} />}
+                                </View>
+                                <Text style={styles.payMethodTitle}>UPI (PhonePe/GPay)</Text>
+                            </View>
+                            <Text style={styles.minusIcon}>-</Text>
+                        </TouchableOpacity>
+
+                        {/* Expanded UPI State */}
+                        {selectedMethod === 'UPI' && (
+                            <View style={styles.upiInputRow}>
+                                <View style={styles.upiInputBox}>
+                                    <TextInput 
+                                        style={styles.upiInput}
+                                        placeholder="Enter UPI ID"
+                                        placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                                        value={upiId}
+                                        onChangeText={setUpiId}
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                <TouchableOpacity style={styles.verifyBtn}>
+                                    <Text style={styles.verifyText}>Verify</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Debit/Credit Card */}
+                    <TouchableOpacity 
+                        style={styles.payMethodCardFlat}
+                        onPress={() => setSelectedMethod('CARD')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.payMethodLeft}>
+                            <View style={selectedMethod === 'CARD' ? styles.radioSelected : styles.radioUnselected}>
+                                {selectedMethod === 'CARD' && <View style={styles.radioInner} />}
+                            </View>
+                            <Text style={styles.payMethodTitle}>Debit/Credit Card</Text>
+                        </View>
+                        <Text style={styles.cardIcon}>💳</Text>
+                    </TouchableOpacity>
+
+                    {/* Net Banking */}
+                    <TouchableOpacity 
+                        style={styles.payMethodCardFlat}
+                        onPress={() => setSelectedMethod('NET')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.payMethodLeft}>
+                            <View style={selectedMethod === 'NET' ? styles.radioSelected : styles.radioUnselected}>
+                                {selectedMethod === 'NET' && <View style={styles.radioInner} />}
+                            </View>
+                            <Text style={styles.payMethodTitle}>Net Banking</Text>
+                        </View>
+                        <Text style={styles.bankIcon}>🏦</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Policy Note */}
+                <View style={styles.policyNote}>
+                    <Text style={styles.policyIcon}>ⓘ</Text>
+                    <Text style={styles.policyText}>
+                        Subscriptions cannot be cancelled within 7 days of starting your plan.
                     </Text>
                 </View>
 
-                {/* Order ID */}
-                {order && (
-                    <View style={styles.orderIdRow}>
-                        <Text style={styles.orderIdLabel}>Order ID</Text>
-                        <Text style={styles.orderIdValue}>{order.razorpay_order_id || order.id}</Text>
-                    </View>
-                )}
+                <View style={{ height: 120 }} />
             </ScrollView>
 
-            {/* Pay CTA */}
-            <View style={styles.ctaContainer}>
-                {creating ? (
-                    <View style={styles.creatingRow}>
-                        <ActivityIndicator color={Colors.primaryContainer} />
-                        <Text style={styles.creatingText}>Preparing your order…</Text>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.payBtn, (loading || !order) && { opacity: 0.6 }]}
-                        onPress={openRazorpay}
-                        disabled={loading || !order}
-                        activeOpacity={0.88}
-                    >
-                        {loading
-                            ? <ActivityIndicator color={Colors.onPrimary} />
-                            : <Text style={styles.payBtnText}>Pay ₹{discountedAmount} via Razorpay</Text>
-                        }
-                    </TouchableOpacity>
-                )}
+            {/* Footer Action Button */}
+            <View style={styles.footerOverlay}>
+                <TouchableOpacity style={styles.submitBtn} onPress={handlePay}>
+                    <Text style={styles.submitText}>Pay ₹{sub.price || 364} & Confirm</Text>
+                </TouchableOpacity>
             </View>
+
+            {/* Processing Payment Overlay */}
+            {isProcessing && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        {/* Modal Header */}
+                        <View style={styles.modalHeader}>
+                            <View style={styles.modalBrand}>
+                                <View style={styles.razorpayLogo}>
+                                    <Text style={styles.razorpayR}>R</Text>
+                                </View>
+                                <Text style={styles.modalBrandText}>Sakhi</Text>
+                            </View>
+                            <View style={styles.modalAmountCol}>
+                                <Text style={styles.modalAmountLabel}>AMOUNT DUE</Text>
+                                <Text style={styles.modalAmountValue}>₹{sub.price || 364}</Text>
+                            </View>
+                        </View>
+                        
+                        <View style={styles.modalDivider} />
+
+                        {/* Modal Body (Spinner) */}
+                        <View style={styles.modalBody}>
+                            <View style={styles.spinnerRing}>
+                                <ActivityIndicator size="large" color="#BEA3D8" />
+                            </View>
+                            <Text style={styles.modalStatus}>Processing Payment...</Text>
+                            <Text style={styles.modalSub}>Please do not close the app or press the back button.</Text>
+                        </View>
+
+                        {/* Modal Footer */}
+                        <View style={styles.modalFooter}>
+                            <Text style={styles.shieldIcon}>🛡️</Text>
+                            <Text style={styles.securedText}>SECURED BY RAZORPAY</Text>
+                        </View>
+                    </View>
+                </View>
+            )}
+
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F0FF' },
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+
+    // Top Navigation
+    topNav: {
+        position: 'absolute', top: 0, left: 0, right: 0,
+        height: Platform.OS === 'ios' ? 108 : 64,
+        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        paddingHorizontal: 24,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
+        zIndex: 10,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
+    backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
+    backIcon: { fontSize: 24, color: '#1E1B2E', fontWeight: '500' },
+    headerTitles: { alignItems: 'flex-start' },
+    title: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
+
+    scrollContent: {
+        paddingTop: Platform.OS === 'ios' ? 124 : 88,
+        paddingHorizontal: 20,
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
-    content: { paddingHorizontal: 20, paddingBottom: 120, gap: 16 },
-    planCard: {
-        backgroundColor: Colors.surfaceContainerLowest, borderRadius: 20,
-        padding: 20, ...Shadows.editorial,
+
+    // Order Summary Card
+    orderCard: {
+        backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, marginBottom: 32,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
     },
-    planHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
-    planIcon: { fontSize: 36 },
-    planTitle: { fontSize: 18, fontWeight: '800', color: Colors.onBackground },
-    planSub: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
-    planDivider: { height: 1, backgroundColor: Colors.outlineVariant, marginVertical: 12 },
-    priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    priceLabel: { fontSize: 13, color: Colors.onSurfaceVariant },
-    priceStrike: {
-        fontSize: 13, color: Colors.outline,
-        textDecorationLine: 'line-through',
+    
+    routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
+    timelineCol: { alignItems: 'center', gap: 4 },
+    dotSolid: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#BEA3D8' },
+    verticalDivider: { width: 1, height: 24, backgroundColor: '#E5E0EF' },
+    dotOutline: { width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: '#BEA3D8', backgroundColor: '#FFF' },
+    routeTextCol: { gap: 28 },
+    routeLabel: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
+
+    specsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+    specBox: { flex: 1 },
+    specTitle: { fontSize: 10, fontWeight: '500', color: '#6B7280', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
+    specValue: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
+
+    timingsRow: { marginBottom: 24 },
+
+    dividerLight: { height: 1, backgroundColor: '#F5F0FF', marginBottom: 20 },
+
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    totalTextCol: { gap: 2 },
+    totalSub: { fontSize: 12, fontWeight: '400', color: '#6B7280' },
+    totalGst: { fontSize: 10, fontWeight: '400', color: '#6B7280' },
+    totalAmt: { fontSize: 24, fontWeight: '700', color: '#BEA3D8' },
+
+    // Payment Methods Section
+    paymentSection: { gap: 16, marginBottom: 24 },
+    sectionHeader: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 0.8, textTransform: 'uppercase' },
+
+    payMethodCard: {
+        backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2,
     },
-    priceSavings: { fontSize: 13, fontWeight: '600', color: '#16a34a' },
-    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    totalLabel: { fontSize: 16, fontWeight: '700', color: Colors.onBackground },
-    totalAmount: { fontSize: 26, fontWeight: '800', color: Colors.primaryContainer },
-    savingsBadge: {
-        backgroundColor: '#f0fdf4', borderRadius: 10, padding: 10, marginTop: 12,
-        borderWidth: 1, borderColor: '#bbf7d0',
+    payMethodCardActive: {
+        backgroundColor: '#F5F0FF', borderWidth: 1, borderColor: 'rgba(190, 163, 216, 0.2)',
     },
-    savingsBadgeText: { fontSize: 12, color: '#16a34a', fontWeight: '600', textAlign: 'center' },
-    noteCard: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-        backgroundColor: Colors.surfaceContainerLow, borderRadius: 12, padding: 14,
+    payMethodCardFlat: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2,
     },
-    noteIcon: { fontSize: 18 },
-    noteText: { flex: 1, fontSize: 12, color: Colors.onSurfaceVariant, lineHeight: 18 },
-    orderIdRow: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        paddingHorizontal: 4,
-    },
-    orderIdLabel: { fontSize: 11, color: Colors.onSurfaceVariant, fontWeight: '600' },
-    orderIdValue: { fontSize: 11, color: Colors.outline, fontFamily: 'monospace' },
-    ctaContainer: {
+
+    payMethodRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    payMethodLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    radioUnselected: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#E5E0EF' },
+    radioSelected: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center' },
+    radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#BEA3D8' },
+    payMethodTitle: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
+    minusIcon: { fontSize: 16, color: '#6B7280', fontWeight: 'bold' },
+    cardIcon: { fontSize: 16, color: '#6B7280' },
+    bankIcon: { fontSize: 16, color: '#6B7280' },
+
+    // UPI Expansion 
+    upiInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
+    upiInputBox: { flex: 1, height: 56, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(190, 163, 216, 0.1)', borderRadius: 8, paddingHorizontal: 12 },
+    upiInput: { flex: 1, fontSize: 14, color: '#1E1B2E' },
+    verifyBtn: { width: 68, height: 56, backgroundColor: '#BEA3D8', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    verifyText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+
+    // Policy Note
+    policyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#EDE9FE', borderRadius: 12, padding: 16 },
+    policyIcon: { fontSize: 16, color: '#BEA3D8', marginTop: 2 },
+    policyText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#6B7280', lineHeight: 20 },
+
+    // Footer overlay
+    footerOverlay: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: Colors.surfaceContainerLowest,
-        paddingHorizontal: 20, paddingVertical: 16, paddingBottom: 32,
-        borderTopWidth: 1, borderTopColor: Colors.outlineVariant,
-        ...Shadows.editorial,
+        height: Platform.OS === 'ios' ? 120 : 104, 
+        paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 24,
+        paddingTop: 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.8)',
+        justifyContent: 'flex-end',
     },
-    creatingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'center', paddingVertical: 10 },
-    creatingText: { fontSize: 14, color: Colors.onSurfaceVariant },
-    payBtn: {
-        backgroundColor: Colors.primaryContainer, borderRadius: BorderRadius.md,
-        paddingVertical: 16, alignItems: 'center', ...Shadows.editorial,
+    submitBtn: {
+        width: '100%', height: 56, backgroundColor: '#BEA3D8', borderRadius: 12,
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
     },
-    payBtnText: { color: Colors.onPrimary, fontSize: 17, fontWeight: '700' },
+    submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+
+    // Modal Styles
+    modalOverlay: {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(30, 27, 46, 0.6)',
+        justifyContent: 'center', alignItems: 'center', zIndex: 100,
+        paddingHorizontal: 24
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        overflow: 'hidden',
+    },
+    modalHeader: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        padding: 24,
+    },
+    modalBrand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    razorpayLogo: { backgroundColor: '#2563EB', width: 24, height: 24, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+    razorpayR: { color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' },
+    modalBrandText: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
+    modalAmountCol: { alignItems: 'flex-end' },
+    modalAmountLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase' },
+    modalAmountValue: { fontSize: 24, fontWeight: '800', color: '#1C1A25' },
+    
+    modalDivider: { height: 1, backgroundColor: '#F5F0FF' },
+    
+    modalBody: {
+        alignItems: 'center',
+        paddingVertical: 40, paddingHorizontal: 24,
+    },
+    spinnerRing: {
+        width: 80, height: 80, borderRadius: 40,
+        borderWidth: 3, borderColor: '#EADDFF',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 24
+    },
+    modalStatus: { fontSize: 18, fontWeight: '700', color: '#1C1A25', marginBottom: 12 },
+    modalSub: { fontSize: 14, fontWeight: '400', color: '#6B7280', textAlign: 'center', lineHeight: 22, paddingHorizontal: 16 },
+    
+    modalFooter: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        backgroundColor: '#F5F0FF',
+        paddingVertical: 16
+    },
+    shieldIcon: { fontSize: 14 },
+    securedText: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 },
+
 });

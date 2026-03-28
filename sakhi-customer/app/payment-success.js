@@ -1,0 +1,169 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useRide } from '../src/context/RideContext';
+
+export default function PaymentSuccessScreen() {
+    const router = useRouter();
+    const { ride } = useRide();
+    const sub = ride.subscription || {};
+
+    const price = sub.price || 364;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.topNav}>
+                <TouchableOpacity onPress={() => router.replace('/(tabs)/subscriptions')} style={styles.backBtn}>
+                    <Text style={styles.backIcon}>←</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuBtn}>
+                    <Text style={styles.menuIcon}>⋮</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.mainContent}>
+                {/* Success Indicator */}
+                <View style={styles.successIndicatorWrapper}>
+                    <View style={styles.successBlur} />
+                    <View style={styles.successCircle}>
+                        <View style={styles.successInner}>
+                            <Text style={styles.tickIcon}>✓</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Headings */}
+                <View style={styles.headerTitles}>
+                    <Text style={styles.title}>Payment Successful!</Text>
+                    <Text style={styles.subtitle}>₹{price} has been successfully paid to Sakhi</Text>
+                </View>
+
+                {/* Transaction Card */}
+                <View style={styles.txCard}>
+                    <View style={styles.txRow}>
+                        <Text style={styles.txLabel}>TRANSACTION ID</Text>
+                        <Text style={styles.txValue}>TXN{Math.floor(Math.random() * 1000000000)}</Text>
+                    </View>
+                    
+                    <View style={styles.txRow}>
+                        <Text style={styles.txLabel}>DATE & TIME</Text>
+                        <Text style={styles.txValue}>{dateStr} | {timeStr}</Text>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.methodRow}>
+                        <View style={styles.methodLeft}>
+                            <View style={styles.payIconBox}>
+                                <Text style={styles.payIcon}>🏦</Text>
+                            </View>
+                            <Text style={styles.methodText}>Paid via UPI</Text>
+                        </View>
+                        <Text style={styles.verifiedIcon}>✓</Text>
+                    </View>
+                </View>
+
+                {/* Actions */}
+                <View style={styles.actionsBox}>
+                    <TouchableOpacity style={styles.doneBtn} onPress={() => router.replace('/(tabs)/subscriptions')} activeOpacity={0.8}>
+                        <Text style={styles.doneText}>Done</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.receiptBtn} activeOpacity={0.8}>
+                        <Text style={styles.receiptIcon}>↓</Text>
+                        <Text style={styles.receiptText}>Download Receipt</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    topNav: {
+        position: 'absolute', top: 0, left: 0, right: 0,
+        height: Platform.OS === 'ios' ? 104 : 64,
+        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        paddingHorizontal: 24,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 10,
+    },
+    backBtn: { width: 32, height: 32, justifyContent: 'center' },
+    backIcon: { fontSize: 24, color: '#BEA3D8' },
+    menuBtn: { width: 32, height: 32, alignItems: 'flex-end', justifyContent: 'center' },
+    menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
+
+    mainContent: {
+        flex: 1, paddingTop: Platform.OS === 'ios' ? 120 : 80,
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+
+    successIndicatorWrapper: {
+        width: 96, height: 96,
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 24,
+        position: 'relative'
+    },
+    successBlur: {
+        position: 'absolute', width: '100%', height: '100%',
+        backgroundColor: '#D1FAE5',
+        opacity: 0.4, borderRadius: 48,
+        shadowColor: '#10B981', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20,
+    },
+    successCircle: {
+        width: 96, height: 96, borderRadius: 48,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+    },
+    successInner: {
+        width: 80, height: 80, borderRadius: 40,
+        borderWidth: 4, borderColor: '#ECFDF5',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    tickIcon: { color: '#10B981', fontSize: 32, fontWeight: 'bold' },
+
+    headerTitles: { alignItems: 'center', marginBottom: 40, width: '100%' },
+    title: { fontSize: 24, fontWeight: '800', color: '#1E1B2E', marginBottom: 8, letterSpacing: -0.6 },
+    subtitle: { fontSize: 16, fontWeight: '400', color: '#6B7280', textAlign: 'center', lineHeight: 26, paddingHorizontal: 16 },
+
+    txCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16, padding: 24,
+        borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)',
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
+        marginBottom: 40,
+    },
+    txRow: { gap: 4, marginBottom: 20 },
+    txLabel: { fontSize: 10, fontWeight: '500', color: '#1C1A25', letterSpacing: 1, textTransform: 'uppercase' },
+    txValue: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+
+    divider: { height: 1, backgroundColor: '#E5E0EF', marginBottom: 16 },
+
+    methodRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    methodLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    payIconBox: { width: 40, height: 24, backgroundColor: '#F0ECFA', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(204, 195, 216, 0.2)', alignItems: 'center', justifyContent: 'center' },
+    payIcon: { fontSize: 12 },
+    methodText: { fontSize: 14, fontWeight: '500', color: '#1C1A25' },
+    verifiedIcon: { fontSize: 14, color: '#BEA3D8' },
+
+    actionsBox: { width: '100%', alignItems: 'center', gap: 24 },
+    doneBtn: {
+        width: '100%', height: 56,
+        backgroundColor: '#A36CEC',
+        borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
+    },
+    doneText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+
+    receiptBtn: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    receiptIcon: { fontSize: 14, color: '#BEA3D8' },
+    receiptText: { fontSize: 14, fontWeight: '600', color: '#BEA3D8' },
+});
