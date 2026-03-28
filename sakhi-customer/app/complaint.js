@@ -1,178 +1,227 @@
-import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator, Alert, Pressable,
+import React from 'react';
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    SafeAreaView, TextInput, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
-import apiClient from '../src/api/client';
 
-const COMPLAINT_CATEGORIES = [
-    { id: 'driver_behavior', label: 'Driver Behavior', emoji: '⚠️' },
-    { id: 'payment', label: 'Payment Issue', emoji: '💸' },
-    { id: 'lost_item', label: 'Lost Item', emoji: '📦' },
-    { id: 'safety', label: 'Safety Concern', emoji: '🛡️' },
-    { id: 'app_issue', label: 'App Issue', emoji: '📱' },
-    { id: 'other', label: 'Other', emoji: '💬' },
-];
-
-export default function RaiseComplaintScreen() {
+export default function HelpSupportScreen() {
     const router = useRouter();
-    const [category, setCategory] = useState('');
-    const [description, setDescription] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = async () => {
-        if (!category) {
-            Alert.alert('Select Category', 'Please choose a complaint category.');
-            return;
-        }
-        if (description.trim().length < 20) {
-            Alert.alert('Too Short', 'Please describe your issue in at least 20 characters.');
-            return;
-        }
-        setSubmitting(true);
-        try {
-            await apiClient.post('/support/complaints', { category, description: description.trim() });
-            setSubmitted(true);
-        } catch (err) {
-            Alert.alert('Submission Failed', err?.response?.data?.message || 'Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    if (submitted) {
-        return (
-            <View style={styles.successContainer}>
-                <View style={styles.successIcon}><Text style={{ fontSize: 56 }}>✅</Text></View>
-                <Text style={styles.successTitle}>Complaint Submitted</Text>
-                <Text style={styles.successSubtitle}>
-                    Our support team will review your complaint and get back to you within 24 hours.
-                </Text>
-                <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace('/(tabs)')}>
-                    <Text style={styles.homeBtnText}>Back to Home</Text>
-                </TouchableOpacity>
+    const QuickHelpCard = ({ icon, label, isEmergency = false }) => (
+        <TouchableOpacity style={styles.quickCard} activeOpacity={0.7}>
+            <View style={[styles.quickIconBox, isEmergency && styles.quickIconBoxEmergency]}>
+                <Text style={[styles.quickIcon, isEmergency && styles.quickIconEmergency]}>{icon}</Text>
             </View>
-        );
-    }
+            <Text style={styles.quickLabel}>{label}</Text>
+        </TouchableOpacity>
+    );
+
+    const RecentTripCard = ({ pickup, dropoff }) => (
+        <View style={styles.tripCard}>
+            <View style={styles.tripDetails}>
+                <View style={styles.locationRow}>
+                    <View style={styles.dotGreen} />
+                    <Text style={styles.locationText} numberOfLines={1}>{pickup}</Text>
+                </View>
+                <View style={styles.locationRow}>
+                    <View style={styles.dotRed} />
+                    <Text style={styles.locationText} numberOfLines={1}>{dropoff}</Text>
+                </View>
+            </View>
+            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7}>
+                <Text style={styles.getHelpText}>Get Help</Text>
+            </TouchableOpacity>
+        </View>
+    );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
-                </Pressable>
-                <Text style={styles.headerTitle}>Raise a Complaint</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <Text style={styles.sectionLabel}>What's the issue?</Text>
-                <View style={styles.categoryGrid}>
-                    {COMPLAINT_CATEGORIES.map((c) => (
-                        <TouchableOpacity
-                            key={c.id}
-                            style={[styles.categoryCard, category === c.id && styles.categoryCardSelected]}
-                            onPress={() => setCategory(c.id)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.categoryEmoji}>{c.emoji}</Text>
-                            <Text style={[styles.categoryLabel, category === c.id && styles.categoryLabelSelected]}>
-                                {c.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                        <Text style={styles.headerIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Help & Support</Text>
+                    <View style={styles.iconBtn} /> 
                 </View>
 
-                <Text style={styles.sectionLabel}>Describe the issue</Text>
-                <TextInput
-                    style={styles.descriptionInput}
-                    placeholder="Please provide as much detail as possible — this helps us resolve it faster…"
-                    placeholderTextColor={Colors.outline}
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
-                    numberOfLines={6}
-                    maxLength={1000}
-                    textAlignVertical="top"
-                />
-                <Text style={styles.charCount}>{description.length}/1000</Text>
+                {/* Main Content */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Search Bar */}
+                    <View style={styles.searchContainer}>
+                        <Text style={styles.searchIcon}>🔍</Text>
+                        <TextInput 
+                            style={styles.searchInput}
+                            placeholder="Search for help..."
+                            placeholderTextColor="#94A3B8"
+                        />
+                    </View>
 
-                <TouchableOpacity
-                    style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
-                    onPress={handleSubmit}
-                    disabled={submitting}
-                >
-                    {submitting
-                        ? <ActivityIndicator color={Colors.onPrimary} />
-                        : <Text style={styles.submitBtnText}>Submit Complaint</Text>
-                    }
-                </TouchableOpacity>
-            </ScrollView>
-        </View>
+                    {/* Quick Help Grid */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeading}>QUICK HELP</Text>
+                        <View style={styles.quickGridRow}>
+                            <QuickHelpCard icon="🚙" label="My Ride Issue" />
+                            <QuickHelpCard icon="₹" label="Billing & Payments" />
+                        </View>
+                        <View style={styles.quickGridRow}>
+                            <QuickHelpCard icon="🛡️" label="Safety Concern" isEmergency={true} />
+                            <QuickHelpCard icon="🔁" label="Subscription Help" />
+                        </View>
+                    </View>
+
+                    {/* Recent Trips Section */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionHeading}>RECENT TRIPS</Text>
+                            <TouchableOpacity>
+                                <Text style={styles.viewAllText}>View All</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <View style={styles.tripsList}>
+                            <RecentTripCard 
+                                pickup="124 Sector 4, HSR Layout" 
+                                dropoff="Venture Park, Indiranagar" 
+                            />
+                            <RecentTripCard 
+                                pickup="Forum Mall, Koramangala" 
+                                dropoff="124 Sector 4, HSR Layout" 
+                            />
+                        </View>
+                    </View>
+
+                    {/* Contact Us Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeading}>CONTACT US</Text>
+                        <View style={styles.contactCardContainer}>
+                            
+                            {/* Chat Row */}
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                                <View style={styles.contactRowLeft}>
+                                    <Text style={styles.contactIcon}>💬</Text>
+                                    <Text style={styles.contactLabel}>Chat with Support</Text>
+                                </View>
+                                <View style={styles.onlineBadge}>
+                                    <Text style={styles.onlineText}>ONLINE</Text>
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* Call Row */}
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                                <View style={styles.contactRowLeft}>
+                                    <Text style={styles.contactIcon}>📞</Text>
+                                    <View style={styles.contactTextCol}>
+                                        <Text style={styles.contactLabel}>Call Support</Text>
+                                        <Text style={styles.contactSubText}>Mon-Sun, 9AM-9PM</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.chevron}>›</Text>
+                            </TouchableOpacity>
+
+                            {/* Email Row */}
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                                <View style={styles.contactRowLeft}>
+                                    <Text style={styles.contactIcon}>✉️</Text>
+                                    <Text style={styles.contactLabel}>Email Us</Text>
+                                </View>
+                                <Text style={styles.chevron}>›</Text>
+                            </TouchableOpacity>
+
+                        </View>
+                    </View>
+
+                    {/* Visit Help Centre Button */}
+                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7}>
+                        <Text style={styles.visitBtnText}>Visit Help Centre</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: { flex: 1 },
+    
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        backgroundColor: 'rgba(245, 240, 255, 0.9)',
+        zIndex: 10,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
+    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'flex-start' },
+    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
+    headerTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5, position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 },
+
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 40,
+        gap: 32,
     },
-    backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
-    content: { paddingHorizontal: 20, paddingBottom: 48, gap: 14 },
-    sectionLabel: {
-        fontSize: 12, fontWeight: '700', color: Colors.onSurfaceVariant,
-        textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 4,
+
+    /* Search Bar */
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 9999,
+        paddingHorizontal: 20,
+        height: 56,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 3,
     },
-    categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    categoryCard: {
-        width: '47%', backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 14, padding: 14, alignItems: 'center', gap: 6,
-        borderWidth: 2, borderColor: 'transparent', ...Shadows.card,
-    },
-    categoryCardSelected: {
-        borderColor: Colors.primaryContainer, backgroundColor: Colors.primaryFixed,
-    },
-    categoryEmoji: { fontSize: 24 },
-    categoryLabel: { fontSize: 12, fontWeight: '600', color: Colors.onSurfaceVariant, textAlign: 'center' },
-    categoryLabelSelected: { color: Colors.primaryContainer },
-    descriptionInput: {
-        backgroundColor: Colors.surfaceContainerLowest,
-        borderRadius: 14, padding: 16, fontSize: 14, color: Colors.onSurface,
-        minHeight: 120, borderWidth: 1.5, borderColor: Colors.outlineVariant,
-        ...Shadows.card,
-    },
-    charCount: { fontSize: 11, color: Colors.outline, textAlign: 'right', marginTop: -8 },
-    submitBtn: {
-        backgroundColor: Colors.primaryContainer, borderRadius: BorderRadius.md,
-        paddingVertical: 16, alignItems: 'center', marginTop: 8, ...Shadows.editorial,
-    },
-    submitBtnText: { color: Colors.onPrimary, fontSize: 16, fontWeight: '700' },
-    successContainer: {
-        flex: 1, backgroundColor: '#F5F0FF',
-        alignItems: 'center', justifyContent: 'center', padding: 32,
-    },
-    successIcon: {
-        width: 96, height: 96, borderRadius: 48,
-        backgroundColor: Colors.primaryFixed, alignItems: 'center', justifyContent: 'center',
-        marginBottom: 24, ...Shadows.editorial,
-    },
-    successTitle: { ...Typography.headlineSmall, color: Colors.onBackground, textAlign: 'center', marginBottom: 12 },
-    successSubtitle: {
-        ...Typography.bodyLarge, color: Colors.onSurfaceVariant,
-        textAlign: 'center', lineHeight: 24, marginBottom: 28,
-    },
-    homeBtn: {
-        backgroundColor: Colors.primaryContainer, borderRadius: BorderRadius.md,
-        paddingVertical: 14, paddingHorizontal: 32, ...Shadows.editorial,
-    },
-    homeBtnText: { color: Colors.onPrimary, fontSize: 15, fontWeight: '700' },
+    searchIcon: { fontSize: 18, color: '#A78BFA', marginRight: 12 },
+    searchInput: { flex: 1, fontSize: 16, color: '#1E1B2E', fontWeight: '400', height: '100%' },
+
+    /* Global Section Settings */
+    section: { gap: 16 },
+    sectionHeading: { fontSize: 12, fontWeight: '600', color: '#6B7280', letterSpacing: 0.6, textTransform: 'uppercase' },
+
+    /* Quick Help Grid */
+    quickGridRow: { flexDirection: 'row', gap: 16, width: '100%' },
+    quickCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, alignItems: 'center', gap: 12, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 },
+    quickIconBox: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F5F0FF', justifyContent: 'center', alignItems: 'center' },
+    quickIconBoxEmergency: { backgroundColor: 'rgba(255, 218, 214, 0.3)' },
+    quickIcon: { fontSize: 20, color: '#BEA3D8' },
+    quickIconEmergency: { color: '#BA1A1A' },
+    quickLabel: { fontSize: 13, fontWeight: '600', color: '#1E1B2E', textAlign: 'center', lineHeight: 20 },
+
+    /* Recent Trips */
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    viewAllText: { fontSize: 12, fontWeight: '600', color: '#BEA3D8' },
+    tripsList: { gap: 16 },
+    tripCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 3 },
+    tripDetails: { flex: 1, gap: 8, paddingRight: 16 },
+    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
+    dotRed: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#BA1A1A' },
+    locationText: { flex: 1, fontSize: 13, fontWeight: '500', color: '#1C1A25' },
+    getHelpBtn: { backgroundColor: '#F5F0FF', paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8 },
+    getHelpText: { fontSize: 13, fontWeight: '700', color: '#BEA3D8' },
+
+    /* Contact Us */
+    contactCardContainer: { backgroundColor: '#FFFFFF', borderRadius: 12, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4, overflow: 'hidden' },
+    contactRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
+    contactRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    contactIcon: { fontSize: 20, color: '#A78BFA' },
+    contactTextCol: { gap: 2 },
+    contactLabel: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
+    contactSubText: { fontSize: 11, color: '#6B7280' },
+    chevron: { fontSize: 22, color: '#CBD5E1', paddingBottom: 2 },
+    onlineBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+    onlineText: { fontSize: 10, fontWeight: '700', color: '#047857', letterSpacing: 0.5 },
+
+    /* Visit Help Centre Btn */
+    visitBtn: { width: '100%', height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 12, marginTop: 8 },
+    visitBtnText: { fontSize: 14, fontWeight: '700', color: '#BEA3D8', letterSpacing: 0.35 },
 });
