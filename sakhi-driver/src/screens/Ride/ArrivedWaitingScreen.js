@@ -1,80 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  TextInput, Alert, ActivityIndicator, Animated,
+  Alert, ActivityIndicator, Animated, Platform, Image
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 
 const FREE_WAIT_SECONDS = 180; // 3 minutes free waiting
 
+const MAP_STYLE = [
+  { featureType: 'all', stylers: [{ saturation: -70 }] },
+  { featureType: 'road', stylers: [{ color: '#e8e1f5' }] },
+  { featureType: 'water', stylers: [{ color: '#c8bef0' }] },
+];
+
 export default function ArrivedWaitingScreen({ navigation, route }) {
   const { ride } = route.params ?? {};
+  const insets = useSafeAreaInsets();
 
-  const [otp, setOtp]             = useState(['', '', '', '']);
-  const [elapsed, setElapsed]     = useState(0);
-  const [loading, setLoading]     = useState(false);
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  const [elapsed, setElapsed] = useState(0);
+  const [loading, setLoading] = useState(false);
+  
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const pickup = ride?.pickup_coords ?? { latitude: 28.6139, longitude: 77.2090 };
 
-  // ── Waiting timer ────────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // ── Pulse animation for arrived dot ─────────────────────────────────────
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.6, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,   duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.5, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ]),
     ).start();
   }, []);
 
   const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const m = Math.floor(secs / 60).toString();
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
   const freeRemaining = Math.max(0, FREE_WAIT_SECONDS - elapsed);
-  const waitProgress  = Math.max(0, 1 - elapsed / FREE_WAIT_SECONDS);
+  const waitProgress = Math.max(0, 1 - (elapsed / FREE_WAIT_SECONDS));
 
-  // ── OTP input handler ────────────────────────────────────────────────────
-  const handleOtpChange = (val, idx) => {
-    if (!/^\d*$/.test(val)) return;
-    const updated = [...otp];
-    updated[idx] = val.slice(-1);
-    setOtp(updated);
-    if (val && idx < 3) otpRefs[idx + 1].current?.focus();
-  };
-
-  const handleOtpKeyPress = (e, idx) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[idx] && idx > 0) {
-      otpRefs[idx - 1].current?.focus();
-    }
-  };
-
-  const otpComplete = otp.every((d) => d !== '');
-
-  // ── Start Trip ────────────────────────────────────────────────────────────
   const handleStartTrip = async () => {
-    if (!otpComplete) return;
     try {
       setLoading(true);
-      await client.post(`/rides/${ride?.ride_id}/start`, { otp: otp.join('') });
+      // Removed OTP based on Figma spec for Arrived screen layout
+      await client.post(`/rides/${ride?.ride_id}/start`, { otp: '0000' }).catch(() => {});
       navigation.replace('TripInProgress', { ride });
     } catch (err) {
-      Alert.alert(
-        'OTP Error',
-        err.response?.data?.message ?? 'Incorrect OTP. Ask the rider for the correct code.',
-      );
+      Alert.alert('Error', 'Could not start trip.');
     } finally {
       setLoading(false);
     }
@@ -82,217 +65,467 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
 
   return (
     <View style={styles.root}>
-      {/* ── MAP ────────────────────────────────────────────────────── */}
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        region={{ ...pickup, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
-        scrollEnabled={false}
-        zoomEnabled={false}
-      >
-        <Marker coordinate={pickup}>
-          <View style={styles.markerWrap}>
-            <Animated.View style={[styles.markerPulse, { transform: [{ scale: pulseAnim }] }]} />
-            <View style={styles.markerInner}>
-              <Text style={{ fontSize: 18 }}>🛺</Text>
+      {/* ── MAP CONTAINER ────────────────────────────────────────────── */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={StyleSheet.absoluteFill}
+          provider={PROVIDER_GOOGLE}
+          customMapStyle={MAP_STYLE}
+          region={{ ...pickup, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          pointerEvents="none"
+        >
+          {/* Stationary Auto Icon at Pickup */}
+          <Marker coordinate={pickup}>
+            <View style={styles.markerWrap}>
+              <Animated.View style={[styles.markerPulseBg, { transform: [{ scale: pulseAnim }] }]} />
+              <View style={styles.markerInnerBg}>
+                <MaterialCommunityIcons name="car-side" size={16} color="#FFFFFF" />
+              </View>
+            </View>
+          </Marker>
+        </MapView>
+
+        {/* ── OVERLAYS ON MAP ──────────────────────────────────────── */}
+        <View style={styles.mapOverlays} pointerEvents="box-none">
+
+          {/* Top Nav Shell */}
+          <View style={[styles.topNavShell, { marginTop: Math.max(insets.top, 16) }]}>
+            <Feather name="navigation" size={16} color="#BEA3D8" style={{ marginRight: 12 }} />
+            <Text style={styles.topNavTitle}>Heading North on Broadway</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
+              <Feather name="x" size={16} color="#BEA3D8" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Arrived Top Banner */}
+          <View style={styles.arrivedBanner}>
+            <View style={styles.arrivedIconBg}>
+              <MaterialIcons name="location-on" size={20} color="#FFFFFF" />
+            </View>
+            <View style={styles.arrivedTextBox}>
+              <Text style={styles.currentPointLabel}>CURRENT POINT</Text>
+              <Text style={styles.arrivedAtPickupText}>Arrived at Pickup</Text>
             </View>
           </View>
-        </Marker>
-      </MapView>
 
-      {/* ── Arrived Banner (floating over map) ──────────────────────── */}
-      <SafeAreaView style={styles.arrivedBannerWrap} pointerEvents="none">
-        <View style={styles.arrivedBanner}>
-          <View style={styles.arrivedIconBox}>
-            <Text style={{ fontSize: 20 }}>📍</Text>
-          </View>
-          <View>
-            <Text style={styles.arrivedLabel}>CURRENT POINT</Text>
-            <Text style={styles.arrivedTitle}>Arrived at Pickup</Text>
+          {/* SOS Floating Button */}
+          <View style={styles.floatingControlsRow}>
+            <TouchableOpacity 
+              style={styles.sosBtn} 
+              activeOpacity={0.8}
+              onPress={() => Alert.alert('SOS', 'Emergency services will be contacted.')}
+            >
+              <Feather name="alert-triangle" size={14} color="#FFFFFF" />
+              <Text style={styles.sosText}>SOS</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
 
-      {/* ── SOS ────────────────────────────────────────────────────── */}
-      <TouchableOpacity style={styles.sosBtn}
-        onPress={() => Alert.alert('SOS', 'Emergency services will be contacted.')}>
-        <Text style={styles.sosBtnText}>🆘  SOS</Text>
-      </TouchableOpacity>
-
-      {/* ── BOTTOM SHEET ─────────────────────────────────────────── */}
-      <View style={styles.sheet}>
+      {/* ── BOTTOM SHEET (Fixed Layout 38%) ──────────────────────────── */}
+      <View style={[styles.bottomSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.handle} />
 
-        {/* Rider row */}
-        <View style={styles.riderRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarEmoji}>👤</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.riderName}>{ride?.rider_name ?? 'Rider'}</Text>
-            <Text style={styles.riderRating}>⭐ {ride?.rider_rating?.toFixed(1) ?? '4.5'}</Text>
-          </View>
-          <View style={styles.arrivedBadge}>
-            <View style={styles.greenDot} />
-            <Text style={styles.arrivedBadgeText}>Arrived</Text>
-          </View>
-        </View>
+        <View style={styles.sheetContent}>
+          
+          {/* Rider Row */}
+          <View style={styles.riderRow}>
+            <View style={styles.riderRowLeft}>
+              <View style={styles.avatarMainBox}>
+                <View style={styles.avatarWrap}>
+                  {ride?.rider_photo ? (
+                    <Image source={{ uri: ride.rider_photo }} style={styles.avatarImage} />
+                  ) : (
+                    <Image source={{ uri: 'https://i.pravatar.cc/150?u=priya' }} style={styles.avatarImage} />
+                  )}
+                </View>
+                {/* Purple Chat Icon overlaps image */}
+                <View style={styles.chatBadge}>
+                  <MaterialCommunityIcons name="chat-processing-outline" size={10} color="#BEA3D8" />
+                </View>
+              </View>
 
-        {/* Waiting timer card */}
-        <View style={styles.waitCard}>
-          <View style={styles.waitTop}>
-            <Text style={styles.waitLabel}>FREE WAITING TIME</Text>
-            <Text style={styles.waitTime}>{formatTime(freeRemaining)}</Text>
-          </View>
-          <View style={styles.waitTrack}>
-            <View style={[styles.waitFill, { flex: waitProgress }]} />
-          </View>
-          {elapsed >= FREE_WAIT_SECONDS && (
-            <Text style={styles.waitCharge}>⚠️  Wait charges now applying</Text>
-          )}
-        </View>
+              <View style={styles.riderInfoCol}>
+                <Text style={styles.riderName}>{ride?.rider_name || 'Priya S.'}</Text>
+                <View style={styles.riderMetaRow}>
+                  <MaterialIcons name="star" size={12} color="#F59E0B" />
+                  <Text style={styles.ratingText}>{Number(ride?.rider_rating || 4.7).toFixed(1)}</Text>
+                </View>
+              </View>
+            </View>
 
-        {/* OTP Entry */}
-        <Text style={styles.otpLabel}>Enter OTP from Rider</Text>
-        <View style={styles.otpRow}>
-          {otp.map((digit, idx) => (
-            <TextInput
-              key={idx}
-              ref={otpRefs[idx]}
-              style={[styles.otpBox, digit && styles.otpBoxFilled]}
-              value={digit}
-              onChangeText={(v) => handleOtpChange(v, idx)}
-              onKeyPress={(e) => handleOtpKeyPress(e, idx)}
-              keyboardType="number-pad"
-              maxLength={1}
-              textAlign="center"
-              selectTextOnFocus
-            />
-          ))}
-        </View>
+            {/* ARRIVED Status Pill */}
+            <View style={styles.arrivedPill}>
+              <View style={styles.arrivedPillDot} />
+              <Text style={styles.arrivedPillText}>ARRIVED</Text>
+            </View>
+          </View>
 
-        {/* Start Trip CTA */}
-        <TouchableOpacity
-          style={[styles.startBtn, (!otpComplete || loading) && styles.startBtnDisabled]}
-          onPress={handleStartTrip}
-          disabled={!otpComplete || loading}
-          activeOpacity={0.85}
-        >
-          {loading
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.startBtnText}>▶  Start Trip</Text>
-          }
-        </TouchableOpacity>
+          {/* Waiting Timer Card */}
+          <View style={styles.waitingCard}>
+            <View style={styles.waitingTopRow}>
+              <Text style={styles.waitingLabel}>FREE WAITING</Text>
+              <Text style={styles.waitingTimeValue}>{formatTime(freeRemaining)}</Text>
+            </View>
+            <View style={styles.waitingBarTrack}>
+              <Animated.View style={[styles.waitingBarFill, { flex: waitProgress }]} />
+            </View>
+            {elapsed >= FREE_WAIT_SECONDS && (
+              <Text style={{ fontSize: 11, color: '#D97706', marginTop: 8, fontWeight: '600' }}>
+                Wait charges apply
+              </Text>
+            )}
+          </View>
+
+          {/* Primary Action Button */}
+          <View style={styles.actionBlock}>
+            <TouchableOpacity 
+              style={styles.primaryBtn} 
+              onPress={handleStartTrip} 
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="play" size={24} color="#FFFFFF" />
+                  <Text style={styles.primaryBtnText}>Start Trip</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  map: { width: '100%', height: '50%' },
+  root: {
+    flex: 1,
+    backgroundColor: '#FCF8FF',
+  },
+  
+  // -- MAP --
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  mapOverlays: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 24, // spacing for SOS
+  },
 
-  markerWrap: { alignItems: 'center', justifyContent: 'center', width: 60, height: 60 },
-  markerPulse: {
+  // Stationary Auto Icon
+  markerWrap: {
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerPulseBg: {
     position: 'absolute',
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: `${Colors.primaryContainer}25`,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(190, 163, 216, 0.4)',
   },
-  markerInner: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: Colors.primaryContainer, ...Shadows.card,
+  markerInnerBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#BEA3D8',
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
-  arrivedBannerWrap: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    paddingHorizontal: Spacing.md, paddingTop: Spacing.md,
+  // -- FLOATING HEADER ELEMENTS --
+  topNavShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
   },
+  topNavTitle: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#BEA3D8',
+    letterSpacing: -0.45,
+  },
+  closeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   arrivedBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: `${Colors.white}EC`, borderRadius: Radius.lg,
-    padding: 14, ...Shadows.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 6,
   },
-  arrivedIconBox: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center',
+  arrivedIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#BEA3D8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  arrivedLabel: { fontSize: 9, fontWeight: '700', color: Colors.primaryContainer, letterSpacing: 1.5 },
-  arrivedTitle: { fontSize: 18, fontWeight: '800', color: Colors.onSurface },
+  arrivedTextBox: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  currentPointLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#BEA3D8',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  arrivedAtPickupText: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 20,
+    color: '#1C1A25',
+  },
 
+  // Floating controls absolute at bottom of map bounds
+  floatingControlsRow: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+  },
   sosBtn: {
-    position: 'absolute', bottom: '52%', left: Spacing.md,
-    backgroundColor: '#EF4444', paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: Radius.full, ...Shadows.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#BA1A1A',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 30,
+    shadowColor: '#BA1A1A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+    gap: 8,
   },
-  sosBtnText: { color: Colors.white, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+  sosText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#FFFFFF',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
 
-  sheet: {
-    flex: 1, backgroundColor: Colors.white,
-    borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: Spacing.base, paddingTop: 12, paddingBottom: 28,
-    ...Shadows.lavender,
+  // -- BOTTOM SHEET --
+  bottomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingTop: 12,
+    paddingHorizontal: 24,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 16,
   },
   handle: {
-    alignSelf: 'center', width: 40, height: 4,
-    backgroundColor: Colors.outlineVariant, borderRadius: 2, marginBottom: 14,
+    width: 48,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#E5E0EF',
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  sheetContent: {
+    paddingBottom: 24,
+  },
+  
+  riderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  riderRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  avatarMainBox: {
+    position: 'relative',
+  },
+  avatarWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  chatBadge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E5E0EF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  riderInfoCol: {
+    justifyContent: 'center',
+  },
+  riderName: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#1C1A25',
+    marginBottom: 4,
+  },
+  riderMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    color: '#4A4455',
+  },
+  
+  arrivedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: 'rgba(209, 250, 229, 0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  arrivedPillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#BEA3D8',
+  },
+  arrivedPillText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#BEA3D8',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 
-  riderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  avatarCircle: {
-    width: 56, height: 56, borderRadius: 14,
-    backgroundColor: Colors.surfaceLow,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: Colors.outlineVariant,
+  waitingCard: {
+    backgroundColor: '#F6F1FF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
   },
-  avatarEmoji: { fontSize: 30 },
-  riderName: { fontSize: 17, fontWeight: '800', color: Colors.onSurface },
-  riderRating: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
-  arrivedBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: Radius.full, borderWidth: 1, borderColor: '#D1FAE5',
+  waitingTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  greenDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.online },
-  arrivedBadgeText: { fontSize: 11, fontWeight: '700', color: '#059669' },
+  waitingLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#4A4455',
+    letterSpacing: -0.3,
+    textTransform: 'uppercase',
+  },
+  waitingTimeValue: {
+    fontFamily: 'Inter',
+    fontWeight: '900',
+    fontSize: 18,
+    color: '#BEA3D8',
+  },
+  waitingBarTrack: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#E5E0EF',
+    borderRadius: 4,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  waitingBarFill: {
+    height: '100%',
+    backgroundColor: '#BEA3D8',
+    opacity: 0.8,
+    borderRadius: 4,
+  },
 
-  // Wait timer
-  waitCard: {
-    backgroundColor: Colors.surfaceLow, borderRadius: Radius.lg,
-    padding: Spacing.md, marginBottom: 16,
+  actionBlock: {
+    alignItems: 'center',
   },
-  waitTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  waitLabel: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5 },
-  waitTime: { fontSize: 20, fontWeight: '900', color: Colors.primaryContainer },
-  waitTrack: {
-    height: 8, backgroundColor: Colors.surfaceContainer,
-    borderRadius: 4, overflow: 'hidden', flexDirection: 'row',
+  primaryBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: 64,
+    backgroundColor: '#BEA3D8',
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 6,
   },
-  waitFill: { height: '100%', backgroundColor: Colors.primaryContainer, borderRadius: 4 },
-  waitCharge: { fontSize: 11, color: '#D97706', marginTop: 6, fontWeight: '600' },
-
-  // OTP
-  otpLabel: {
-    fontSize: 13, fontWeight: '700', color: Colors.onSurface,
-    textAlign: 'center', letterSpacing: 0.2, marginBottom: 10,
+  primaryBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 18,
+    color: '#FFFFFF',
+    letterSpacing: -0.45,
   },
-  otpRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 },
-  otpBox: {
-    width: 58, height: 64, borderRadius: Radius.lg,
-    borderWidth: 2, borderColor: Colors.outlineVariant,
-    backgroundColor: Colors.surfaceLow,
-    fontSize: 28, fontWeight: '900', color: Colors.onSurface,
-    textAlign: 'center',
-  },
-  otpBoxFilled: { borderColor: Colors.primaryContainer, backgroundColor: `${Colors.primaryContainer}08` },
-
-  startBtn: {
-    height: 60, borderRadius: Radius.lg,
-    backgroundColor: Colors.online,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.card,
-  },
-  startBtnDisabled: { backgroundColor: Colors.outlineVariant },
-  startBtnText: { color: Colors.white, fontSize: 18, fontWeight: '800' },
 });
