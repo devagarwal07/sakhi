@@ -1,372 +1,355 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Alert, Switch, Dimensions,
+  Image, ScrollView, Dimensions
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
+import { Feather } from '@expo/vector-icons';
 
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
-import DriverSidebarMenu from '../../components/DriverSidebarMenu';
-import {
-  requestLocationPermissions,
-  startLocationTracking,
-  stopLocationTracking,
-} from '../../services/locationTask';
 
-const { height: SCREEN_H } = Dimensions.get('window');
-const MAP_STYLE = [
-  { featureType: 'all', stylers: [{ saturation: -60 }, { lightness: 10 }] },
-  { featureType: 'road.arterial', stylers: [{ color: '#e8e1f5' }] },
-  { featureType: 'road.highway',  stylers: [{ color: '#d4c6f5' }] },
-  { featureType: 'water',         stylers: [{ color: '#c8bef0' }] },
-  { featureType: 'poi.park',      stylers: [{ color: '#ddd8f0' }] },
-];
+const { width: SCREEN_W } = Dimensions.get('window');
 
-export default function DriverHomeScreen({ navigation }) {
-  const { driver, updateDriver } = useAuth();
-
-  // ── State ─────────────────────────────────────────────────────────────────
-  const [isOnline, setIsOnline]           = useState(driver?.is_online ?? false);
-  const [location, setLocation]           = useState(null);
-  const [sidebarOpen, setSidebarOpen]     = useState(false);
-  const [todayStats, setTodayStats]       = useState({ earnings: 0, trips: 0, rating: 4.9 });
-  const [subRide, setSubRide]             = useState(null); // upcoming subscription ride
-  const [statusLoading, setStatusLoading] = useState(false);
-
-  // Pulse animation for online state
-  const pulse = useRef(new Animated.Value(1)).current;
-  const mapRef = useRef(null);
-
-  // ── Initial location fetch ────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setLocation(loc.coords);
-    })();
-  }, []);
-
-  // ── Stats refresh on focus ────────────────────────────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      fetchStats();
-    }, []),
+// ── Bottom Tab Item ────────────────────────────────────────────────────────────
+function TabItem({ icon, label, active, onPress }) {
+  return (
+    <TouchableOpacity style={tab.item} onPress={onPress} activeOpacity={0.7}>
+      <Image source={icon} style={[tab.icon, active && tab.iconActive]} resizeMode="contain" />
+      <Text style={[tab.label, active && tab.labelActive]}>{label}</Text>
+    </TouchableOpacity>
   );
+}
+const tab = StyleSheet.create({
+  item:        { flex: 1, alignItems: 'center', gap: 4 },
+  icon:        { width: 22, height: 22, tintColor: '#9CA3AF' },
+  iconActive:  { tintColor: '#BEA3D8' },
+  label:       { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: '#9CA3AF', lineHeight: 14 },
+  labelActive: { color: '#BEA3D8' },
+});
 
-  const fetchStats = async () => {
-    try {
-      const { data } = await client.get('/drivers/dashboard');
-      setTodayStats({
-        earnings: data.today_earnings ?? 0,
-        trips:    data.today_trips ?? 0,
-        rating:   data.rating ?? 4.9,
-      });
-      setSubRide(data.upcoming_subscription_ride ?? null);
-    } catch {
-      // Ignore — stats are non-critical
-    }
+// ── Quick Action Button ────────────────────────────────────────────────────────
+function QuickAction({ icon, label, onPress }) {
+  return (
+    <TouchableOpacity style={qa.btn} onPress={onPress} activeOpacity={0.8}>
+      <View style={qa.iconBox}>
+        <View style={qa.innerIconBg}>
+          <Image source={icon} style={qa.icon} resizeMode="contain" />
+        </View>
+      </View>
+      <Text style={qa.label}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+const qa = StyleSheet.create({
+  btn:      { alignItems: 'center', gap: 8 },
+  iconBox:  {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06, shadowRadius: 16, elevation: 3,
+  },
+  innerIconBg: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#F3E8FF',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  icon:     { width: 20, height: 20, tintColor: '#BEA3D8' },
+  label:    { fontSize: 12, fontWeight: '600', color: '#4A4455', textAlign: 'center' },
+});
+
+// ── Main Screen ────────────────────────────────────────────────────────────────
+export default function DriverHomeScreen({ navigation }) {
+  const { driver } = useAuth();
+  const [earnings, setEarnings] = useState({ today: 1250, rides: 8, onlineTime: '5h 20m' });
+
+  useFocusEffect(useCallback(() => {
+    // Optionally fetch active stats if backend supports it
+    client.get('/drivers/earnings/today')
+      .then(r => {
+        if(r.data && r.data.today_earnings) {
+          setEarnings(prev => ({ ...prev, today: r.data.today_earnings, rides: r.data.today_trips || prev.rides }));
+        }
+      })
+      .catch(() => {});
+  }, []));
+
+  const handleGoOnline = () => {
+    // Go to PaymentPlans
+    navigation.navigate('PaymentPlans');
   };
-
-  // ── Pulse animation ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (isOnline) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.35, duration: 900, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1,    duration: 900, useNativeDriver: true }),
-        ]),
-      ).start();
-    } else {
-      pulse.stopAnimation();
-      pulse.setValue(1);
-    }
-  }, [isOnline]);
-
-  // ── Toggle online/offline ─────────────────────────────────────────────────
-  const handleToggle = async () => {
-    const goOnline = !isOnline;
-
-    if (goOnline) {
-      // Must have location permissions before going online
-      const granted = await requestLocationPermissions();
-      if (!granted) {
-        Alert.alert(
-          'Location Required',
-          'Background location permission is needed to receive rides while online.',
-        );
-        return;
-      }
-    }
-
-    try {
-      setStatusLoading(true);
-      await client.post('/drivers/status', { is_online: goOnline });
-      setIsOnline(goOnline);
-      updateDriver({ is_online: goOnline });
-
-      if (goOnline) {
-        await startLocationTracking();
-      } else {
-        await stopLocationTracking();
-      }
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not update status.');
-    } finally {
-      setStatusLoading(false);
-    }
-  };
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  const region = location
-    ? { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }
-    : { latitude: 28.6139, longitude: 77.2090, latitudeDelta: 0.05, longitudeDelta: 0.05 };
 
   return (
-    <View style={styles.root}>
-      {/* ── MAP ─────────────────────────────────────────────────────────── */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        region={region}
-        customMapStyle={MAP_STYLE}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-      >
-        {location && (
-          <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
-            <View style={styles.markerWrap}>
-              {isOnline && (
-                <Animated.View style={[styles.markerPulse, { transform: [{ scale: pulse }] }]} />
-              )}
-              <View style={styles.markerCircle}>
-                <Text style={styles.markerEmoji}>🛺</Text>
+    <View style={s.root}>
+      <StatusBar style="dark" />
+      <SafeAreaView style={s.safeArea}>
+        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* ── HEADER ── */}
+          <View style={s.header}>
+            <View style={s.headerLeft}>
+              <View style={s.profilePicWrap}>
+                {/* Fallback avatar */}
+                <Feather name="user" size={24} color="#FFF" />
               </View>
-              <View style={styles.markerLabel}>
-                <Text style={styles.markerLabelText}>You</Text>
+              <View style={s.headerTextWrap}>
+                <Text style={s.greetingText}>Hi, Priya <Text style={s.waveIcon}>👋</Text></Text>
+                <Text style={s.tierText}>GOLD TIER DRIVER</Text>
               </View>
             </View>
-          </Marker>
-        )}
-      </MapView>
+            
+            <TouchableOpacity style={s.notifBtn} activeOpacity={0.8}>
+              <Feather name="bell" size={20} color="#BEA3D8" />
+            </TouchableOpacity>
+          </View>
 
-      {/* ── MAP HEADER OVERLAYS ─────────────────────────────────────────── */}
-      <SafeAreaView style={styles.headerOverlay} pointerEvents="box-none">
-        {/* Hamburger */}
-        <TouchableOpacity style={styles.hamburger} onPress={() => setSidebarOpen(true)}>
-          <Text style={styles.hamburgerIcon}>☰</Text>
-        </TouchableOpacity>
+          {/* ── EARNINGS CARD ── */}
+          <View style={s.earningsCard}>
+            <View style={s.earningsTop}>
+              <View>
+                <Text style={s.earningsTitle}>Today's Earnings</Text>
+                <Text style={s.earningsAmount}>₹{earnings.today}</Text>
+              </View>
+              {/* Fake Sparkline using CSS borders */}
+              <View style={s.sparklineWrap}>
+                <View style={s.sparklineItem1}></View>
+                <View style={s.sparklineItem2}></View>
+                <View style={s.sparklineItem3}></View>
+              </View>
+            </View>
 
-        {/* Today's earnings pill */}
-        <View style={styles.earningsPill}>
-          <Text style={styles.earningsMeta}>Today:</Text>
-          <Text style={styles.earningsValue}>₹{todayStats.earnings}</Text>
-        </View>
+            <View style={s.divider} />
+
+            <View style={s.earningsBottom}>
+              <View style={s.statsBlock}>
+                <Text style={s.statsLabel}>Completed</Text>
+                <Text style={s.statsValue}>{earnings.rides} Rides</Text>
+              </View>
+              <View style={s.statsBlock}>
+                <Text style={s.statsLabel}>Online Time</Text>
+                <Text style={s.statsValue}>{earnings.onlineTime}</Text>
+              </View>
+              <TouchableOpacity style={s.detailsBtn} activeOpacity={0.8}>
+                <Text style={s.detailsText}>Details</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── HUGE 'GO ONLINE' BUTTON ── */}
+          <View style={s.actionCenter}>
+            <TouchableOpacity style={s.hugeGoOnlineBtn} onPress={handleGoOnline} activeOpacity={0.85}>
+              <Feather name="power" size={42} color="#FFFFFF" style={s.powerIcon} />
+              <Text style={s.hugeGoOnlineText}>GO ONLINE</Text>
+            </TouchableOpacity>
+
+            <Text style={s.offlineStatusHeading}>You are currently offline</Text>
+            <Text style={s.offlineStatusSub}>Go online to start receiving ride requests</Text>
+          </View>
+
+          {/* ── QUICK ACTIONS ── */}
+          <View style={s.quickActionsRow}>
+            <QuickAction
+              icon={require('../../../assets/car.png')}
+              label="My Rides"
+              onPress={() => navigation.navigate('TripInProgress')}
+            />
+            <QuickAction
+              icon={require('../../../assets/earning.png')}
+              label="Earnings"
+              onPress={() => navigation.navigate('MyEarnings')}
+            />
+            <QuickAction
+              icon={require('../../../assets/subscription.png')}
+              label="Subscription"
+              onPress={() => navigation.navigate('SubscriptionRides')} // update route if needed
+            />
+          </View>
+
+          {/* ── MAP EXPLORE ZONE ── */}
+          <View style={s.mapExploreCard}>
+            <View style={s.mapPlaceholderBg}>
+              {/* Dummy map lines */}
+              <View style={s.mapLine1} />
+              <View style={s.mapLine2} />
+              <View style={s.mapLine3} />
+            </View>
+            <TouchableOpacity style={s.explorePill} activeOpacity={0.9}>
+              <Text style={s.exploreText}>Tap to explore demand zones</Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
       </SafeAreaView>
 
-      {/* ── BOTTOM SHEET ────────────────────────────────────────────────── */}
-      <View style={styles.sheet}>
-        {/* Drag handle */}
-        <View style={styles.handle} />
-
-        {/* ── Online/Offline Segmented Toggle ── */}
-        <TouchableOpacity
-          style={styles.toggleTrack}
-          onPress={handleToggle}
-          disabled={statusLoading}
-          activeOpacity={0.9}
-        >
-          <Animated.View style={[styles.toggleThumb, isOnline && styles.toggleThumbOnline]}>
-            <Text style={[styles.toggleThumbText, isOnline && styles.toggleThumbTextOnline]}>
-              {isOnline ? 'ONLINE' : 'OFFLINE'}
-            </Text>
-          </Animated.View>
-          <Text style={[styles.toggleOtherLabel, !isOnline && styles.toggleOtherVisible]}>
-            {isOnline ? 'OFFLINE' : 'ONLINE'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Status headline */}
-        <View style={styles.statusText}>
-          <Text style={styles.statusHeadline}>
-            {isOnline ? 'You are Online 🟢' : 'You are Offline'}
-          </Text>
-          <Text style={styles.statusSub}>
-            {isOnline ? 'Looking for ride requests…' : 'Go online to receive rides'}
-          </Text>
-        </View>
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>₹{todayStats.earnings}</Text>
-            <Text style={styles.statLabel}>TODAY</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{todayStats.trips}</Text>
-            <Text style={styles.statLabel}>TRIPS</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>
-              {todayStats.rating.toFixed(1)} ⭐
-            </Text>
-            <Text style={styles.statLabel}>RATING</Text>
-          </View>
-        </View>
-
-        {/* Subscription Banner */}
-        {subRide ? (
-          <View style={styles.subBanner}>
-            <Text style={styles.subIcon}>🔒</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.subTitle}>Subscription Ride in {subRide.minutes_away} mins</Text>
-              <Text style={styles.subSub}>New requests paused until completion</Text>
-            </View>
-            <Text style={styles.subTimer}>{String(subRide.minutes_away).padStart(2,'0')}:00</Text>
-          </View>
-        ) : (
-          <View style={styles.subBannerEmpty}>
-            <Text style={styles.subEmptyText}>💜  No upcoming subscription rides</Text>
-          </View>
-        )}
+      {/* ── BOTTOM NAV ── */}
+      <View style={s.nav}>
+        <TabItem
+          icon={require('../../../assets/home.png')}
+          label="HOME"
+          active={true}
+          onPress={() => {}}
+        />
+        <TabItem
+          icon={require('../../../assets/rides.png')}
+          label="RIDES"
+          active={false}
+          onPress={() => navigation.navigate('TripInProgress')}
+        />
+        <TabItem
+          icon={require('../../../assets/wallet.png')}
+          label="WALLET"
+          active={false}
+          onPress={() => navigation.navigate('PaymentPlans')}
+        />
+        <TabItem
+          icon={require('../../../assets/profile.png')}
+          label="PROFILE"
+          active={false}
+          onPress={() => navigation.navigate('MyProfile')}
+        />
       </View>
-
-      {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
-      {sidebarOpen && (
-        <DriverSidebarMenu navigation={navigation} onClose={() => setSidebarOpen(false)} />
-      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#F8F8FA' },
+  safeArea: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    alignItems: 'center'
+  },
 
-  // Map
-  map: { width: '100%', height: '55%' },
-
-  // Marker
-  markerWrap: { alignItems: 'center', gap: 4 },
-  markerPulse: {
-    position: 'absolute',
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: `${Colors.primaryContainer}20`,
+  /* ── Header ── */
+  header: {
+    width: '100%',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 24,
   },
-  markerCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: `${Colors.primaryContainer}40`,
-    ...Shadows.card,
+  headerLeft: {
+    flexDirection: 'row', alignItems: 'center', gap: 12
   },
-  markerEmoji: { fontSize: 28 },
-  markerLabel: {
-    backgroundColor: Colors.primaryContainer,
-    paddingHorizontal: 10, paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  markerLabelText: { fontSize: 9, fontWeight: '700', color: '#fff', letterSpacing: 1 },
-
-  // Header overlay
-  headerOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.md,
-    pointerEvents: 'box-none',
-  },
-  hamburger: {
+  profilePicWrap: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.card,
+    backgroundColor: '#0F766E', // Teal color for avatar bg based on image
+    alignItems: 'center', justifyContent: 'center'
   },
-  hamburgerIcon: { fontSize: 22, color: Colors.primaryContainer },
-  earningsPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.white,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: Radius.full, ...Shadows.card,
+  headerTextWrap: {
+    justifyContent: 'center'
   },
-  earningsMeta: { fontSize: 11, fontWeight: '500', color: Colors.onSurfaceVariant },
-  earningsValue: { fontSize: 14, fontWeight: '800', color: Colors.primaryContainer },
-
-  // Bottom sheet
-  sheet: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingHorizontal: Spacing.base,
-    paddingTop: 20, paddingBottom: 12,
-    ...Shadows.lavender,
-  },
-  handle: {
-    alignSelf: 'center', width: 40, height: 4,
-    backgroundColor: Colors.outlineVariant, borderRadius: 2, marginBottom: 20,
-  },
-
-  // Toggle
-  toggleTrack: {
-    alignSelf: 'center',
-    width: 260, height: 56,
-    backgroundColor: Colors.surfaceLow,
-    borderRadius: 28,
-    flexDirection: 'row', alignItems: 'center',
-    padding: 4, marginBottom: 14,
-    overflow: 'hidden', ...Shadows.card,
-  },
-  toggleThumb: {
-    width: '48%', height: '100%',
-    borderRadius: 24,
-    backgroundColor: `${Colors.outlineVariant}60`,
+  greetingText: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', marginBottom: 2 },
+  waveIcon: { fontSize: 18 },
+  tierText: { fontSize: 10, fontWeight: '700', color: '#C4A6E1', letterSpacing: 0.5, textTransform: 'uppercase' },
+  
+  notifBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#F3E8FF',
     alignItems: 'center', justifyContent: 'center',
   },
-  toggleThumbOnline: {
-    backgroundColor: Colors.online,
-    marginLeft: 'auto',
-  },
-  toggleThumbText: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: Colors.onSurfaceVariant },
-  toggleThumbTextOnline: { color: Colors.white },
-  toggleOtherLabel: {
-    fontSize: 12, fontWeight: '800', color: `${Colors.onSurfaceVariant}60`,
-    letterSpacing: 1, marginLeft: 'auto', marginRight: 28,
-  },
-  toggleOtherVisible: { color: Colors.online },
 
-  // Status text
-  statusText: { alignItems: 'center', marginBottom: 20 },
-  statusHeadline: { fontSize: 18, fontWeight: '800', color: Colors.onSurface, letterSpacing: -0.3 },
-  statusSub: { fontSize: 13, color: Colors.onSurfaceVariant, marginTop: 3 },
-
-  // Stats
-  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  statCard: {
-    flex: 1, backgroundColor: Colors.surfaceLow,
-    borderRadius: Radius.lg, paddingVertical: 12,
-    alignItems: 'center', ...Shadows.card,
+  /* ── Earnings Card ── */
+  earningsCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 40,
+    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05, shadowRadius: 16, elevation: 4,
   },
-  statValue: { fontSize: 17, fontWeight: '800', color: Colors.primaryContainer },
-  statLabel: { fontSize: 9, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.2, marginTop: 3 },
+  earningsTop: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: 20
+  },
+  earningsTitle: { fontSize: 13, fontWeight: '600', color: '#A855F7', marginBottom: 8 },
+  earningsAmount: { fontSize: 32, fontWeight: '800', color: '#1E1B2E', letterSpacing: -1 },
+  
+  sparklineWrap: {
+    width: 80, height: 40,
+    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end'
+  },
+  // Fake curved line using circles with no bottom borders
+  sparklineItem1: { width: 25, height: 20, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: 20, borderColor: '#C4A6E1', marginRight: -5 },
+  sparklineItem2: { width: 25, height: 40, borderTopWidth: 2, borderTopLeftRadius: 25, borderTopRightRadius: 25, borderColor: '#C4A6E1', marginRight: -5 },
+  sparklineItem3: { width: 25, height: 25, borderTopWidth: 2, borderRightWidth: 2, borderTopRightRadius: 20, borderColor: '#C4A6E1' },
 
-  // Sub banner
-  subBanner: {
+  divider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: 20, width: '100%' },
+  
+  earningsBottom: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
+  },
+  statsBlock: { },
+  statsLabel: { fontSize: 12, fontWeight: '500', color: '#9CA3AF', marginBottom: 4 },
+  statsValue: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
+  
+  detailsBtn: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 9999
+  },
+  detailsText: { fontSize: 12, fontWeight: '600', color: '#A855F7' },
+
+  /* ── Huge Go Online Button ── */
+  actionCenter: {
+    alignItems: 'center',
+    marginBottom: 40,
+    width: '100%'
+  },
+  hugeGoOnlineBtn: {
+    width: 200, height: 200, borderRadius: 100,
+    backgroundColor: '#C4A6E1',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#A855F7', shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3, shadowRadius: 32, elevation: 12,
+  },
+  powerIcon: { marginBottom: 16 },
+  hugeGoOnlineText: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1 },
+
+  offlineStatusHeading: { fontSize: 16, fontWeight: '600', color: '#4A4455', marginTop: 32, marginBottom: 8 },
+  offlineStatusSub: { fontSize: 13, fontWeight: '400', color: '#9CA3AF' },
+
+  /* ── Quick Actions ── */
+  quickActionsRow: {
+    width: '100%',
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    marginBottom: 40
+  },
+
+  /* ── Map Explore Card ── */
+  mapExploreCard: {
+    width: '100%',
+    height: 140,
+    borderRadius: 24,
+    backgroundColor: '#D1D5DB', // gray placeholder map bg
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  mapPlaceholderBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 },
+  mapLine1: { position: 'absolute', width: '150%', height: 2, backgroundColor: '#FFFFFF', transform: [{rotate: '15deg'}], top: 40, left: -20 },
+  mapLine2: { position: 'absolute', width: '150%', height: 2, backgroundColor: '#FFFFFF', transform: [{rotate: '-25deg'}], top: 80, left: -20 },
+  mapLine3: { position: 'absolute', width: '150%', height: 2, backgroundColor: '#FFFFFF', transform: [{rotate: '45deg'}], top: 0, left: 40 },
+
+  explorePill: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 24, paddingVertical: 12,
+    borderRadius: 9999,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1, shadowRadius: 10, elevation: 4
+  },
+  exploreText: { fontSize: 14, fontWeight: '700', color: '#BEA3D8' },
+
+  /* ── Bottom Nav ── */
+  nav: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceLow,
-    borderRadius: Radius.lg, paddingHorizontal: 14, paddingVertical: 12,
-    gap: 10, borderWidth: 1, borderColor: `${Colors.primaryContainer}15`,
+    paddingTop: 12, paddingBottom: 28,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1, borderTopColor: 'rgba(190,163,216,0.1)',
   },
-  subIcon: { fontSize: 20 },
-  subTitle: { fontSize: 12, fontWeight: '700', color: Colors.onSurface },
-  subSub: { fontSize: 10, color: Colors.onSurfaceVariant, marginTop: 2 },
-  subTimer: { fontSize: 13, fontWeight: '800', color: Colors.primaryContainer, marginLeft: 'auto' },
-  subBannerEmpty: {
-    backgroundColor: Colors.surfaceLow, borderRadius: Radius.lg,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  subEmptyText: { fontSize: 13, color: Colors.onSurfaceVariant, fontWeight: '500' },
 });
