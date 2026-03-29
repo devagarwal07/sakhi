@@ -1,300 +1,406 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Switch, ActivityIndicator, RefreshControl, Alert,
+  Switch, ActivityIndicator, Alert, Dimensions, Platform
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 
-const VIEW_TABS = [
-  { label: 'Today',     value: 'today'  },
-  { label: 'This Week', value: 'weekly' },
-  { label: 'All',       value: 'all'    },
+const { width: SCREEN_W } = Dimensions.get('window');
+
+// Mock data to match Figma visual
+const MOCK_TODAY = [
+  { id: '1', time: '08:30 AM', route: 'Office Corridor - Tech Park', rider: 'Ananya Sharma', status: 'UPCOMING' },
+  { id: '2', time: '05:45 PM', route: 'Tech Park - Residency Area', rider: 'Ananya Sharma', status: 'UPCOMING' }
 ];
 
-const STATUS_COLORS = {
-  upcoming:  { bg: `${Colors.primaryContainer}18`, text: Colors.primaryContainer },
-  completed: { bg: '#D1FAE5',                       text: '#059669'               },
-  missed:    { bg: '#FEE2E2',                        text: '#DC2626'               },
-};
+const MOCK_UPCOMING_WEEK = [
+  { id: 'w1', month: 'OCT', date: '24', dayTitle: 'Tomorrow, Tuesday', ridesCount: 2 },
+  { id: 'w2', month: 'OCT', date: '25', dayTitle: 'Wednesday', ridesCount: 4 },
+  { id: 'w3', month: 'OCT', date: '26', dayTitle: 'Thursday', ridesCount: 2 },
+];
 
-// ── Ride card ────────────────────────────────────────────────────────────────
-function RideCard({ ride, onPress }) {
-  const status = ride.status ?? 'upcoming';
-  const sc     = STATUS_COLORS[status] ?? STATUS_COLORS.upcoming;
-  const isUpcoming = status === 'upcoming';
-
-  return (
-    <TouchableOpacity
-      style={[styles.rideCard, isUpcoming && styles.rideCardActive]}
-      onPress={onPress}
-      activeOpacity={0.75}
-    >
-      <View style={styles.timeCol}>
-        <Text style={[styles.timeHour, !isUpcoming && styles.timeHourInactive]}>
-          {ride.time_display ?? '—'}
-        </Text>
-        <Text style={[styles.timePeriod, !isUpcoming && styles.timePeriodInactive]}>
-          {ride.period ?? ''}
-        </Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rideRoute} numberOfLines={1}>{ride.route ?? '—'}</Text>
-        <Text style={styles.riderName}>{ride.rider_name ?? ''}</Text>
-        {ride.ride_label && <Text style={styles.rideLabel}>{ride.ride_label}</Text>}
-      </View>
-      <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-        <Text style={[styles.statusText, { color: sc.text }]}>{status}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────────
 export default function SubscriptionRidesOverviewScreen({ navigation }) {
-  const [tab, setTab]               = useState('today');
-  const [optedIn, setOptedIn]       = useState(true);
-  const [rides, setRides]           = useState([]);
-  const [nextRide, setNextRide]     = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const [optedIn, setOptedIn] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [rides, setRides] = useState(MOCK_TODAY);
 
-  const fetchRides = useCallback(async (t = tab) => {
-    try {
-      const { data } = await client.get(`/drivers/subscriptions?view=${t}`);
-      setRides(data.rides ?? []);
-      setNextRide(data.next_ride ?? null);
-      setOptedIn(data.opted_in ?? true);
-    } catch (err) {
-      console.warn('[Subscriptions]', err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [tab]);
+  // Example lock state for the banner
+  const isLocked = true; 
+  const minutesUntilNext = 28;
 
-  useEffect(() => { fetchRides(tab); }, [tab]);
-
-  const onRefresh = () => { setRefreshing(true); fetchRides(tab); };
-
-  const handleOptToggle = async (val) => {
-    try {
-      setOptedIn(val);
-      await client.patch('/drivers/subscriptions/opt-in', { opted_in: val });
-    } catch {
-      setOptedIn(!val); // revert
-      Alert.alert('Error', 'Could not update preference.');
-    }
+  const handleOptToggle = (val) => {
+    setOptedIn(val);
+    // In a real app we would call: client.patch('/drivers/subscriptions/opt-in', { opted_in: val })
   };
 
-  const minutesUntilNext = nextRide
-    ? Math.max(0, Math.round((new Date(nextRide.scheduled_at) - Date.now()) / 60000))
-    : null;
-  const showLockBanner = minutesUntilNext !== null && minutesUntilNext <= 60;
-
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription Rides</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={styles.root}>
+      {/* Background Aesthetic Blur Elements */}
+      <View style={styles.blurTopRight} />
+      <View style={styles.blurBottomLeft} />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
+      {/* Main Content Area */}
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 24) + 60 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
       >
-        {/* Opt-in toggle card */}
-        <View style={styles.optCard}>
-          <View style={styles.optLeft}>
-            <View style={styles.optIconBox}>
-              <Text style={{ fontSize: 22 }}>🔄</Text>
-            </View>
-            <View>
-              <Text style={styles.optTitle}>Accept Subscription Rides</Text>
-              <Text style={styles.optSub}>Priority matching + guaranteed earnings</Text>
-            </View>
+        
+        {/* Opt-In Section */}
+        <View style={styles.optInCard}>
+          <View style={styles.optInRow1}>
+            <Text style={styles.optInTitle}>Opt In to Subscription Rides</Text>
+            <Switch
+              value={optedIn}
+              onValueChange={handleOptToggle}
+              trackColor={{ false: '#CBD5E1', true: '#BEA3D8' }}
+              thumbColor="#FFFFFF"
+              style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
+            />
           </View>
-          <Switch
-            value={optedIn}
-            onValueChange={handleOptToggle}
-            trackColor={{ false: Colors.outlineVariant, true: Colors.primaryContainer }}
-            thumbColor={Colors.white}
-          />
+          <Text style={styles.optInSubText}>Priority matching and guaranteed earnings</Text>
         </View>
 
-        {/* Opted-in banner */}
-        {optedIn && (
-          <View style={styles.greenBanner}>
-            <Text style={{ fontSize: 16 }}>✅</Text>
-            <Text style={styles.greenBannerText}>
-              You are opted in. Subscription rides will be assigned to you.
-            </Text>
-          </View>
-        )}
-
-        {/* Lock/countdown banner */}
-        {showLockBanner && (
-          <View style={styles.lockBanner}>
-            <View style={styles.lockLeft}>
-              <Text style={{ fontSize: 16 }}>🔒</Text>
-              <Text style={styles.lockText}>
-                Subscription ride in {minutesUntilNext} mins. On-demand paused.
-              </Text>
-            </View>
-            <View style={styles.lockTimer}>
-              <Text style={styles.lockTimerText}>
-                {Math.floor(minutesUntilNext / 60).toString().padStart(2, '0')}:
-                {(minutesUntilNext % 60).toString().padStart(2, '0')}
-              </Text>
+        {/* Locked Banner Section */}
+        {isLocked && (
+          <View style={styles.lockedBannerCard}>
+            <MaterialIcons name="lock" size={16} color="#EA580C" style={{ marginTop: 2 }} />
+            <View style={styles.lockedBannerCol}>
+              <Text style={styles.lockedTextTitle}>Locked — Subscription ride in {minutesUntilNext} mins.</Text>
+              <Text style={styles.lockedTextSub}>On-demand paused.</Text>
             </View>
           </View>
         )}
 
-        {/* View tabs */}
-        <Text style={styles.sectionTitle}>SCHEDULE</Text>
-        <View style={styles.tabsRow}>
-          {VIEW_TABS.map((t) => (
-            <TouchableOpacity
-              key={t.value}
-              style={[styles.tab, tab === t.value && styles.tabActive]}
-              onPress={() => setTab(t.value)}
-              activeOpacity={0.7}
+        {/* Today's Schedule Section */}
+        <Text style={styles.sectionTitle}>TODAY'S SCHEDULE</Text>
+        
+        <View style={styles.rideList}>
+          {rides.map((ride, idx) => (
+            <TouchableOpacity 
+              key={ride.id} 
+              style={[styles.rideCard, idx === 1 && { opacity: 0.9 }]}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.tabText, tab === t.value && styles.tabTextActive]}>
-                {t.label}
-              </Text>
+              <View style={styles.rideMarkerLine} />
+              
+              <View style={styles.rideCardInner}>
+                <View style={styles.rideCardTopRow}>
+                  <Text style={styles.rideTime}>{ride.time}</Text>
+                  <View style={styles.upcomingBadge}>
+                    <Text style={styles.upcomingBadgeText}>{ride.status}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.rideCardDetails}>
+                  <Text style={styles.rideRoute}>{ride.route}</Text>
+                  <Text style={styles.rideRider}>Rider: {ride.rider}</Text>
+                </View>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Weekly calendar shortcut */}
-        {tab === 'weekly' && (
-          <TouchableOpacity
-            style={styles.calendarBtn}
-            onPress={() => navigation.navigate('WeeklyCalendarView')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.calendarBtnText}>📅  View Weekly Calendar</Text>
-          </TouchableOpacity>
-        )}
+        {/* Upcoming Week Section */}
+        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>UPCOMING WEEK</Text>
+        
+        <View style={styles.weekOverlay}>
+          {MOCK_UPCOMING_WEEK.map((day, idx) => (
+            <TouchableOpacity 
+              key={day.id} 
+              style={[
+                styles.weekRowItem, 
+                idx > 0 && { marginTop: 8 }
+              ]}
+              activeOpacity={0.7}
+            >
+              <View style={styles.weekDateBadge}>
+                <Text style={styles.weekMonthText}>{day.month}</Text>
+                <Text style={styles.weekDateText}>{day.date}</Text>
+              </View>
+              
+              <View style={styles.weekInfoCol}>
+                <Text style={styles.weekDayTitle}>{day.dayTitle}</Text>
+                <Text style={styles.weekRidesCount}>{day.ridesCount} subscription rides</Text>
+              </View>
 
-        {/* Ride list */}
-        {loading ? (
-          <ActivityIndicator size="large" color={Colors.primaryContainer} style={{ marginTop: 40 }} />
-        ) : rides.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyTitle}>No rides scheduled</Text>
-            <Text style={styles.emptySub}>When subscriptions are assigned, they'll appear here.</Text>
-          </View>
-        ) : (
-          <View style={styles.rideList}>
-            {rides.map((ride, i) => (
-              <RideCard
-                key={ride.id ?? i}
-                ride={ride}
-                onPress={() => navigation.navigate('SubscriptionAssignmentDetails', { subscription: ride })}
-              />
-            ))}
-          </View>
-        )}
+              <Feather name="chevron-right" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Top Floating App Bar */}
+      <View style={[styles.headerAppBar, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Feather name="arrow-left" size={24} color="#BEA3D8" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Subscription Rides</Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-    backgroundColor: `${Colors.surfaceLow}E0`,
+  root: {
+    flex: 1,
+    backgroundColor: '#F5F0FF',
+    position: 'relative',
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
+  
+  // -- Aesthetic Background Blurs --
+  blurTopRight: {
+    position: 'absolute',
+    width: 256,
+    height: 256,
+    right: -96,
+    top: -96,
+    backgroundColor: 'rgba(190, 163, 216, 0.1)',
+    borderRadius: 128,
+  },
+  blurBottomLeft: {
+    position: 'absolute',
+    width: 256,
+    height: 256,
+    left: -96,
+    bottom: -96,
+    backgroundColor: 'rgba(103, 75, 181, 0.1)',
+    borderRadius: 128,
+  },
 
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 32, gap: 12 },
+  // -- MAIN CONTENT --
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
 
-  // Opt-in
-  optCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, ...Shadows.card,
+  // Opt-In Section
+  optInCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
   },
-  optLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  optIconBox: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.surfaceContainer,
-    alignItems: 'center', justifyContent: 'center',
+  optInRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  optTitle: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  optSub: { fontSize: 11, color: Colors.onSurfaceVariant, marginTop: 2 },
+  optInTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#1C1A25',
+  },
+  optInSubText: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    color: '#64748B',
+  },
 
-  greenBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#ECFDF5', borderRadius: Radius.lg,
-    padding: Spacing.md, borderWidth: 1, borderColor: '#A7F3D0',
+  // Locked Banner
+  lockedBannerCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 247, 237, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(254, 215, 170, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    marginBottom: 24,
   },
-  greenBannerText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#065F46' },
+  lockedBannerCol: {
+    flex: 1,
+    gap: 2,
+  },
+  lockedTextTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#C2410C',
+  },
+  lockedTextSub: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 12,
+    color: 'rgba(234, 88, 12, 0.8)',
+  },
 
-  lockBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#FFF7ED', borderRadius: Radius.lg,
-    padding: Spacing.md, borderLeftWidth: 4, borderLeftColor: '#F97316',
+  // Section Headers
+  sectionTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#4A4455',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+    opacity: 0.8,
   },
-  lockLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  lockText: { fontSize: 12, fontWeight: '600', color: '#9A3412', flex: 1 },
-  lockTimer: {
-    backgroundColor: Colors.white, paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: Radius.md,
-  },
-  lockTimerText: { fontSize: 15, fontWeight: '800', color: '#F97316', fontVariant: ['tabular-nums'] },
 
-  sectionTitle: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5 },
-  tabsRow: { flexDirection: 'row', gap: 8 },
-  tab: {
-    flex: 1, paddingVertical: 8, borderRadius: Radius.md,
-    backgroundColor: Colors.white, alignItems: 'center', ...Shadows.card,
+  // Ride Item Cards
+  rideList: {
+    gap: 16,
+    marginBottom: 24,
   },
-  tabActive: { backgroundColor: Colors.primaryContainer },
-  tabText: { fontSize: 12, fontWeight: '600', color: Colors.onSurfaceVariant },
-  tabTextActive: { color: Colors.white, fontWeight: '800' },
-
-  calendarBtn: {
-    backgroundColor: `${Colors.primaryContainer}12`, borderRadius: Radius.lg,
-    padding: Spacing.md, alignItems: 'center',
-    borderWidth: 1.5, borderColor: `${Colors.primaryContainer}25`,
-  },
-  calendarBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primaryContainer },
-
-  rideList: { gap: 10 },
   rideCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, borderLeftWidth: 4, borderLeftColor: Colors.outlineVariant,
-    ...Shadows.card,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
+    height: 128,
+    overflow: 'hidden',
   },
-  rideCardActive: { borderLeftColor: Colors.primaryContainer },
-  timeCol: { alignItems: 'center', minWidth: 36 },
-  timeHour: { fontSize: 18, fontWeight: '900', color: Colors.primaryContainer, lineHeight: 20 },
-  timeHourInactive: { color: Colors.onSurfaceVariant },
-  timePeriod: { fontSize: 9, fontWeight: '700', color: Colors.primaryContainer, letterSpacing: 0.5 },
-  timePeriodInactive: { color: Colors.onSurfaceVariant },
-  rideRoute: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  riderName: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
-  rideLabel: { fontSize: 10, color: Colors.onSurfaceVariant, fontStyle: 'italic', marginTop: 2 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full },
-  statusText: { fontSize: 9, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  rideMarkerLine: {
+    width: 6,
+    height: '100%',
+    backgroundColor: '#BEA3D8',
+  },
+  rideCardInner: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    gap: 12,
+  },
+  rideCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  rideTime: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#BEA3D8',
+  },
+  upcomingBadge: {
+    backgroundColor: '#E8DDFF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  upcomingBadgeText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    color: '#3F1E8C',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  rideCardDetails: {
+    gap: 4,
+  },
+  rideRoute: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#1C1A25',
+  },
+  rideRider: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    color: '#64748B',
+  },
 
-  emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-  emptySub: { fontSize: 13, color: Colors.onSurfaceVariant, textAlign: 'center', lineHeight: 20 },
+  // Weekly Override View
+  weekOverlay: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 16,
+    padding: 8,
+  },
+  weekRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  weekDateBadge: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#F0ECFA',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekMonthText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    color: '#BEA3D8',
+    textTransform: 'uppercase',
+    opacity: 0.6,
+  },
+  weekDateText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#1C1A25',
+  },
+  weekInfoCol: {
+    flex: 1,
+  },
+  weekDayTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#1C1A25',
+  },
+  weekRidesCount: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#64748B',
+  },
+
+  // -- FLOATING HEADER --
+  headerAppBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    // Note: React Native doesn't support backdrop-filter natively without special blurred views,
+    // so we use a semi-transparent white.
+  },
+  backBtn: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#1E1B4B',
+    marginLeft: 16,
+    letterSpacing: -0.36,
+  },
 });
