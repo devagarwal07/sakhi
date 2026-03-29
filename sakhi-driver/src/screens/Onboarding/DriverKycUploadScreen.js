@@ -5,16 +5,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 
 const DOCS = [
-  { key: 'dl_front',  label: 'Driving License',    sub: 'Front side',  emoji: '🪪' },
-  { key: 'dl_back',   label: 'Driving License',    sub: 'Back side',   emoji: '🪪' },
-  { key: 'aadhaar',   label: 'Aadhaar Card',        sub: 'Front side',  emoji: '🆔' },
-  { key: 'vehicle_rc',label: 'Vehicle RC',          sub: 'Registration Certificate', emoji: '🚗' },
-  { key: 'profile',   label: 'Profile Photo',       sub: 'Clear face photo',        emoji: '📸' },
+  { key: 'dl',          label: 'Driving Licence',       sub: 'Front & Back', iconName: 'card-account-details-outline' },
+  { key: 'vehicle_rc',  label: 'Vehicle RC',            iconName: 'car' },
+  { key: 'insurance',   label: 'Insurance Certificate', iconName: 'shield-check-outline' },
+  { key: 'aadhaar',     label: 'Aadhaar Card',          iconName: 'card-account-details-outline' },
+  { key: 'profile',     label: 'Profile Photo',         iconName: 'account-outline' },
 ];
 
 export default function DriverKycUploadScreen({ navigation }) {
@@ -23,6 +23,8 @@ export default function DriverKycUploadScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const allUploaded = DOCS.every((d) => uploads[d.key]);
+  const completedCount = Object.keys(uploads).length;
+  const pct = Math.round((completedCount / DOCS.length) * 100);
 
   const pickImage = async (key) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -65,156 +67,372 @@ export default function DriverKycUploadScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>KYC Verification</Text>
-        <View style={{ width: 40 }} />
+    <View style={styles.container}>
+      {/* Nav - TopAppBar */}
+      <View style={styles.topAppBar}>
+        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Feather name="arrow-left" size={24} color="#7C3AED" />
+            </TouchableOpacity>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>KYC Verification</Text>
+            </View>
+            <View style={{ width: 40 }} />
+          </View>
+        </SafeAreaView>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Progress */}
-        <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Step 2 of 5 · Upload Documents</Text>
-          <Text style={styles.progressPct}>{Math.round((Object.keys(uploads).length / DOCS.length) * 100)}%</Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${(Object.keys(uploads).length / DOCS.length) * 100}%` }]} />
-        </View>
+        <View style={styles.mainCanvas}>
+          
+          {/* Progress Bar Section */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressTextRow}>
+              <Text style={styles.progressStepLabel}>STEP 3 OF 5</Text>
+              <Text style={styles.progressPctLabel}>{pct}% Complete</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${pct}%` }]} />
+            </View>
+          </View>
 
-        <Text style={styles.headline}>Upload Your Documents</Text>
-        <Text style={styles.subline}>Required for verification and account activation</Text>
+          {/* Section - Header Titles */}
+          <View style={styles.headerTitles}>
+            <Text style={styles.headline}>Upload Your Documents</Text>
+            <Text style={styles.subline}>Required for verification and account activation</Text>
+          </View>
 
-        {/* Document rows */}
-        <View style={styles.card}>
-          {DOCS.map((doc, idx) => {
-            const uploaded = !!uploads[doc.key];
-            return (
-              <View key={doc.key}>
-                <View style={styles.docRow}>
-                  <View style={styles.docIcon}>
-                    <Text style={styles.docEmoji}>{doc.emoji}</Text>
-                  </View>
-                  <View style={styles.docInfo}>
-                    <Text style={styles.docLabel}>{doc.label}</Text>
-                    <Text style={styles.docSub}>{doc.sub}</Text>
-                  </View>
-
-                  {uploaded ? (
-                    <View style={styles.uploadedCol}>
-                      <Image source={{ uri: uploads[doc.key].uri }} style={styles.thumb} />
-                      <TouchableOpacity onPress={() => pickImage(doc.key)}>
-                        <Text style={styles.reupload}>Re-upload</Text>
-                      </TouchableOpacity>
+          {/* Section - Document List Card */}
+          <View style={styles.docsCard}>
+            {DOCS.map((doc, idx) => {
+              const uploaded = !!uploads[doc.key];
+              return (
+                <View key={doc.key}>
+                  <View style={styles.row}>
+                    
+                    <View style={styles.rowLeft}>
+                      <View style={styles.iconBg}>
+                        <MaterialCommunityIcons name={doc.iconName} size={20} color="#7C3AED" />
+                      </View>
+                      <View style={styles.rowTextCol}>
+                        <Text style={styles.rowLabel}>{doc.label}</Text>
+                        {doc.sub && <Text style={styles.rowSub}>{doc.sub}</Text>}
+                      </View>
                     </View>
-                  ) : (
-                    <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(doc.key)}>
-                      <Text style={styles.uploadBtnText}>Upload</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {idx < DOCS.length - 1 && <View style={styles.rowDivider} />}
-              </View>
-            );
-          })}
-        </View>
 
-        {/* Info */}
-        <View style={styles.infoBanner}>
-          <Text style={styles.infoEmoji}>⏱</Text>
-          <Text style={styles.infoText}>Clean documents are auto-approved. Flagged ones go to manual review.</Text>
+                    <View style={styles.rowRight}>
+                      {uploaded ? (
+                        <View style={styles.uploadedState}>
+                          <View style={styles.uploadedCheckRow}>
+                            <MaterialCommunityIcons name="check-circle" size={14} color="#059669" />
+                            <Text style={styles.uploadedText}>Uploaded</Text>
+                            <Feather name="check" size={12} color="#059669" />
+                          </View>
+                          <TouchableOpacity onPress={() => pickImage(doc.key)}>
+                            <Text style={styles.reuploadText}>Re-upload</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(doc.key)}>
+                          <Text style={styles.uploadBtnText}>Upload</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                  </View>
+                  {idx < DOCS.length - 1 && <View style={styles.divider} />}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Section - Info Box */}
+          <View style={styles.infoBox}>
+            <MaterialCommunityIcons name="clock-outline" size={16} color="#7C3AED" style={{ marginTop: 2 }} />
+            <Text style={styles.infoText}>
+              Clean documents are auto-approved. Flagged ones go to manual review.
+            </Text>
+          </View>
+
         </View>
       </ScrollView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.ctaBtn, (!allUploaded || loading) && styles.ctaDisabled]}
-          onPress={handleSubmit}
-          disabled={!allUploaded || loading}
-          activeOpacity={0.85}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.ctaText}>Submit for Verification</Text>
-          }
-        </TouchableOpacity>
+      {/* Bottom Action Footer */}
+      <View style={styles.bottomFooter}>
+        <SafeAreaView edges={['bottom']} style={{ width: '100%', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[styles.submitBtn, (!allUploaded || loading) && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={!allUploaded || loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitBtnText}>Submit for Verification</Text>
+            )}
+          </TouchableOpacity>
+        </SafeAreaView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm,
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F0FF',
+  },
+  topAppBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(245, 240, 255, 0.95)',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
+    zIndex: 10,
+  },
+  safeAreaHeader: {
+    width: '100%',
+  },
+  headerContent: {
+    height: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
   },
   backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${Colors.primaryContainer}15`,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  backIcon: { fontSize: 26, color: Colors.primaryContainer, marginTop: -3 },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: Colors.onSurface },
-
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 6 },
-  progressLabel: { fontSize: 11, fontWeight: '700', color: Colors.primaryContainer, letterSpacing: 0.5 },
-  progressPct: { fontSize: 11, color: Colors.onSurfaceVariant },
-  progressTrack: { height: 8, backgroundColor: Colors.surfaceContainer, borderRadius: 4, overflow: 'hidden', marginBottom: 24 },
-  progressFill: { height: '100%', backgroundColor: Colors.primaryContainer, borderRadius: 4 },
-
-  headline: { fontSize: 22, fontWeight: '800', color: Colors.onSurface, letterSpacing: -0.5, marginBottom: 4 },
-  subline: { fontSize: 14, color: Colors.onSurfaceVariant, marginBottom: 20 },
-
-  card: { backgroundColor: Colors.white, borderRadius: Radius.lg, overflow: 'hidden', ...Shadows.card },
-  docRow: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, gap: 12 },
-  docIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.surfaceLow,
-    alignItems: 'center', justifyContent: 'center',
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  docEmoji: { fontSize: 22 },
-  docInfo: { flex: 1 },
-  docLabel: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  docSub: { fontSize: 11, color: Colors.onSurfaceVariant, marginTop: 2 },
-  rowDivider: { height: 1, backgroundColor: Colors.surfaceLow, marginHorizontal: Spacing.md },
-
+  headerTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 18,
+    lineHeight: 28,
+    color: '#1E1B2E',
+    letterSpacing: -0.45,
+    marginLeft: 4,
+  },
+  scroll: {
+    flexGrow: 1,
+    paddingBottom: 160,
+  },
+  mainCanvas: {
+    paddingHorizontal: 24,
+    paddingTop: 140, // Needs space for Header + Padding (96 per design, depending on safe area)
+    paddingBottom: 128,
+    gap: 32,
+    alignItems: 'center',
+    width: '100%',
+  },
+  progressSection: {
+    width: '100%',
+    gap: 12,
+  },
+  progressTextRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+  },
+  progressStepLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 12,
+    color: '#7C3AED',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  progressPctLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#F0ECFA',
+    borderRadius: 9999,
+  },
+  progressFill: {
+    height: 8,
+    backgroundColor: '#7C3AED',
+    borderRadius: 9999,
+  },
+  headerTitles: {
+    width: '100%',
+    gap: 7,
+  },
+  headline: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 24,
+    lineHeight: 30,
+    color: '#1E1B2E',
+    letterSpacing: -0.6,
+  },
+  subline: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 23,
+    color: '#6B7280',
+  },
+  docsCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 80,
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+  },
+  iconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 9999,
+    backgroundColor: '#F5F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowTextCol: {
+    flexShrink: 1,
+  },
+  rowLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#1E1B2E',
+  },
+  rowSub: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#6B7280',
+  },
+  rowRight: {
+    marginLeft: 16,
+  },
   uploadBtn: {
-    paddingHorizontal: 16, paddingVertical: 7,
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radius.full,
+    backgroundColor: '#EBE6F5',
+    borderRadius: 9999,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  uploadBtnText: { fontSize: 12, fontWeight: '600', color: Colors.primaryContainer },
-
-  uploadedCol: { alignItems: 'center', gap: 4 },
-  thumb: { width: 48, height: 48, borderRadius: 8, borderWidth: 2, borderColor: Colors.online },
-  reupload: { fontSize: 10, color: Colors.onSurfaceVariant, textDecorationLine: 'underline' },
-
-  infoBanner: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: `${Colors.primaryContainer}18`,
-    borderRadius: Radius.lg, padding: Spacing.md,
-    marginTop: 16, gap: 10,
+  uploadBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#7C3AED',
   },
-  infoEmoji: { fontSize: 18 },
-  infoText: { flex: 1, fontSize: 12, color: Colors.onSurfaceVariant, lineHeight: 18 },
-
-  footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: Spacing.base, paddingBottom: 32, paddingTop: 12,
-    backgroundColor: `${Colors.white}E0`,
+  uploadedState: {
+    alignItems: 'flex-end',
+    gap: 4,
   },
-  ctaBtn: {
-    height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.lavender,
+  uploadedCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  ctaDisabled: { backgroundColor: Colors.outlineVariant },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  uploadedText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 12,
+    color: '#059669',
+  },
+  reuploadText: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 10,
+    color: '#6B7280',
+    textDecorationLine: 'underline',
+  },
+  divider: {
+    width: '88%',
+    alignSelf: 'center',
+    height: 1,
+    backgroundColor: '#F5F0FF',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EDE9FE',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    width: '100%',
+  },
+  infoText: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 12,
+    lineHeight: 20,
+    color: '#6B7280',
+  },
+  bottomFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  submitBtn: {
+    width: '100%',
+    height: 56,
+    backgroundColor: '#7C3AED',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  submitBtnDisabled: {
+    opacity: 0.4,
+  },
+  submitBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
 });
