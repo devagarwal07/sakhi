@@ -3,17 +3,17 @@
  * Modal bottom-sheet confirming logout. Shown from sidebar or profile menu.
  * Usage: navigation.navigate('LogoutConfirmation')
  */
-import React, { useRef, useEffect, useContext } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Animated, Modal, TouchableWithoutFeedback,
   ActivityIndicator,
 } from 'react-native';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SakhiLogoutConfirmationSheet({ navigation }) {
-  const { logout } = useContext(AuthContext);
+  const { logout } = useAuth();
   const [loading, setLoading] = React.useState(false);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const bgAnim    = useRef(new Animated.Value(0)).current;
