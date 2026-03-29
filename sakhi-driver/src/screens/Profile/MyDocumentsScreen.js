@@ -1,141 +1,437 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
-import client from '../../api/client';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 
-const DOC_STATUS_STYLES = {
-  verified:       { bg: '#DCFCE7', text: '#15803D', label: '✅ Verified'       },
-  pending:        { bg: '#FEF9C3', text: '#92400E', label: '⏳ Pending'         },
-  rejected:       { bg: '#FEE2E2', text: '#DC2626', label: '❌ Rejected'        },
-  expiring_soon:  { bg: '#FFF7ED', text: '#C2410C', label: '⚠️ Expiring Soon'   },
+const { width: SCREEN_W } = Dimensions.get('window');
+
+const MOCK_DOCS = [
+  {
+    id: '1',
+    type: 'driving_licence',
+    title: 'Driving Licence',
+    status: 'VERIFIED',
+    iconName: 'card-account-details-outline',
+    iconType: 'MaterialCommunity',
+    expires: '12 Jun 2027',
+    uploaded: '12 Jun 2022',
+    colorKey: 'success',
+  },
+  {
+    id: '2',
+    type: 'vehicle_rc',
+    title: 'Vehicle RC',
+    status: 'EXPIRING SOON',
+    iconName: 'swap-horizontal',
+    iconType: 'MaterialCommunity',
+    expires: '15 Oct 2026',
+    uploaded: '20 Oct 2021',
+    colorKey: 'warning',
+  },
+  {
+    id: '3',
+    type: 'insurance',
+    title: 'Insurance Certificate',
+    status: 'UNDER REVIEW',
+    iconName: 'file-document-outline',
+    iconType: 'MaterialCommunity',
+    expires: '05 Jan 2026',
+    uploaded: '10 Jan 2025',
+    colorKey: 'primary',
+  },
+  {
+    id: '4',
+    type: 'aadhaar',
+    title: 'Aadhaar Card',
+    status: 'VERIFIED',
+    iconName: 'badge-account-horizontal-outline',
+    iconType: 'MaterialCommunity',
+    colorKey: 'success',
+  },
+  {
+    id: '5',
+    type: 'profile_photo',
+    title: 'Profile Photo',
+    status: 'VERIFIED',
+    isPhoto: true,
+    colorKey: 'success',
+  },
+];
+
+const COLORS = {
+  success: {
+    border: '#10B981',
+    badgeBg: '#F0FDF4',
+    badgeText: '#15803D',
+    icon: 'check-circle',
+  },
+  warning: {
+    border: '#F59E0B',
+    badgeBg: '#FFF7ED',
+    badgeText: '#C2410C',
+    icon: 'alert-triangle',
+  },
+  primary: {
+    border: '#BEA3D8',
+    badgeBg: '#F5F3FF',
+    badgeText: '#BEA3D8',
+    icon: 'refresh-cw',
+  },
 };
 
-function DocumentRow({ doc, onReUpload }) {
-  const s = DOC_STATUS_STYLES[doc.status] ?? DOC_STATUS_STYLES.pending;
-  return (
-    <View style={styles.docRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.docName}>{doc.name}</Text>
-        {doc.expiry && <Text style={styles.docExpiry}>Exp: {doc.expiry}</Text>}
-        <View style={[styles.statusBadge, { backgroundColor: s.bg }]}>
-          <Text style={[styles.statusText, { color: s.text }]}>{s.label}</Text>
-        </View>
+export default function MyDocumentsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+
+  const renderBadge = (status, colorKey) => {
+    const theme = COLORS[colorKey];
+    return (
+      <View style={[styles.badgeContainer, { backgroundColor: theme.badgeBg }]}>
+        <Text style={[styles.badgeText, { color: theme.badgeText }]}>{status}</Text>
+        <Feather name={theme.icon} size={10} color={theme.badgeText} style={{ marginLeft: 4 }} />
       </View>
-      <TouchableOpacity style={styles.reUploadBtn} onPress={() => onReUpload(doc)} activeOpacity={0.7}>
-        <Text style={styles.reUploadText}>Re-upload</Text>
-      </TouchableOpacity>
+    );
+  };
+
+  const renderIconBox = (item) => {
+    if (item.isPhoto) {
+      return (
+        <View style={styles.photoBox}>
+          <Image
+            source={{ uri: 'https://ui-avatars.com/api/?name=Driver&background=D4A373&color=fff' }}
+            style={styles.profileAvatar}
+          />
+        </View>
+      );
+    }
+    return (
+      <View style={styles.iconBox}>
+        {item.iconType === 'MaterialCommunity' ? (
+          <MaterialCommunityIcons name={item.iconName} size={24} color="#BEA3D8" />
+        ) : (
+          <Feather name={item.iconName} size={24} color="#BEA3D8" />
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.root}>
+      {/* Absolute Navbar matching Figma Spec */}
+      <View style={[styles.navBar, { top: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity
+          style={styles.navIconButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Feather name="arrow-left" size={24} color="#BEA3D8" />
+        </TouchableOpacity>
+        
+        <Text style={styles.navTitle}>Documents</Text>
+
+        <TouchableOpacity style={styles.navIconButton}>
+          <View style={styles.helpIconCircle}>
+            <Text style={styles.helpIconText}>?</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 16) + 60 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Title Section */}
+        <View style={styles.headerTitleBox}>
+          <Text style={styles.mainHeading}>My Documents</Text>
+          <Text style={styles.subHeading}>
+            Keep your documents updated to stay active on Sakhi.
+          </Text>
+        </View>
+
+        {/* Warning Banner */}
+        <View style={styles.warningBanner}>
+          <View style={styles.warningIconWrapper}>
+            <Feather name="alert-triangle" size={18} color="#EA580C" />
+          </View>
+          <Text style={styles.warningText}>
+            1 document expiring soon. Please re-upload.
+          </Text>
+        </View>
+
+        {/* Document List */}
+        <View style={styles.docList}>
+          {MOCK_DOCS.map((doc) => {
+            const hasDetails = !!doc.expires || !!doc.uploaded;
+            return (
+              <View 
+                key={doc.id} 
+                style={[
+                  styles.docCard, 
+                  hasDetails ? styles.docCardLarge : styles.docCardSmall,
+                  { borderLeftColor: COLORS[doc.colorKey]?.border || '#FFFFFF' }
+                ]}
+              >
+                {renderIconBox(doc)}
+                
+                <View style={styles.docInfoCol}>
+                  <View style={styles.docTopRow}>
+                    <Text style={styles.docTitle}>{doc.title}</Text>
+                    {renderBadge(doc.status, doc.colorKey)}
+                  </View>
+
+                  {hasDetails && (
+                    <View style={styles.docDetailsBox}>
+                      <Text style={styles.docMetaText}>Expires: {doc.expires}</Text>
+                      <Text style={styles.docMetaText}>Uploaded: {doc.uploaded}</Text>
+                      
+                      <TouchableOpacity style={styles.reuploadBtn} activeOpacity={0.7}>
+                        <Text style={styles.reuploadBtnText}>RE-UPLOAD</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Sticky Bottom Action Button */}
+      <View style={[styles.bottomStickyArea, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <TouchableOpacity style={styles.uploadNewBtn} activeOpacity={0.8}>
+          <Text style={styles.uploadNewText}>Upload New Document</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-export default function MyDocumentsScreen({ navigation }) {
-  const [docs, setDocs]       = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchDocs = async () => {
-    try {
-      const { data } = await client.get('/drivers/documents');
-      setDocs(data.documents ?? []);
-    } catch { /* use fallback */ }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchDocs(); }, []);
-
-  const handleReUpload = async (doc) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission required'); return; }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false, quality: 0.9,
-    });
-    if (result.canceled) return;
-
-    try {
-      const form = new FormData();
-      form.append('document', { uri: result.assets[0].uri, type: 'image/jpeg', name: `${doc.type}.jpg` });
-      form.append('document_type', doc.type);
-      await client.post('/drivers/documents/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      Alert.alert('Uploaded', 'Document submitted for verification.');
-      fetchDocs();
-    } catch (err) {
-      Alert.alert('Upload Failed', err.response?.data?.message ?? 'Please try again.');
-    }
-  };
-
-  // Fallback mock list if API hasn't returned yet
-  const displayDocs = docs.length > 0 ? docs : [
-    { name: 'Driving Licence',  type: 'driving_licence', status: 'verified',      expiry: 'Oct 2028' },
-    { name: 'Aadhaar Card',     type: 'aadhaar',         status: 'verified',      expiry: null       },
-    { name: 'Vehicle RC',       type: 'vehicle_rc',      status: 'verified',      expiry: 'Jan 2030' },
-    { name: 'Insurance',        type: 'insurance',       status: 'expiring_soon', expiry: 'Aug 2024' },
-    { name: 'Selfie / Identity',type: 'selfie',          status: 'verified',      expiry: null       },
-  ];
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Documents</Text>
-        <View style={{ width: 36 }} />
-      </View>
-
-      {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primaryContainer} /></View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.infoNote}>
-            📋  Documents are verified by Sakhi ops team. Re-upload if any is expired or rejected.
-          </Text>
-          <View style={styles.card}>
-            {displayDocs.map((doc, i, arr) => (
-              <View key={doc.type}>
-                <DocumentRow doc={doc} onReUpload={handleReUpload} />
-                {i < arr.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      )}
-    </SafeAreaView>
-  );
-}
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+  root: {
+    flex: 1,
+    backgroundColor: '#F8F7FF',
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 40, gap: 12 },
-  infoNote: {
-    fontSize: 12, color: Colors.onSurfaceVariant, lineHeight: 18,
-    backgroundColor: `${Colors.primaryContainer}0D`, borderRadius: Radius.lg,
-    padding: Spacing.md,
+  // Navbar
+  navBar: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 10,
   },
-  card: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, ...Shadows.card },
-  docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  docName: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  docExpiry: { fontSize: 10, color: Colors.onSurfaceVariant, marginTop: 2 },
-  statusBadge: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full },
-  statusText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  reUploadBtn: {
-    backgroundColor: `${Colors.primaryContainer}10`, paddingHorizontal: 10,
-    paddingVertical: 6, borderRadius: Radius.md,
+  navIconButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  reUploadText: { fontSize: 11, fontWeight: '700', color: Colors.primaryContainer },
-  divider: { height: 1, backgroundColor: Colors.surfaceLow, marginVertical: 2 },
+  navTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 20,
+    color: '#111827',
+  },
+  helpIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#BEA3D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpIconText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+
+  // Main Scroll
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 120, // space for sticky button
+  },
+
+  headerTitleBox: {
+    marginBottom: 24,
+    gap: 8,
+  },
+  mainHeading: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 30,
+    lineHeight: 36,
+    color: '#0F172A',
+  },
+  subHeading: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#64748B',
+  },
+
+  // Warning Banner
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FFEDD5',
+    borderRadius: 8,
+    padding: 16,
+    gap: 12,
+    marginBottom: 24,
+  },
+  warningIconWrapper: {
+    paddingTop: 2,
+  },
+  warningText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 19,
+    color: '#7C2D12',
+    flex: 1,
+  },
+
+  // Document List
+  docList: {
+    gap: 16,
+  },
+  docCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    padding: 16,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 20,
+    elevation: 2,
+    alignItems: 'flex-start',
+  },
+  docCardLarge: {
+    minHeight: 126,
+  },
+  docCardSmall: {
+    alignItems: 'center',
+    minHeight: 80,
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#EAEAEA',
+  },
+  profileAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  docInfoCol: {
+    flex: 1,
+    gap: 4,
+  },
+  docTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  docTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    lineHeight: 22,
+    color: '#0F172A',
+    flex: 1,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  // Details
+  docDetailsBox: {
+    marginTop: 2,
+    gap: 2,
+  },
+  docMetaText: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#64748B',
+  },
+  reuploadBtn: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  reuploadBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: '#BEA3D8',
+    textTransform: 'uppercase',
+  },
+
+  // Sticky Bottom Action
+  bottomStickyArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    backgroundColor: 'transparent', 
+  },
+  uploadNewBtn: {
+    backgroundColor: '#BEA3D8',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 4,
+  },
+  uploadNewText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
 });

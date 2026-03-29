@@ -1,30 +1,60 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, Alert, ActivityIndicator, TextInput,
+  Image, Alert, ActivityIndicator, TextInput, Dimensions
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import client from '../../api/client';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
-const DETAIL_ROW = ({ label, value, onEdit }) => (
-  <View style={styles.detailRow}>
-    <View style={{ flex: 1 }}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value || '—'}</Text>
+const { width: SCREEN_W } = Dimensions.get('window');
+
+const DETAIL_ROW = ({ label, value, onEdit, isFirst, isLast }) => (
+  <View style={[styles.detailRowWrapper, !isFirst && styles.detailRowBorder]}>
+    <View style={styles.detailRow}>
+      <View style={styles.detailTextCol}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={styles.detailValue}>{value || '—'}</Text>
+      </View>
+      {onEdit && (
+        <TouchableOpacity onPress={onEdit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Feather name="edit-2" size={16} color="rgba(99, 14, 212, 0.4)" />
+        </TouchableOpacity>
+      )}
     </View>
-    {onEdit && (
-      <TouchableOpacity onPress={onEdit} hitSlop={8}>
-        <Text style={styles.editIcon}>✏️</Text>
-      </TouchableOpacity>
-    )}
   </View>
 );
 
+const DOC_PREVIEW_ROW = ({ title, expiry, badgeState, onReUpload, isFirst }) => {
+  const BADGES = {
+    verified: { bg: '#DCFCE7', text: '#15803D', label: 'VERIFIED' },
+    expiring: { bg: '#FFEDD5', text: '#C2410C', label: 'EXPIRING SOON' },
+  };
+  const b = BADGES[badgeState] || BADGES.verified;
+
+  return (
+    <View style={[styles.docPreviewWrapper, !isFirst && styles.detailRowBorder]}>
+      <View style={styles.docPreviewRow}>
+        <View style={styles.docTextCol}>
+          <Text style={styles.docTitle}>{title}</Text>
+          <Text style={styles.docExpiry}>Exp: {expiry}</Text>
+          <View style={[styles.badgeContainer, { backgroundColor: b.bg }]}>
+            <Text style={[styles.badgeText, { color: b.text }]}>{b.label}</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.reuploadBtn} onPress={onReUpload}>
+          <Text style={styles.reuploadBtnText}>Re-upload</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 export default function MyProfileScreen({ navigation }) {
-  const { driver, checkAuth } = useContext(AuthContext);
+  const insets = useSafeAreaInsets();
+  const { driver, checkAuth } = useAuth();
   const [editField, setEditField] = useState(null);
   const [editValue, setEditValue]  = useState('');
   const [saving, setSaving]        = useState(false);
@@ -70,54 +100,67 @@ export default function MyProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
+    <View style={styles.root}>
+      {/* Absolute Header */}
+      <View style={[styles.headerAppBar, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Feather name="arrow-left" size={24} color="#7C3AED" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Profile</Text>
-        <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Avatar card */}
-        <View style={styles.avatarCard}>
-          <View style={styles.avatarLeft}>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 16) + 60 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Info Card */}
+        <View style={styles.profileHeaderCard}>
+          <View style={styles.profileHeaderLeft}>
             <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrap} activeOpacity={0.8}>
               {driver?.profile_photo
-                ? <Image source={{ uri: driver.profile_photo }} style={styles.avatar} />
-                : <Text style={styles.avatarFallback}>👤</Text>
+                ? <Image source={{ uri: driver.profile_photo }} style={styles.avatarImg} />
+                : <Image source={{ uri: 'https://ui-avatars.com/api/?name=Meena&background=D4A373&color=fff' }} style={styles.avatarImg} />
               }
-              <View style={styles.editAvatarBtn}>
-                {uploading ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={{ fontSize: 12 }}>✏️</Text>}
+              <View style={styles.editAvatarPencil}>
+                {uploading ? (
+                  <ActivityIndicator size={10} color="#FFF" />
+                ) : (
+                  <MaterialIcons name="edit" size={12} color="#FFFFFF" />
+                )}
               </View>
             </TouchableOpacity>
-            <View>
-              <Text style={styles.driverName}>{driver?.name ?? 'Driver'}</Text>
-              <Text style={styles.vehicleSubtitle}>{driver?.vehicle_model ?? '—'}</Text>
+
+            <View style={styles.profileHeaderInfoCol}>
+              <Text style={styles.profileName}>{driver?.name ?? 'Meena R.'}</Text>
+              <Text style={styles.profileSubtitle}>{driver?.vehicle_model ?? 'Maruti Suzuki Swift'}</Text>
               <View style={styles.metaRow}>
-                <Text style={styles.rating}>⭐ {driver?.average_rating?.toFixed(1) ?? '4.9'}</Text>
-                {driver?.is_approved && (
-                  <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>✅ Verified</Text>
-                  </View>
-                )}
+                <Text style={styles.ratingText}>{Number(driver?.average_rating ?? 4.8).toFixed(1)}</Text>
+                <MaterialIcons name="star" size={14} color="#F59E0B" style={{ marginTop: -1 }} />
+                <View style={styles.verifiedPill}>
+                  <Text style={styles.verifiedText}>Verified</Text>
+                  <MaterialIcons name="check-circle" size={10} color="#047857" style={{ marginLeft: 2 }} />
+                </View>
               </View>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.editProfileBtn}
+
+          <TouchableOpacity 
+            style={styles.editProfileActionBtn}
             onPress={() => handleEditField('name', driver?.name)}
+            activeOpacity={0.7}
           >
-            <Text style={styles.editProfileBtnText}>Edit</Text>
+            <Text style={styles.editProfileActionBtnText}>Edit{'\n'}Profile</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Edit field inline */}
+        {/* Inline Edit Overlay Box */}
         {editField && (
-          <View style={styles.editCard}>
-            <Text style={styles.editCardLabel}>Editing: {editField}</Text>
+          <View style={styles.inlineEditCard}>
+            <Text style={styles.editCardLabel}>EDITING {editField.toUpperCase()}</Text>
             <TextInput
               style={styles.editInput}
               value={editValue}
@@ -131,144 +174,414 @@ export default function MyProfileScreen({ navigation }) {
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSaveField} style={styles.saveBtn} disabled={saving}>
-                {saving ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={styles.saveBtnText}>Save</Text>}
+                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Save</Text>}
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Personal Details */}
+        {/* Personal Details Section */}
         <Text style={styles.sectionTitle}>PERSONAL DETAILS</Text>
-        <View style={styles.card}>
-          {[
-            { label: 'Full Name', field: 'name',  value: driver?.name  },
-            { label: 'Phone',     field: 'phone', value: driver?.phone  },
-            { label: 'Email',     field: 'email', value: driver?.email  },
-          ].map((row, i, arr) => (
-            <View key={row.field}>
-              <DETAIL_ROW
-                label={row.label}
-                value={row.value}
-                onEdit={() => handleEditField(row.field, row.value)}
-              />
-              {i < arr.length - 1 && <View style={styles.rowDivider} />}
-            </View>
-          ))}
+        <View style={styles.sectionCard}>
+          <DETAIL_ROW 
+            label="FULL NAME" 
+            value={driver?.name ?? 'Meena Ramesh'} 
+            onEdit={() => handleEditField('name', driver?.name)} 
+            isFirst={true} 
+          />
+          <DETAIL_ROW 
+            label="PHONE" 
+            value={driver?.phone ?? '+91 98765 43210'} 
+            onEdit={() => handleEditField('phone', driver?.phone)} 
+          />
+          <DETAIL_ROW 
+            label="EMAIL" 
+            value={driver?.email ?? 'meena.r@sakhi.com'} 
+            onEdit={() => handleEditField('email', driver?.email)} 
+          />
         </View>
 
-        {/* Vehicle Details */}
+        {/* Vehicle Details Section */}
         <Text style={styles.sectionTitle}>VEHICLE DETAILS</Text>
-        <View style={styles.card}>
-          {[
-            { label: 'Vehicle Type', field: 'vehicle_type',  value: driver?.vehicle_type  },
-            { label: 'Reg Number',   field: 'vehicle_reg',   value: driver?.vehicle_reg   },
-            { label: 'Colour',       field: 'vehicle_color', value: driver?.vehicle_color },
-            { label: 'Model',        field: 'vehicle_model', value: driver?.vehicle_model },
-          ].map((row, i, arr) => (
-            <View key={row.field}>
-              <DETAIL_ROW label={row.label} value={row.value} onEdit={() => handleEditField(row.field, row.value)} />
-              {i < arr.length - 1 && <View style={styles.rowDivider} />}
-            </View>
-          ))}
+        <View style={styles.sectionCard}>
+          <DETAIL_ROW 
+            label="VEHICLE TYPE" 
+            value={driver?.vehicle_type ?? 'Hatchback (4-seater)'} 
+            onEdit={() => handleEditField('vehicle_type', driver?.vehicle_type)} 
+            isFirst={true} 
+          />
+          <DETAIL_ROW 
+            label="REG NUMBER" 
+            value={driver?.vehicle_reg ?? 'KA 01 MG 4521'} 
+            onEdit={() => handleEditField('vehicle_reg', driver?.vehicle_reg)} 
+          />
+          <DETAIL_ROW 
+            label="COLOUR" 
+            value={driver?.vehicle_color ?? 'Midnight White'} 
+            onEdit={() => handleEditField('vehicle_color', driver?.vehicle_color)} 
+          />
+          <DETAIL_ROW 
+            label="MODEL" 
+            value={driver?.vehicle_model ?? 'Swift VXI 2023'} 
+            onEdit={() => handleEditField('vehicle_model', driver?.vehicle_model)} 
+          />
         </View>
 
-        {/* Documents shortcut */}
-        <TouchableOpacity style={styles.docsBtn} onPress={() => navigation.navigate('MyDocuments')} activeOpacity={0.8}>
-          <Text style={styles.docsBtnIcon}>📄</Text>
-          <Text style={styles.docsBtnText}>View My Documents</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        {/* Documents Section */}
+        <Text style={styles.sectionTitle}>DOCUMENTS</Text>
+        <View style={styles.sectionCard}>
+          <DOC_PREVIEW_ROW 
+            title="Driving Licence" 
+            expiry="14 Oct 2028" 
+            badgeState="verified" 
+            onReUpload={() => navigation.navigate('MyDocuments')}
+            isFirst={true} 
+          />
+          <DOC_PREVIEW_ROW 
+            title="Vehicle RC" 
+            expiry="22 Jan 2030" 
+            badgeState="verified" 
+            onReUpload={() => navigation.navigate('MyDocuments')}
+          />
+          <DOC_PREVIEW_ROW 
+            title="Insurance" 
+            expiry="15 Aug 2024" 
+            badgeState="expiring" 
+            onReUpload={() => navigation.navigate('MyDocuments')}
+          />
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+  root: {
+    flex: 1,
+    backgroundColor: '#F5F0FF',
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
 
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 40, gap: 12 },
-
-  // Avatar card
-  avatarCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, ...Shadows.card,
+  // Navbar
+  headerAppBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 96, // Rough estimate, will flex with insets
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(245, 240, 255, 0.8)',
+    zIndex: 10,
+    // Note: To match Figma backdrop blur perfectly on native requires BlurView from expo-blur,
+    // but rgba handles the tint securely here.
   },
-  avatarLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  backBtn: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 20,
+    lineHeight: 28,
+    color: '#1E1B2E',
+    letterSpacing: -0.5,
+  },
+
+  // Scroll Content
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+
+  // Header Card
+  profileHeaderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
+    marginBottom: 24,
+  },
+  profileHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   avatarWrap: {
-    width: 72, height: 72, borderRadius: 36, overflow: 'hidden',
-    backgroundColor: Colors.surfaceContainer, position: 'relative',
-    alignItems: 'center', justifyContent: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#EBE6F5',
+    marginRight: 16,
   },
-  avatar: { width: '100%', height: '100%' },
-  avatarFallback: { fontSize: 36 },
-  editAvatarBtn: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center',
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 36,
   },
-  driverName: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-  vehicleSubtitle: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  rating: { fontSize: 13, color: Colors.onSurface, fontWeight: '600' },
-  verifiedBadge: {
-    backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full,
+  editAvatarPencil: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#630ED4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
-  verifiedText: { fontSize: 10, fontWeight: '700', color: '#15803D' },
-  editProfileBtn: {
-    borderWidth: 2, borderColor: `${Colors.primaryContainer}30`,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.lg,
+  profileHeaderInfoCol: {
+    justifyContent: 'center',
+    flex: 1,
   },
-  editProfileBtnText: { fontSize: 12, fontWeight: '700', color: Colors.primaryContainer },
+  profileName: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 18,
+    lineHeight: 28,
+    color: '#1C1A25',
+  },
+  profileSubtitle: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4A4455',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  ratingText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#1C1A25',
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 4,
+  },
+  verifiedText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    color: '#047857',
+  },
+  editProfileActionBtn: {
+    borderWidth: 2,
+    borderColor: 'rgba(99, 14, 212, 0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editProfileActionBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+    color: '#630ED4',
+  },
 
-  // Inline edit
-  editCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, gap: 10, borderWidth: 2, borderColor: Colors.primaryContainer,
-    ...Shadows.lavender,
-  },
-  editCardLabel: { fontSize: 11, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 0.5 },
-  editInput: {
-    height: 48, backgroundColor: Colors.surfaceLow, borderRadius: Radius.md,
-    paddingHorizontal: 14, fontSize: 15, color: Colors.onSurface,
-  },
-  editActions: { flexDirection: 'row', gap: 10 },
-  cancelBtn: {
-    flex: 1, height: 44, borderRadius: Radius.md, borderWidth: 1.5,
-    borderColor: Colors.outlineVariant, alignItems: 'center', justifyContent: 'center',
-  },
-  cancelBtnText: { fontSize: 14, fontWeight: '600', color: Colors.onSurfaceVariant },
-  saveBtn: {
-    flex: 2, height: 44, borderRadius: Radius.md,
-    backgroundColor: Colors.primaryContainer, alignItems: 'center', justifyContent: 'center',
-  },
-  saveBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
-
+  // Titles
   sectionTitle: {
-    fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant,
-    letterSpacing: 1.5, marginTop: 4,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: '#4A4455',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    paddingLeft: 4,
   },
-  card: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, ...Shadows.card },
-  detailRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  detailLabel: { fontSize: 9, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1, marginBottom: 3 },
-  detailValue: { fontSize: 14, fontWeight: '500', color: Colors.onSurface },
-  editIcon: { fontSize: 16 },
-  rowDivider: { height: 1, backgroundColor: Colors.surfaceLow },
 
-  docsBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, ...Shadows.card,
+  // Common Section Blocks
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
+    marginBottom: 24,
   },
-  docsBtnIcon: { fontSize: 22 },
-  docsBtnText: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  chevron: { fontSize: 22, color: Colors.onSurfaceVariant },
+
+  // Detail Row
+  detailRowWrapper: {
+    paddingVertical: 12,
+  },
+  detailRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#EBE6F5',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  detailTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  detailLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    lineHeight: 15,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#7B7487',
+  },
+  detailValue: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#1C1A25',
+  },
+
+  // Document Preview Row
+  docPreviewWrapper: {
+    paddingVertical: 12,
+  },
+  docPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  docTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  docTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#1C1A25',
+  },
+  docExpiry: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#7B7487',
+  },
+  badgeContainer: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 9,
+    lineHeight: 14,
+    letterSpacing: -0.45,
+  },
+  reuploadBtn: {
+    backgroundColor: 'rgba(99, 14, 212, 0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  reuploadBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#630ED4',
+  },
+
+  // Edit Card
+  inlineEditCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#BEA3D8',
+    marginBottom: 24,
+  },
+  editCardLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 1,
+    color: '#7B7487',
+    marginBottom: 8,
+  },
+  editInput: {
+    height: 48,
+    backgroundColor: '#F5F0FF',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 16,
+    color: '#1C1A25',
+    marginBottom: 16,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#64748B',
+  },
+  saveBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#630ED4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
 });
