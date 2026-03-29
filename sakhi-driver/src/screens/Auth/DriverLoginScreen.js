@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,17 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { StatusBar } from 'expo-status-bar';
 import client from '../../api/client';
 
+const { width } = Dimensions.get('window');
+
 export default function DriverLoginScreen({ navigation }) {
-  const [phone, setPhone]     = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const isValid = phone.replace(/\s/g, '').length === 10;
@@ -36,6 +40,17 @@ export default function DriverLoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+
+      {/* ── Top Bar ── */}
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.canGoBack() && navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Sakhi Driver</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -45,41 +60,35 @@ export default function DriverLoginScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Decorative blobs */}
-          <View style={styles.blobTR} />
-          <View style={styles.blobBL} />
-
-          {/* Branding */}
-          <View style={styles.brandRow}>
-            <View style={styles.brandIcon}>
-              <Text style={styles.brandEmoji}>🛺</Text>
-            </View>
-            <Text style={styles.brandName}>Sakhi Driver</Text>
-            <View style={styles.partnerBadge}>
-              <Text style={styles.partnerText}>PARTNER APP</Text>
-            </View>
+          {/* ── Illustration ── */}
+          <View style={styles.illustrationCard}>
+            <Image
+              source={require('../../../assets/riksha.png')}
+              style={styles.illustration}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* Headline */}
-          <View style={styles.headlineBlock}>
-            <Text style={styles.headline}>Welcome, Driver</Text>
-            <Text style={styles.subline}>
+          {/* ── Header Text ── */}
+          <View style={styles.headerText}>
+            <Text style={styles.heading}>Welcome, Sakhi</Text>
+            <Text style={styles.subheading}>
               Log in or register to start driving with Sakhi
             </Text>
           </View>
 
-          {/* Phone input card */}
-          <View style={[styles.inputCard, phone.length > 0 && styles.inputCardActive]}>
-            {/* +91 prefix */}
-            <View style={styles.prefixBox}>
+          {/* ── Phone Input ── */}
+          <View style={[styles.inputCard, phone.length > 0 && styles.inputCardFocused]}>
+            {/* Country code */}
+            <View style={styles.countryCode}>
               <Text style={styles.flag}>🇮🇳</Text>
-              <Text style={styles.prefix}>+91</Text>
+              <Text style={styles.dialCode}>+91</Text>
             </View>
-            <View style={styles.divider} />
+            <View style={styles.inputDivider} />
             <TextInput
               style={styles.phoneInput}
               placeholder="Phone number"
-              placeholderTextColor={Colors.outlineVariant}
+              placeholderTextColor="rgba(123,116,135,0.5)"
               keyboardType="phone-pad"
               maxLength={10}
               value={phone}
@@ -89,7 +98,7 @@ export default function DriverLoginScreen({ navigation }) {
             />
           </View>
 
-          {/* CTA */}
+          {/* ── CTA Button ── */}
           <TouchableOpacity
             style={[styles.ctaBtn, (!isValid || loading) && styles.ctaDisabled]}
             onPress={handleSendOtp}
@@ -98,18 +107,18 @@ export default function DriverLoginScreen({ navigation }) {
           >
             {loading
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.ctaText}>Send OTP via SMS ›</Text>
+              : <Text style={styles.ctaText}>Send OTP via SMS  ›</Text>
             }
           </TouchableOpacity>
 
-          {/* Divider */}
+          {/* ── Divider ── */}
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerLabel}>VERIFICATION</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Footer */}
+          {/* ── Footer ── */}
           <Text style={styles.footer}>
             By continuing, you agree to our{' '}
             <Text style={styles.footerLink}>Terms of Service</Text>
@@ -123,104 +132,184 @@ export default function DriverLoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: Colors.surfaceLow },
-  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingBottom: 40 },
-
-  // Blobs
-  blobTR: {
-    position: 'absolute', top: -60, right: -60,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(124,58,237,0.06)',
-  },
-  blobBL: {
-    position: 'absolute', bottom: -80, left: -80,
-    width: 240, height: 240, borderRadius: 120,
-    backgroundColor: 'rgba(124,58,237,0.04)',
+  safe: {
+    flex: 1,
+    backgroundColor: '#F5F0FF',
   },
 
-  // Brand
-  brandRow: { alignItems: 'center', marginTop: 32, gap: 10 },
-  brandIcon: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadows.lavender,
+  // ── Top app bar ──────────────────────────────────────────────────────────
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    height: 64,
+    backgroundColor: 'rgba(245,240,255,0.85)',
   },
-  brandEmoji: { fontSize: 38 },
-  brandName: {
-    fontSize: 28, fontWeight: '800',
-    color: Colors.onSurface, letterSpacing: -0.5,
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  partnerBadge: {
-    backgroundColor: `${Colors.primaryContainer}22`,
-    paddingHorizontal: 12, paddingVertical: 4,
-    borderRadius: Radius.full,
-    borderWidth: 1, borderColor: `${Colors.primaryContainer}40`,
+  backArrow: {
+    fontSize: 22,
+    color: '#BEA3D8',
+    fontWeight: '500',
   },
-  partnerText: {
-    fontSize: 9, fontWeight: '700', letterSpacing: 2,
-    color: Colors.primaryContainer,
-  },
-
-  // Headline
-  headlineBlock: { marginTop: 32, marginBottom: 28 },
-  headline: {
-    fontSize: 30, fontWeight: '800',
-    color: Colors.onSurface, letterSpacing: -0.5,
-  },
-  subline: {
-    fontSize: 15, color: Colors.onSurfaceVariant,
-    marginTop: 4, lineHeight: 22,
+  topBarTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E1B2E',
+    letterSpacing: -0.5,
   },
 
-  // Phone input
+  // ── Scroll content ───────────────────────────────────────────────────────
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+
+  // ── Illustration card ────────────────────────────────────────────────────
+  illustrationCard: {
+    width: '100%',
+    height: 220,
+    backgroundColor: '#F6F1FF',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    marginBottom: 32,
+  },
+  illustration: {
+    width: '90%',
+    height: '90%',
+  },
+
+  // ── Header text ──────────────────────────────────────────────────────────
+  headerText: {
+    marginBottom: 24,
+    gap: 8,
+  },
+  heading: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1E1B2E',
+    letterSpacing: -0.8,
+    lineHeight: 40,
+  },
+  subheading: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#6B7280',
+    lineHeight: 26,
+  },
+
+  // ── Phone input ──────────────────────────────────────────────────────────
   inputCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: Radius.lg, height: 56,
-    paddingHorizontal: Spacing.md,
-    borderWidth: 2, borderColor: 'transparent',
-    ...Shadows.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    height: 56,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  inputCardActive: { borderColor: `${Colors.primaryContainer}70` },
-  prefixBox: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  flag: { fontSize: 20 },
-  prefix: { fontSize: 15, fontWeight: '600', color: Colors.onSurface },
-  divider: {
-    width: 1, height: 22,
-    backgroundColor: Colors.outlineVariant,
-    marginHorizontal: Spacing.sm,
+  inputCardFocused: {
+    borderColor: 'rgba(190,163,216,0.6)',
+  },
+  countryCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingRight: 12,
+  },
+  flag: { fontSize: 18 },
+  dialCode: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  inputDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: 'rgba(204,195,216,0.3)',
+    marginRight: 14,
   },
   phoneInput: {
-    flex: 1, fontSize: 16, fontWeight: '500',
-    color: Colors.onSurface, letterSpacing: 0.5,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1E1B2E',
   },
 
-  // CTA
+  // ── CTA button ───────────────────────────────────────────────────────────
   ctaBtn: {
-    marginTop: 20, height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadows.lavender,
+    height: 56,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: '#AD86E1',   // matches gradient midpoint
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 6,
+    marginBottom: 0,
   },
-  ctaDisabled: { backgroundColor: Colors.outlineVariant },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  ctaDisabled: {
+    backgroundColor: '#CCC3D8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  ctaText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 
-  // Divider row
+  // ── VERIFICATION divider ─────────────────────────────────────────────────
   dividerRow: {
-    flexDirection: 'row', alignItems: 'center',
-    marginTop: 32, gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 40,
+    marginBottom: 32,
+    gap: 16,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: `${Colors.outlineVariant}40` },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(204,195,216,0.2)',
+  },
   dividerLabel: {
-    fontSize: 9, fontWeight: '700', letterSpacing: 2,
-    color: Colors.onSurfaceVariant,
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#6B7280',
   },
 
-  // Footer
+  // ── Footer ───────────────────────────────────────────────────────────────
   footer: {
-    fontSize: 11, color: Colors.onSurfaceVariant,
-    textAlign: 'center', marginTop: 24, lineHeight: 18,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  footerLink: { color: Colors.primaryContainer, fontWeight: '600' },
+  footerLink: {
+    color: '#BEA3D8',
+    textDecorationLine: 'underline',
+  },
 });

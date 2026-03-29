@@ -1,48 +1,52 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
   Animated,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, Shadows } from '../../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
 export default function DriverSplashScreen({ navigation }) {
-  const logoScale = new Animated.Value(0.5);
-  const logoOpacity = new Animated.Value(0);
-  const taglineOpacity = new Animated.Value(0);
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const contentScale   = useRef(new Animated.Value(0.92)).current;
+  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const progressWidth  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animate logo in
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(taglineOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
+    // 1. Fade + scale the logo cluster in
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 1, duration: 600, useNativeDriver: true,
+      }),
+      Animated.spring(contentScale, {
+        toValue: 1, tension: 60, friction: 8, useNativeDriver: true,
       }),
     ]).start();
 
-    // Navigate after splash
+    // 2. Tagline fades in after 500 ms
+    setTimeout(() => {
+      Animated.timing(taglineOpacity, {
+        toValue: 1, duration: 500, useNativeDriver: true,
+      }).start();
+    }, 500);
+
+    // 3. Progress bar fills over 2.2 s
+    Animated.timing(progressWidth, {
+      toValue: 192,      // final pixel width matching progressTrack
+      duration: 2200,
+      delay: 200,
+      useNativeDriver: false,
+    }).start();
+
+    // 4. Navigate to shell
     const timer = setTimeout(() => {
       navigation.replace('RootShell');
-    }, 2500);
+    }, 2700);
 
     return () => clearTimeout(timer);
   }, []);
@@ -51,40 +55,41 @@ export default function DriverSplashScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Background gradient blobs */}
-      <View style={styles.blobTopRight} />
-      <View style={styles.blobBottomLeft} />
+      {/* Subtle top gradient overlay */}
+      <View style={styles.topGradient} pointerEvents="none" />
 
-      {/* Logo area */}
-      <Animated.View
-        style={[
-          styles.logoContainer,
-          { opacity: logoOpacity, transform: [{ scale: logoScale }] },
-        ]}
-      >
-        {/* Auto/rickshaw vehicle icon placeholder */}
-        <View style={styles.iconCircle}>
-          <Text style={styles.vehicleEmoji}>🛺</Text>
-        </View>
 
-        <Text style={styles.appName}>Sakhi Driver</Text>
-        <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>PARTNER APP</Text>
-          </View>
-        </View>
-      </Animated.View>
+      {/* ── Center cluster: logo → FOR DRIVERS → tagline ── */}
+      <View style={styles.cluster}>
+        <Animated.View
+          style={[
+            styles.logoWrap,
+            { opacity: contentOpacity, transform: [{ scale: contentScale }] },
+          ]}
+        >
+          <Image
+            source={require('../../../assets/splash-icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
 
-      {/* Tagline */}
-      <Animated.View style={[styles.taglineContainer, { opacity: taglineOpacity }]}>
-        <Text style={styles.tagline}>Drive safe. Earn more. Every day.</Text>
-      </Animated.View>
+        <Animated.Text
+          style={[styles.forDrivers, { opacity: contentOpacity }]}
+        >
+          FOR DRIVERS
+        </Animated.Text>
 
-      {/* Bottom loader dots */}
-      <View style={styles.loaderContainer}>
-        <View style={[styles.dot, styles.dotActive]} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
+        <Animated.Text
+          style={[styles.tagline, { opacity: taglineOpacity }]}
+        >
+          Drive. Earn. Empower.
+        </Animated.Text>
+      </View>
+
+      {/* ── Bottom progress bar ── */}
+      <View style={styles.progressTrack} pointerEvents="none">
+        <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
       </View>
     </View>
   );
@@ -93,104 +98,71 @@ export default function DriverSplashScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primaryContainer,  // violet-600
+    backgroundColor: '#1E1B2E',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // Background decorative blobs
-  blobTopRight: {
+  // Very subtle top-edge gradient tint (no solid fill)
+  topGradient: {
     position: 'absolute',
-    top: -80,
-    right: -80,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  blobBottomLeft: {
-    position: 'absolute',
-    bottom: -100,
-    left: -100,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+    backgroundColor: 'rgba(99,14,212,0.08)',
   },
 
-  // Logo
-  logoContainer: {
+
+
+  // All center content in one flexbox column (no absolute positioning)
+  cluster: {
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+
+  logoWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    ...Shadows.lavender,
+    marginBottom: 4,
   },
-  vehicleEmoji: {
-    fontSize: 56,
+  logo: {
+    width: 210,
+    height: 175,
   },
-  appName: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: Colors.white,
-    letterSpacing: -1,
-    marginTop: 8,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-  },
-  badge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  badgeText: {
-    color: Colors.white,
-    fontSize: 10,
+
+  forDrivers: {
     fontWeight: '700',
-    letterSpacing: 2,
-  },
-
-  // Tagline
-  taglineContainer: {
-    position: 'absolute',
-    bottom: height * 0.18,
-    alignItems: 'center',
-  },
-  tagline: {
-    color: 'rgba(255,255,255,0.75)',
     fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: 0.3,
+    letterSpacing: 2.8,
+    textTransform: 'uppercase',
+    color: '#A78BFA',
   },
 
-  // Loader dots
-  loaderContainer: {
+  tagline: {
+    fontStyle: 'italic',
+    fontWeight: '300',
+    fontSize: 18,
+    letterSpacing: 0.45,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
+    marginTop: 6,
+  },
+
+  // Progress bar — anchored 96 px from the bottom
+  progressTrack: {
     position: 'absolute',
-    bottom: height * 0.10,
-    flexDirection: 'row',
-    gap: 8,
+    bottom: 96,
+    left: (width - 192) / 2,
+    width: 192,
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    overflow: 'hidden',
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
-  dotActive: {
-    backgroundColor: Colors.white,
-    width: 24,
-    borderRadius: 4,
+  progressBar: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#A78BFA',
   },
 });

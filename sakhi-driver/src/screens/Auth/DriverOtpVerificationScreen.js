@@ -1,65 +1,67 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 
-const OTP_LENGTH = 6;
-const RESEND_SECONDS = 30;
+const { width } = Dimensions.get('window');
+const OTP_LENGTH    = 6;
+const RESEND_SECS   = 30;
+
+// Custom keypad layout
+const KEYPAD = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['', '0', '⌫'],
+];
 
 export default function DriverOtpVerificationScreen({ route, navigation }) {
   const { phone } = route.params ?? {};
   const { login } = useAuth();
 
-  const [otp, setOtp]           = useState(Array(OTP_LENGTH).fill(''));
-  const [loading, setLoading]   = useState(false);
-  const [resendTimer, setTimer] = useState(RESEND_SECONDS);
-  const inputRefs = useRef([]);
+  const [otp, setOtp]         = useState([]);   // array of digit strings
+  const [loading, setLoading] = useState(false);
+  const [timer, setTimer]     = useState(RESEND_SECS);
 
-  // Resend countdown
+  // Countdown timer
   useEffect(() => {
-    if (resendTimer <= 0) return;
+    if (timer <= 0) return;
     const id = setTimeout(() => setTimer((t) => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [resendTimer]);
+  }, [timer]);
 
-  // ── OTP input handlers ──────────────────────────────────────────────────
-  const handleChange = (text, index) => {
-    const digit = text.replace(/\D/g, '').slice(-1);
-    const next = [...otp];
-    next[index] = digit;
-    setOtp(next);
-
-    if (digit && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
+  // ── Keypad press ────────────────────────────────────────────────────────
+  const handleKey = (key) => {
+    if (key === '') return;
+    if (key === '⌫') {
+      setOtp((prev) => prev.slice(0, -1));
+      return;
     }
-    // Auto-submit when last digit entered
-    if (digit && index === OTP_LENGTH - 1) {
+    if (otp.length >= OTP_LENGTH) return;
+    const next = [...otp, key];
+    setOtp(next);
+    // Auto-submit when 6th digit is entered
+    if (next.length === OTP_LENGTH) {
       handleVerify(next.join(''));
     }
   };
 
-  const handleKeyPress = (e, index) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
+  // ── Resend ──────────────────────────────────────────────────────────────
   const handleResend = async () => {
     try {
       const client = (await import('../../api/client')).default;
       await client.post('/auth/send-otp', { phone, role: 'driver' });
-      setOtp(Array(OTP_LENGTH).fill(''));
-      setTimer(RESEND_SECONDS);
-      inputRefs.current[0]?.focus();
+      setOtp([]);
+      setTimer(RESEND_SECS);
     } catch {
       Alert.alert('Error', 'Could not resend OTP.');
     }
@@ -71,94 +73,131 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
     try {
       setLoading(true);
       const result = await login(phone, code);
-
       if (!result.success) {
-        Alert.alert('Invalid OTP', result.message);
-        setOtp(Array(OTP_LENGTH).fill(''));
-        inputRefs.current[0]?.focus();
+        Alert.alert('Invalid OTP', result.message ?? 'Please try again.');
+        setOtp([]);
         return;
       }
-
-      const status = result.driver?.onboarding_status;
-      if (status === 'approved') {
-        navigation.reset({ index: 0, routes: [{ name: 'RootShell' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'RootShell' }] });
-        // RootNavigator will redirect to OnboardingStack automatically
-      }
+      // RootNavigator will route to Onboarding or Main automatically
+      navigation.reset({ index: 0, routes: [{ name: 'RootShell' }] });
     } catch {
       Alert.alert('Error', 'Verification failed. Please try again.');
+      setOtp([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filled = otp.join('').length;
+  // ── Format phone for display ─────────────────────────────────────────────
+  const formattedPhone = phone
+    ? phone.replace(/(\+91)(\d{5})(\d{5})/, '$1 $2 $3')
+    : '';
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Decorative blobs */}
-      <View style={styles.blobBL} />
-      <View style={styles.blobTR} />
+    <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <StatusBar style="dark" />
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* ── Top App Bar ── */}
+      <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Verification</Text>
+        <Text style={styles.topBarTitle}>Verification</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Content */}
+      {/* ── Main Content ── */}
       <View style={styles.content}>
-        <Text style={styles.headline}>Verify Your Number</Text>
-        <Text style={styles.subline}>
-          6-digit SMS code sent to{'\n'}
-          <Text style={styles.phoneHighlight}>{phone}</Text>
-        </Text>
 
-        {/* OTP boxes */}
+        {/* Branding / identity */}
+        <View style={styles.identity}>
+          <Text style={styles.heading}>Verify Your Number</Text>
+          <View style={styles.sublineWrap}>
+            <Text style={styles.subline}>
+              6-digit SMS code sent to{'\n'}
+              <Text style={styles.phoneNum}>{formattedPhone}</Text>
+            </Text>
+          </View>
+          {/* SENT VIA SMS badge */}
+          <View style={styles.smsBadge}>
+            <Text style={styles.smsIcon}>💬</Text>
+            <Text style={styles.smsBadgeText}>SENT VIA SMS</Text>
+          </View>
+        </View>
+
+        {/* OTP Boxes */}
         <View style={styles.otpRow}>
-          {otp.map((digit, i) => (
-            <TextInput
-              key={i}
-              ref={(r) => (inputRefs.current[i] = r)}
-              style={[
-                styles.otpBox,
-                digit ? styles.otpBoxFilled : null,
-              ]}
-              value={digit}
-              onChangeText={(t) => handleChange(t, i)}
-              onKeyPress={(e) => handleKeyPress(e, i)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-              autoFocus={i === 0}
-            />
-          ))}
+          {Array.from({ length: OTP_LENGTH }).map((_, i) => {
+            const isActive  = i === otp.length;
+            const isFilled  = i < otp.length;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.otpBox,
+                  isFilled && styles.otpBoxFilled,
+                  isActive && styles.otpBoxActive,
+                ]}
+              >
+                {isFilled ? (
+                  <Text style={styles.otpDigit}>{otp[i]}</Text>
+                ) : isActive ? (
+                  <View style={styles.cursor} />
+                ) : (
+                  <View style={styles.dot} />
+                )}
+              </View>
+            );
+          })}
         </View>
 
         {/* Resend row */}
         <View style={styles.resendRow}>
-          {resendTimer > 0
-            ? <Text style={styles.resendTimer}>
-                Resend OTP in{' '}
-                <Text style={styles.resendCountdown}>0:{String(resendTimer).padStart(2, '0')}</Text>
+          {timer > 0 ? (
+            <Text style={styles.resendTimer}>
+              Resend OTP in{' '}
+              <Text style={styles.resendCountdown}>
+                0:{String(timer).padStart(2, '0')}
               </Text>
-            : <TouchableOpacity onPress={handleResend}>
-                <Text style={styles.resendLink}>Resend OTP</Text>
-              </TouchableOpacity>
-          }
+            </Text>
+          ) : (
+            <TouchableOpacity onPress={handleResend}>
+              <Text style={styles.resendLink}>Resend OTP</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Custom Keypad */}
+        <View style={styles.keypad}>
+          {KEYPAD.map((row, ri) => (
+            <View key={ri} style={styles.keyRow}>
+              {row.map((key, ki) => (
+                <TouchableOpacity
+                  key={ki}
+                  style={[styles.keyBtn, key === '' && styles.keyBtnEmpty]}
+                  onPress={() => handleKey(key)}
+                  activeOpacity={key === '' ? 1 : 0.7}
+                  disabled={key === ''}
+                >
+                  <Text style={[
+                    styles.keyText,
+                    key === '⌫' && styles.keyBackspace,
+                  ]}>
+                    {key}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
         </View>
       </View>
 
-      {/* Bottom CTA */}
+      {/* ── Bottom CTA ── */}
       <View style={styles.bottom}>
         <TouchableOpacity
-          style={[styles.ctaBtn, (filled < OTP_LENGTH || loading) && styles.ctaDisabled]}
+          style={[styles.ctaBtn, (otp.length < OTP_LENGTH || loading) && styles.ctaDisabled]}
           onPress={() => handleVerify()}
-          disabled={filled < OTP_LENGTH || loading}
+          disabled={otp.length < OTP_LENGTH || loading}
           activeOpacity={0.85}
         >
           {loading
@@ -167,7 +206,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
           }
         </TouchableOpacity>
         <Text style={styles.disclaimer}>
-          By continuing, you confirm that you are the authorized driver of the registered vehicle.
+          By continuing, you confirm that you are the authorized{'\n'}driver of the registered vehicle.
         </Text>
       </View>
     </SafeAreaView>
@@ -175,90 +214,158 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-
-  // Blobs
-  blobBL: {
-    position: 'absolute', bottom: -100, left: -100,
-    width: 260, height: 260, borderRadius: 130,
-    backgroundColor: 'rgba(124,58,237,0.05)',
-  },
-  blobTR: {
-    position: 'absolute', top: -100, right: -100,
-    width: 260, height: 260, borderRadius: 130,
-    backgroundColor: 'rgba(103,75,181,0.07)',
+  safe: {
+    flex: 1,
+    backgroundColor: '#FCF8FF',
   },
 
-  // Header
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+  // ── Top bar ─────────────────────────────────────────────────────────────
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    height: 64,
+    backgroundColor: 'rgba(245,240,255,0.85)',
   },
   backBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${Colors.primaryContainer}15`,
+    borderRadius: 99,
   },
-  backIcon: { fontSize: 26, color: Colors.primaryContainer, marginTop: -3 },
-  headerTitle: {
+  backArrow: { fontSize: 22, color: '#BEA3D8' },
+  topBarTitle: {
     flex: 1, textAlign: 'center',
-    fontSize: 17, fontWeight: '600', color: Colors.onSurface,
+    fontSize: 18, fontWeight: '600',
+    color: '#1E1B2E', letterSpacing: -0.45,
   },
 
-  // Content
-  content: { flex: 1, paddingHorizontal: Spacing.xl, paddingTop: 36 },
-  headline: {
-    fontSize: 26, fontWeight: '800',
-    color: Colors.onSurface, letterSpacing: -0.5, marginBottom: 10,
+  // ── Content ─────────────────────────────────────────────────────────────
+  content: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    alignItems: 'center',
   },
+
+  // Identity block
+  identity: { alignItems: 'center', marginBottom: 28 },
+  heading: {
+    fontSize: 24, fontWeight: '800',
+    color: '#1C1A25', letterSpacing: -0.6,
+    textAlign: 'center', marginBottom: 12,
+  },
+  sublineWrap: { alignItems: 'center', marginBottom: 12 },
   subline: {
-    fontSize: 14, color: Colors.onSurfaceVariant,
-    lineHeight: 22, marginBottom: 36,
+    fontSize: 14, fontWeight: '400',
+    color: '#4A4455', textAlign: 'center', lineHeight: 22,
   },
-  phoneHighlight: { fontWeight: '700', color: Colors.onSurface },
+  phoneNum: { fontWeight: '700', color: '#1C1A25' },
 
-  // OTP
+  // SMS badge
+  smsBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F6F1FF',
+    borderWidth: 1, borderColor: 'rgba(204,195,216,0.2)',
+    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4,
+    gap: 6,
+  },
+  smsIcon: { fontSize: 11 },
+  smsBadgeText: {
+    fontSize: 10, fontWeight: '700',
+    letterSpacing: 0.5, textTransform: 'uppercase',
+    color: '#7B7487',
+  },
+
+  // ── OTP Boxes ─────────────────────────────────────────────────────────
   otpRow: {
-    flexDirection: 'row', justifyContent: 'space-between', gap: 8,
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+    width: '100%',
   },
   otpBox: {
     flex: 1, height: 56,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5, borderColor: Colors.outlineVariant,
-    textAlign: 'center', fontSize: 22, fontWeight: '700',
-    color: Colors.onSurface,
-    ...Shadows.card,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(177,143,254,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08, shadowRadius: 16,
+    elevation: 3,
+  },
+  otpBoxActive: {
+    borderWidth: 2, borderColor: '#BEA3D8',
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.1,
+    // Focus ring approximated via shadow
   },
   otpBoxFilled: {
-    borderColor: Colors.primaryContainer,
-    borderWidth: 2,
-    backgroundColor: `${Colors.primaryContainer}08`,
+    borderColor: 'rgba(177,143,254,0.6)',
+  },
+  otpDigit: {
+    fontSize: 20, fontWeight: '700', color: '#1C1A25',
+  },
+  cursor: {
+    width: 2, height: 22,
+    backgroundColor: '#BEA3D8',
+  },
+  dot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: 'rgba(124,58,237,0.2)',
   },
 
-  // Resend
-  resendRow: { alignItems: 'center', marginTop: 20 },
-  resendTimer: { fontSize: 13, color: Colors.onSurfaceVariant },
-  resendCountdown: { fontWeight: '700', color: Colors.primaryContainer },
-  resendLink: { fontSize: 13, fontWeight: '700', color: Colors.primaryContainer },
+  // ── Resend ───────────────────────────────────────────────────────────
+  resendRow: { marginBottom: 28, alignItems: 'center' },
+  resendTimer: { fontSize: 14, fontWeight: '500', color: '#7B7487' },
+  resendCountdown: { fontWeight: '700', color: '#9C6FD7' },
+  resendLink: { fontSize: 14, fontWeight: '700', color: '#9C6FD7' },
 
-  // Bottom
+  // ── Custom Keypad ────────────────────────────────────────────────────
+  keypad: { width: '100%', gap: 4 },
+  keyRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 0,
+  },
+  keyBtn: {
+    width: (width - 64) / 3,
+    height: 52,
+    alignItems: 'center', justifyContent: 'center',
+    borderRadius: 12,
+  },
+  keyBtnEmpty: { opacity: 0 },
+  keyText: {
+    fontSize: 20, fontWeight: '600', color: '#1C1A25',
+  },
+  keyBackspace: {
+    fontSize: 18, color: '#4A4455',
+  },
+
+  // ── Bottom ────────────────────────────────────────────────────────────
   bottom: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing['2xl'],
-    gap: 12,
+    paddingHorizontal: 32,
+    paddingBottom: 32,
+    gap: 14,
+    alignItems: 'center',
   },
   ctaBtn: {
-    height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
+    width: '100%', height: 56,
+    borderRadius: 12,
+    backgroundColor: '#9C6FD7',
     alignItems: 'center', justifyContent: 'center',
-    ...Shadows.lavender,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2, shadowRadius: 24,
+    elevation: 8,
   },
-  ctaDisabled: { backgroundColor: Colors.outlineVariant },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  ctaDisabled: {
+    backgroundColor: '#CCC3D8',
+    shadowOpacity: 0, elevation: 0,
+  },
+  ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   disclaimer: {
-    fontSize: 11, textAlign: 'center',
-    color: Colors.onSurfaceVariant, lineHeight: 16,
+    fontSize: 11, color: '#7B7487',
+    textAlign: 'center', lineHeight: 18,
   },
 });
