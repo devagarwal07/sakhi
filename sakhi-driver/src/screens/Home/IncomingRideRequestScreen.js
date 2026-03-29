@@ -1,102 +1,53 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Easing, Alert, Dimensions, Image,
+  Animated, Alert, Dimensions, Image, Platform
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import { useSocket } from '../../context/SocketContext';
 
-const TIMER_SECONDS = 15;
 const { height: SCREEN_H } = Dimensions.get('window');
+
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
   { featureType: 'road', stylers: [{ color: '#e8e1f5' }] },
   { featureType: 'water', stylers: [{ color: '#c8bef0' }] },
 ];
 
-// ─── Depleting timer bar ────────────────────────────────────────────────────
-function TimerBar({ seconds, onExpire }) {
-  const width = useRef(new Animated.Value(1)).current; // 1 = 100%
-  const [remaining, setRemaining] = useState(seconds);
-
-  useEffect(() => {
-    Animated.timing(width, {
-      toValue: 0,
-      duration: seconds * 1000,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) onExpire?.();
-    });
-
-    const interval = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) { clearInterval(interval); return 0; }
-        return r - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const barColor = width.interpolate({
-    inputRange: [0, 0.3, 1],
-    outputRange: ['#EF4444', '#F59E0B', Colors.primaryContainer],
-  });
-
-  return (
-    <View style={timerStyles.wrap}>
-      <View style={timerStyles.track}>
-        <Animated.View
-          style={[
-            timerStyles.fill,
-            { flex: width, backgroundColor: barColor },
-          ]}
-        />
-      </View>
-      <Text style={timerStyles.countdown}>{remaining}s</Text>
-    </View>
-  );
-}
-
-const timerStyles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  track: {
-    flex: 1, height: 6, backgroundColor: Colors.surfaceContainer,
-    borderRadius: 3, overflow: 'hidden', flexDirection: 'row',
-  },
-  fill: { height: '100%', borderRadius: 3 },
-  countdown: { fontSize: 13, fontWeight: '800', color: Colors.primaryContainer, minWidth: 28 },
-});
-
-// ─── Main overlay ───────────────────────────────────────────────────────────
 export default function IncomingRideRequestScreen({ navigation }) {
   const { incomingRide, acceptRide, rejectRide, clearIncomingRide } = useSocket();
+  const insets = useSafeAreaInsets();
 
-  // Pulse animation for bell
   const bellPulse = useRef(new Animated.Value(1)).current;
-  const slideUp   = useRef(new Animated.Value(SCREEN_H * 0.55)).current;
+  const slideUp = useRef(new Animated.Value(SCREEN_H)).current;
   const [accepting, setAccepting] = useState(false);
 
-  // ── Slide up & pulse on mount ───────────────────────────────────────────
   useEffect(() => {
-    Animated.spring(slideUp, { toValue: 0, tension: 55, friction: 10, useNativeDriver: true }).start();
+    Animated.spring(slideUp, { 
+      toValue: 0, 
+      tension: 60, 
+      friction: 12, 
+      useNativeDriver: true 
+    }).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(bellPulse, { toValue: 1.3, duration: 600, useNativeDriver: true }),
-        Animated.timing(bellPulse, { toValue: 1,   duration: 600, useNativeDriver: true }),
+        Animated.timing(bellPulse, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(bellPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
       ]),
     ).start();
+
+    // Auto-decline timer fallback (e.g. 15s)
+    const timeout = setTimeout(() => {
+      handleDecline();
+    }, 15000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
-  // ── Handle expire ───────────────────────────────────────────────────────
-  const handleExpire = useCallback(() => {
-    rejectRide(incomingRide?.ride_id);
-  }, [incomingRide?.ride_id]);
-
-  // ── Accept ──────────────────────────────────────────────────────────────
   const handleAccept = async () => {
     if (accepting) return;
     try {
@@ -110,7 +61,6 @@ export default function IncomingRideRequestScreen({ navigation }) {
     }
   };
 
-  // ── Decline ─────────────────────────────────────────────────────────────
   const handleDecline = () => {
     rejectRide(incomingRide?.ride_id);
     clearIncomingRide();
@@ -119,233 +69,403 @@ export default function IncomingRideRequestScreen({ navigation }) {
   if (!incomingRide) return null;
 
   const {
-    rider_name       = 'Rider',
-    rider_photo      = null,
-    rider_rating     = 4.5,
-    fare             = 0,
-    pickup_address   = '—',
-    dropoff_address  = '—',
-    distance_to_pickup_km = 0,
-    eta_to_pickup_min     = 0,
-    pickup_coords    = { latitude: 28.61, longitude: 77.20 },
-    dropoff_coords   = { latitude: 28.63, longitude: 77.22 },
+    rider_name = 'Priya S.',
+    rider_photo = null,
+    rider_rating = 4.7,
+    fare = 87,
+    pickup_address = 'Versova Metro Station',
+    dropoff_address = 'Oberoi Mall, Goregaon',
+    distance_to_pickup_km = 3.2,
+    eta_to_pickup_min = 6,
+    pickup_coords = { latitude: 28.61, longitude: 77.20 },
+    dropoff_coords = { latitude: 28.63, longitude: 77.22 },
   } = incomingRide;
 
   const mapRegion = {
-    latitude:        (pickup_coords.latitude  + dropoff_coords.latitude)  / 2,
-    longitude:       (pickup_coords.longitude + dropoff_coords.longitude) / 2,
-    latitudeDelta:   Math.abs(pickup_coords.latitude  - dropoff_coords.latitude)  * 2.5 + 0.01,
-    longitudeDelta:  Math.abs(pickup_coords.longitude - dropoff_coords.longitude) * 2.5 + 0.01,
+    latitude: (pickup_coords.latitude + dropoff_coords.latitude) / 2,
+    longitude: (pickup_coords.longitude + dropoff_coords.longitude) / 2,
+    latitudeDelta: Math.abs(pickup_coords.latitude - dropoff_coords.latitude) * 2.5 + 0.01,
+    longitudeDelta: Math.abs(pickup_coords.longitude - dropoff_coords.longitude) * 2.5 + 0.01,
   };
 
   return (
     <View style={styles.root}>
-      {/* ── MAP (top 50%) ─────────────────────────────────────────────── */}
+      {/* MAP BACKGROUND */}
       <MapView
-        style={styles.map}
+        style={StyleSheet.absoluteFill}
         provider={PROVIDER_GOOGLE}
-        region={mapRegion}
         customMapStyle={MAP_STYLE}
+        region={mapRegion}
         scrollEnabled={false}
         zoomEnabled={false}
         pointerEvents="none"
       >
-        {/* Pickup marker */}
         <Marker coordinate={pickup_coords}>
           <View style={styles.pickupDot} />
         </Marker>
-
-        {/* Dropoff marker */}
         <Marker coordinate={dropoff_coords}>
-          <View style={styles.dropoffPin}>
-            <Text style={{ fontSize: 18 }}>📍</Text>
-          </View>
+          <MaterialCommunityIcons name="map-marker" size={32} color="#9D58E0" />
         </Marker>
-
-        {/* Dashed route line */}
         <Polyline
           coordinates={[pickup_coords, dropoff_coords]}
-          strokeColor={Colors.primaryContainer}
+          strokeColor="#9D58E0"
           strokeWidth={4}
           lineDashPattern={[10, 8]}
         />
       </MapView>
 
-      {/* ── BOTTOM SHEET ──────────────────────────────────────────────── */}
-      <Animated.View style={[styles.sheet, { transform: [{ translateY: slideUp }] }]}>
-        {/* Drag handle */}
-        <View style={styles.handle} />
+      {/* TOP APP BAR */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 20) }]}>
+        <TouchableOpacity style={styles.iconBtn}>
+          <Feather name="menu" size={24} color="#BEA3D8" />
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>New Request</Text>
+        <TouchableOpacity style={styles.iconBtn}>
+          <MaterialIcons name="history" size={24} color="#BEA3D8" />
+        </TouchableOpacity>
+      </View>
 
-        {/* Pulsing bell header */}
-        <View style={styles.headerRow}>
-          <Animated.View style={[styles.bellWrap, { transform: [{ scale: bellPulse }] }]}>
-            <Text style={styles.bellIcon}>🔔</Text>
+      {/* BOTTOM SHEET */}
+      <Animated.View style={[
+        styles.bottomSheet, 
+        { transform: [{ translateY: slideUp }], paddingBottom: insets.bottom + 24 }
+      ]}>
+        
+        {/* Pulse Header */}
+        <View style={styles.pulseHeader}>
+          <Animated.View style={[styles.pulseIconBg, { transform: [{ scale: bellPulse }] }]}>
+            <MaterialCommunityIcons name="bell-ring" size={22} color="#BEA3D8" />
           </Animated.View>
-          <Text style={styles.headline}>New Ride Request</Text>
+          <Text style={styles.pulseTitle}>New Ride Request 🔔</Text>
         </View>
 
-        {/* Depleting timer */}
-        <TimerBar seconds={TIMER_SECONDS} onExpire={handleExpire} />
-
-        {/* Ride card */}
+        {/* Ride Info Card */}
         <View style={styles.rideCard}>
-          {/* Rider row */}
+          {/* Rider Profile Row */}
           <View style={styles.riderRow}>
-            <View style={styles.avatarWrap}>
-              {rider_photo
-                ? <Image source={{ uri: rider_photo }} style={styles.avatar} />
-                : <Text style={styles.avatarFallback}>👤</Text>
-              }
+            <View style={styles.riderProfileBox}>
+              {rider_photo ? (
+                <Image source={{ uri: rider_photo }} style={styles.riderAvatar} />
+              ) : (
+                <View style={[styles.riderAvatar, { backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ fontSize: 24 }}>🙎‍♀️</Text>
+                </View>
+              )}
+              <View>
+                <Text style={styles.riderName}>{rider_name}</Text>
+                <View style={styles.ratingBox}>
+                  <MaterialIcons name="star" size={14} color="#F59E0B" />
+                  <Text style={styles.ratingText}>{Number(rider_rating).toFixed(1)}</Text>
+                </View>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.riderName}>{rider_name}</Text>
-              <Text style={styles.riderRating}>⭐ {Number(rider_rating).toFixed(1)}</Text>
-            </View>
-            <Text style={styles.fare}>₹{fare}</Text>
+            <Text style={styles.fareText}>₹{fare}</Text>
           </View>
 
-          <View style={styles.rowDivider} />
-
-          {/* Route info */}
-          <View style={styles.routeCol}>
-            {/* Pickup */}
-            <View style={styles.routeRow}>
-              <View style={styles.greenDot} />
-              <View style={{ flex: 1 }}>
+          {/* Route Info */}
+          <View style={styles.routeBox}>
+            <View style={styles.routeColNav}>
+              <View style={styles.routeDotGreen} />
+              <View style={styles.routeLineVertical} />
+              <MaterialCommunityIcons name="map-marker-outline" size={16} color="#BEA3D8" />
+            </View>
+            <View style={styles.routeContent}>
+              <View style={styles.routeRow}>
                 <Text style={styles.routeLabel}>PICKUP</Text>
                 <Text style={styles.routeAddress} numberOfLines={1}>{pickup_address}</Text>
               </View>
-            </View>
-            <View style={styles.routeLine} />
-            {/* Dropoff */}
-            <View style={styles.routeRow}>
-              <Text style={{ fontSize: 14, color: Colors.primaryContainer }}>📍</Text>
-              <View style={{ flex: 1 }}>
+              <View style={styles.routeRow}>
                 <Text style={styles.routeLabel}>DROP-OFF</Text>
                 <Text style={styles.routeAddress} numberOfLines={1}>{dropoff_address}</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.rowDivider} />
-
-          {/* Distance + ETA */}
-          <View style={styles.metaRow}>
-            <Text style={styles.metaItem}>🛣  {distance_to_pickup_km} km to pickup</Text>
-            <Text style={styles.metaItem}>⏱  ETA ~{eta_to_pickup_min} min</Text>
+          {/* Trip Stats */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons name="map-marker-distance" size={16} color="#1C1A25" />
+              <Text style={styles.statText}>{distance_to_pickup_km} km to pickup</Text>
+            </View>
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons name="clock-outline" size={16} color="#1C1A25" />
+              <Text style={styles.statText}>ETA ~{eta_to_pickup_min} min</Text>
+            </View>
           </View>
         </View>
 
-        {/* Action buttons */}
-        <View style={styles.actions}>
+        {/* Action Buttons Stacked */}
+        <View style={styles.actionsBox}>
           <TouchableOpacity
-            style={[styles.acceptBtn, accepting && styles.acceptBtnDisabled]}
+            style={[styles.acceptBtn, accepting && { opacity: 0.7 }]}
             onPress={handleAccept}
             disabled={accepting}
             activeOpacity={0.85}
           >
-            <Text style={styles.acceptText}>
-              {accepting ? 'Accepting…' : '✅  Accept Ride'}
+            <Text style={styles.acceptBtnText}>
+              {accepting ? 'Accepting...' : 'Accept Ride'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.declineBtn}
             onPress={handleDecline}
+            disabled={accepting}
             activeOpacity={0.8}
           >
-            <Text style={styles.declineText}>✖  Decline</Text>
+            <Text style={styles.declineBtnText}>Decline</Text>
           </TouchableOpacity>
         </View>
+
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, zIndex: 800 },
-
-  // Map
-  map: { width: '100%', height: '50%' },
+  root: {
+    flex: 1,
+    backgroundColor: '#FCF8FF',
+  },
   pickupDot: {
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: Colors.online,
-    borderWidth: 2.5, borderColor: Colors.white,
+    width: 20,
+    height: 20,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  dropoffPin: {
-    width: 32, height: 32, alignItems: 'center', justifyContent: 'center',
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    zIndex: 10,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 5,
   },
-
-  // Sheet
-  sheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: Spacing.base, paddingTop: 16, paddingBottom: 24,
-    ...Shadows.lavender,
+  iconBtn: {
+    padding: 8,
+    marginLeft: -8,
+    marginRight: -8,
   },
-  handle: {
-    alignSelf: 'center', width: 36, height: 4,
-    backgroundColor: Colors.outlineVariant, borderRadius: 2, marginBottom: 16,
+  topBarTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 18,
+    color: '#0F172A',
+    letterSpacing: -0.45,
   },
-
-  // Header
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  bellWrap: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: `${Colors.primaryContainer}15`,
-    alignItems: 'center', justifyContent: 'center',
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 16,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
-  bellIcon: { fontSize: 20 },
-  headline: { fontSize: 18, fontWeight: '800', color: Colors.onSurface, letterSpacing: -0.3 },
-
-  // Ride card
+  pulseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  pulseIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F5F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  pulseTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 22,
+    color: '#1C1A25',
+    letterSpacing: -0.5,
+  },
   rideCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.outlineVariant,
-    padding: Spacing.md, marginBottom: 14, ...Shadows.card,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0ECFA',
+    marginBottom: 24,
   },
-  riderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  avatarWrap: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.surfaceLow,
-    alignItems: 'center', justifyContent: 'center',
-    overflow: 'hidden', borderWidth: 1.5, borderColor: Colors.outlineVariant,
+  riderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  avatar: { width: '100%', height: '100%' },
-  avatarFallback: { fontSize: 24 },
-  riderName: { fontSize: 15, fontWeight: '700', color: Colors.onSurface },
-  riderRating: { fontSize: 12, color: Colors.onSurfaceVariant, marginTop: 1 },
-  fare: { fontSize: 26, fontWeight: '900', color: Colors.primaryContainer, letterSpacing: -1 },
-
-  rowDivider: { height: 1, backgroundColor: Colors.surfaceLow, marginVertical: 10 },
-
-  // Route
-  routeCol: { gap: 0 },
-  routeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  greenDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.online, marginTop: 4 },
-  routeLine: { width: 1.5, height: 20, backgroundColor: Colors.outlineVariant, marginLeft: 4, marginVertical: 2 },
-  routeLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1.5, color: Colors.onSurfaceVariant },
-  routeAddress: { fontSize: 13, fontWeight: '600', color: Colors.onSurface, marginTop: 1 },
-
-  // Meta
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  metaItem: { fontSize: 11, color: Colors.onSurfaceVariant, fontWeight: '500' },
-
-  // Buttons
-  actions: { gap: 10 },
+  riderProfileBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  riderAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: '#F0ECFA',
+  },
+  riderName: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#1C1A25',
+    marginBottom: 4,
+  },
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 13,
+    color: '#1C1A25',
+  },
+  fareText: {
+    fontFamily: 'Inter',
+    fontWeight: '900',
+    fontSize: 28,
+    color: '#BEA3D8',
+    letterSpacing: -1.2,
+  },
+  routeBox: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  routeColNav: {
+    alignItems: 'center',
+    width: 20,
+    marginRight: 12,
+    marginTop: 6,
+  },
+  routeDotGreen: {
+    width: 10,
+    height: 10,
+    backgroundColor: '#10B981',
+    borderRadius: 5,
+  },
+  routeLineVertical: {
+    width: 2,
+    height: 36,
+    backgroundColor: '#E5E0EF',
+    marginVertical: 4,
+  },
+  routeContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  routeRow: {
+    marginBottom: 16,
+  },
+  routeLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  routeAddress: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 15,
+    color: '#1C1A25',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F0FF',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 13,
+    color: '#1C1A25',
+  },
+  actionsBox: {
+    width: '100%',
+    gap: 12,
+  },
   acceptBtn: {
-    height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.lavender,
+    width: '100%',
+    height: 56,
+    backgroundColor: '#BEA3D8',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BEA3D8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  acceptBtnDisabled: { backgroundColor: Colors.outlineVariant },
-  acceptText: { fontSize: 16, fontWeight: '800', color: Colors.white },
+  acceptBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 17,
+    color: '#FFFFFF',
+  },
   declineBtn: {
-    height: 52, borderRadius: Radius.lg,
-    borderWidth: 2, borderColor: '#EF4444',
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center',
+    width: '100%',
+    height: 56,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#F87171',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  declineText: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
+  declineBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 17,
+    color: '#F87171',
+  },
 });
