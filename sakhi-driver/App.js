@@ -28,8 +28,10 @@ import DocumentReUploadScreen          from './src/screens/Onboarding/DocumentRe
 import AccountApprovedScreen           from './src/screens/Onboarding/AccountApprovedScreen';
 
 // Main screens
-import DriverHomeScreen          from './src/screens/Home/DriverHomeScreen';
-import IncomingRideRequestScreen from './src/screens/Home/IncomingRideRequestScreen';
+import DriverHomeScreen              from './src/screens/Home/DriverHomeScreen';
+import DriverOnlineDashboardScreen   from './src/screens/Home/DriverOnlineDashboardScreen';
+import IncomingRideRequestScreen     from './src/screens/Home/IncomingRideRequestScreen';
+import PaymentPlansScreen            from './src/screens/Home/PaymentPlansScreen';
 
 // Ride flow screens
 import EnRouteToPickupScreen from './src/screens/Ride/EnRouteToPickupScreen';
@@ -90,7 +92,9 @@ function MainStack() {
   return (
     <SocketProvider>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="DriverHome"      component={DriverHomeScreen}      />
+        <Stack.Screen name="DriverHome"              component={DriverHomeScreen}            />
+        <Stack.Screen name="DriverOnlineDashboard"   component={DriverOnlineDashboardScreen} />
+        <Stack.Screen name="PaymentPlans"            component={PaymentPlansScreen}          />
         <Stack.Screen name="ActiveTrip"      component={EnRouteToPickupScreen} />
         <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} />
         <Stack.Screen name="ArrivedWaiting"  component={ArrivedWaitingScreen}  />
