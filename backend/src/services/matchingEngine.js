@@ -152,12 +152,13 @@ class MatchingEngine extends EventEmitter {
   async _queryCandidates(pickupLat, pickupLng, radiusMeters) {
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-    // Fetch all eligible online drivers with fresh locations
+    // Fetch all eligible online drivers with fresh locations + RAR fields
     const { data: rows, error } = await supabase
       .from('drivers')
       .select(`
         id, name, phone, fcm_token, vehicle_type, vehicle_reg_no,
         vehicle_color, vehicle_model, language_pref,
+        acceptance_rate, total_requests,
         driver_locations!inner(lat, lng, updated_at)
       `)
       .eq('is_online', true)
@@ -186,16 +187,25 @@ class MatchingEngine extends EventEmitter {
       .gt('blocked_until', new Date().toISOString());
     const blockedIds = new Set((blockedRows || []).map((r) => r.driver_id));
 
-    // Filter + compute Haversine distance, then sort ascending
+    // Filter + compute Haversine distance, then compute composite dispatch score
+    // composite_score = distance_meters × (1 + 1.5 × (1 − RAR))
+    // Effect: a driver with RAR=0.5 appears 75% farther; RAR=1.0 is unpenalised
+    const RAR_PENALTY_FACTOR = 1.5;
+
     return rows
       .filter((d) => !busyIds.has(d.id) && !blockedIds.has(d.id))
       .map((d) => {
         const loc = Array.isArray(d.driver_locations) ? d.driver_locations[0] : d.driver_locations;
         const distance_meters = haversine(pickupLat, pickupLng, loc.lat, loc.lng);
-        return { ...d, lat: loc.lat, lng: loc.lng, distance_meters };
+        const rar = parseFloat(d.acceptance_rate ?? 1.0);
+        // Treat new drivers (< 5 requests) as neutral (rar = 1.0) to not penalise unfairly
+        const effectiveRar = (d.total_requests || 0) < 5 ? 1.0 : rar;
+        const composite_score = distance_meters * (1 + RAR_PENALTY_FACTOR * (1 - effectiveRar));
+        return { ...d, lat: loc.lat, lng: loc.lng, distance_meters, rar, composite_score };
       })
       .filter((d) => d.distance_meters <= radiusMeters)
-      .sort((a, b) => a.distance_meters - b.distance_meters);
+      // Sort by composite score — closer + more reliable drivers first
+      .sort((a, b) => a.composite_score - b.composite_score);
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -278,6 +288,22 @@ class MatchingEngine extends EventEmitter {
     // Notify driver the request expired
     this._emitToDriver(driverId, 'ride_request_expired', { ride_id: rideId });
 
+    // ── RAR: count as a request sent (timeout = implicit reject) ──────────────
+    supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: false })
+      .catch(() => {
+        // Fallback if RPC not yet deployed
+        supabase.from('drivers')
+          .update({ total_requests: supabase.rpc ? undefined : undefined })
+          .eq('id', driverId)
+          .single()
+          .then(({ data: d }) => {
+            if (d) {
+              return supabase.from('drivers').update({ total_requests: (d.total_requests || 0) + 1 }).eq('id', driverId);
+            }
+          })
+          .catch(() => {});
+      });
+
     const { drivers, candidateIndex } = session;
     this._sendToCandidate(rideId, drivers, candidateIndex).catch((err) =>
       logger.error('MatchingEngine._handleDriverTimeout — error', { error: err.message })
@@ -335,6 +361,23 @@ class MatchingEngine extends EventEmitter {
         return;
       }
 
+      // ── RAR: count as both a request sent AND accepted ────────────────────
+      supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: true })
+        .catch(() => {
+          // Direct increment fallback
+          supabase.from('drivers')
+            .select('total_requests, total_accepts')
+            .eq('id', driverId)
+            .single()
+            .then(({ data: d }) => {
+              if (d) supabase.from('drivers').update({
+                total_requests: (d.total_requests || 0) + 1,
+                total_accepts:  (d.total_accepts  || 0) + 1,
+              }).eq('id', driverId);
+            })
+            .catch(() => {});
+        });
+
       // 4. Cleanup
       this._cleanup(rideId);
 
@@ -389,6 +432,19 @@ class MatchingEngine extends EventEmitter {
     logger.info('MatchingEngine.handleDriverReject', { rideId, driverId });
 
     if (session.timeoutHandle) clearTimeout(session.timeoutHandle);
+
+    // ── RAR: explicit rejection — count request, no accept ────────────────────
+    supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: false })
+      .catch(() => {
+        supabase.from('drivers')
+          .select('total_requests')
+          .eq('id', driverId)
+          .single()
+          .then(({ data: d }) => {
+            if (d) supabase.from('drivers').update({ total_requests: (d.total_requests || 0) + 1 }).eq('id', driverId);
+          })
+          .catch(() => {});
+      });
 
     const { drivers, candidateIndex } = session;
     await this._sendToCandidate(rideId, drivers, candidateIndex);
