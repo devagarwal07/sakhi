@@ -39,13 +39,17 @@ require('./src/services/anomalyService').startGlobalAnomalyMonitor(io);
 require('./src/services/sosService').setIO(io);
 
 // ─── Background workers ───────────────────────────────────────────────────────
-const subScheduler    = require('./src/workers/SubscriptionRideScheduler');
-const driverTimeout   = require('./src/workers/DriverTimeoutWorker');
-const loyaltyWorker   = require('./src/workers/LoyaltyMilestoneWorker');
+const subScheduler      = require('./src/workers/SubscriptionRideScheduler');
+const driverTimeout     = require('./src/workers/DriverTimeoutWorker');
+const loyaltyWorker     = require('./src/workers/LoyaltyMilestoneWorker');
+const leaderboardWorker = require('./src/workers/LeaderboardWorker');
+const loyaltyTierWorker = require('./src/workers/LoyaltyTierWorker');
 
 subScheduler.startScheduler(io);
 driverTimeout.startDriverTimeoutWorker();
 loyaltyWorker.startLoyaltyMilestoneWorker();
+leaderboardWorker.startLeaderboardWorker();
+loyaltyTierWorker.startLoyaltyTierWorker();
 
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
@@ -76,6 +80,8 @@ async function shutdown(signal) {
     if (subScheduler.stopScheduler)   subScheduler.stopScheduler();
     if (driverTimeout.stopWorker)     driverTimeout.stopWorker();
     if (loyaltyWorker.stopWorker)     loyaltyWorker.stopWorker();
+    if (leaderboardWorker.stopWorker) leaderboardWorker.stopWorker?.();
+    if (loyaltyTierWorker.stopWorker) loyaltyTierWorker.stopWorker?.();
     logger.info('shutdown — cron workers stopped');
   } catch (err) {
     logger.warn('shutdown — worker stop error', { error: err.message });

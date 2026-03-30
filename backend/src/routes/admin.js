@@ -342,4 +342,53 @@ router.get('/users', async (req, res, next) => {
   } catch (err) { return next(err); }
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// GAMIFICATION — WEEKLY LEADERBOARD
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /admin/leaderboard/weekly?week=2026-W13
+ * Returns the weekly leaderboard snapshot.
+ * Defaults to the current ISO week if no `week` query param.
+ */
+router.get('/leaderboard/weekly', async (req, res, next) => {
+  try {
+    const { getWeekLabel } = require('../workers/LeaderboardWorker');
+    const week = req.query.week || getWeekLabel();
+
+    const { data: rows, error } = await supabase
+      .from('weekly_leaderboard')
+      .select(`
+        rank, composite_score, rides_count, avg_rating_snap,
+        acceptance_rate_snap, payout_amount, payout_done, week_label,
+        drivers!inner(id, name, phone, vehicle_type, avg_rating, loyalty_tier)
+      `)
+      .eq('week_label', week)
+      .order('rank', { ascending: true });
+
+    if (error) return next(error);
+
+    return res.status(200).json({ week_label: week, leaderboard: rows || [] });
+  } catch (err) { return next(err); }
+});
+
+/**
+ * POST /admin/leaderboard/weekly/recompute
+ * Manually trigger a leaderboard computation for any past week.
+ * Body: { week: '2026-W12' }
+ */
+router.post('/leaderboard/weekly/recompute', async (req, res, next) => {
+  try {
+    const { buildLeaderboard, getWeekLabel } = require('../workers/LeaderboardWorker');
+    const week = req.body?.week || getWeekLabel();
+
+    // Non-blocking — kick off async
+    buildLeaderboard(week).catch((e) =>
+      logger.error('POST /admin/leaderboard/recompute — error', { error: e.message })
+    );
+
+    return res.status(202).json({ message: `Leaderboard recomputation started for ${week}` });
+  } catch (err) { return next(err); }
+});
+
 module.exports = router;
