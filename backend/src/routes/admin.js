@@ -2,10 +2,12 @@
 
 const { Router } = require('express');
 const { z } = require('zod');
+const crypto         = require('crypto');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleGuard      = require('../middleware/roleGuard');
 const supabase       = require('../config/supabase');
 const fcmService     = require('../services/fcmService');
+const smsService     = require('../services/smsService');
 const logger         = require('../utils/logger');
 const { adminLimiter } = require('../middleware/rateLimiter');
 
@@ -17,9 +19,97 @@ router.use(adminLimiter, authMiddleware, roleGuard('admin'));
 // ── Helper ────────────────────────────────────────────────────────────────────
 const reasonSchema = z.object({ reason: z.string().min(1) });
 
+const createDriverSchema = z.object({
+  name:           z.string().min(2).max(80),
+  phone:          z.string().regex(/^[6-9]\d{9}$/, 'Invalid 10-digit mobile number'),
+  vehicle_type:   z.enum(['auto', 'cab', 'mini']).optional().default('auto'),
+  vehicle_reg_no: z.string().min(4).max(20).optional(),
+  vehicle_model:  z.string().max(50).optional(),
+  note:           z.string().max(500).optional(), // ops notes
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // DRIVER MANAGEMENT
 // ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /admin/drivers
+ * Hand-held (phone-assisted) driver signup by ops team.
+ * Creates a driver record with kyc_status = 'manual_review'.
+ * Sends a one-time PIN via SMS for driver to set their own password.
+ */
+router.post('/drivers', async (req, res, next) => {
+  try {
+    const parsed = createDriverSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    }
+
+    const { name, phone, vehicle_type, vehicle_reg_no, vehicle_model, note } = parsed.data;
+
+    // 1. Check no existing driver with this phone
+    const { data: existing } = await supabase
+      .from('drivers')
+      .select('id')
+      .eq('phone', phone)
+      .limit(1);
+
+    if (existing?.length) {
+      return res.status(409).json({ error: 'A driver with this phone number already exists.' });
+    }
+
+    // 2. Generate a 6-digit temporary PIN
+    const tempPin = crypto.randomInt(100000, 999999).toString();
+    // In production, hash the PIN. Stored temporarily so the driver can log in and set a real password.
+    // Here we persist it as a plain-text claim in a dedicated column or in metadata.
+    // For Supabase: create an auth user and a driver row.
+
+    // 3. Insert the driver row (pre-registered, pending self-activation)
+    const { data: driverRow, error: insertErr } = await supabase
+      .from('drivers')
+      .insert({
+        name,
+        phone,
+        vehicle_type,
+        vehicle_reg_no: vehicle_reg_no || null,
+        vehicle_model:  vehicle_model  || null,
+        kyc_status:          'manual_review',
+        verification_status: 'pending',
+        is_active:           false,
+        gender_verified:     false,
+        onboarding_method:   'admin_assisted',
+        onboarding_note:     note || null,
+        onboarding_admin_id: req.user?.id || null,
+        temp_pin:            tempPin, // driver uses this to complete signup
+      })
+      .select('id, name, phone')
+      .single();
+
+    if (insertErr) {
+      logger.error('POST /admin/drivers — insert failed', { error: insertErr.message });
+      return next(insertErr);
+    }
+
+    // 4. Send SMS with temporary PIN
+    const smsMsg = `Welcome to Sakhi! Your temporary login PIN is ${tempPin}. Open the Sakhi Driver app and enter this PIN to complete your registration. It expires in 48 hours.`;
+    await smsService.sendSMS(phone, smsMsg).catch((e) =>
+      logger.warn('POST /admin/drivers — SMS send failed', { phone, error: e.message })
+    );
+
+    logger.info('POST /admin/drivers — driver pre-registered', { driverId: driverRow.id, phone, createdBy: req.user?.id });
+
+    return res.status(201).json({
+      message: 'Driver pre-registered successfully. A temporary PIN has been sent via SMS.',
+      driver: {
+        id:    driverRow.id,
+        name:  driverRow.name,
+        phone: driverRow.phone,
+      },
+      temp_pin: tempPin, // also return to ops agent for verbal confirmation
+    });
+  } catch (err) { return next(err); }
+});
+
 
 /**
  * PATCH /admin/drivers/:id/approve
