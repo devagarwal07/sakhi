@@ -236,7 +236,53 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
       timestamp: new Date().toISOString(),
     });
 
-    // 8. Driver referral programme — non-blocking check
+    // 8. Safe Drop SMS — notify rider's emergency contacts on completion ---
+    setImmediate(async () => {
+      try {
+        const { data: contacts } = await supabase
+          .from('emergency_contacts')
+          .select('phone, name')
+          .eq('user_id', riderId)
+          .limit(3);
+
+        if (contacts?.length) {
+          const riderName = ride.users?.name || 'Your family member';
+          const destination = ride.destination_address || 'their destination';
+          const phones = contacts.map((c) => c.phone);
+          const message = `✅ Safe Drop Alert: ${riderName} has safely reached ${destination} via Sakhi. Trip completed at ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.`;
+          await smsService.sendBulkSMS(phones, message);
+          logger.info('rideService — Safe Drop SMS sent', { rideId, recipientCount: phones.length });
+        }
+      } catch (e) {
+        logger.warn('rideService — Safe Drop SMS failed (non-fatal)', { rideId, error: e.message });
+      }
+    });
+
+    // 9. Coupon liability payout — if Sakhi owes the driver the discounted portion ---
+    setImmediate(async () => {
+      const promoLiability = parseFloat(ride.promo_discount_amount || 0);
+      if (promoLiability > 0 && !ride.promo_liability_settled) {
+        try {
+          await payoutService.initiatePayout({
+            driverId:  driverId,
+            rideId:    rideId,
+            amountInr: promoLiability,
+            type:      'coupon_liability',
+            narration: `Sakhi Promo Settlement - ${rideId.slice(0, 8)}`,
+          });
+          logger.info('rideService — coupon payout initiated', { rideId, promoLiability });
+        } catch (e) {
+          logger.error('rideService — coupon payout failed (non-fatal)', { rideId, error: e.message });
+        }
+      }
+    });
+
+    // 10. Update driver total_rides + avg_rating stats ---
+    setImmediate(async () => {
+      await supabase.rpc('update_driver_stats_on_completion', { p_driver_id: driverId }).catch(() => {});
+    });
+
+    // 11. Driver referral programme — non-blocking check
     setImmediate(() => referralService.checkDriverReferral(driverId));
 
     logger.info('rideService.updateRideStatus — completed', { rideId, driverId, finalFare, commission });
