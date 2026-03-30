@@ -4,6 +4,8 @@ const fareService = require('./fareService');
 const fcmService = require('./fcmService');
 const waitingTimerService = require('./waitingTimerService');
 const matchingEngine = require('./matchingEngine');
+const smsService  = require('./smsService');
+const payoutService = require('./payoutService');
 const supabase = require('../config/supabase');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
@@ -28,7 +30,11 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
   // Fetch current ride
   const { data: rides, error: fetchErr } = await supabase
     .from('rides')
-    .select('*, drivers(name, fcm_token), users!rides_rider_id_fkey(id, name)')
+    .select(`
+      *,
+      drivers(name, fcm_token),
+      users!rides_rider_id_fkey(id, name, phone)
+    `)
     .eq('id', rideId)
     .limit(1);
 
