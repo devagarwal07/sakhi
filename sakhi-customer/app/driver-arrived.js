@@ -75,7 +75,7 @@ export default function DriverArrivedScreen() {
                     bounces={false}
                 >
                     {/* Status Badge */}
-                    <TouchableOpacity style={styles.statusBadge} onPress={() => router.push('/active-trip')} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.statusBadge} onPress={() => router.push('/active-ride')} activeOpacity={0.8}>
                         <View style={styles.checkIconWrapper}>
                             <Text style={styles.checkIcon}>✓</Text>
                         </View>

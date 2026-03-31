@@ -43,7 +43,7 @@ export default function RideFindingScreen() {
 
         // Dummy timeout to simulate finding driver
         const timer = setTimeout(() => {
-            router.replace('/trip-status');
+            router.replace('/driver-arrived');
         }, 5000);
 
         return () => clearTimeout(timer);

@@ -54,7 +54,7 @@ export default function ActiveRideScreen() {
         const handleStatusUpdate = ({ status }) => {
             updateStatus(status);
             if (status === 'completed') {
-                router.replace('/fare-summary');
+                router.replace('/ride-summary');
             }
         };
 
@@ -173,7 +173,7 @@ export default function ActiveRideScreen() {
             <View style={styles.topRightPills}>
                 <TouchableOpacity
                     style={styles.sosPill}
-                    onPress={() => router.push('/sos')}
+                    onPress={() => router.push('/sos-warning')}
                     activeOpacity={0.85}
                 >
                     <Text style={styles.sosPillText}>🆘  SOS</Text>
