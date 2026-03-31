@@ -3,7 +3,9 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Dimensions, Alert, Platform, Animated,
 } from 'react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+// import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { ScrollView as BottomSheetScrollView } from 'react-native';
+const BottomSheet = ({ children }) => <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%', backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 16 }}>{children}</View>;
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
@@ -134,14 +136,9 @@ export default function HomeScreen() {
 
             </View>
 
-            {/* Interactive Bottom Sheet */}
-            <BottomSheet
-                snapPoints={['42%', '85%']}
-                index={0}
-                backgroundStyle={{ backgroundColor: '#FFFFFF', borderRadius: 32 }}
-                handleIndicatorStyle={{ backgroundColor: '#E5E0EF', width: 48, height: 6 }}
-                style={styles.bottomSheetShadow}
-            >
+            {/* Interactive Bottom Sheet (Disabled for debugging) */}
+            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
+                <View style={{ alignSelf: 'center', width: 48, height: 6, backgroundColor: '#E5E0EF', borderRadius: 3, marginTop: 12, marginBottom: 12 }} />
                 <BottomSheetScrollView
                     contentContainerStyle={styles.sheetContent}
                     showsVerticalScrollIndicator={false}
@@ -241,7 +238,7 @@ export default function HomeScreen() {
                         ))}
                     </View>
                 </BottomSheetScrollView>
-            </BottomSheet>
+            </View>
         </View>
     );
 }
