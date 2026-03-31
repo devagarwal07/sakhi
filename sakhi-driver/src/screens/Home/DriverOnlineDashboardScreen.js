@@ -304,7 +304,7 @@ export default function DriverHomeScreen({ navigation }) {
           icon={require('../../../assets/wallet.png')}
           label="WALLET"
           active={activeTab === 'wallet'}
-          onPress={() => navigation.navigate('PaymentPlans')}
+          onPress={() => navigation.navigate('TransactionHistory')}
         />
         <TabItem
           icon={require('../../../assets/profile.png')}

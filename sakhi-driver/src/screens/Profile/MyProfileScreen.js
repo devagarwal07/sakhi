@@ -318,7 +318,7 @@ export default function MyProfileScreen({ navigation }) {
         <Text style={s.sectionTitle}>Personal Details</Text>
         <View style={s.sectionCard}>
           <DetailRow label="Full Name" value={driver?.name         ?? 'Meena Ramesh'}       onEdit={() => openEdit('name',  driver?.name)}  isFirst />
-          <DetailRow label="Phone"     value={driver?.phone        ?? '+91 98765 43210'}     onEdit={() => openEdit('phone', driver?.phone)} />
+          <DetailRow label="Phone"     value={driver?.phone        ?? '+91 98765 43210'}     onEdit={() => navigation.navigate('ChangePhoneInput')} />
           <DetailRow label="Email"     value={driver?.email        ?? 'meena.r@sakhi.com'}   onEdit={() => openEdit('email', driver?.email)} />
         </View>
 
@@ -365,8 +365,8 @@ export default function MyProfileScreen({ navigation }) {
       <View style={[s.bottomNav, { paddingBottom: Math.max(insets.bottom, 8), height: NAV_H }]}>
         <NavTab icon={<Home />}        label="HOME"     active={false} onPress={() => navigation?.navigate('DriverHome')} />
         <NavTab icon={<TrendingUp />}  label="EARNINGS" active={false} onPress={() => navigation?.navigate('MyEarnings')} />
-        <NavTab icon={<Wallet />}      label="WALLET"   active={true}  onPress={() => {}} />
-        <NavTab icon={<User />}        label="ACCOUNT"  active={false} onPress={() => {}} />
+        <NavTab icon={<Wallet />}      label="WALLET"   active={false} onPress={() => navigation?.navigate('TransactionHistory')} />
+        <NavTab icon={<User />}        label="ACCOUNT"  active={true}  onPress={() => {}} />
       </View>
 
     </View>

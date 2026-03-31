@@ -114,6 +114,7 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
                 styles.weekRowItem, 
                 idx > 0 && { marginTop: 8 }
               ]}
+              onPress={() => navigation.navigate('WeeklyCalendarView', { day })}
               activeOpacity={0.7}
             >
               <View style={styles.weekDateBadge}>

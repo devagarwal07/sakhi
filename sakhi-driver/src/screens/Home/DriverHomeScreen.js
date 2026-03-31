@@ -101,7 +101,11 @@ export default function DriverHomeScreen({ navigation }) {
               </View>
             </View>
             
-            <TouchableOpacity style={s.notifBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={s.notifBtn}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.8}
+            >
               <Feather name="bell" size={20} color="#BEA3D8" />
             </TouchableOpacity>
           </View>
@@ -132,7 +136,7 @@ export default function DriverHomeScreen({ navigation }) {
                 <Text style={s.statsLabel}>Online Time</Text>
                 <Text style={s.statsValue}>{earnings.onlineTime}</Text>
               </View>
-              <TouchableOpacity style={s.detailsBtn} activeOpacity={0.8}>
+              <TouchableOpacity style={s.detailsBtn} onPress={() => navigation.navigate('MyEarnings')} activeOpacity={0.8}>
                 <Text style={s.detailsText}>Details</Text>
               </TouchableOpacity>
             </View>
@@ -154,7 +158,7 @@ export default function DriverHomeScreen({ navigation }) {
             <QuickAction
               icon={require('../../../assets/car.png')}
               label="My Rides"
-              onPress={() => navigation.navigate('TripInProgress')}
+              onPress={() => navigation.navigate('RideHistory')}
             />
             <QuickAction
               icon={require('../../../assets/earning.png')}
@@ -202,7 +206,7 @@ export default function DriverHomeScreen({ navigation }) {
           icon={require('../../../assets/wallet.png')}
           label="WALLET"
           active={false}
-          onPress={() => navigation.navigate('PaymentPlans')}
+          onPress={() => navigation.navigate('TransactionHistory')}
         />
         <TabItem
           icon={require('../../../assets/profile.png')}
