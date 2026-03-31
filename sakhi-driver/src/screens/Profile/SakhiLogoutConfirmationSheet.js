@@ -1,34 +1,64 @@
 /**
  * SakhiLogoutConfirmationSheet
- * Modal bottom-sheet confirming logout. Shown from sidebar or profile menu.
+ * Transparent-modal bottom sheet confirming logout.
+ * Shows an "online" warning if the driver is currently active.
  * Usage: navigation.navigate('LogoutConfirmation')
  */
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Animated, Modal, TouchableWithoutFeedback,
-  ActivityIndicator,
+  ActivityIndicator, Platform,
 } from 'react-native';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TriangleAlert } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 
+// ─── Tokens ────────────────────────────────────────────────────────────────────
+const WHITE   = '#FFFFFF';
+const DARK    = '#1E1B2E';
+const MUTED   = '#6B7280';
+const RED     = '#DC2626';
+const PURPLE  = '#BEA3D8';
+const BORDER  = 'rgba(190,163,216,0.35)';
+const HANDLE  = '#E5E7EB';
+
+// Warning banner colours
+const WARN_BG   = '#FFF4EC';   // very light orange
+const WARN_TEXT = '#C2410C';   // deep orange
+const WARN_ICO  = '#F97316';   // vivid orange
+
 export default function SakhiLogoutConfirmationSheet({ navigation }) {
-  const { logout } = useAuth();
-  const [loading, setLoading] = React.useState(false);
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const { logout, driver } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  const [loading, setLoading] = useState(false);
+
+  const slideAnim = useRef(new Animated.Value(400)).current;
   const bgAnim    = useRef(new Animated.Value(0)).current;
+
+  // Whether driver is currently online (show warning)
+  const isOnline = driver?.is_online ?? false;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 80, useNativeDriver: true }),
-      Animated.timing(bgAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.spring(slideAnim, {
+        toValue: 0, friction: 9, tension: 70, useNativeDriver: true,
+      }),
+      Animated.timing(bgAnim, {
+        toValue: 0.55, duration: 280, useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
   const dismiss = () => {
     Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 400, duration: 200, useNativeDriver: true }),
-      Animated.timing(bgAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim, {
+        toValue: 500, duration: 220, useNativeDriver: true,
+      }),
+      Animated.timing(bgAnim, {
+        toValue: 0, duration: 220, useNativeDriver: true,
+      }),
     ]).start(() => navigation.goBack());
   };
 
@@ -36,7 +66,7 @@ export default function SakhiLogoutConfirmationSheet({ navigation }) {
     try {
       setLoading(true);
       await logout();
-      // AuthContext will redirect to Login via navigation reset
+      // AuthContext resets the navigator to Login
     } catch {
       setLoading(false);
     }
@@ -44,83 +74,185 @@ export default function SakhiLogoutConfirmationSheet({ navigation }) {
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={dismiss}>
-      {/* Dim overlay */}
+
+      {/* ── Dim overlay ─────────────────────────────────────────────────────── */}
       <TouchableWithoutFeedback onPress={dismiss}>
-        <Animated.View style={[styles.overlay, { opacity: bgAnim }]} />
+        <Animated.View style={[s.overlay, { opacity: bgAnim }]} />
       </TouchableWithoutFeedback>
 
-      {/* Sheet */}
-      <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
-        {/* Handle bar */}
-        <View style={styles.handle} />
+      {/* ── Sheet ───────────────────────────────────────────────────────────── */}
+      <Animated.View
+        style={[
+          s.sheet,
+          { paddingBottom: Math.max(insets.bottom, 24) + 8 },
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        {/* Drag handle */}
+        <View style={s.handle} />
 
-        {/* Danger icon */}
-        <View style={styles.iconWrap}>
-          <Text style={styles.icon}>👋</Text>
-        </View>
+        {/* Title */}
+        <Text style={s.title}>Log Out?</Text>
 
-        <Text style={styles.title}>Log Out?</Text>
-        <Text style={styles.subtitle}>
-          You'll be signed out of your driver account. You'll need to log back in to accept rides.
+        {/* Subtitle */}
+        <Text style={s.subtitle}>
+          You will need to log back in to accept rides.
         </Text>
 
-        {/* Actions */}
+        {/* Online warning banner (only when driver is active) */}
+        {isOnline && (
+          <View style={s.warnBox}>
+            <TriangleAlert size={18} color={WARN_ICO} strokeWidth={2} />
+            <Text style={s.warnText}>
+              You are currently online. Going offline before logging out.
+            </Text>
+          </View>
+        )}
+
+        {/* Log Out button */}
         <TouchableOpacity
-          style={[styles.logoutBtn, loading && styles.logoutBtnDisabled]}
+          style={[s.logoutBtn, loading && s.logoutBtnDisabled]}
           onPress={handleLogout}
           disabled={loading}
-          activeOpacity={0.85}
+          activeOpacity={0.88}
         >
           {loading
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.logoutBtnText}>Yes, Log Me Out</Text>
+            ? <ActivityIndicator color={WHITE} size="small" />
+            : <Text style={s.logoutBtnText}>Log Out</Text>
           }
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelBtn} onPress={dismiss} activeOpacity={0.7}>
-          <Text style={styles.cancelBtnText}>Cancel — Stay Signed In</Text>
+
+        {/* Cancel button */}
+        <TouchableOpacity
+          style={s.cancelBtn}
+          onPress={dismiss}
+          activeOpacity={0.75}
+        >
+          <Text style={s.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
       </Animated.View>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
+  // ── overlay ────────────────────────────────────────────────────────────────
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: '#000',
   },
+
+  // ── sheet ──────────────────────────────────────────────────────────────────
   sheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingHorizontal: Spacing.lg, paddingBottom: 40, paddingTop: 12,
-    alignItems: 'center', gap: 12, ...Shadows.lavender,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: WHITE,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    alignItems: 'center',
+    gap: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+      },
+      android: { elevation: 20 },
+    }),
   },
+
+  // ── drag handle ────────────────────────────────────────────────────────────
   handle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.outlineVariant, marginBottom: 8,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: HANDLE,
+    marginBottom: 8,
   },
-  iconWrap: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: Colors.surfaceLow,
-    alignItems: 'center', justifyContent: 'center',
+
+  // ── text ───────────────────────────────────────────────────────────────────
+  title: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 24,
+    lineHeight: 32,
+    color: DARK,
+    textAlign: 'center',
   },
-  icon: { fontSize: 36 },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.onSurface },
   subtitle: {
-    fontSize: 14, color: Colors.onSurfaceVariant, textAlign: 'center', lineHeight: 22,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 22,
+    color: MUTED,
+    textAlign: 'center',
   },
+
+  // ── warning banner ─────────────────────────────────────────────────────────
+  warnBox: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: WARN_BG,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  warnText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    lineHeight: 20,
+    color: WARN_TEXT,
+    flex: 1,
+  },
+
+  // ── Log Out button ─────────────────────────────────────────────────────────
   logoutBtn: {
-    width: '100%', height: 56, borderRadius: Radius.lg,
-    backgroundColor: '#DC2626',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#DC2626', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    width: '100%',
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: RED,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  logoutBtnDisabled: { backgroundColor: Colors.outlineVariant },
-  logoutBtnText: { color: Colors.white, fontSize: 16, fontWeight: '800' },
+  logoutBtnDisabled: {
+    backgroundColor: '#F87171',
+    shadowOpacity: 0,
+  },
+  logoutBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 17,
+    color: WHITE,
+    letterSpacing: 0.2,
+  },
+
+  // ── Cancel button ──────────────────────────────────────────────────────────
   cancelBtn: {
-    width: '100%', height: 50, borderRadius: Radius.lg, borderWidth: 1.5,
-    borderColor: Colors.outlineVariant, alignItems: 'center', justifyContent: 'center',
+    width: '100%',
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: 14, fontWeight: '700', color: Colors.onSurfaceVariant },
+  cancelBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: PURPLE,
+  },
 });
