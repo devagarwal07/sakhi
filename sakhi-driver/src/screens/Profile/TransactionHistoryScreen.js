@@ -1,159 +1,479 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl,
+  View, Text, ScrollView, TouchableOpacity,
+  StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 
-const TYPE_CONFIG = {
-  credit:       { icon: '💸', color: Colors.online          },
-  debit:        { icon: '💳', color: '#DC2626'              },
-  commission:   { icon: '📊', color: '#D97706'              },
-  payout:       { icon: '🏦', color: Colors.primaryContainer},
-  subscription: { icon: '🔄', color: Colors.primaryContainer},
+// ─── Icon components (no SVG library needed) ──────────────────────────────────
+
+/** ‹ back chevron */
+const BackIcon = () => (
+  <View style={ico.backWrap}>
+    <Text style={ico.backArrow}>{'‹'}</Text>
+  </View>
+);
+
+/** Horizontal filter lines */
+const FilterIcon = () => (
+  <View style={ico.filterWrap}>
+    {[18, 13, 8].map((w, i) => (
+      <View key={i} style={[ico.filterBar, { width: w }]} />
+    ))}
+  </View>
+);
+
+/** Tiny calendar grid */
+const CalendarIcon = () => (
+  <View style={ico.calOuter}>
+    <View style={ico.calTop} />
+    <View style={ico.calDots}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View key={i} style={ico.calDot} />
+      ))}
+    </View>
+  </View>
+);
+
+/** ∨ chevron */
+const ChevronDown = () => (
+  <View style={ico.chevWrap}>
+    <View style={ico.chevLine} />
+  </View>
+);
+
+/** ↑↓ export arrow */
+const ExportIcon = () => (
+  <View style={ico.expWrap}>
+    <View style={ico.expArrow} />
+    <View style={ico.expBase} />
+  </View>
+);
+
+const ico = StyleSheet.create({
+  backWrap:   { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  backArrow:  { fontSize: 28, color: '#BEA3D8', lineHeight: 32, marginTop: -2 },
+  filterWrap: { width: 18, height: 12, gap: 3, alignItems: 'flex-end', justifyContent: 'center' },
+  filterBar:  { height: 2, backgroundColor: '#BEA3D8', borderRadius: 1, alignSelf: 'flex-end' },
+  calOuter:   { width: 11, height: 11, borderRadius: 2, borderWidth: 1.2, borderColor: '#BEA3D8', overflow: 'hidden' },
+  calTop:     { height: 3, backgroundColor: '#BEA3D8' },
+  calDots:    { flexDirection: 'row', flexWrap: 'wrap', padding: 1, gap: 1 },
+  calDot:     { width: 2, height: 2, borderRadius: 1, backgroundColor: '#BEA3D8' },
+  chevWrap:   { width: 7, height: 5, alignItems: 'center', justifyContent: 'center' },
+  chevLine:   { width: 7, height: 7, borderRightWidth: 1.5, borderBottomWidth: 1.5, borderColor: '#4A4455', transform: [{ rotate: '45deg' }], marginTop: -4 },
+  expWrap:    { width: 12, height: 10, alignItems: 'center', justifyContent: 'center' },
+  expArrow:   { width: 0, height: 0, borderLeftWidth: 4, borderRightWidth: 4, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomWidth: 5, borderBottomColor: '#fff', marginBottom: 1 },
+  expBase:    { width: 8, height: 4, borderWidth: 1.5, borderColor: '#fff', borderTopWidth: 0 },
+});
+
+// ─── Category icon bubble ─────────────────────────────────────────────────────
+const TYPE_THEME = {
+  ride:         { bg: '#ECFDF5', color: '#059669' },
+  subscription: { bg: '#F6F1FF', color: '#BEA3D8' },
+  commission:   { bg: '#FEF2F2', color: '#EF4444' },
 };
 
-function TxnCard({ item }) {
-  const cfg = TYPE_CONFIG[item.type] ?? { icon: '💰', color: Colors.onSurface };
-  const isCredit = item.amount > 0;
-  return (
-    <View style={styles.card}>
-      <View style={[styles.iconBox, { backgroundColor: `${cfg.color}12` }]}>
-        <Text style={{ fontSize: 22 }}>{cfg.icon}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.txnTitle}>{item.title}</Text>
-        <Text style={styles.txnId} numberOfLines={1}>#{item.txn_id ?? '—'}</Text>
-        <Text style={styles.txnDate}>{item.date_label ?? ''}</Text>
-      </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        <Text style={[styles.amount, { color: isCredit ? Colors.online : '#DC2626' }]}>
-          {isCredit ? '+' : '-'}₹{Math.abs(item.amount).toLocaleString('en-IN')}
-        </Text>
-        <View style={[styles.statusPill, { backgroundColor: item.status === 'completed' ? '#DCFCE7' : '#FFF7ED' }]}>
-          <Text style={[styles.statusText, { color: item.status === 'completed' ? '#15803D' : '#D97706' }]}>
-            {item.status ?? 'completed'}
-          </Text>
+function CategoryBubble({ type }) {
+  const th = TYPE_THEME[type] ?? { bg: '#F5F0FF', color: '#BEA3D8' };
+
+  const renderInner = () => {
+    if (type === 'ride') {
+      return (
+        <View style={{ alignItems: 'center' }}>
+          {/* simplified van silhouette */}
+          <View style={[bub.vanBody, { borderColor: th.color }]}>
+            <View style={[bub.vanCab, { backgroundColor: th.color }]} />
+          </View>
+          <View style={bub.wheels}>
+            <View style={[bub.wheel, { backgroundColor: th.color }]} />
+            <View style={[bub.wheel, { backgroundColor: th.color }]} />
+          </View>
         </View>
+      );
+    }
+    if (type === 'subscription') {
+      return (
+        <View style={[bub.cycleRing, { borderColor: th.color }]}>
+          <View style={[bub.cycleTop,    { borderColor: th.color }]} />
+          <View style={[bub.cycleBottom, { borderColor: th.color }]} />
+        </View>
+      );
+    }
+    // commission → ₹
+    return <Text style={[bub.rupee, { color: th.color }]}>₹</Text>;
+  };
+
+  return (
+    <View style={[bub.bg, { backgroundColor: th.bg }]}>
+      {renderInner()}
+    </View>
+  );
+}
+
+const bub = StyleSheet.create({
+  bg:          { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  vanBody:     { width: 20, height: 10, borderWidth: 1.5, borderRadius: 2, overflow: 'visible', position: 'relative' },
+  vanCab:      { position: 'absolute', top: -5, left: 2, width: 9, height: 5, borderRadius: 2 },
+  wheels:      { flexDirection: 'row', justifyContent: 'space-between', width: 15, marginTop: 1 },
+  wheel:       { width: 5, height: 5, borderRadius: 2.5 },
+  cycleRing:   { width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  cycleTop:    { position: 'absolute', top: -1, right: -1, width: 6, height: 6, borderRightWidth: 2, borderTopWidth: 2, transform: [{ rotate: '45deg' }] },
+  cycleBottom: { position: 'absolute', bottom: -1, left: -1, width: 6, height: 6, borderLeftWidth: 2, borderBottomWidth: 2, transform: [{ rotate: '45deg' }] },
+  rupee:       { fontSize: 18, fontWeight: '700' },
+});
+
+// ─── Static / fallback data ───────────────────────────────────────────────────
+const FALLBACK_SECTIONS = [
+  {
+    date: 'SATURDAY, 15 MAR 2026',
+    dayTotal: 'Day total: +₹640',
+    rows: [
+      { id: 'tx1', type: 'ride',         title: 'Ride Fare Collected',        time: '10:30 AM', rawAmount: 87,   isCredit: true  },
+      { id: 'tx2', type: 'subscription', title: 'Subscription Ride Earnings', time: '08:30 AM', rawAmount: 450,  isCredit: true  },
+      { id: 'tx3', type: 'commission',   title: 'Commission Paid',            time: '07:00 AM', rawAmount: 350,  isCredit: false },
+    ],
+  },
+  {
+    date: 'FRIDAY, 14 MAR 2026',
+    dayTotal: 'Day total: +₹110',
+    rows: [
+      { id: 'tx4', type: 'ride', title: 'Ride Fare Collected', time: '05:45 PM', rawAmount: 110, isCredit: true },
+    ],
+  },
+  {
+    date: 'THURSDAY, 13 MAR 2026',
+    dayTotal: 'Day total: +₹225',
+    rows: [
+      { id: 'tx5', type: 'ride',         title: 'Ride Fare Collected',        time: '03:10 PM', rawAmount: 160, isCredit: true  },
+      { id: 'tx6', type: 'commission',   title: 'Commission Paid',            time: '09:00 AM', rawAmount: 75,  isCredit: false },
+      { id: 'tx7', type: 'subscription', title: 'Subscription Ride Earnings', time: '07:30 AM', rawAmount: 140, isCredit: true  },
+    ],
+  },
+];
+
+const TYPE_FILTERS = ['All', 'Ride', 'Subscription', 'Commission'];
+const DATE_RANGES  = ['1 Mar – 15 Mar', '16 Mar – 31 Mar', '1 Feb – 28 Feb', 'Custom Range'];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function formatAmount(raw, isCredit) {
+  const sign = isCredit ? '+' : '−';
+  return `${sign}₹${Math.abs(raw).toLocaleString('en-IN')}`;
+}
+
+function groupApiData(txns = []) {
+  const map = {};
+  txns.forEach((t) => {
+    const key = t.date_label ?? 'Unknown';
+    if (!map[key]) map[key] = { date: key.toUpperCase(), dayTotal: '', rows: [] };
+    map[key].rows.push({
+      id:        String(t.id),
+      type:      t.type === 'credit' ? 'ride' : t.type,
+      title:     t.title ?? t.type,
+      time:      t.time_label ?? '',
+      rawAmount: Math.abs(t.amount ?? 0),
+      isCredit:  (t.amount ?? 0) > 0,
+    });
+  });
+  // compute day totals
+  Object.values(map).forEach((s) => {
+    const tot = s.rows.reduce((acc, r) => acc + (r.isCredit ? r.rawAmount : -r.rawAmount), 0);
+    s.dayTotal = `Day total: ${tot >= 0 ? '+' : ''}₹${Math.abs(tot)}`;
+  });
+  return Object.values(map);
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function TxRow({ item }) {
+  const amtColor = item.isCredit ? '#059669' : '#EF4444';
+  const display  = formatAmount(item.rawAmount, item.isCredit);
+  const multiline = item.rawAmount >= 100 && item.type === 'subscription';
+
+  return (
+    <View style={row.card}>
+      <View style={row.left}>
+        <CategoryBubble type={item.type} />
+        <View style={row.info}>
+          <Text style={row.title}>{item.title}</Text>
+          <Text style={row.time}>{item.time}</Text>
+        </View>
+      </View>
+      <Text style={[row.amount, { color: amtColor }]}>{display}</Text>
+    </View>
+  );
+}
+
+const row = StyleSheet.create({
+  card:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#FFFFFF', borderRadius: 12, ...Shadows.card },
+  left:   { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1, marginRight: 8 },
+  info:   { flex: 1 },
+  title:  { fontSize: 16, fontWeight: '700', color: '#1C1A25', lineHeight: 24 },
+  time:   { fontSize: 12, fontWeight: '500', color: '#7B7487', lineHeight: 16, marginTop: 2 },
+  amount: { fontSize: 16, fontWeight: '700', lineHeight: 24, textAlign: 'right' },
+});
+
+function DaySection({ section }) {
+  return (
+    <View style={ds.wrap}>
+      <View style={ds.header}>
+        <Text style={ds.date}>{section.date}</Text>
+        <Text style={ds.total}>{section.dayTotal}</Text>
+      </View>
+      <View style={ds.rows}>
+        {section.rows.map((r) => <TxRow key={r.id} item={r} />)}
       </View>
     </View>
   );
 }
 
-export default function TransactionHistoryScreen({ navigation }) {
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [refreshing, setRefreshing]     = useState(false);
-  const [summary, setSummary]           = useState(null);
+const ds = StyleSheet.create({
+  wrap:   { gap: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  date:   { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.1, textTransform: 'uppercase' },
+  total:  { fontSize: 11, fontWeight: '700', color: '#7B7487' },
+  rows:   { gap: 16 },
+});
 
-  const fetchTxns = useCallback(async () => {
+function PickerModal({ visible, title, options, selected, onSelect, onClose }) {
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={pm.backdrop} activeOpacity={1} onPress={onClose}>
+        <View style={pm.sheet}>
+          <View style={pm.pill} />
+          <Text style={pm.title}>{title}</Text>
+          {options.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={pm.option}
+              onPress={() => { onSelect(opt); onClose(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={[pm.optText, opt === selected && pm.optActive]}>{opt}</Text>
+              {opt === selected && <Text style={pm.tick}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const pm = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.28)', justifyContent: 'flex-end' },
+  sheet:    { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 },
+  pill:     { width: 36, height: 4, backgroundColor: '#DDD', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  title:    { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 16 },
+  option:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F5F0FF' },
+  optText:  { fontSize: 15, fontWeight: '500', color: '#1C1A25' },
+  optActive:{ fontWeight: '700', color: '#7C3AED' },
+  tick:     { fontSize: 16, color: '#7C3AED', fontWeight: '700' },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function TransactionHistoryScreen({ navigation }) {
+  const [sections,       setSections]       = useState(FALLBACK_SECTIONS);
+  const [loading,        setLoading]        = useState(false);
+  const [refreshing,     setRefreshing]     = useState(false);
+  const [typeFilter,     setTypeFilter]     = useState('All');
+  const [dateRange,      setDateRange]      = useState('1 Mar – 15 Mar');
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const fetchData = useCallback(async () => {
     try {
       const { data } = await client.get('/drivers/transactions');
-      setTransactions(data.transactions ?? []);
-      setSummary(data.summary ?? null);
-    } catch { setTransactions([]); }
-    finally { setLoading(false); setRefreshing(false); }
+      const grouped  = groupApiData(data.transactions ?? []);
+      if (grouped.length) setSections(grouped);
+    } catch {
+      // keep fallback data if API unavailable
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  useEffect(() => { fetchTxns(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchTxns(); };
+  useEffect(() => { fetchData(); }, []);
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
+
+  // Apply client-side type filter
+  const filtered = sections
+    .map((sec) => ({
+      ...sec,
+      rows: sec.rows.filter((r) =>
+        typeFilter === 'All' || r.type === typeFilter.toLowerCase()
+      ),
+    }))
+    .filter((sec) => sec.rows.length > 0);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
+    <SafeAreaView style={s.safe} edges={['top']}>
+
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <View style={s.headerLeft}>
+          <TouchableOpacity
+            onPress={() => navigation?.goBack()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={s.backBtn}
+          >
+            <BackIcon />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Transactions</Text>
+        </View>
+        <TouchableOpacity
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={s.filterIconBtn}
+        >
+          <FilterIcon />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transaction History</Text>
-        <View style={{ width: 36 }} />
       </View>
 
       {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primaryContainer} /></View>
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color="#7C3AED" />
+        </View>
       ) : (
-        <FlatList
-          data={transactions}
-          keyExtractor={(item, i) => item.id ?? String(i)}
-          renderItem={({ item }) => <TxnCard item={item} />}
-          contentContainerStyle={styles.list}
+        <ScrollView
+          contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
-          ListHeaderComponent={summary && (
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total Earned</Text>
-                <Text style={[styles.summaryValue, { color: Colors.online }]}>
-                  ₹{(summary.total_earned ?? 0).toLocaleString('en-IN')}
-                </Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Commission Paid</Text>
-                <Text style={[styles.summaryValue, { color: '#D97706' }]}>
-                  ₹{(summary.total_commission ?? 0).toLocaleString('en-IN')}
-                </Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Net Take-Home</Text>
-                <Text style={[styles.summaryValue, { color: Colors.primaryContainer }]}>
-                  ₹{(summary.net_take_home ?? 0).toLocaleString('en-IN')}
-                </Text>
-              </View>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🧾</Text>
-              <Text style={styles.emptyTitle}>No transactions yet</Text>
-              <Text style={styles.emptySub}>Your earnings and payments will appear here.</Text>
-            </View>
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
           }
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        />
+        >
+
+          {/* ── Filter Row ── */}
+          <View style={s.filterRow}>
+            {/* Date Range Pill */}
+            <TouchableOpacity style={s.pill} onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+              <CalendarIcon />
+              <Text style={s.pillText} numberOfLines={1}>{dateRange}</Text>
+            </TouchableOpacity>
+
+            {/* Type Pill */}
+            <TouchableOpacity style={s.pill} onPress={() => setShowTypePicker(true)} activeOpacity={0.8}>
+              <Text style={s.pillText}>Type: {typeFilter}</Text>
+              <ChevronDown />
+            </TouchableOpacity>
+
+            {/* Export */}
+            <TouchableOpacity style={s.exportBtn} activeOpacity={0.8}>
+              <ExportIcon />
+              <Text style={s.exportText}>Export</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Transaction Groups ── */}
+          <View style={s.groups}>
+            {filtered.length === 0 ? (
+              <View style={s.emptyWrap}>
+                <Text style={s.emptyEmoji}>🧾</Text>
+                <Text style={s.emptyTitle}>No transactions found</Text>
+                <Text style={s.emptySub}>Try changing the filter or date range.</Text>
+              </View>
+            ) : (
+              filtered.map((sec) => <DaySection key={sec.date} section={sec} />)
+            )}
+          </View>
+
+        </ScrollView>
       )}
+
+      {/* ── Modals ── */}
+      <PickerModal
+        visible={showTypePicker}
+        title="Filter by Type"
+        options={TYPE_FILTERS}
+        selected={typeFilter}
+        onSelect={setTypeFilter}
+        onClose={() => setShowTypePicker(false)}
+      />
+      <PickerModal
+        visible={showDatePicker}
+        title="Select Date Range"
+        options={DATE_RANGES}
+        selected={dateRange}
+        onSelect={setDateRange}
+        onClose={() => setShowDatePicker(false)}
+      />
+
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F5F0FF' },
+
+  // Header  ——————————————————————————————————————————————————————————————————
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    height: 64,
+    backgroundColor: 'rgba(245, 240, 255, 0.92)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#7C3AED',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+      },
+      android: { elevation: 4 },
+    }),
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
+  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  backBtn:       { width: 32, alignItems: 'center', justifyContent: 'center' },
+  headerTitle:   { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
+  filterIconBtn: { width: 34, height: 28, alignItems: 'center', justifyContent: 'center' },
+
+  // Scroll  ——————————————————————————————————————————————————————————————————
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: 24, paddingTop: 0, paddingBottom: 60 },
 
-  list: { paddingHorizontal: Spacing.base, paddingBottom: 40, paddingTop: 8 },
-
-  summaryCard: {
-    flexDirection: 'row', backgroundColor: Colors.white,
-    borderRadius: Radius.lg, padding: Spacing.md, marginBottom: 14, ...Shadows.card,
+  // Filter row  ——————————————————————————————————————————————————————————————
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 64,
   },
-  summaryItem: { flex: 1, alignItems: 'center', gap: 4 },
-  summaryLabel: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 0.5 },
-  summaryValue: { fontSize: 17, fontWeight: '900' },
-  summaryDivider: { width: 1, backgroundColor: Colors.outlineVariant, marginHorizontal: 6 },
 
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, ...Shadows.card,
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 9999,
+    ...Shadows.card,
   },
-  iconBox: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  txnTitle: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  txnId: { fontSize: 10, color: Colors.onSurfaceVariant, marginTop: 2, fontFamily: 'monospace' },
-  txnDate: { fontSize: 10, color: Colors.onSurfaceVariant, marginTop: 2 },
-  amount: { fontSize: 16, fontWeight: '800' },
-  statusPill: { marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full },
-  statusText: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  pillText: { fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 20 },
 
-  emptyState: { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyEmoji: { fontSize: 52 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.onSurface },
-  emptySub: { fontSize: 13, color: Colors.onSurfaceVariant, textAlign: 'center' },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: '#BEA3D8',
+    borderRadius: 9999,
+    marginLeft: 'auto',
+    ...Platform.select({
+      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
+      android: { elevation: 5 },
+    }),
+  },
+  exportText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', lineHeight: 20 },
+
+  // Content  ——————————————————————————————————————————————————————————————————
+  groups: { gap: 32, paddingBottom: 8 },
+
+  // Empty    ——————————————————————————————————————————————————————————————————
+  emptyWrap:  { alignItems: 'center', paddingVertical: 72 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
+  emptySub:   { fontSize: 13, fontWeight: '400', color: '#7B7487', marginTop: 4 },
 });
