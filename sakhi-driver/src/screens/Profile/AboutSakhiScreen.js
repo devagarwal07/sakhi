@@ -1,0 +1,452 @@
+import React from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, Linking, Alert,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft, ChevronRight, Sparkles } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+// ─── Design tokens ─────────────────────────────────────────────────────────────
+const BG      = '#F6F1FF';
+const WHITE   = '#FFFFFF';
+const PURPLE  = '#BEA3D8';
+const DEEP    = '#7C3AED';
+const DARK    = '#1E1B2E';
+const MUTED   = '#6B7280';
+const GREEN   = '#3A7D44';
+
+const CARD_SHADOW = {
+  shadowColor: '#7C3AED',
+  shadowOffset: { width: 0, height: 16 },
+  shadowOpacity: 0.08,
+  shadowRadius: 32,
+  elevation: 4,
+};
+
+// ─── APP LOGO ──────────────────────────────────────────────────────────────────
+function AppLogo() {
+  return (
+    <View style={logo.shell}>
+      <View style={logo.bg}>
+        <Text style={logo.text}>SAKHI</Text>
+      </View>
+    </View>
+  );
+}
+const logo = StyleSheet.create({
+  shell: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: WHITE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...CARD_SHADOW,
+  },
+  bg: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 11,
+    color: WHITE,
+    letterSpacing: 1.5,
+  },
+});
+
+// ─── MISSION CARD ──────────────────────────────────────────────────────────────
+function MissionCard() {
+  return (
+    <View style={mc.card}>
+      <View style={mc.heading}>
+        <Sparkles size={18} color={PURPLE} strokeWidth={1.8} />
+        <Text style={mc.headingText}>Our Mission</Text>
+      </View>
+      <View style={mc.quoteBox}>
+        <Text style={mc.quote}>
+          "To make every journey safe, dignified, and empowering for women — for riders and drivers alike."
+        </Text>
+      </View>
+    </View>
+  );
+}
+const mc = StyleSheet.create({
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    padding: 20,
+    gap: 16,
+    ...CARD_SHADOW,
+  },
+  heading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headingText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 17,
+    color: DARK,
+    lineHeight: 24,
+  },
+  quoteBox: {
+    backgroundColor: '#F5F0FF',
+    borderRadius: 12,
+    padding: 16,
+  },
+  quote: {
+    fontFamily: 'Inter',
+    fontStyle: 'italic',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#4A4455',
+    textAlign: 'center',
+  },
+});
+
+// ─── FEATURE ROW ───────────────────────────────────────────────────────────────
+const FEATURES = [
+  { emoji: '🛡️', label: 'Verified women-only platform'       },
+  { emoji: '💰', label: 'Transparent commission structure'    },
+  { emoji: '📋', label: 'Subscription ride guarantees'        },
+  { emoji: '🆘', label: '24/7 safety support'                 },
+];
+
+function FeaturesCard() {
+  return (
+    <View>
+      <Text style={feat.sectionLabel}>FOR DRIVERS</Text>
+      <View style={feat.card}>
+        {FEATURES.map((f, i) => (
+          <View key={f.label}>
+            <View style={feat.row}>
+              <View style={feat.iconBox}>
+                <Text style={feat.emoji}>{f.emoji}</Text>
+              </View>
+              <Text style={feat.label}>{f.label}</Text>
+            </View>
+            {i < FEATURES.length - 1 && <View style={feat.divider} />}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+const feat = StyleSheet.create({
+  sectionLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: PURPLE,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    ...CARD_SHADOW,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 16,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emoji: {
+    fontSize: 20,
+  },
+  label: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 15,
+    color: DARK,
+    flex: 1,
+    lineHeight: 22,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(204, 195, 216, 0.2)',
+    marginLeft: 56,
+  },
+});
+
+// ─── SOCIAL LINKS ──────────────────────────────────────────────────────────────
+const SOCIALS = [
+  { icon: 'instagram', url: 'https://instagram.com/' },
+  { icon: 'twitter',   url: 'https://twitter.com/'   },
+  { icon: 'facebook',  url: 'https://facebook.com/'  },
+];
+
+function SocialRow() {
+  const handleSocial = (url) => Linking.openURL(url).catch(() => Alert.alert('Could not open link'));
+  return (
+    <View style={soc.row}>
+      {SOCIALS.map((s) => (
+        <TouchableOpacity
+          key={s.icon}
+          style={soc.btn}
+          onPress={() => handleSocial(s.url)}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons name={s.icon} size={22} color={DEEP} />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+const soc = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  btn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: `rgba(190,163,216,0.4)`,
+    backgroundColor: 'rgba(190,163,216,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+// ─── LEGAL LINKS ───────────────────────────────────────────────────────────────
+const LEGAL = [
+  { label: 'Terms of Service',  url: 'https://sakhi.in/terms'   },
+  { label: 'Privacy Policy',    url: 'https://sakhi.in/privacy' },
+  { label: 'Driver Agreement',  url: 'https://sakhi.in/driver-agreement' },
+  { label: 'Cookie Policy',     url: 'https://sakhi.in/cookies' },
+];
+
+function LegalCard() {
+  const open = (url) => Linking.openURL(url).catch(() => {});
+  return (
+    <View style={leg.card}>
+      {LEGAL.map((l, i) => (
+        <View key={l.label}>
+          <TouchableOpacity style={leg.row} onPress={() => open(l.url)} activeOpacity={0.7}>
+            <Text style={leg.label}>{l.label}</Text>
+            <ChevronRight size={16} color="#CCC3D8" strokeWidth={2} />
+          </TouchableOpacity>
+          {i < LEGAL.length - 1 && <View style={leg.divider} />}
+        </View>
+      ))}
+    </View>
+  );
+}
+const leg = StyleSheet.create({
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    ...CARD_SHADOW,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  label: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 15,
+    color: DARK,
+    lineHeight: 22,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(204, 195, 216, 0.2)',
+  },
+});
+
+// ─── MAIN SCREEN ───────────────────────────────────────────────────────────────
+export default function AboutSakhiScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+
+  const handleRate = () => {
+    Linking.openURL('market://details?id=in.sakhi.driver').catch(() =>
+      Linking.openURL('https://play.google.com/store/')
+    );
+  };
+
+  return (
+    <View style={s.root}>
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={s.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>About Sakhi</Text>
+      </View>
+
+      {/* ── Scrollable Content ──────────────────────────────────────────────── */}
+      <ScrollView
+        contentContainerStyle={[
+          s.scroll,
+          { paddingBottom: Math.max(insets.bottom, 24) + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* App identity */}
+        <View style={s.identity}>
+          <AppLogo />
+          <Text style={s.appName}>Sakhi</Text>
+          <Text style={s.appVersion}>Driver App v1.0.2</Text>
+        </View>
+
+        {/* Mission */}
+        <MissionCard />
+
+        {/* Features */}
+        <FeaturesCard />
+
+        {/* Social media */}
+        <SocialRow />
+
+        {/* Legal links */}
+        <LegalCard />
+
+        {/* Rate CTA */}
+        <TouchableOpacity style={s.rateBtn} onPress={handleRate} activeOpacity={0.8}>
+          <Text style={s.rateBtnText}>Rate Sakhi on Play Store ⭐</Text>
+        </TouchableOpacity>
+
+        {/* Build info */}
+        <Text style={s.buildInfo}>BUILD v1.0.2 (240501) • Sakhi Driver India</Text>
+
+      </ScrollView>
+    </View>
+  );
+}
+
+// ─── Styles ────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    gap: 16,
+    backgroundColor: 'rgba(245, 240, 255, 0.88)',
+    ...Platform.select({
+      ios: {
+        shadowColor: DEEP,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 24,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 18,
+    lineHeight: 28,
+    letterSpacing: -0.45,
+    color: DARK,
+  },
+
+  // Scroll
+  scroll: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    gap: 24,
+  },
+
+  // App identity block
+  identity: {
+    alignItems: 'center',
+    gap: 12,
+    paddingBottom: 8,
+  },
+  appName: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 28,
+    lineHeight: 36,
+    color: DARK,
+    letterSpacing: -0.7,
+    marginTop: 4,
+  },
+  appVersion: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 20,
+    color: MUTED,
+  },
+
+  // Rate button
+  rateBtn: {
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: `rgba(190,163,216,0.5)`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(190,163,216,0.06)',
+  },
+  rateBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 15,
+    color: PURPLE,
+    lineHeight: 22,
+  },
+
+  // Build info
+  buildInfo: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 11,
+    color: MUTED,
+    textAlign: 'center',
+    opacity: 0.7,
+    letterSpacing: 0.2,
+    paddingBottom: 8,
+  },
+});
