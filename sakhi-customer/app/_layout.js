@@ -30,30 +30,15 @@ export default function RootLayout() {
                                     name="ride-estimate"
                                     options={{ animation: 'slide_from_bottom' }}
                                 />
-                                <Stack.Screen
-                                    name="searching"
-                                    options={{ animation: 'fade' }}
-                                />
+
                                 <Stack.Screen
                                     name="active-ride"
                                     options={{ animation: 'slide_from_right' }}
                                 />
-                                <Stack.Screen
-                                    name="fare-summary"
-                                    options={{ animation: 'slide_from_bottom' }}
-                                />
-                                <Stack.Screen
-                                    name="sos"
-                                    options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }}
-                                />
-                                <Stack.Screen
-                                    name="profile-setup"
-                                    options={{ animation: 'slide_from_right' }}
-                                />
-                                <Stack.Screen
-                                    name="profile-details"
-                                    options={{ animation: 'slide_from_right' }}
-                                />
+
+
+
+
                                 <Stack.Screen
                                     name="notifications"
                                     options={{ animation: 'slide_from_right' }}
@@ -66,10 +51,7 @@ export default function RootLayout() {
                                     name="complaint"
                                     options={{ animation: 'slide_from_right' }}
                                 />
-                                <Stack.Screen
-                                    name="subscription-setup"
-                                    options={{ animation: 'slide_from_bottom' }}
-                                />
+
                                 <Stack.Screen
                                     name="subscription-payment"
                                     options={{ animation: 'slide_from_right' }}
@@ -111,8 +93,7 @@ export default function RootLayout() {
                                 <Stack.Screen name="sos-active" options={{ animation: 'none', presentation: 'fullScreenModal' }} />
                                 <Stack.Screen name="ride-finding" options={{ animation: 'fade' }} />
                                 <Stack.Screen name="driver-arrived" options={{ animation: 'slide_from_bottom' }} />
-                                <Stack.Screen name="active-trip" options={{ animation: 'slide_from_right' }} />
-                                <Stack.Screen name="trip-status" options={{ animation: 'slide_from_bottom' }} />
+
                                 <Stack.Screen name="ride-summary" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="subscription-plans" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="subscription-ride" options={{ animation: 'slide_from_right' }} />
