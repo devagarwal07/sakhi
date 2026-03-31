@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, Image,
+  TextInput, Alert, ActivityIndicator, Image, Modal,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import {
+  ArrowLeft, ChevronDown, ChevronUp, History,
+  ImageIcon, X,
+} from 'lucide-react-native';
 import client from '../../api/client';
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const PURPLE   = '#BEA3D8';
+const VIOLET   = '#630ED4';
+const DEEP     = '#7C3AED';
+const AB_FE    = '#AB8FFE';
+const DARK     = '#1E1B2E';
+const MUTED    = '#6B7280';
+const WHITE    = '#FFFFFF';
+const BG       = '#F5F0FF';
+const FIELD_BG = '#F6F1FF';
+const CARD_SH  = {
+  shadowColor: '#7C3AED',
+  shadowOffset: { width: 0, height: 16 },
+  shadowOpacity: 0.08,
+  shadowRadius: 32,
+  elevation: 4,
+};
+const SUBMIT_SH = {
+  shadowColor: '#7C3AED',
+  shadowOffset: { width: 0, height: 16 },
+  shadowOpacity: 0.15,
+  shadowRadius: 32,
+  elevation: 6,
+};
+
+// ─── Issue types ──────────────────────────────────────────────────────────────
 const ISSUE_TYPES = [
   'Ride Issue',
   'Commission Dispute',
@@ -18,17 +48,78 @@ const ISSUE_TYPES = [
   'Other',
 ];
 
-export default function RaiseAComplaintScreen({ navigation }) {
-  const [issueType, setIssueType]   = useState(ISSUE_TYPES[0]);
-  const [showPicker, setShowPicker] = useState(false);
-  const [description, setDescription] = useState('');
-  const [screenshot, setScreenshot] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+// Seed rides for "Select recent ride" picker
+const MOCK_RIDES = [
+  { id: 'r1', label: 'Today, 10:22 AM — Koramangala → HSR' },
+  { id: 'r2', label: 'Yesterday, 6:45 PM — Indiranagar → MG Road' },
+  { id: 'r3', label: '30 Mar, 9:10 AM — Bannerghatta → BTM' },
+];
+
+const MAX_DESC = 500;
+
+// ─── Inline dropdown ──────────────────────────────────────────────────────────
+function InlineDropdown({ open, items, selected, onSelect }) {
+  if (!open) return null;
+  return (
+    <View style={dd.wrap}>
+      {items.map((item, i) => (
+        <TouchableOpacity
+          key={item}
+          style={[dd.row, i > 0 && dd.border, item === selected && dd.rowActive]}
+          onPress={() => onSelect(item)}
+          activeOpacity={0.75}
+        >
+          <Text style={[dd.text, item === selected && dd.textActive]}>{item}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+const dd = StyleSheet.create({
+  wrap:       { backgroundColor: WHITE, borderRadius: 12, marginTop: 4, overflow: 'hidden', ...CARD_SH },
+  row:        { paddingVertical: 14, paddingHorizontal: 16 },
+  border:     { borderTopWidth: 1, borderTopColor: BG },
+  rowActive:  { backgroundColor: 'rgba(99,14,212,0.06)' },
+  text:       { fontSize: 15, color: DARK, fontWeight: '400' },
+  textActive: { color: VIOLET, fontWeight: '700' },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function RaiseAComplaintScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
+
+  // Pre-select from Help & Support quick-help cards
+  const initCategory = route?.params?.category;
+  const initIssue = initCategory === 'commission'  ? 'Commission Dispute'
+                  : initCategory === 'docs'         ? 'Document Problem'
+                  : initCategory === 'safety'       ? 'Safety Concern'
+                  : 'Ride Issue';
+
+  const [issueType,     setIssueType]     = useState(initIssue);
+  const [showIssue,     setShowIssue]     = useState(false);
+  const [relatedRide,   setRelatedRide]   = useState(null);
+  const [showRides,     setShowRides]     = useState(false);
+  const [description,   setDescription]  = useState('');
+  const [screenshot,    setScreenshot]    = useState(null);
+  const [submitting,    setSubmitting]    = useState(false);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const toggleIssue = useCallback(() => {
+    setShowIssue(v => !v);
+    setShowRides(false);
+  }, []);
+
+  const toggleRides = useCallback(() => {
+    setShowRides(v => !v);
+    setShowIssue(false);
+  }, []);
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow photo access to attach a screenshot.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false, quality: 0.85,
@@ -46,6 +137,7 @@ export default function RaiseAComplaintScreen({ navigation }) {
       const form = new FormData();
       form.append('issue_type', issueType);
       form.append('description', description.trim());
+      if (relatedRide) form.append('related_ride_id', relatedRide.id);
       if (screenshot) {
         form.append('screenshot', {
           uri: screenshot.uri, type: 'image/jpeg', name: 'screenshot.jpg',
@@ -54,8 +146,8 @@ export default function RaiseAComplaintScreen({ navigation }) {
       await client.post('/drivers/complaints', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      Alert.alert('Submitted! ✅', 'We\'ll get back to you within 24 hours.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      Alert.alert('Submitted ✅', "We'll get back to you within 24 hours.", [
+        { text: 'OK', onPress: () => navigation?.goBack() },
       ]);
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message ?? 'Could not submit. Please try again.');
@@ -64,165 +156,262 @@ export default function RaiseAComplaintScreen({ navigation }) {
     }
   };
 
+  const HEADER_H = Math.max(insets.top, 0) + 72;
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Support</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={s.root}>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
-        <Text style={styles.pageTitle}>Raise a Complaint</Text>
-        <Text style={styles.pageSubtitle}>We'll get back to you within 24 hours.</Text>
+        {/* ── Decorative blobs ── */}
+        <View style={s.blobTR} />
+        <View style={s.blobBL} />
 
-        <View style={styles.card}>
-          {/* Issue Type */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>ISSUE TYPE</Text>
-            <TouchableOpacity
-              style={styles.selector}
-              onPress={() => setShowPicker(!showPicker)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.selectorText}>{issueType}</Text>
-              <Text style={styles.selectorChevron}>{showPicker ? '▲' : '▼'}</Text>
-            </TouchableOpacity>
-            {showPicker && (
-              <View style={styles.dropdown}>
-                {ISSUE_TYPES.map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[styles.dropdownItem, type === issueType && styles.dropdownItemActive]}
-                    onPress={() => { setIssueType(type); setShowPicker(false); }}
-                  >
-                    <Text style={[styles.dropdownItemText, type === issueType && styles.dropdownItemTextActive]}>
-                      {type}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Description */}
-          <View style={styles.fieldGroup}>
-            <View style={styles.fieldLabelRow}>
-              <Text style={styles.fieldLabel}>DESCRIBE YOUR ISSUE</Text>
-              <Text style={styles.charCount}>{description.length}/500</Text>
-            </View>
-            <TextInput
-              style={styles.textarea}
-              value={description}
-              onChangeText={(t) => setDescription(t.slice(0, 500))}
-              placeholder="Tell us what happened…"
-              placeholderTextColor={Colors.onSurfaceVariant}
-              multiline numberOfLines={5}
-              textAlignVertical="top"
-            />
-          </View>
-
-          {/* Screenshot upload */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>ATTACH SCREENSHOT (OPTIONAL)</Text>
-            {screenshot ? (
-              <View style={styles.previewWrap}>
-                <Image source={{ uri: screenshot.uri }} style={styles.preview} resizeMode="cover" />
-                <TouchableOpacity style={styles.removeImg} onPress={() => setScreenshot(null)}>
-                  <Text style={styles.removeImgText}>✕ Remove</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage} activeOpacity={0.7}>
-                <Text style={styles.uploadIcon}>🖼</Text>
-                <Text style={styles.uploadLabel}>Upload Image</Text>
-                <Text style={styles.uploadSub}>Tap to browse</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+        {/* ── Frosted Header ── */}
+        <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
+          <TouchableOpacity
+            onPress={() => navigation?.goBack()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Support</Text>
         </View>
 
-        {/* Submit */}
-        <TouchableOpacity
-          style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting}
-          activeOpacity={0.85}
+        {/* ── Scrollable body ── */}
+        <ScrollView
+          contentContainerStyle={[s.scroll, { paddingTop: HEADER_H + 24 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {submitting
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.submitBtnText}>Submit Complaint</Text>
-          }
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* ── Page heading ── */}
+          <View style={s.heading}>
+            <Text style={s.pageTitle}>Raise a Complaint</Text>
+            <Text style={s.pageSub}>{"We'll get back to you within 24 hours."}</Text>
+          </View>
+
+          {/* ════════════════════ Form Card ════════════════════ */}
+          <View style={s.card}>
+
+            {/* ── Issue Type ── */}
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>ISSUE TYPE</Text>
+              <TouchableOpacity
+                style={s.selector}
+                onPress={toggleIssue}
+                activeOpacity={0.8}
+              >
+                <Text style={s.selectorText}>{issueType}</Text>
+                {showIssue
+                  ? <ChevronUp   size={12} color={PURPLE} strokeWidth={2.5} />
+                  : <ChevronDown size={12} color={PURPLE} strokeWidth={2.5} />
+                }
+              </TouchableOpacity>
+              <InlineDropdown
+                open={showIssue}
+                items={ISSUE_TYPES}
+                selected={issueType}
+                onSelect={(t) => { setIssueType(t); setShowIssue(false); }}
+              />
+            </View>
+
+            {/* ── Related Ride ── */}
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>RELATED RIDE (OPTIONAL)</Text>
+              <TouchableOpacity
+                style={s.ridePill}
+                onPress={toggleRides}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.ridePillText, relatedRide && s.ridePillSelected]}>
+                  {relatedRide ? relatedRide.label : 'Select recent ride'}
+                </Text>
+                <History size={18} color={PURPLE} strokeWidth={2} />
+              </TouchableOpacity>
+              <InlineDropdown
+                open={showRides}
+                items={MOCK_RIDES.map(r => r.label)}
+                selected={relatedRide?.label ?? null}
+                onSelect={(label) => {
+                  const ride = MOCK_RIDES.find(r => r.label === label);
+                  setRelatedRide(ride ?? null);
+                  setShowRides(false);
+                }}
+              />
+            </View>
+
+            {/* ── Description ── */}
+            <View style={s.fieldGroup}>
+              <View style={s.fieldLabelRow}>
+                <Text style={s.fieldLabel}>DESCRIBE YOUR ISSUE</Text>
+                <Text style={s.charCount}>{description.length}/{MAX_DESC}</Text>
+              </View>
+              <TextInput
+                style={s.textarea}
+                value={description}
+                onChangeText={(t) => setDescription(t.slice(0, MAX_DESC))}
+                placeholder="Tell us what happened…"
+                placeholderTextColor={MUTED}
+                multiline
+                numberOfLines={5}
+                textAlignVertical="top"
+              />
+            </View>
+
+            {/* ── Screenshot ── */}
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>ATTACH SCREENSHOT (OPTIONAL)</Text>
+
+              {screenshot ? (
+                <View style={s.previewCard}>
+                  <Image source={{ uri: screenshot.uri }} style={s.previewImg} resizeMode="cover" />
+                  <TouchableOpacity style={s.removeBtn} onPress={() => setScreenshot(null)}>
+                    <X size={12} color={WHITE} strokeWidth={3} />
+                    <Text style={s.removeText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={s.uploadBox} onPress={handlePickImage} activeOpacity={0.8}>
+                  {/* Image icon */}
+                  <View style={s.uploadIconWrap}>
+                    <ImageIcon size={27} color="#A78BFA" strokeWidth={1.8} />
+                  </View>
+                  {/* Upload button */}
+                  <View style={s.uploadBtn}>
+                    <Text style={s.uploadBtnText}>Upload Image</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+
+          </View>
+          {/* ══════════════════ End Card ══════════════════════ */}
+
+          {/* ── Submit ── */}
+          <TouchableOpacity
+            style={[s.submitBtn, submitting && s.submitDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+            activeOpacity={0.88}
+          >
+            {submitting
+              ? <ActivityIndicator color={WHITE} />
+              : <Text style={s.submitText}>Submit Complaint</Text>
+            }
+          </TouchableOpacity>
+
+          {/* Bottom safe area padding */}
+          <View style={{ height: Math.max(insets.bottom, 24) }} />
+
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BG, overflow: 'hidden' },
+
+  // ── Decorative blobs ─────────────────────────────────────────────────────
+  blobTR: {
+    position: 'absolute', width: 256, height: 256,
+    top: -128, right: -128, borderRadius: 128,
+    backgroundColor: 'rgba(210,187,255,0.2)',
+  },
+  blobBL: {
+    position: 'absolute', width: 256, height: 256,
+    bottom: -128, left: -128, borderRadius: 128,
+    backgroundColor: 'rgba(206,189,255,0.2)',
+  },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    paddingHorizontal: 24, paddingBottom: 16, height: 'auto',
+    backgroundColor: 'rgba(245, 240, 255, 0.88)',
+    ...Platform.select({
+      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12 },
+      android: { elevation: 4 },
+    }),
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: DARK, letterSpacing: -0.45, lineHeight: 28 },
 
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 40, gap: 16 },
-  pageTitle: { fontSize: 28, fontWeight: '900', color: Colors.onSurface, letterSpacing: -0.5 },
-  pageSubtitle: { fontSize: 14, color: Colors.onSurfaceVariant, marginTop: -8 },
+  // ── Scroll ────────────────────────────────────────────────────────────────
+  scroll: { paddingHorizontal: 24, gap: 32, paddingBottom: 8 },
 
-  card: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: 18, ...Shadows.card },
-  fieldGroup: { gap: 8 },
-  fieldLabel: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5 },
+  // ── Heading ───────────────────────────────────────────────────────────────
+  heading:  { gap: 8 },
+  pageTitle:{ fontSize: 32, fontWeight: '800', color: DARK, letterSpacing: -0.8, lineHeight: 40 },
+  pageSub:  { fontSize: 16, fontWeight: '400', color: MUTED, lineHeight: 24 },
+
+  // ── Form Card ─────────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: WHITE, borderRadius: 16,
+    paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32,
+    gap: 24, ...CARD_SH,
+  },
+
+  // ── Field group ───────────────────────────────────────────────────────────
+  fieldGroup:    { gap: 8 },
+  fieldLabel:    { fontSize: 12, fontWeight: '500', color: MUTED, letterSpacing: 0.6, textTransform: 'uppercase', lineHeight: 18 },
   fieldLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  charCount: { fontSize: 11, color: Colors.onSurfaceVariant },
+  charCount:     { fontSize: 11.2, fontWeight: '400', color: MUTED, lineHeight: 17 },
 
+  // ── Issue type selector ───────────────────────────────────────────────────
   selector: {
-    height: 52, backgroundColor: Colors.surfaceLow, borderRadius: Radius.lg,
-    paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    height: 56, backgroundColor: FIELD_BG, borderRadius: 12,
+    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  selectorText: { fontSize: 15, color: Colors.onSurface, fontWeight: '500' },
-  selectorChevron: { fontSize: 12, color: Colors.primaryContainer },
-  dropdown: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.outlineVariant, overflow: 'hidden', ...Shadows.card,
-  },
-  dropdownItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.surfaceLow },
-  dropdownItemActive: { backgroundColor: `${Colors.primaryContainer}10` },
-  dropdownItemText: { fontSize: 14, color: Colors.onSurface },
-  dropdownItemTextActive: { color: Colors.primaryContainer, fontWeight: '700' },
+  selectorText: { fontSize: 16, fontWeight: '400', color: DARK, lineHeight: 24 },
 
+  // ── Related ride pill ─────────────────────────────────────────────────────
+  ridePill: {
+    height: 56, backgroundColor: FIELD_BG, borderRadius: 9999,
+    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  ridePillText:     { fontSize: 16, fontWeight: '400', color: DARK, lineHeight: 24, flex: 1 },
+  ridePillSelected: { fontWeight: '600' },
+
+  // ── Textarea ──────────────────────────────────────────────────────────────
   textarea: {
-    backgroundColor: Colors.surfaceLow, borderRadius: Radius.lg,
-    padding: 14, fontSize: 15, color: Colors.onSurface, minHeight: 100,
+    backgroundColor: FIELD_BG, borderRadius: 12, padding: 16,
+    fontSize: 16, color: DARK, minHeight: 128,
+    textAlignVertical: 'top', lineHeight: 24,
   },
 
+  // ── Upload box ────────────────────────────────────────────────────────────
   uploadBox: {
-    borderWidth: 2, borderColor: Colors.outlineVariant, borderStyle: 'dashed',
-    borderRadius: Radius.lg, padding: 24, alignItems: 'center', gap: 6,
-    backgroundColor: `${Colors.surfaceLow}80`,
+    borderWidth: 2, borderColor: 'rgba(204,195,216,0.4)', borderStyle: 'dashed',
+    borderRadius: 12, paddingVertical: 24,
+    backgroundColor: 'rgba(246,241,255,0.5)',
+    alignItems: 'center', gap: 0,
   },
-  uploadIcon: { fontSize: 36 },
-  uploadLabel: { fontSize: 13, fontWeight: '700', color: Colors.primaryContainer },
-  uploadSub: { fontSize: 11, color: Colors.onSurfaceVariant },
-  previewWrap: { borderRadius: Radius.lg, overflow: 'hidden' },
-  preview: { width: '100%', height: 160, borderRadius: Radius.lg },
-  removeImg: {
-    backgroundColor: Colors.white, paddingVertical: 8, alignItems: 'center',
-    borderTopWidth: 1, borderColor: Colors.outlineVariant,
+  uploadIconWrap: { marginBottom: 12 },
+  uploadBtn:      {
+    backgroundColor: AB_FE, borderRadius: 9999,
+    paddingVertical: 8, paddingHorizontal: 24,
   },
-  removeImgText: { fontSize: 12, fontWeight: '700', color: '#DC2626' },
+  uploadBtnText: { fontSize: 16, fontWeight: '600', color: '#3F1E8C', lineHeight: 24 },
 
-  submitBtn: {
-    height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.lavender,
+  // ── Preview ───────────────────────────────────────────────────────────────
+  previewCard:  { borderRadius: 12, overflow: 'hidden' },
+  previewImg:   { width: '100%', height: 160 },
+  removeBtn:    {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: '#DC2626', paddingVertical: 10,
   },
-  submitBtnDisabled: { backgroundColor: Colors.outlineVariant },
-  submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: '800' },
+  removeText:   { fontSize: 12, fontWeight: '700', color: WHITE },
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  submitBtn: {
+    height: 56, borderRadius: 12, backgroundColor: PURPLE,
+    alignItems: 'center', justifyContent: 'center', ...SUBMIT_SH,
+  },
+  submitDisabled: { opacity: 0.6 },
+  submitText:     { fontSize: 18, fontWeight: '700', color: WHITE, lineHeight: 28 },
 });
