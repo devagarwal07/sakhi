@@ -21,8 +21,8 @@ const MENU_ITEMS = [
 ];
 
 const SECONDARY_MENU_ITEMS = [
-  { id: 'Support',              label: 'Help & Support',     iconName: 'help-circle-outline',  iconType: 'materialCommunity' },
-  { id: 'About',                label: 'About Sakhi',        iconName: 'information-outline',  iconType: 'materialCommunity' },
+  { id: 'HelpSupport',          label: 'Help & Support',     iconName: 'help-circle-outline',  iconType: 'materialCommunity' },
+  { id: 'AboutSakhi',           label: 'About Sakhi',        iconName: 'information-outline',  iconType: 'materialCommunity' },
 ];
 
 export default function DriverSidebarMenu({ navigation, onClose, activeRoute = 'Home' }) {
@@ -177,7 +177,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <TouchableOpacity 
             style={styles.logoutBtn}
-            onPress={() => handleNav('SakhiLogoutConfirmationSheet')}
+            onPress={() => handleNav('LogoutConfirmation')}
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="logout" size={20} color="#BA1A1A" />

@@ -37,7 +37,9 @@ import PaymentPlansScreen            from './src/screens/Home/PaymentPlansScreen
 import EnRouteToPickupScreen from './src/screens/Ride/EnRouteToPickupScreen';
 import ArrivedWaitingScreen  from './src/screens/Ride/ArrivedWaitingScreen';
 import TripInProgressScreen  from './src/screens/Ride/TripInProgressScreen';
-import PaymentDetailsScreen  from './src/screens/Ride/PaymentDetailsScreen';
+import PaymentDetailsScreen          from './src/screens/Ride/PaymentDetailsScreen';
+import CompletedRideDetailsScreen    from './src/screens/Ride/CompletedRideDetailsScreen';
+import RideHistoryScreen             from './src/screens/Ride/RideHistoryScreen';
 
 // Earnings screens
 import MyEarningsDashboardScreen      from './src/screens/Earnings/MyEarningsDashboardScreen';
@@ -58,7 +60,11 @@ import RaiseAComplaintScreen           from './src/screens/Profile/RaiseAComplai
 import NotificationSettingsScreen      from './src/screens/Profile/NotificationSettingsScreen';
 import NotificationsScreen             from './src/screens/Profile/NotificationsScreen';
 import TransactionHistoryScreen        from './src/screens/Profile/TransactionHistoryScreen';
+import PaymentDetailsScreen            from './src/screens/Profile/PaymentDetailsScreen';
 import SakhiLogoutConfirmationSheet    from './src/screens/Profile/SakhiLogoutConfirmationSheet';
+import ChangePhoneOtpScreen            from './src/screens/Profile/ChangePhoneOtpScreen';
+import HelpSupportScreen               from './src/screens/Profile/HelpSupportScreen';
+import AboutSakhiScreen               from './src/screens/Profile/AboutSakhiScreen';
 
 // ── Navigators ────────────────────────────────────────────────────────────────
 const Stack = createNativeStackNavigator();
@@ -99,7 +105,9 @@ function MainStack() {
         <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} />
         <Stack.Screen name="ArrivedWaiting"  component={ArrivedWaitingScreen}  />
         <Stack.Screen name="TripInProgress"  component={TripInProgressScreen}  />
-        <Stack.Screen name="PaymentDetails"  component={PaymentDetailsScreen}  />
+        <Stack.Screen name="PaymentDetails"         component={PaymentDetailsScreen}       />
+        <Stack.Screen name="CompletedRideDetails"   component={CompletedRideDetailsScreen}  />
+        <Stack.Screen name="RideHistory"            component={RideHistoryScreen}           />
         {/* Earnings */}
         <Stack.Screen name="MyEarnings"                component={MyEarningsDashboardScreen}      />
         <Stack.Screen name="DailyCommissionPayment"    component={DailyCommissionPaymentScreen}   />
@@ -117,6 +125,10 @@ function MainStack() {
         <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}  />
         <Stack.Screen name="Notifications"          component={NotificationsScreen}         />
         <Stack.Screen name="TransactionHistory"     component={TransactionHistoryScreen}    />
+        <Stack.Screen name="PaymentDetails"         component={PaymentDetailsScreen}        />
+        <Stack.Screen name="ChangePhoneOtp"         component={ChangePhoneOtpScreen}        />
+        <Stack.Screen name="HelpSupport"            component={HelpSupportScreen}           />
+        <Stack.Screen name="AboutSakhi"             component={AboutSakhiScreen}            />
         <Stack.Screen name="LogoutConfirmation"     component={SakhiLogoutConfirmationSheet} options={{ presentation: 'transparentModal', animation: 'fade' }} />
       </Stack.Navigator>
       {/* Incoming ride overlay — rendered on top of whatever screen is active */}
