@@ -1,360 +1,554 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Linking, Image,
+  Alert, ActivityIndicator, Linking, Image, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import {
+  ArrowLeft, MoreVertical, Phone, Calendar, Sun, Moon, MapPin,
+} from 'lucide-react-native';
 
-const STATUS_COLORS = {
-  upcoming:  { bg: `${Colors.primaryContainer}18`, text: Colors.primaryContainer },
-  completed: { bg: '#D1FAE5',                       text: '#059669'               },
-  scheduled: { bg: Colors.surfaceContainer,          text: Colors.onSurfaceVariant },
+// ─── Brand tokens (shorthand) ─────────────────────────────────────────────────
+const PURPLE  = '#BEA3D8';
+const DEEP    = '#7C3AED';
+const DARK    = '#1C1A25';
+const MUTED   = '#6B7280';
+const BG      = '#F5F0FF';
+const WHITE   = '#FFFFFF';
+const GREEN   = '#10B981';
+const AMBER   = '#F59E0B';
+const CARD_SH = { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
+
+// ─── Seed / fallback data ─────────────────────────────────────────────────────
+const FALLBACK = {
+  rider_name:      'Priya S.',
+  rider_photo:     null,           // use initials avatar
+  rider_rating:    4.7,
+  rider_phone:     null,
+  pickup_address:  'Greenwood Heights, Block C, 402',
+  dropoff_address: 'Tech Park South Wing, Gate 2',
+  plan_label:      '30 Rides',
+  frequency:       'Mon–Fri',
+  morning_time:    '8:30 AM',
+  evening_time:    '6:00 PM',
+  start_date:      '1 Mar 2026',
+  end_date:        '30 Mar 2026',
+  completed_rides: 18,
+  total_rides:     30,
+  upcoming_dates: [
+    { month: 'MAR', day: '12', day_name: 'Tomorrow',  times: '8:30 AM & 6:00 PM', status: 'upcoming' },
+    { month: 'MAR', day: '13', day_name: 'Friday',    times: '8:30 AM & 6:00 PM', status: 'upcoming' },
+    { month: 'MAR', day: '16', day_name: 'Monday',    times: '8:30 AM & 6:00 PM', status: 'upcoming' },
+  ],
 };
 
-export default function SubscriptionAssignmentDetailsScreen({ navigation, route }) {
-  const { subscription: sub } = route.params ?? {};
-  const [initiating, setInitiating] = useState(false);
+// ─── Initials avatar ──────────────────────────────────────────────────────────
+function InitialsAvatar({ name, size = 52 }) {
+  const initials = (name ?? 'R')
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
+  return (
+    <View style={[av.bg, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[av.text, { fontSize: size * 0.38 }]}>{initials}</Text>
+    </View>
+  );
+}
+const av = StyleSheet.create({
+  bg:   { backgroundColor: '#D4A373', alignItems: 'center', justifyContent: 'center' },
+  text: { color: WHITE, fontWeight: '700' },
+});
 
-  // ── Initiate scheduled pickup ─────────────────────────────────────────────
-  const handleInitiatePickup = async () => {
-    Alert.alert(
-      'Start Pickup?',
-      'Confirm you are heading to the rider\'s pickup location.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Start',
-          onPress: async () => {
-            try {
-              setInitiating(true);
-              await client.post(`/rides/subscription/${sub?.id}/initiate`);
-              navigation.navigate('EnRouteToPickup', {
-                ride: {
-                  ride_id:          sub?.id,
-                  rider_name:       sub?.rider_name,
-                  rider_photo:      sub?.rider_photo,
-                  rider_rating:     sub?.rider_rating,
-                  rider_phone:      sub?.rider_phone,
-                  pickup_address:   sub?.pickup_address,
-                  dropoff_address:  sub?.dropoff_address,
-                  pickup_coords:    sub?.pickup_coords,
-                  dropoff_coords:   sub?.dropoff_coords,
-                  distance_to_pickup_km: sub?.distance_km,
-                  eta_to_pickup_min:     sub?.eta_min,
-                },
-              });
-            } catch (err) {
-              Alert.alert('Error', err.response?.data?.message ?? 'Could not initiate pickup.');
-              setInitiating(false);
-            }
-          },
-        },
-      ],
-    );
-  };
+// ─── Map preview (decorative) ─────────────────────────────────────────────────
+function MapPreview() {
+  return (
+    <View style={map.border}>
+      {/* grey road grid */}
+      <View style={map.bg}>
+        {/* horizontal roads */}
+        {[0.22, 0.42, 0.65, 0.82].map((t, i) => (
+          <View key={`h${i}`} style={[map.road, { top: `${t * 100}%`, left: 0, right: 0, height: 2 }]} />
+        ))}
+        {/* vertical roads */}
+        {[0.18, 0.38, 0.60, 0.80].map((l, i) => (
+          <View key={`v${i}`} style={[map.road, { left: `${l * 100}%`, top: 0, bottom: 0, width: 2 }]} />
+        ))}
+        {/* Route dashed arc (simplified as a horizontal dashed line) */}
+        <View style={map.routeTrack}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <View key={i} style={[map.dash, { opacity: i % 3 === 0 ? 0 : 1 }]} />
+          ))}
+        </View>
+        {/* Start dot */}
+        <View style={[map.dot, map.startDot]} />
+        {/* End dot */}
+        <View style={[map.dot, map.endDot]} />
+        {/* Tint overlay */}
+        <View style={map.tint} />
+      </View>
+    </View>
+  );
+}
+const map = StyleSheet.create({
+  border:     { borderWidth: 1, borderColor: '#E5E0EF', borderRadius: 12, overflow: 'hidden', height: 178 },
+  bg:         { flex: 1, backgroundColor: '#F5F0FF', position: 'relative' },
+  road:       { position: 'absolute', backgroundColor: '#E5E0EF' },
+  routeTrack: { position: 'absolute', left: '11%', right: '11%', top: '46%', flexDirection: 'row', gap: 3 },
+  dash:       { flex: 1, height: 3, backgroundColor: PURPLE, borderRadius: 2 },
+  dot:        { position: 'absolute', width: 12, height: 12, borderRadius: 6 },
+  startDot:   { backgroundColor: GREEN, left: '11%', top: '40%', borderWidth: 2, borderColor: WHITE },
+  endDot:     { backgroundColor: PURPLE, right: '11%', top: '40%', borderWidth: 2, borderColor: WHITE },
+  tint:       { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(190, 163, 216, 0.08)' },
+});
 
-  // ── Call rider ────────────────────────────────────────────────────────────
-  const handleCall = () => {
-    if (sub?.rider_phone) Linking.openURL(`tel:${sub.rider_phone}`);
-    else Alert.alert('No number', 'Rider number unavailable.');
-  };
+// ─── Info row (label + value pair) ───────────────────────────────────────────
+function InfoCell({ label, value, primary = false, alignEnd = false }) {
+  return (
+    <View style={{ flex: 1, alignItems: alignEnd ? 'flex-end' : 'flex-start' }}>
+      <Text style={inf.label}>{label}</Text>
+      <Text style={[inf.value, primary && inf.valuePrimary]}>{value}</Text>
+    </View>
+  );
+}
+const inf = StyleSheet.create({
+  label:        { fontSize: 10, fontWeight: '600', color: DARK, letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
+  value:        { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24, marginTop: 4 },
+  valuePrimary: { fontSize: 20, fontWeight: '800', color: PURPLE, lineHeight: 28 },
+});
 
-  const completedRides = sub?.completed_rides ?? 18;
-  const totalRides     = sub?.total_rides     ?? 30;
-  const progress       = totalRides > 0 ? completedRides / totalRides : 0;
-  const sc = STATUS_COLORS[sub?.status ?? 'upcoming'];
-
-  // ── Upcoming rides list ────────────────────────────────────────────────────
-  const upcomingRides = sub?.upcoming_dates ?? [];
+// ─── Upcoming ride card ───────────────────────────────────────────────────────
+function RideCard({ item, isFirst }) {
+  const badgeBg   = isFirst ? BG        : '#EBE6F5';
+  const badgeText = isFirst ? PURPLE    : DARK;
+  const boxBg     = isFirst ? 'rgba(190,163,216,0.1)' : '#EBE6F5';
+  const monthClr  = isFirst ? PURPLE    : DARK;
+  const dayClr    = isFirst ? PURPLE    : DARK;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription Details</Text>
-        <View style={{ width: 36 }} />
+    <View style={[rc.card, !isFirst && rc.cardFaded]}>
+      {/* Date box */}
+      <View style={[rc.dateBox, { backgroundColor: boxBg }]}>
+        <Text style={[rc.month, { color: monthClr }]}>{item.month}</Text>
+        <Text style={[rc.day,   { color: dayClr   }]}>{item.day}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Rider Card */}
-        <View style={styles.riderCard}>
-          <View style={styles.riderLeft}>
-            <View style={styles.avatarWrap}>
-              {sub?.rider_photo
-                ? <Image source={{ uri: sub.rider_photo }} style={styles.avatar} />
-                : <Text style={styles.avatarFallback}>👤</Text>
+      {/* Info */}
+      <View style={rc.info}>
+        <Text style={rc.dayName}>{item.day_name}</Text>
+        <Text style={rc.times}>{item.times}</Text>
+      </View>
+
+      {/* Badge */}
+      <View style={[rc.badge, { backgroundColor: badgeBg }]}>
+        <Text style={[rc.badgeText, { color: badgeText }]}>
+          {isFirst ? 'UPCOMING' : 'UPCOMING'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+const rc = StyleSheet.create({
+  card:      { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: WHITE, borderRadius: 12, gap: 16, ...CARD_SH },
+  cardFaded: { opacity: 0.8 },
+  dateBox:   { width: 48, height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  month:     { fontSize: 10, fontWeight: '700', lineHeight: 15, textTransform: 'uppercase' },
+  day:       { fontSize: 18, fontWeight: '800', lineHeight: 28 },
+  info:      { flex: 1 },
+  dayName:   { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24 },
+  times:     { fontSize: 12, fontWeight: '500', color: DARK, lineHeight: 16, marginTop: 2 },
+  badge:     { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9999 },
+  badgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', lineHeight: 15 },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function SubscriptionAssignmentDetailsScreen({ navigation, route }) {
+  const sub = { ...FALLBACK, ...(route?.params?.subscription ?? {}) };
+  const [initiating, setInitiating] = useState(false);
+
+  const completedRides = sub.completed_rides ?? 18;
+  const totalRides     = sub.total_rides     ?? 30;
+  const remaining      = totalRides - completedRides;
+  const progressPct    = totalRides > 0 ? completedRides / totalRides : 0;
+
+  // ── Contact / Initiate ────────────────────────────────────────────────────
+  const handleCall = () => {
+    if (sub.rider_phone) Linking.openURL(`tel:${sub.rider_phone}`);
+    else Alert.alert('Masked Call', 'Calls are routed securely through Sakhi.');
+  };
+
+  const handleInitiatePickup = () => {
+    Alert.alert('Start Pickup?', 'Confirm you are heading to the pickup location.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Start',
+        onPress: async () => {
+          try {
+            setInitiating(true);
+            await client.post(`/rides/subscription/${sub?.id}/initiate`);
+            navigation.navigate('EnRouteToPickup', { ride: { ride_id: sub?.id, ...sub } });
+          } catch (err) {
+            Alert.alert('Error', err.response?.data?.message ?? 'Could not initiate pickup.');
+            setInitiating(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={s.root}>
+
+      {/* ── Floating Header ── */}
+      <View style={s.header}>
+        <View style={s.headerLeft}>
+          <TouchableOpacity
+            onPress={() => navigation?.goBack()}
+            style={s.headerBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Subscription Details</Text>
+        </View>
+        <TouchableOpacity style={s.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <MoreVertical size={16} color={MUTED} strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Scrollable content (padded so header/footer don't overlap) ── */}
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ════════════════════════════════════════
+            1. Rider Card
+        ════════════════════════════════════════ */}
+        <View style={s.card}>
+          <View style={s.riderRow}>
+            {/* Avatar */}
+            <View style={s.avatarRing}>
+              {sub.rider_photo
+                ? <Image source={{ uri: sub.rider_photo }} style={s.avatar} />
+                : <InitialsAvatar name={sub.rider_name} size={52} />
               }
             </View>
-            <View>
-              <Text style={styles.riderName}>{sub?.rider_name ?? 'Rider'}</Text>
-              <View style={styles.riderMeta}>
-                <Text style={styles.riderRating}>⭐ {sub?.rider_rating?.toFixed(1) ?? '4.5'}</Text>
-                <View style={styles.regularBadge}>
-                  <Text style={styles.regularBadgeText}>Regular Rider</Text>
+            {/* Name + meta */}
+            <View style={s.riderInfo}>
+              <Text style={s.riderName}>{sub.rider_name}</Text>
+              <View style={s.riderMeta}>
+                {/* Rating */}
+                <View style={s.ratingRow}>
+                  <Text style={s.ratingText}>{Number(sub.rider_rating ?? 4.7).toFixed(1)}</Text>
+                  <View style={s.starDot} />
+                </View>
+                {/* Badge */}
+                <View style={s.regularBadge}>
+                  <Text style={s.regularBadgeText}>REGULAR RIDER</Text>
                 </View>
               </View>
             </View>
           </View>
-          <TouchableOpacity style={styles.chatBtn} onPress={handleCall} activeOpacity={0.8}>
-            <Text style={{ fontSize: 20 }}>📞</Text>
+          {/* Chat / message button */}
+          <TouchableOpacity style={s.msgBtn} activeOpacity={0.8}>
+            <View style={s.msgIcon} />
           </TouchableOpacity>
         </View>
 
-        {/* Route Card */}
-        <View style={styles.routeCard}>
-          <View style={styles.routeRow}>
-            <View style={styles.greenDot} />
+        {/* ════════════════════════════════════════
+            2. Route Card
+        ════════════════════════════════════════ */}
+        <View style={[s.card, s.routeCard]}>
+          {/* Pickup + Drop with dashed connector */}
+          <View style={s.routeSection}>
+            {/* Dashed vertical line */}
+            <View style={s.routeLine} />
+
+            {/* Pickup row */}
+            <View style={s.routeStop}>
+              {/* Green dot marker */}
+              <View style={s.dotWrapGreen}>
+                <View style={s.dotInner} />
+              </View>
+              <View style={s.routeStopText}>
+                <Text style={s.stopLabel}>PICKUP</Text>
+                <Text style={s.stopAddress}>{sub.pickup_address}</Text>
+              </View>
+            </View>
+
+            {/* Drop row */}
+            <View style={s.routeStop}>
+              {/* Pin marker */}
+              <View style={s.dotWrapPin}>
+                <MapPin size={12} color={WHITE} strokeWidth={2.5} fill={WHITE} />
+              </View>
+              <View style={s.routeStopText}>
+                <Text style={s.stopLabel}>DROP</Text>
+                <Text style={s.stopAddress}>{sub.dropoff_address}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Map Preview */}
+          <MapPreview />
+        </View>
+
+        {/* ════════════════════════════════════════
+            3. Subscription Info Card
+        ════════════════════════════════════════ */}
+        <View style={s.card}>
+          {/* Row 1: Plan + Frequency */}
+          <View style={s.infoGrid}>
+            <InfoCell label="Subscription Plan" value={sub.plan_label ?? `${totalRides} Rides`} primary />
+            <InfoCell label="Frequency" value={sub.frequency ?? 'Mon–Fri'} alignEnd />
+          </View>
+
+          {/* Divider */}
+          <View style={s.hLine} />
+
+          {/* Row 2: Morning + Return */}
+          <View style={s.infoGrid}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.routeLabel}>PICKUP</Text>
-              <Text style={styles.routeAddress}>{sub?.pickup_address ?? '—'}</Text>
+              <Text style={inf.label}>Morning Pickup</Text>
+              <View style={s.timeRow}>
+                <Sun size={16} color={PURPLE} strokeWidth={1.8} />
+                <Text style={inf.value}>{sub.morning_time}</Text>
+              </View>
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={inf.label}>Return Pickup</Text>
+              <View style={s.timeRow}>
+                <Moon size={16} color={PURPLE} strokeWidth={1.8} />
+                <Text style={inf.value}>{sub.evening_time}</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.routeDash} />
-          <View style={styles.routeRow}>
-            <Text style={{ fontSize: 18, color: Colors.primaryContainer }}>📍</Text>
+
+          {/* Divider */}
+          <View style={s.hLine} />
+
+          {/* Row 3: Start + End Dates */}
+          <View style={s.infoGrid}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.routeLabel}>DROP</Text>
-              <Text style={styles.routeAddress}>{sub?.dropoff_address ?? '—'}</Text>
+              <Text style={inf.label}>Start Date</Text>
+              <Text style={[inf.value, { fontWeight: '600' }]}>{sub.start_date}</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={inf.label}>End Date</Text>
+              <Text style={[inf.value, { fontWeight: '600' }]}>{sub.end_date}</Text>
             </View>
           </View>
         </View>
 
-        {/* Plan info */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <View>
-              <Text style={styles.infoLabel}>Subscription Plan</Text>
-              <Text style={styles.infoPrimary}>{totalRides} Rides</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.infoLabel}>Frequency</Text>
-              <Text style={styles.infoValue}>{sub?.frequency ?? 'Mon–Fri'}</Text>
-            </View>
+        {/* ════════════════════════════════════════
+            4. Progress Card
+        ════════════════════════════════════════ */}
+        <View style={s.card}>
+          {/* Header row */}
+          <View style={s.progressHeader}>
+            <Text style={s.progressTitle}>Rides Completed</Text>
+            <Text style={s.progressCount}>{completedRides} / {totalRides}</Text>
           </View>
 
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <View>
-              <Text style={styles.infoLabel}>Morning Pickup</Text>
-              <Text style={styles.infoValue}>☀️  {sub?.morning_time ?? '8:30 AM'}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.infoLabel}>Return Pickup</Text>
-              <Text style={styles.infoValue}>🌙  {sub?.evening_time ?? '6:00 PM'}</Text>
-            </View>
+          {/* Track + gradient fill */}
+          <View style={s.progressTrack}>
+            <View style={[s.progressFill, { width: `${Math.round(progressPct * 100)}%` }]} />
           </View>
 
-          <View style={styles.divider} />
+          {/* Sub-label */}
+          <Text style={s.progressSub}>{remaining} rides remaining in this cycle</Text>
+        </View>
 
-          <View style={styles.infoRow}>
-            <View>
-              <Text style={styles.infoLabel}>Start Date</Text>
-              <Text style={styles.infoValue}>{sub?.start_date ?? '—'}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.infoLabel}>End Date</Text>
-              <Text style={styles.infoValue}>{sub?.end_date ?? '—'}</Text>
-            </View>
+        {/* ════════════════════════════════════════
+            5. Upcoming Rides
+        ════════════════════════════════════════ */}
+        <View style={s.upcomingSection}>
+          {/* Heading row */}
+          <View style={s.upcomingHeading}>
+            <Calendar size={18} color={PURPLE} strokeWidth={2} />
+            <Text style={s.upcomingTitle}>Upcoming Rides</Text>
+          </View>
+
+          {/* Cards */}
+          <View style={s.upcomingList}>
+            {(sub.upcoming_dates ?? []).map((item, i) => (
+              <RideCard key={`${item.month}${item.day}`} item={item} isFirst={i === 0} />
+            ))}
           </View>
         </View>
 
-        {/* Progress */}
-        <View style={styles.progressCard}>
-          <View style={styles.progressTop}>
-            <Text style={styles.progressTitle}>Rides Completed</Text>
-            <Text style={styles.progressCount}>{completedRides} / {totalRides}</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { flex: progress }]} />
-          </View>
-          <Text style={styles.progressSub}>{totalRides - completedRides} rides remaining in this cycle</Text>
-        </View>
-
-        {/* Upcoming rides */}
-        {upcomingRides.length > 0 && (
-          <View>
-            <Text style={styles.sectionTitle}>📅  Upcoming Rides</Text>
-            <View style={styles.upcomingList}>
-              {upcomingRides.map((r, i) => (
-                <View key={i} style={[styles.upcomingCard, i === 0 && styles.upcomingCardFirst]}>
-                  <View style={[styles.dateBox, i === 0 && styles.dateBoxFirst]}>
-                    <Text style={[styles.dateMon, i === 0 && styles.dateMonFirst]}>{r.month}</Text>
-                    <Text style={[styles.dateDay, i === 0 && styles.dateDayFirst]}>{r.day}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.upcomingDayName}>{r.day_name ?? 'Day'}</Text>
-                    <Text style={styles.upcomingTimes}>{r.times ?? '—'}</Text>
-                  </View>
-                  <View style={[styles.upBadge, i === 0 && styles.upBadgeFirst]}>
-                    <Text style={[styles.upBadgeText, i === 0 && styles.upBadgeTextFirst]}>
-                      {i === 0 ? 'Next' : 'Upcoming'}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={{ height: 80 }} />
+        {/* Spacer for footer */}
+        <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Bottom CTA */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.callBtn} onPress={handleCall} activeOpacity={0.8}>
-          <Text style={styles.callBtnText}>📞  Contact Rider</Text>
+      {/* ════════════════════════════════════════
+          Bottom Action Area
+      ════════════════════════════════════════ */}
+      <View style={s.footer}>
+        {/* Contact Rider */}
+        <TouchableOpacity style={s.callBtn} onPress={handleCall} activeOpacity={0.8}>
+          <Phone size={18} color={DEEP} strokeWidth={2.5} />
+          <Text style={s.callBtnText}>Contact Rider</Text>
         </TouchableOpacity>
-        <Text style={styles.callNote}>Calls are masked for privacy</Text>
-
-        {sub?.status === 'upcoming' && (
-          <TouchableOpacity
-            style={[styles.startBtn, initiating && styles.startBtnDisabled]}
-            onPress={handleInitiatePickup}
-            disabled={initiating}
-            activeOpacity={0.85}
-          >
-            {initiating
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={styles.startBtnText}>🛺  Start Pickup</Text>
-            }
-          </TouchableOpacity>
-        )}
+        {/* Privacy note */}
+        <Text style={s.callNote}>CALLS ARE MASKED FOR PRIVACY</Text>
       </View>
-    </SafeAreaView>
+
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BG },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, height: 60,
+    backgroundColor: 'rgba(245, 240, 255, 0.88)',
+    ...Platform.select({
+      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
+      android: { elevation: 6 },
+    }),
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
+  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  headerBtn:   { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45, lineHeight: 28 },
 
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, gap: 14 },
+  // ── Scroll ────────────────────────────────────────────────────────────────
+  scroll: { paddingTop: 80, paddingHorizontal: 24, paddingBottom: 155, gap: 24 },
 
-  // Rider
-  riderCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, ...Shadows.card,
-  },
-  riderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatarWrap: {
-    width: 56, height: 56, borderRadius: 28, overflow: 'hidden',
-    backgroundColor: Colors.surfaceLow, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: `${Colors.primaryContainer}25`,
-  },
-  avatar: { width: '100%', height: '100%' },
-  avatarFallback: { fontSize: 30 },
-  riderName: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-  riderMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  riderRating: { fontSize: 13, color: Colors.onSurfaceVariant },
-  regularBadge: {
-    backgroundColor: Colors.surfaceLow, paddingHorizontal: 8, paddingVertical: 2,
-    borderRadius: Radius.full,
-  },
-  regularBadgeText: { fontSize: 9, fontWeight: '700', color: Colors.primaryContainer, letterSpacing: 0.5 },
-  chatBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: `${Colors.primaryContainer}10`,
-    alignItems: 'center', justifyContent: 'center',
+  // ── Shared Card ───────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 16,
+    padding: 24,
+    gap: 16,
+    ...CARD_SH,
   },
 
-  // Route
-  routeCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, gap: 4, ...Shadows.card,
-  },
-  routeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  greenDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.online, marginTop: 4 },
-  routeDash: { width: 2, height: 20, backgroundColor: Colors.outlineVariant, marginLeft: 6, marginVertical: 2 },
-  routeLabel: { fontSize: 9, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5 },
-  routeAddress: { fontSize: 14, fontWeight: '700', color: Colors.onSurface, marginTop: 2 },
+  // ── Rider Card ────────────────────────────────────────────────────────────
+  riderRow:     { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 16 },
+  avatarRing:   { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(190,163,216,0.2)', overflow: 'hidden' },
+  avatar:       { width: '100%', height: '100%' },
+  riderInfo:    { flex: 1, gap: 1.5 },
+  riderName:    { fontSize: 18, fontWeight: '700', color: DARK, lineHeight: 28 },
+  riderMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ratingRow:    { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  ratingText:   { fontSize: 14, fontWeight: '500', color: AMBER, lineHeight: 20 },
+  starDot:      { width: 11, height: 11, borderRadius: 5.5, backgroundColor: AMBER },
+  regularBadge: { backgroundColor: BG, borderRadius: 9999, paddingHorizontal: 8, paddingVertical: 2 },
+  regularBadgeText: { fontSize: 10, fontWeight: '700', color: PURPLE, letterSpacing: 0.5, textTransform: 'uppercase', lineHeight: 15 },
+  msgBtn:       { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(171,143,254,0.1)', alignItems: 'center', justifyContent: 'center' },
+  msgIcon:      { width: 20, height: 20, backgroundColor: PURPLE, borderRadius: 3 },
 
-  // Info
-  infoCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, gap: 12, ...Shadows.card,
-  },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  infoLabel: { fontSize: 9, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5, marginBottom: 4 },
-  infoPrimary: { fontSize: 20, fontWeight: '900', color: Colors.primaryContainer },
-  infoValue: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  divider: { height: 1, backgroundColor: Colors.surfaceContainer },
+  // ── Route Card ────────────────────────────────────────────────────────────
+  routeCard: { paddingTop: 48, gap: 16 },
 
-  // Progress
-  progressCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, gap: 8, ...Shadows.card,
+  routeSection: {
+    paddingLeft: 32,
+    gap: 24,
+    position: 'relative',
   },
-  progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressTitle: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  progressCount: { fontSize: 18, fontWeight: '900', color: Colors.primaryContainer },
-  progressTrack: {
-    height: 12, backgroundColor: Colors.surfaceContainer,
-    borderRadius: 6, overflow: 'hidden', flexDirection: 'row',
-  },
-  progressFill: { height: '100%', backgroundColor: Colors.primaryContainer, borderRadius: 6 },
-  progressSub: { fontSize: 11, color: Colors.onSurfaceVariant, textAlign: 'center' },
 
-  // Upcoming
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.onSurface, marginBottom: 4 },
-  upcomingList: { gap: 8 },
-  upcomingCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.white, borderRadius: Radius.lg,
-    padding: Spacing.md, ...Shadows.card, opacity: 0.85,
+  // Vertical dashed connector
+  routeLine: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    bottom: 12,
+    width: 2,
+    // Dashed effect via alternating segments
+    backgroundColor: PURPLE,
+    opacity: 0.5,
   },
-  upcomingCardFirst: { opacity: 1 },
-  dateBox: {
-    width: 48, height: 48, borderRadius: 10,
-    backgroundColor: Colors.surfaceContainer,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  dateBoxFirst: { backgroundColor: `${Colors.primaryContainer}18` },
-  dateMon: { fontSize: 9, fontWeight: '700', color: Colors.onSurfaceVariant, textTransform: 'uppercase' },
-  dateMonFirst: { color: Colors.primaryContainer },
-  dateDay: { fontSize: 18, fontWeight: '900', color: Colors.onSurfaceVariant },
-  dateDayFirst: { color: Colors.primaryContainer },
-  upcomingDayName: { fontSize: 14, fontWeight: '700', color: Colors.onSurface },
-  upcomingTimes: { fontSize: 11, color: Colors.onSurfaceVariant, marginTop: 2 },
-  upBadge: {
-    marginLeft: 'auto', backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full,
-  },
-  upBadgeFirst: { backgroundColor: `${Colors.primaryContainer}18` },
-  upBadgeText: { fontSize: 9, fontWeight: '800', color: Colors.onSurfaceVariant, letterSpacing: 1, textTransform: 'uppercase' },
-  upBadgeTextFirst: { color: Colors.primaryContainer },
 
-  // Footer
+  routeStop:     { flexDirection: 'row', alignItems: 'flex-start', gap: 0, position: 'relative' },
+  routeStopText: { flex: 1, paddingLeft: 0 },
+  stopLabel:     { fontSize: 10, fontWeight: '600', color: DARK, letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
+  stopAddress:   { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 20, marginTop: 4 },
+
+  // Green pickup dot
+  dotWrapGreen: {
+    position: 'absolute',
+    left: -28,
+    top: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: WHITE },
+
+  // Purple pin for drop
+  dotWrapPin: {
+    position: 'absolute',
+    left: -28,
+    top: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: PURPLE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Info Card ─────────────────────────────────────────────────────────────
+  infoGrid: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  hLine:    { height: 1, backgroundColor: 'rgba(229,224,239,0.3)', marginHorizontal: -24 },
+  timeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+
+  // ── Progress Card ─────────────────────────────────────────────────────────
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  progressTitle:  { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24 },
+  progressCount:  { fontSize: 18, fontWeight: '800', color: PURPLE, lineHeight: 28 },
+  progressTrack:  { height: 12, backgroundColor: '#EBE6F5', borderRadius: 9999, overflow: 'hidden' },
+  progressFill: {
+    height: '100%',
+    borderRadius: 9999,
+    // Gradient approximated as a solid — using LinearGradient would need expo-linear-gradient
+    backgroundColor: PURPLE,
+    // Fallback; ideally replaced with expo-linear-gradient from #9267CC to #BEA3D8
+  },
+  progressSub: { fontSize: 11, fontWeight: '500', color: DARK, lineHeight: 16, textAlign: 'center' },
+
+  // ── Upcoming Section ──────────────────────────────────────────────────────
+  upcomingSection: { gap: 16 },
+  upcomingHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  upcomingTitle:   { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24 },
+  upcomingList:    { gap: 12 },
+
+  // ── Footer ────────────────────────────────────────────────────────────────
   footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.white,
-    paddingHorizontal: Spacing.base, paddingBottom: 32, paddingTop: 12,
-    gap: 8, ...Shadows.lavender,
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40,
+    gap: 12,
+    ...Platform.select({
+      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.06, shadowRadius: 24 },
+      android: { elevation: 12 },
+    }),
   },
+
   callBtn: {
-    height: 52, borderRadius: Radius.lg,
-    borderWidth: 2, borderColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center',
+    height: 60,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: DEEP,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  callBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primaryContainer },
-  callNote: { fontSize: 10, color: Colors.onSurfaceVariant, textAlign: 'center', letterSpacing: 0.5 },
-  startBtn: {
-    height: 56, borderRadius: Radius.lg,
-    backgroundColor: Colors.primaryContainer,
-    alignItems: 'center', justifyContent: 'center', ...Shadows.lavender,
-  },
-  startBtnDisabled: { backgroundColor: Colors.outlineVariant },
-  startBtnText: { color: Colors.white, fontSize: 16, fontWeight: '800' },
+  callBtnText: { fontSize: 16, fontWeight: '700', color: DEEP, lineHeight: 24 },
+  callNote:    { fontSize: 10, fontWeight: '500', color: DARK, textAlign: 'center', letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
 });
