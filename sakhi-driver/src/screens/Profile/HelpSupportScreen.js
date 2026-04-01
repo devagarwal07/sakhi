@@ -1,15 +1,16 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Platform, Linking, Alert, Animated,
+  TextInput, Platform, Linking, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft, Search, Car, BadgeDollarSign, FileWarning,
   ShieldAlert, MessageSquare, Phone, Mail,
   ChevronRight, ChevronUp, ChevronDown,
-  Home, TrendingUp, Wallet, User,
 } from 'lucide-react-native';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -179,26 +180,7 @@ const cr = StyleSheet.create({
   sub:        { fontSize: 12, fontWeight: '500', lineHeight: 16 },
 });
 
-// ─── Bottom nav tab ───────────────────────────────────────────────────────────
-function NavTab({ icon, label, active, onPress }) {
-  const color = active ? DEEP : MUTED;
-  return (
-    <TouchableOpacity
-      style={[nav.tab, active && nav.tabActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      {React.cloneElement(icon, { color, size: 18, strokeWidth: 2 })}
-      <Text style={[nav.label, active && nav.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const nav = StyleSheet.create({
-  tab:         { alignItems: 'center', justifyContent: 'center', gap: 4, flex: 1, paddingVertical: 4 },
-  tabActive:   { backgroundColor: BG, borderRadius: 12, paddingHorizontal: 12 },
-  label:       { fontSize: 10, fontWeight: '500', color: MUTED, letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
-  labelActive: { color: DEEP },
-});
+
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HelpSupportScreen({ navigation }) {
@@ -223,30 +205,15 @@ export default function HelpSupportScreen({ navigation }) {
       )
     : FAQS;
 
-  const HEADER_H = Math.max(insets.top, 0) + 64;
-  const NAV_H    = 77 + Math.max(insets.bottom, 0);
-
   return (
     <View style={s.root}>
-
-      {/* ── Header ── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <View style={s.headerLeft}>
-          <TouchableOpacity
-            onPress={() => navigation?.goBack()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Help &amp; Support</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Help & Support" onBack={() => navigation?.goBack()} />
 
       {/* ── Scroll body ── */}
       <ScrollView
         contentContainerStyle={[s.scroll, {
-          paddingTop: HEADER_H + 24,
-          paddingBottom: NAV_H + 24,
+          paddingTop: 16,
+          paddingBottom: 24,
         }]}
         showsVerticalScrollIndicator={false}
       >
@@ -324,14 +291,7 @@ export default function HelpSupportScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* ── Bottom Nav ── */}
-      <View style={[s.bottomNav, { paddingBottom: Math.max(insets.bottom, 8), height: NAV_H }]}>
-        <NavTab icon={<Home />}       label="HOME"     active={false} onPress={() => navigation?.navigate('DriverHome')} />
-        <NavTab icon={<TrendingUp />} label="EARNINGS" active={false} onPress={() => navigation?.navigate('MyEarnings')} />
-        <NavTab icon={<Wallet />}     label="WALLET"   active={true}  onPress={() => {}} />
-        <NavTab icon={<User />}       label="ACCOUNT"  active={false} onPress={() => navigation?.navigate('MyProfile')} />
-      </View>
-
+      <BottomNavBar navigation={navigation} activeTab="account" />
     </View>
   );
 }
@@ -340,24 +300,10 @@ export default function HelpSupportScreen({ navigation }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingBottom: 14,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 4 },
-    }),
-  },
-  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: HEADER, letterSpacing: -0.5, lineHeight: 28 },
-
-  // ── Scroll ────────────────────────────────────────────────────────────────
+  // ── Scroll ──────────────────────────────────────────────────────────────────
   scroll: { paddingHorizontal: 24, gap: 32 },
 
-  // ── Search ────────────────────────────────────────────────────────────────
+  // ── Search ──────────────────────────────────────────────────────────────────
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: WHITE, borderRadius: 12,
@@ -386,17 +332,4 @@ const s = StyleSheet.create({
 
   // ── No results ────────────────────────────────────────────────────────────
   noResults: { padding: 24, textAlign: 'center', color: MUTED, fontSize: 14 },
-
-  // ── Bottom Nav ────────────────────────────────────────────────────────────
-  bottomNav: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 8, paddingTop: 8,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: -16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 12 },
-    }),
-  },
 });

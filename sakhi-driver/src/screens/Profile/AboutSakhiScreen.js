@@ -1,11 +1,12 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, Linking, Alert,
+  Linking, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, ChevronRight, Sparkles } from 'lucide-react-native';
+import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const BG      = '#F6F1FF';
@@ -298,22 +299,13 @@ export default function AboutSakhiScreen({ navigation }) {
     <View style={s.root}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={s.backBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>About Sakhi</Text>
-      </View>
+      <ScreenHeader title="About Sakhi" onBack={() => navigation.goBack()} />
 
       {/* ── Scrollable Content ──────────────────────────────────────────────── */}
       <ScrollView
         contentContainerStyle={[
           s.scroll,
-          { paddingBottom: Math.max(insets.bottom, 24) + 24 },
+          { paddingTop: 16, paddingBottom: Math.max(insets.bottom, 24) + 24 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -357,43 +349,9 @@ const s = StyleSheet.create({
     backgroundColor: BG,
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    gap: 16,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: {
-        shadowColor: DEEP,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.06,
-        shadowRadius: 24,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 18,
-    lineHeight: 28,
-    letterSpacing: -0.45,
-    color: DARK,
-  },
-
   // Scroll
   scroll: {
     paddingHorizontal: 24,
-    paddingTop: 32,
     gap: 24,
   },
 
