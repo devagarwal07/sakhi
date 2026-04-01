@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 import SakhiModal from '../../src/components/SakhiModal';
 
 export default function SubscriptionsDashboard() {
     const router = useRouter();
+    const { showBack } = useLocalSearchParams();
     const { ride } = useRide();
     const sub = ride?.subscription || {};
     const [isPaused, setIsPaused] = useState(false);
@@ -92,9 +93,11 @@ export default function SubscriptionsDashboard() {
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
                 <View style={styles.headerLeft}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.backIcon}>←</Text>
-                    </TouchableOpacity>
+                    {(router.canGoBack() || showBack) && (
+                        <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                            <Text style={styles.backIcon}>←</Text>
+                        </TouchableOpacity>
+                    )}
                     <Text style={styles.title}>My Subscription</Text>
                 </View>
                 <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/subscription-plans')}>

@@ -136,7 +136,7 @@ export default function SidebarScreen() {
                 <ScrollView contentContainerStyle={styles.menuContainer} showsVerticalScrollIndicator={false}>
                     <MenuItem iconSource={require("../assets/Home-filled.png")} label="Home" active={true} onPress={() => router.replace("/(tabs)/")} />
                     <MenuItem iconSource={require("../assets/Auto-icon.png")} label="My Rides" onPress={() => router.replace("/(tabs)/ride-history")} />
-                    <MenuItem iconSource={require("../assets/Subscriptions-Icon.png")} label="My Subscriptions" onPress={() => router.replace("/(tabs)/subscriptions")} />
+                    <MenuItem iconSource={require("../assets/Subscriptions-Icon.png")} label="My Subscriptions" onPress={() => router.replace("/(tabs)/subscriptions?showBack=true")} />
                     <MenuItem iconSource={require("../assets/PaymentMethods-Icon.png")} label="Payment Methods" onPress={() => router.replace("/payment")} />
                     <MenuItem iconSource={require("../assets/SavedPlaces-Icon.png")} label="Saved Places" onPress={() => router.replace("/saved-places")} />
                     <MenuItem iconSource={require("../assets/EmergencyContacts-Slider-Icon.png")} label="Emergency Contacts" onPress={() => router.replace("/emergency-contacts")} />
