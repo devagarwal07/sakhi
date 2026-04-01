@@ -105,7 +105,7 @@ export default function LocationSearchScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Plan Your Ride</Text>
@@ -236,21 +236,40 @@ export default function LocationSearchScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     container: {
         flex: 1,
         backgroundColor: '#F5F0FF',
     },
 
     // Header
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 52 : 16,
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        gap: 16,
-        backgroundColor: '#F5F0FF',
-    },
+    
     backBtn: {
         width: 19,
         height: 19,
@@ -262,13 +281,7 @@ const styles = StyleSheet.create({
         color: '#BEA3D8',
         fontWeight: '600',
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#1C1A25',
-        letterSpacing: -0.45,
-        lineHeight: 28,
-    },
+    
 
     scrollContent: {
         paddingBottom: 140,

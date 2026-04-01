@@ -106,7 +106,7 @@ export default function EditProfileScreen() {
             icon: '✅',
             title: 'Profile Updated!',
             message: 'Your profile changes have been saved successfully.',
-            buttons: [{ text: 'Done', onPress: () => { setModal(null); router.back(); } }]
+            buttons: [{ text: 'Done', onPress: () => { setModal(null); if (router.canGoBack()) router.back(); else router.replace("/"); } }]
         });
     };
 
@@ -119,7 +119,7 @@ export default function EditProfileScreen() {
                 {/* ── Header ── */}
                 <View style={styles.header}>
                     <View style={styles.headerLeftWrap}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                             <Text style={styles.headerIcon}>←</Text>
                         </TouchableOpacity>
                     </View>
@@ -345,20 +345,43 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     keyboardView: { flex: 1 },
 
     // ── Header ──
-    header: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 24, paddingVertical: 16,
-        backgroundColor: 'rgba(245, 240, 255, 0.95)', zIndex: 10,
-    },
+    
     headerLeftWrap: { width: 60, alignItems: 'flex-start' },
     headerRightWrap: { width: 60, alignItems: 'flex-end' },
-    iconBtn: { width: 32, height: 32, justifyContent: 'center' },
-    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
-    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45, textAlign: 'center' },
+    
+    
+    
     saveTopBtn: { paddingVertical: 4 },
     saveTopText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8' },
 
