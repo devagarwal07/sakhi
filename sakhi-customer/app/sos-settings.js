@@ -25,7 +25,12 @@ export default function SOSSettingsScreen() {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={[styles.headerTitle, { marginLeft: 0 }]}>Safety & SOS</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Safety & SOS</Text>
+                    </View>
                 </View>
 
                 {/* Main Scroll Content */}
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
     header: { 
         flexDirection: 'row', 
         alignItems: 'center', 
-        paddingHorizontal: 20, 
+        paddingHorizontal: 24, 
         height: 64,
         backgroundColor: '#F5F0FF', 
         zIndex: 10
@@ -171,7 +176,6 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#1E1B2E', 
         letterSpacing: -0.5,
-        marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
