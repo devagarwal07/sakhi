@@ -14,7 +14,7 @@ export default function KYCIntroScreen() {
 
             {/* Header — Top Navigation */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.headerRight}>
@@ -82,6 +82,33 @@ export default function KYCIntroScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     container: {
         flex: 1,
         backgroundColor: '#F6F1FF',
@@ -99,16 +126,7 @@ const styles = StyleSheet.create({
     },
 
     // Header — glassmorphic
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'ios' ? 52 : 16,
-        paddingBottom: 16,
-        height: Platform.OS === 'ios' ? 92 : 72,
-        backgroundColor: 'rgba(245, 240, 255, 0.8)',
-    },
+    
     backButton: {
         width: 40,
         height: 40,
@@ -130,13 +148,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#C0A6D6',
     },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1E1B2E',
-        letterSpacing: -0.32,
-        lineHeight: 24,
-    },
+    
 
     // Main content
     main: {

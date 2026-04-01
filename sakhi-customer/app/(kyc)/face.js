@@ -120,7 +120,7 @@ export default function FaceVerificationScreen() {
 
             {/* Top Navigation */}
             <View style={styles.topNav}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </Pressable>
                 <Text style={styles.navTitle}>Identity Verification</Text>

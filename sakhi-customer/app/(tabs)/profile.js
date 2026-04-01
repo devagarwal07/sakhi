@@ -37,7 +37,7 @@ export default function ProfileScreen() {
                 
                 {/* Header App Bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Settings</Text>
@@ -117,7 +117,7 @@ export default function ProfileScreen() {
                             <SettingRow icon="🔔" label="Notifications" onPress={() => router.push('/notifications')} />
                             <SettingRow icon="❓" label="Help & Support" onPress={() => router.push('/complaint')} />
                             <SettingRow icon="ℹ️" label="About Sakhi" onPress={() => router.push('/about')} />
-                            <SettingRow icon="🛡️" label="Terms & Privacy" onPress={() => router.push('/about')} isLast />
+                            <SettingRow icon="🛡️" label="Terms & Privacy" onPress={() => router.push('/terms')} isLast />
                         </View>
                     </View>
 
