@@ -129,7 +129,7 @@ export default function RideHistoryScreen() {
                 
                 {/* Fixed App Bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn} activeOpacity={0.7}>
+                    <TouchableOpacity onPress={() => router.push('/profile')} style={styles.backBtn} activeOpacity={0.7}>
                         <Text style={styles.backArrow}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Ride History</Text>
