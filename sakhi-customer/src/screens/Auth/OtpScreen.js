@@ -119,7 +119,7 @@ export default function OtpScreen() {
 
             {/* Header — glassmorphic */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
+                <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Sakhi</Text>
@@ -136,7 +136,7 @@ export default function OtpScreen() {
                         <View style={styles.phoneRow}>
                             <Text style={styles.phoneText}>{displayPhone}</Text>
                             <Text style={styles.phoneDot}> · </Text>
-                            <Pressable onPress={() => router.back()}>
+                            <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                                 <Text style={styles.editLink}>Edit</Text>
                             </Pressable>
                         </View>

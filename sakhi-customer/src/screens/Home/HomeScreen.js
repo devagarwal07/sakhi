@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Alert, Platform, Animated,
+    Dimensions, Alert, Animated, PanResponder, Platform
 } from 'react-native';
-// import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { ScrollView as BottomSheetScrollView } from 'react-native';
-const BottomSheet = ({ children }) => <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%', backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 16 }}>{children}</View>;
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
@@ -24,8 +21,48 @@ export default function HomeScreen() {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [savedPlaces, setSavedPlaces] = useState([]);
     const [activeTab, setActiveTab] = useState('book');
+    const [isExpanded, setIsExpanded] = useState(false);
     const mapRef = useRef(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    // Custom Bottom Sheet Animation
+    const SCREEN_HEIGHT = Dimensions.get('window').height;
+    const SNAP_BOTTOM = SCREEN_HEIGHT * 0.58; // 42% height exposed (100 - 58)
+    const SNAP_TOP = SCREEN_HEIGHT * 0.15;    // 85% height exposed (100 - 15)
+    
+    const sheetAnim = useRef(new Animated.Value(SNAP_BOTTOM)).current;
+    
+    const panResponder = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Only handle vertical drags
+                return Math.abs(gestureState.dy) > 10;
+            },
+            onPanResponderGrant: () => {
+                sheetAnim.setOffset(sheetAnim._value);
+                sheetAnim.setValue(0);
+            },
+            onPanResponderMove: Animated.event([null, { dy: sheetAnim }], { useNativeDriver: false }),
+            onPanResponderRelease: (_, gestureState) => {
+                sheetAnim.flattenOffset();
+                const isDraggingDown = gestureState.vy > 0.5 || gestureState.dy > 50;
+                const isDraggingUp = gestureState.vy < -0.5 || gestureState.dy < -50;
+                
+                let target = sheetAnim._value;
+                if (isDraggingDown) target = SNAP_BOTTOM;
+                else if (isDraggingUp) target = SNAP_TOP;
+                else target = sheetAnim._value > (SNAP_TOP + SNAP_BOTTOM) / 2 ? SNAP_BOTTOM : SNAP_TOP;
+
+                Animated.spring(sheetAnim, {
+                    toValue: Math.max(SNAP_TOP, Math.min(target, SNAP_BOTTOM)),
+                    useNativeDriver: false,
+                    bounciness: 8,
+                }).start(() => {
+                    setIsExpanded(target === SNAP_TOP);
+                });
+            },
+        })
+    ).current;
 
     useEffect(() => {
         (async () => {
@@ -136,12 +173,27 @@ export default function HomeScreen() {
 
             </View>
 
-            {/* Interactive Bottom Sheet (Disabled for debugging) */}
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-                <View style={{ alignSelf: 'center', width: 48, height: 6, backgroundColor: '#E5E0EF', borderRadius: 3, marginTop: 12, marginBottom: 12 }} />
-                <BottomSheetScrollView
+            {/* Interactive Bottom Sheet */}
+            <Animated.View 
+                {...panResponder.panHandlers}
+                style={[
+                    styles.bottomSheetShadow, 
+                    { 
+                        position: 'absolute', left: 0, right: 0, bottom: 0, height: SCREEN_HEIGHT,
+                        backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32,
+                        transform: [{ translateY: sheetAnim }]
+                    }
+                ]}
+            >
+                <View style={{ width: '100%', alignItems: 'center', backgroundColor: 'transparent', paddingBottom: 12 }}>
+                    <View style={{ backgroundColor: '#E5E0EF', width: 48, height: 6, borderRadius: 3, marginTop: 12 }} />
+                </View>
+
+                <ScrollView
                     contentContainerStyle={styles.sheetContent}
                     showsVerticalScrollIndicator={false}
+                    bounces={false}
+                    scrollEnabled={isExpanded}
                 >
                     {/* Row 1: Greeting & Notification */}
                     <View style={styles.greetingRow}>
@@ -239,8 +291,8 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                         ))}
                     </View>
-                </BottomSheetScrollView>
-            </View>
+                </ScrollView>
+            </Animated.View>
         </View>
     );
 }

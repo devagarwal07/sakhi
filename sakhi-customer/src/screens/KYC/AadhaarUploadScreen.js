@@ -136,7 +136,7 @@ export default function AadhaarUploadScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerRow}>
-                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                    <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                         <Text style={styles.backIcon}>←</Text>
                     </Pressable>
                     <Text style={styles.headerTitle}>Upload Aadhaar Card</Text>
