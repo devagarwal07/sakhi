@@ -1,9 +1,11 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Platform, Alert, Modal, TextInput
+    Platform, Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function SavedPlacesScreen() {
     const router = useRouter();
@@ -17,6 +19,7 @@ export default function SavedPlacesScreen() {
     const [modalType, setModalType] = useState('custom'); // 'home' | 'work' | 'custom'
     const [inputAddress, setInputAddress] = useState('');
     const [inputName, setInputName] = useState('');
+    const [alertModal, setAlertModal] = useState(null);
 
     const openModal = (type) => {
         setModalType(type);
@@ -26,21 +29,49 @@ export default function SavedPlacesScreen() {
     };
 
     const handleSave = () => {
-        if (!inputAddress.trim()) { Alert.alert('Missing Info', 'Please enter an address.'); return; }
+        if (!inputAddress.trim()) { 
+            setAlertModal({
+                icon: '⚠️',
+                title: 'Missing Info',
+                message: 'Please enter an address.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+            return; 
+        }
         if (modalType === 'home') { setHomeAddress(inputAddress.trim()); }
         else if (modalType === 'work') { setWorkAddress(inputAddress.trim()); }
         else {
-            if (!inputName.trim()) { Alert.alert('Missing Info', 'Please enter a place name.'); return; }
+            if (!inputName.trim()) { 
+                setAlertModal({
+                    icon: '⚠️',
+                    title: 'Missing Info',
+                    message: 'Please enter a place name.',
+                    buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+                });
+                return; 
+            }
             setCustomPlaces(prev => [...prev, { id: String(Date.now()), name: inputName.trim(), address: inputAddress.trim() }]);
         }
         setShowModal(false);
     };
 
     const handleDelete = (id, name) => {
-        Alert.alert('Remove Place', `Remove "${name}" from saved places?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => setCustomPlaces(prev => prev.filter(p => p.id !== id)) },
-        ]);
+        setAlertModal({
+            icon: '🗑️',
+            title: 'Remove Place',
+            message: `Remove "${name}" from saved places?`,
+            buttons: [
+                { text: 'Cancel', style: 'cancel', onPress: () => setAlertModal(null) },
+                { 
+                    text: 'Remove', 
+                    style: 'destructive', 
+                    onPress: () => {
+                        setAlertModal(null);
+                        setCustomPlaces(prev => prev.filter(p => p.id !== id));
+                    } 
+                },
+            ]
+        });
     };
 
     return (
@@ -117,7 +148,12 @@ export default function SavedPlacesScreen() {
                                 </View>
                             </View>
                             <View style={styles.actionIconsRow}>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Edit Place', 'Place editing coming soon.')}>
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => setAlertModal({
+                                    icon: '✏️',
+                                    title: 'Edit Place',
+                                    message: 'Place editing coming soon.',
+                                    buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+                                })}>
                                     <Text style={styles.actionEdit}>✏️</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(place.id, place.name)}>
@@ -169,6 +205,7 @@ export default function SavedPlacesScreen() {
                     </TouchableOpacity>
                 </View>
             </Modal>
+            {alertModal && <SakhiModal config={alertModal} onClose={() => setAlertModal(null)} />}
         </SafeAreaView>
     );
 }
@@ -203,7 +240,7 @@ const styles = StyleSheet.create({
     primaryCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
     rowItem: {
         flexDirection: 'row', alignItems: 'center',
@@ -240,7 +277,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         padding: 20,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
     customPlaceLeft: {
         flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1,
@@ -267,7 +304,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         marginTop: 8,
         overflow: 'hidden',
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 5,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 5,
     },
     mapOverlayBg: {
         flex: 1,
@@ -294,7 +331,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     modalBtn: {
-        backgroundColor: '#9867D9', borderRadius: 12, height: 52,
+        backgroundColor: '#BEA3D8', borderRadius: 12, height: 52,
         justifyContent: 'center', alignItems: 'center', marginTop: 4,
     },
     modalBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },

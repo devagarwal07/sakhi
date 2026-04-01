@@ -1,13 +1,16 @@
-import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Image, Platform, Alert, Linking
+    Image, Platform, Linking
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function RideDetailsScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const [modal, setModal] = useState(null);
 
     // Mock data for display based on design spec
     const ride = {
@@ -45,7 +48,22 @@ export default function RideDetailsScreen() {
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Ride Details</Text>
-                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => Alert.alert('Share Ride', `Trip ID: SAKHI-${Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/demo`, [{ text: 'Copy Link', onPress: () => Alert.alert('Copied!', 'Link copied to clipboard.') }, { text: 'Close' }])}>
+                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => setModal({
+                        icon: '🔗',
+                        title: 'Share Ride',
+                        message: `Trip ID: SAKHI-${Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/demo`,
+                        buttons: [
+                            { text: 'Copy Link', onPress: () => {
+                                setModal({
+                                    icon: '✅',
+                                    title: 'Copied!',
+                                    message: 'Link copied to clipboard.',
+                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                });
+                            }},
+                            { text: 'Close', style: 'cancel', onPress: () => setModal(null) }
+                        ]
+                    })}>
                         <Text style={styles.headerIcon}>🔗</Text>
                     </TouchableOpacity>
                 </View>
@@ -174,6 +192,8 @@ export default function RideDetailsScreen() {
                 </View>
 
             </View>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </SafeAreaView>
     );
 }

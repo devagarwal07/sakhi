@@ -1,9 +1,11 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Platform, Alert, Modal, TextInput
+    Platform, Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
@@ -11,16 +13,30 @@ export default function PaymentMethodsScreen() {
     const [upiIds, setUpiIds] = useState(['priya@okaxis']);
     const [showAddUpi, setShowAddUpi] = useState(false);
     const [newUpi, setNewUpi] = useState('');
+    const [modal, setModal] = useState(null);
 
     const handleDeleteUpi = (id) => {
-        Alert.alert('Remove UPI', `Remove ${id} from saved IDs?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => setUpiIds(prev => prev.filter(u => u !== id)) },
-        ]);
+        setModal({
+            icon: '⚠️',
+            title: 'Remove UPI',
+            message: `Remove ${id} from saved IDs?`,
+            buttons: [
+                { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                { text: 'Remove', style: 'destructive', onPress: () => { setUpiIds(prev => prev.filter(u => u !== id)); setModal(null); } },
+            ],
+        });
     };
 
     const handleAddUpi = () => {
-        if (!newUpi.includes('@')) { Alert.alert('Invalid UPI', 'Please enter a valid UPI ID (e.g. name@okaxis).'); return; }
+        if (!newUpi.includes('@')) { 
+            setModal({
+                icon: '⚠️',
+                title: 'Invalid UPI',
+                message: 'Please enter a valid UPI ID (e.g. name@okaxis).',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+            return; 
+        }
         setUpiIds(prev => [...prev, newUpi.trim()]);
         setNewUpi('');
         setShowAddUpi(false);
@@ -68,7 +84,11 @@ export default function PaymentMethodsScreen() {
                                     </View>
                                 </TouchableOpacity>
                                 <View style={styles.actionBtns}>
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Edit UPI', 'UPI editing coming soon.')}>
+                                    <TouchableOpacity style={styles.actionBtn} onPress={() => setModal({
+                                        title: 'Edit UPI',
+                                        message: 'UPI editing coming soon.',
+                                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                    })}>
                                         <Text style={styles.actionIcon}>✎</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteUpi(id)}>
@@ -151,6 +171,8 @@ export default function PaymentMethodsScreen() {
                     </TouchableOpacity>
                 </View>
             </Modal>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </SafeAreaView>
     );
 }
@@ -204,7 +226,7 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
     upiLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     upiIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F6F1FF', justifyContent: 'center', alignItems: 'center' },
@@ -233,7 +255,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderWidth: 2, borderColor: 'rgba(190, 163, 216, 0.2)',
         borderRadius: 12,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
     cashCardSelected: { borderColor: '#BEA3D8', backgroundColor: '#F6F1FF' },
     cashLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
@@ -292,7 +314,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     modalBtn: {
-        backgroundColor: '#9867D9', borderRadius: 12, height: 52,
+        backgroundColor: '#BEA3D8', borderRadius: 12, height: 52,
         justifyContent: 'center', alignItems: 'center',
     },
     modalBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },

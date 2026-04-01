@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Platform, Alert
+    Dimensions, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useRide } from '../src/context/RideContext';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ export default function RideEstimateScreen() {
     const router = useRouter();
     const { ride } = useRide();
     const [breakdownExpanded, setBreakdownExpanded] = useState(true);
+    const [modal, setModal] = useState(null);
 
     // Mock route coordinates
     const routeCoordinates = [
@@ -30,10 +32,15 @@ export default function RideEstimateScreen() {
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Sakhi</Text>
                 </View>
-                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Options', 'Choose an option', [
-                    { text: 'Edit Locations', onPress: () => router.push('/location-search') },
-                    { text: 'Cancel', style: 'cancel' },
-                ])}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
+                    icon: 'ⓘ',
+                    title: 'Options',
+                    message: 'Choose an option',
+                    buttons: [
+                        { text: 'Edit Locations', onPress: () => { setModal(null); router.push('/location-search'); } },
+                        { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                    ]
+                })}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -167,6 +174,8 @@ export default function RideEstimateScreen() {
                     <Text style={styles.bookText}>Book Auto  ›</Text>
                 </TouchableOpacity>
             </View>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }
