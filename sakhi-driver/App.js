@@ -61,7 +61,7 @@ import RaiseAComplaintScreen           from './src/screens/Profile/RaiseAComplai
 import NotificationSettingsScreen      from './src/screens/Profile/NotificationSettingsScreen';
 import NotificationsScreen             from './src/screens/Profile/NotificationsScreen';
 import TransactionHistoryScreen        from './src/screens/Profile/TransactionHistoryScreen';
-import PaymentDetailsScreen            from './src/screens/Profile/PaymentDetailsScreen';
+import ProfilePaymentDetailsScreen     from './src/screens/Profile/PaymentDetailsScreen';
 import SakhiLogoutConfirmationSheet    from './src/screens/Profile/SakhiLogoutConfirmationSheet';
 import ChangePhoneOtpScreen            from './src/screens/Profile/ChangePhoneOtpScreen';
 import HelpSupportScreen               from './src/screens/Profile/HelpSupportScreen';
@@ -126,7 +126,7 @@ function MainStack() {
         <Stack.Screen name="NotificationSettings"   component={NotificationSettingsScreen}  />
         <Stack.Screen name="Notifications"          component={NotificationsScreen}         />
         <Stack.Screen name="TransactionHistory"     component={TransactionHistoryScreen}    />
-        <Stack.Screen name="PaymentDetails"         component={PaymentDetailsScreen}        />
+        <Stack.Screen name="ProfilePaymentDetails"   component={ProfilePaymentDetailsScreen}  />
         <Stack.Screen name="ChangePhoneOtp"         component={ChangePhoneOtpScreen}        />
         <Stack.Screen name="HelpSupport"            component={HelpSupportScreen}           />
         <Stack.Screen name="AboutSakhi"             component={AboutSakhiScreen}            />
