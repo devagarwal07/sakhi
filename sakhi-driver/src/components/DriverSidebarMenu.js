@@ -11,9 +11,9 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SIDEBAR_W = 293;
 
 const MENU_ITEMS = [
-  { id: 'Home',                 label: 'Home',               iconName: 'home',                 iconType: 'feather' },
+  { id: 'DriverHome',            label: 'Home',               iconName: 'home',                 iconType: 'feather' },
   { id: 'PaymentDetails',       label: 'Pay Commission',     iconName: 'cash-multiple',        iconType: 'materialCommunity' },
-  { id: 'History',              label: 'Ride History',       iconName: 'history',              iconType: 'materialCommunity' },
+  { id: 'RideHistory',           label: 'Ride History',       iconName: 'history',              iconType: 'materialCommunity' },
   { id: 'SubscriptionRides',    label: 'Subscription Rides', iconName: 'car-outline',          iconType: 'materialCommunity' },
   { id: 'MyEarnings',           label: 'Earnings',           iconName: 'wallet-outline',       iconType: 'materialCommunity' },
   { id: 'MyDocuments',          label: 'My Documents',       iconName: 'file-document-outline',iconType: 'materialCommunity' },
@@ -64,7 +64,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
   };
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
       {/* Overlay Background */}
       <TouchableWithoutFeedback onPress={handleClose}>
         <Animated.View style={[styles.overlay, { opacity: opacityAnim }]} />
