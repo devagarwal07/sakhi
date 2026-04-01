@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, SafeAreaView, Alert, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function SOSActiveScreen() {
     const router = useRouter();
+    const [modal, setModal] = useState(null);
 
     const emergencyContacts = [
         { id: 1, name: 'Aisha Sharma', initial: 'A', color: '#FCD34D' },
@@ -12,10 +15,15 @@ export default function SOSActiveScreen() {
     ];
 
     const handleCancel = () => {
-        Alert.alert('Cancel SOS?', 'Are you sure you are safe? This will cancel the SOS alert.', [
-            { text: 'No, Keep SOS', style: 'cancel' },
-            { text: "Yes, I'm Safe", style: 'destructive', onPress: () => router.replace('/(tabs)/') },
-        ]);
+        setModal({
+            icon: '⚠️',
+            title: 'Cancel SOS?',
+            message: 'Are you sure you are safe? This will cancel the SOS alert for all contacts.',
+            buttons: [
+                { text: 'No, Keep SOS', style: 'cancel', onPress: () => setModal(null) },
+                { text: "Yes, I'm Safe", style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+            ],
+        });
     };
 
     return (
@@ -105,7 +113,12 @@ export default function SOSActiveScreen() {
                         <Text style={styles.callSakhiText}>Call Sakhi Team</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8} onPress={() => Alert.alert('Message Support', 'Opening Sakhi safety chat. Our team is on standby.', [{ text: 'OK' }])}>
+                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8} onPress={() => setModal({
+                        icon: '💬',
+                        title: 'Message Sakhi Team',
+                        message: 'Opening Sakhi safety chat. Our team is on standby 24/7.',
+                        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                    })}>
                         <Text style={styles.msgIcon}>💬</Text>
                         <Text style={styles.msgSakhiText}>Message Sakhi Team</Text>
                     </TouchableOpacity>
@@ -125,6 +138,7 @@ export default function SOSActiveScreen() {
                 </TouchableOpacity>
             </View>
 
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

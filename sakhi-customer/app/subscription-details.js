@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, Pressable,
-    ActivityIndicator, Alert, TouchableOpacity,
+    ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { getSubscriptionDetails } from '../src/api/endpoints';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
 import apiClient from '../src/api/client';
+import SakhiModal from '../src/components/SakhiModal';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -17,39 +18,57 @@ export default function SubscriptionDetailsScreen() {
     const [sub, setSub] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
+    const [modal, setModal] = useState(null);
 
     useEffect(() => {
         if (!id) { setLoading(false); return; }
         getSubscriptionDetails(id)
             .then(({ data }) => setSub(data.subscription || data))
-            .catch(() => Alert.alert('Error', 'Could not load subscription details.'))
+            .catch(() => setModal({
+                icon: '⚠️',
+                title: 'Error',
+                message: 'Could not load subscription details.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            }))
             .finally(() => setLoading(false));
     }, [id]);
 
     const handleCancel = () => {
-        Alert.alert(
-            'Cancel Subscription',
-            'Are you sure? Unused rides will not be refunded automatically.',
-            [
-                { text: 'Keep Subscription', style: 'cancel' },
+        setModal({
+            icon: '⚠️',
+            title: 'Cancel Subscription',
+            message: 'Are you sure? Unused rides will not be refunded automatically.',
+            buttons: [
+                { text: 'Keep Subscription', style: 'cancel', onPress: () => setModal(null) },
                 {
                     text: 'Cancel Subscription',
                     style: 'destructive',
                     onPress: async () => {
+                        setModal(null);
                         setCancelling(true);
                         try {
                             await apiClient.patch(`/subscriptions/${id}/cancel`);
                             setSub((s) => ({ ...s, status: 'cancelled' }));
-                            Alert.alert('Cancelled', 'Your subscription has been cancelled.');
+                            setModal({
+                                icon: '✅',
+                                title: 'Cancelled',
+                                message: 'Your subscription has been cancelled.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            });
                         } catch (err) {
-                            Alert.alert('Error', err?.response?.data?.message || 'Could not cancel. Contact support.');
+                            setModal({
+                                icon: '⚠️',
+                                title: 'Error',
+                                message: err?.response?.data?.message || 'Could not cancel. Contact support.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            });
                         } finally {
                             setCancelling(false);
                         }
                     },
                 },
             ],
-        );
+        });
     };
 
     if (loading) {
@@ -255,6 +274,8 @@ export default function SubscriptionDetailsScreen() {
                     </TouchableOpacity>
                 )}
             </ScrollView>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

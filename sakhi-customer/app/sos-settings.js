@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Switch, Platform 
+    Switch, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -94,7 +95,7 @@ export default function SOSSettingsScreen() {
                         <View style={styles.section}>
                             <Text style={styles.sectionHeading}>Who Gets Notified</Text>
                             
-                            <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/(tabs)/profile')}>
+                            <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/emergency-contacts')}>
                                 <View style={styles.rowTextCol}>
                                     <Text style={styles.rowTitle}>Emergency Contacts</Text>
                                     <View style={styles.badgeWrapper}>

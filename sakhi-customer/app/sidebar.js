@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useRef } from 'react';
 import { 
     View, Text, StyleSheet, TouchableOpacity, Animated, 
-    Dimensions, PanResponder, ScrollView, Platform, SafeAreaView 
+    Dimensions, PanResponder, ScrollView, Platform, Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
@@ -70,24 +71,27 @@ export default function SidebarScreen() {
         })
     ).current;
 
-    const MenuItem = ({ icon, label, onPress, active = false }) => (
-        <View>
-            <TouchableOpacity 
-                style={[styles.menuRow, active && styles.menuRowActive]} 
-                onPress={() => {
-                    handleClose(() => onPress && onPress());
-                }}
-                activeOpacity={0.7}
-            >
-                <View style={[styles.iconBox, active && styles.iconBoxActive]}>
-                    <Text style={[styles.iconText, active && styles.iconTextActive]}>{icon}</Text>
-                </View>
-                <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{label}</Text>
-                <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-            {!active && <View style={styles.divider} />}
-        </View>
-    );
+    const MenuItem = ({ iconSource, label, onPress, active = false, customTintColor }) => {
+        const tint = active ? '#BEA3D8' : (customTintColor || '#64748B');
+        return (
+            <View>
+                <TouchableOpacity 
+                    style={[styles.menuRow, active && styles.menuRowActive]} 
+                    onPress={() => {
+                        handleClose(() => onPress && onPress());
+                    }}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.iconBox, active && styles.iconBoxActive]}>
+                        <Image source={iconSource} style={{ width: 24, height: 24, tintColor: tint, resizeMode: 'contain' }} />
+                    </View>
+                    <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{label}</Text>
+                    <Text style={styles.chevron}>›</Text>
+                </TouchableOpacity>
+                {!active && <View style={styles.divider} />}
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -130,17 +134,14 @@ export default function SidebarScreen() {
                 </SafeAreaView>
 
                 <ScrollView contentContainerStyle={styles.menuContainer} showsVerticalScrollIndicator={false}>
-                    <MenuItem icon="🏠" label="Home" active={true} onPress={() => router.replace('/(tabs)/')} />
-                    <MenuItem icon="👤" label="Profile & Settings" onPress={() => router.replace('/(tabs)/profile')} />
-                    <MenuItem icon="🚗" label="My Rides" onPress={() => router.replace('/(tabs)/ride-history')} />
-                    <MenuItem icon="🎫" label="My Subscriptions" onPress={() => router.replace('/(tabs)/subscriptions')} />
-                    <MenuItem icon="💳" label="Payment Methods" onPress={() => router.replace('/payment')} />
-                    <MenuItem icon="📍" label="Saved Places" onPress={() => router.replace('/saved-places')} />
-                    <MenuItem icon="✳️" label="Emergency Contacts" onPress={() => router.replace('/emergency-contacts')} />
-                    <MenuItem icon="🔔" label="Notifications" onPress={() => router.replace('/notifications')} />
-                    <MenuItem icon="❓" label="Help & Support" onPress={() => router.replace('/complaint')} />
-                    <MenuItem icon="ℹ️" label="About Sakhi" onPress={() => router.replace('/about')} />
-                    <MenuItem icon="📄" label="Terms & Privacy" onPress={() => router.replace('/about')} />
+                    <MenuItem iconSource={require("../assets/Home-filled.png")} label="Home" active={true} onPress={() => router.replace("/(tabs)/")} />
+                    <MenuItem iconSource={require("../assets/Auto-icon.png")} label="My Rides" onPress={() => router.replace("/(tabs)/ride-history")} />
+                    <MenuItem iconSource={require("../assets/Subscriptions-Icon.png")} label="My Subscriptions" onPress={() => router.replace("/(tabs)/subscriptions")} />
+                    <MenuItem iconSource={require("../assets/PaymentMethods-Icon.png")} label="Payment Methods" onPress={() => router.replace("/payment")} />
+                    <MenuItem iconSource={require("../assets/SavedPlaces-Icon.png")} label="Saved Places" onPress={() => router.replace("/saved-places")} />
+                    <MenuItem iconSource={require("../assets/EmergencyContacts-Slider-Icon.png")} label="Emergency Contacts" onPress={() => router.replace("/emergency-contacts")} />
+                    <MenuItem iconSource={require("../assets/Notifications-Icon.png")} label="Notifications" onPress={() => router.replace("/notifications")} />
+                    <MenuItem iconSource={require("../assets/Help&Support-Icon.png")} label="Help & Support" onPress={() => router.replace("/complaint")} />
                 </ScrollView>
 
                 {/* Footer Section */}
@@ -156,7 +157,7 @@ export default function SidebarScreen() {
                         activeOpacity={0.7}
                     >
                         <View style={styles.logoutIconBox}>
-                            <Text style={styles.logoutIcon}>🚪</Text>
+                            <Image source={require('../assets/LogOut-Icon.png')} style={{ width: 24, height: 24, tintColor: '#EF4444', resizeMode: 'contain' }} />
                         </View>
                         <Text style={styles.logoutText}>Log Out</Text>
                     </TouchableOpacity>
