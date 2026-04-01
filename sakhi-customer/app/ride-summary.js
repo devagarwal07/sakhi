@@ -158,6 +158,33 @@ export default function RideSummaryScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     container: { flex: 1, backgroundColor: '#F5F0FF' },
 
     // Top Nav
@@ -194,7 +221,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2,
     },
     successCheck: { color: '#10B981', fontSize: 36, fontWeight: 'bold' },
-    headerTitle: { fontSize: 24, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.6, marginBottom: 4 },
+    
     headerSub: { fontSize: 14, fontWeight: '400', color: '#6B7280', textAlign: 'center' },
 
     // Fare Summary Card

@@ -50,7 +50,7 @@ export default function SidebarScreen() {
             if (callback) {
                 callback();
             } else if (router.canGoBack()) {
-                router.back();
+                if (router.canGoBack()) router.back(); else router.replace("/");
             }
         });
     };

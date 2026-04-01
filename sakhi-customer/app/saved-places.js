@@ -80,10 +80,12 @@ export default function SavedPlacesScreen() {
                 
                 {/* Header App Bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()} activeOpacity={0.7}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Saved Places</Text>
+                        <Text style={styles.headerTitle}>Saved Places</Text>
+                    </View>
                     <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
                         <Text style={styles.headerDots}>⋮</Text>
                     </TouchableOpacity>
@@ -211,21 +213,41 @@ export default function SavedPlacesScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
     
     /* Header AppBar */
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24, paddingVertical: 16,
-        backgroundColor: 'rgba(245, 240, 255, 0.95)',
-        zIndex: 10,
-    },
-    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45 },
+    
+    
+    
+    
     headerDots: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold', paddingTop: -4 },
 
     /* Scroll Body */
