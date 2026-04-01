@@ -7,10 +7,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  ArrowLeft, ChevronDown, ChevronUp, History,
+  ChevronDown, ChevronUp, History,
   ImageIcon, X,
 } from 'lucide-react-native';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -169,20 +170,11 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
         <View style={s.blobTR} />
         <View style={s.blobBL} />
 
-        {/* ── Frosted Header ── */}
-        <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-          <TouchableOpacity
-            onPress={() => navigation?.goBack()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Support</Text>
-        </View>
+        <ScreenHeader title="Support" onBack={() => navigation?.goBack()} />
 
         {/* ── Scrollable body ── */}
         <ScrollView
-          contentContainerStyle={[s.scroll, { paddingTop: HEADER_H + 24 }]}
+          contentContainerStyle={[s.scroll, { }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -328,21 +320,8 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(206,189,255,0.2)',
   },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    paddingHorizontal: 24, paddingBottom: 16, height: 'auto',
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12 },
-      android: { elevation: 4 },
-    }),
-  },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: DARK, letterSpacing: -0.45, lineHeight: 28 },
-
   // ── Scroll ────────────────────────────────────────────────────────────────
-  scroll: { paddingHorizontal: 24, gap: 32, paddingBottom: 8 },
+  scroll: { paddingHorizontal: 24, paddingTop: 16, gap: 32, paddingBottom: 8 },
 
   // ── Heading ───────────────────────────────────────────────────────────────
   heading:  { gap: 8 },
