@@ -25,13 +25,7 @@ export default function SOSSettingsScreen() {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.headerIcon}>←</Text>
-                    </TouchableOpacity>
-                        <Text style={styles.headerTitle}>SOS Settings</Text>
-                    </View>
-                    <View style={styles.iconBtn} /> 
+                    <Text style={[styles.headerTitle, { marginLeft: 0 }]}>Safety & SOS</Text>
                 </View>
 
                 {/* Main Scroll Content */}
