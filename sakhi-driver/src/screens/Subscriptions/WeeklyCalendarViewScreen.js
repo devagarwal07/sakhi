@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
@@ -31,15 +32,9 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
   const dayData = week[selectedDay] ?? DEFAULT_WEEK[selectedDay];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Weekly Calendar</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <ScreenHeader title="Weekly Calendar" onBack={() => navigation.goBack()} />
 
       {/* Day selector strip */}
       <ScrollView
@@ -107,20 +102,12 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-  },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-
   // Day strip
   dayStrip: { flexGrow: 0, borderBottomWidth: 1, borderColor: Colors.outlineVariant },
   dayStripContent: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: 8 },
