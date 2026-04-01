@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 24,
         paddingTop: 24,
-        paddingBottom: 40,
+        paddingBottom: 120, // ensure room for the absolute tab bar
     },
     pageSubText: {
         fontSize: 14,

@@ -1,6 +1,5 @@
-import React from 'react';
-import { Redirect } from 'expo-router';
+import SOSSettingsScreen from '../sos-settings';
 
 export default function SafetyTab() {
-    return <Redirect href="/sos-settings" />;
+    return <SOSSettingsScreen />;
 }
