@@ -1,36 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
+import SakhiModal from '../../src/components/SakhiModal';
 
 export default function SubscriptionsDashboard() {
     const router = useRouter();
     const { ride } = useRide();
     const sub = ride?.subscription || {};
     const [isPaused, setIsPaused] = useState(false);
+    const [modal, setModal] = useState(null);
 
     const handlePause = () => {
-        Alert.alert(
-            isPaused ? 'Resume Subscription' : 'Pause Subscription',
-            isPaused
+        setModal({
+            icon: isPaused ? '▶️' : '⏸️',
+            title: isPaused ? 'Resume Subscription' : 'Pause Subscription',
+            message: isPaused
                 ? 'Your subscription rides will resume from tomorrow.'
                 : 'Your upcoming rides will be paused until you resume.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: isPaused ? 'Resume' : 'Pause', onPress: () => setIsPaused(!isPaused) },
+            buttons: [
+                { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                { 
+                    text: isPaused ? 'Resume' : 'Pause', 
+                    onPress: () => {
+                        setIsPaused(!isPaused);
+                        setModal(null);
+                    } 
+                },
             ]
-        );
+        });
     };
 
     const handleCancel = () => {
-        Alert.alert(
-            'Cancel Subscription?',
-            'This will permanently cancel your current plan. Any unused rides will be forfeited.',
-            [
-                { text: 'Keep Plan', style: 'cancel' },
-                { text: 'Yes, Cancel', style: 'destructive', onPress: () => Alert.alert('Subscription Cancelled', 'Your plan has been cancelled.') },
+        setModal({
+            icon: '⚠️',
+            title: 'Cancel Subscription?',
+            message: 'This will permanently cancel your current plan. Any unused rides will be forfeited.',
+            buttons: [
+                { text: 'Keep Plan', style: 'cancel', onPress: () => setModal(null) },
+                { 
+                    text: 'Yes, Cancel', 
+                    style: 'destructive', 
+                    onPress: () => {
+                        setModal(null);
+                        setTimeout(() => {
+                            setModal({
+                                icon: '✅',
+                                title: 'Subscription Cancelled',
+                                message: 'Your plan has been cancelled.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            });
+                        }, 500);
+                    } 
+                },
             ]
-        );
+        });
     };
     
     // Dynamic values mapped from context
@@ -149,6 +173,7 @@ export default function SubscriptionsDashboard() {
 
                 <View style={{ height: 120 }} />
             </ScrollView>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
     );
 }

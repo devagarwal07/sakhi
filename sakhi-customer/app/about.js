@@ -1,12 +1,15 @@
-import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Platform, Alert, Linking
+    Platform, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function AboutScreen() {
     const router = useRouter();
+    const [modal, setModal] = useState(null);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -95,15 +98,30 @@ export default function AboutScreen() {
 
                     {/* Legal Links */}
                     <View style={styles.legalSection}>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Terms of Service', 'Opening terms of service at sakhi.app/terms', [{ text: 'OK' }])}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
+                            icon: '📄',
+                            title: 'Terms of Service',
+                            message: 'Opening terms of service at sakhi.app/terms',
+                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                        })}>
                             <Text style={styles.legalLabel}>Terms of Service</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Privacy Policy', 'Opening privacy policy at sakhi.app/privacy', [{ text: 'OK' }])}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
+                            icon: '🛡️',
+                            title: 'Privacy Policy',
+                            message: 'Opening privacy policy at sakhi.app/privacy',
+                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                        })}>
                             <Text style={styles.legalLabel}>Privacy Policy</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Cookie Policy', 'Opening cookie policy at sakhi.app/cookies', [{ text: 'OK' }])}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
+                            icon: '🍪',
+                            title: 'Cookie Policy',
+                            message: 'Opening cookie policy at sakhi.app/cookies',
+                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                        })}>
                             <Text style={styles.legalLabel}>Cookie Policy</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
@@ -117,6 +135,7 @@ export default function AboutScreen() {
 
                 </ScrollView>
             </View>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </SafeAreaView>
     );
 }
@@ -135,7 +154,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'flex-start' },
-    headerIcon: { fontSize: 24, color: '#7C3AED', fontWeight: 'bold' },
+    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
     headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45, position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 },
 
     scrollContent: {

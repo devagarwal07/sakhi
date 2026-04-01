@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList,
     TouchableOpacity, ActivityIndicator, Pressable,
-    ScrollView, Platform, SafeAreaView
+    ScrollView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getRideHistory } from '../../src/api/endpoints';

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Image, Animated, Alert, Modal,
+    ScrollView, Image, Animated, Modal,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { cancelRide, callDriver, sendBatteryAlert } from '../src/api/endpoints';
 import * as Battery from 'expo-battery';
 import * as Sharing from 'expo-sharing';
 import ChatModal from '../src/components/ChatModal';
+import SakhiModal from '../src/components/SakhiModal';
 
 const STATUS_LABELS = {
     assigned: 'Driver Found!',
@@ -38,6 +39,7 @@ export default function ActiveRideScreen() {
         y: ride.driver?.currentLocation?.longitude || 0,
     })).current;
     const sheetSlide = useRef(new Animated.Value(300)).current;
+    const [modal, setModal] = useState(null);
 
     useEffect(() => {
         // Slide up bottom sheet
@@ -104,28 +106,46 @@ export default function ActiveRideScreen() {
             if (isAvailable) {
                 await Sharing.shareAsync(shareUrl, { dialogTitle: 'Track my Sakhi ride' });
             } else {
-                Alert.alert('Live Trip Sharing', `Link: ${shareUrl}`);
+                setModal({
+                    icon: '🔗',
+                    title: 'Live Trip Sharing',
+                    message: `Link: ${shareUrl}`,
+                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                });
             }
         } catch (err) { }
     };
 
     const handleCancel = () => {
-        Alert.alert('Cancel Ride', 'Are you sure you want to cancel this ride?', [
-            { text: 'Keep Ride', style: 'cancel' },
-            {
-                text: 'Cancel Ride',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await cancelRide(ride.rideId);
-                        clearRide();
-                        router.replace('/(tabs)');
-                    } catch (e) {
-                        Alert.alert('Error', 'Could not cancel. Please try again.');
+        setModal({
+            icon: '⚠️',
+            title: 'Cancel Ride',
+            message: 'Are you sure you want to cancel this ride?',
+            buttons: [
+                { text: 'Keep Ride', style: 'cancel', onPress: () => setModal(null) },
+                {
+                    text: 'Cancel Ride',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setModal(null);
+                        try {
+                            await cancelRide(ride.rideId);
+                            clearRide();
+                            router.replace('/(tabs)');
+                        } catch (e) {
+                            setTimeout(() => {
+                                setModal({
+                                    icon: '⚠️',
+                                    title: 'Error',
+                                    message: 'Could not cancel. Please try again.',
+                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                });
+                            }, 500);
+                        }
                     }
-                },
-            },
-        ]);
+                }
+            ]
+        });
     };
 
     const statusLabel = STATUS_LABELS[ride.status] || 'Finding Driver…';
@@ -223,7 +243,14 @@ export default function ActiveRideScreen() {
                                 style={styles.actionBtn}
                                 onPress={async () => {
                                     try { await callDriver(ride.rideId); }
-                                    catch (_) { Alert.alert('Call Failed', 'Could not connect call. Please try again.'); }
+                                    catch (_) {
+                                        setModal({
+                                            icon: '⚠️',
+                                            title: 'Call Failed',
+                                            message: 'Could not connect call. Please try again.',
+                                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                        });
+                                    }
                                 }}
                             >
                                 <Text style={{ fontSize: 18 }}>📞</Text>
@@ -278,6 +305,7 @@ export default function ActiveRideScreen() {
             >
                 <ChatModal rideId={ride.rideId} onClose={() => setChatOpen(false)} />
             </Modal>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
     );
 }
