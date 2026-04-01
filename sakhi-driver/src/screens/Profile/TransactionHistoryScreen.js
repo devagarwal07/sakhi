@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Icon components (no SVG library needed) ──────────────────────────────────
 
@@ -307,35 +308,25 @@ export default function TransactionHistoryScreen({ navigation }) {
     .filter((sec) => sec.rows.length > 0);
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <View style={[s.safe, { flex: 1 }]}>
 
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <View style={s.headerLeft}>
-          <TouchableOpacity
-            onPress={() => navigation?.goBack()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={s.backBtn}
-          >
-            <BackIcon />
+      <ScreenHeader
+        title="Transactions"
+        onBack={() => navigation?.goBack()}
+        rightSlot={
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={s.filterIconBtn}>
+            <FilterIcon />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Transactions</Text>
-        </View>
-        <TouchableOpacity
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={s.filterIconBtn}
-        >
-          <FilterIcon />
-        </TouchableOpacity>
-      </View>
+        }
+      />
 
       {loading ? (
-        <View style={s.loader}>
+        <View style={[s.loader, {}]}>
           <ActivityIndicator size="large" color="#7C3AED" />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={s.scroll}
+          contentContainerStyle={[s.scroll, { }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
@@ -397,7 +388,7 @@ export default function TransactionHistoryScreen({ navigation }) {
         onClose={() => setShowDatePicker(false)}
       />
 
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -405,30 +396,7 @@ export default function TransactionHistoryScreen({ navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F0FF' },
 
-  // Header  ——————————————————————————————————————————————————————————————————
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    height: 64,
-    backgroundColor: 'rgba(245, 240, 255, 0.92)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#7C3AED',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  backBtn:       { width: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:   { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
-  filterIconBtn: { width: 34, height: 28, alignItems: 'center', justifyContent: 'center' },
-
-  // Scroll  ——————————————————————————————————————————————————————————————————
+  // Scroll
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 24, paddingTop: 0, paddingBottom: 60 },
 
