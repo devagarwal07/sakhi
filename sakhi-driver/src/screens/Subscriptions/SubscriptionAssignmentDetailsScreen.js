@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator, Linking, Image, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import {
-  ArrowLeft, MoreVertical, Phone, Calendar, Sun, Moon, MapPin,
+  MoreVertical, Phone, Calendar, Sun, Moon, MapPin,
 } from 'lucide-react-native';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Brand tokens (shorthand) ─────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -201,26 +202,19 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
   return (
     <View style={s.root}>
 
-      {/* ── Floating Header ── */}
-      <View style={s.header}>
-        <View style={s.headerLeft}>
-          <TouchableOpacity
-            onPress={() => navigation?.goBack()}
-            style={s.headerBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+      <ScreenHeader
+        title="Subscription Details"
+        onBack={() => navigation?.goBack()}
+        rightSlot={
+          <TouchableOpacity style={s.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <MoreVertical size={16} color={MUTED} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Subscription Details</Text>
-        </View>
-        <TouchableOpacity style={s.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <MoreVertical size={16} color={MUTED} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
+        }
+      />
 
-      {/* ── Scrollable content (padded so header/footer don't overlap) ── */}
+      {/* ── Scrollable content ── */}
       <ScrollView
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -405,23 +399,10 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, height: 60,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 6 },
-    }),
-  },
-  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 16 },
   headerBtn:   { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45, lineHeight: 28 },
 
   // ── Scroll ────────────────────────────────────────────────────────────────
-  scroll: { paddingTop: 80, paddingHorizontal: 24, paddingBottom: 155, gap: 24 },
+  scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 155, gap: 24 },
 
   // ── Shared Card ───────────────────────────────────────────────────────────
   card: {
