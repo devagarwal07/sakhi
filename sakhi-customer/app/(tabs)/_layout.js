@@ -35,8 +35,12 @@ export default function TabsLayout() {
                     tabBarIcon: ({ focused }) => <TabIcon emoji="📋" focused={focused} />,
                 }}
             />
-            <Tabs.Screen
+                        <Tabs.Screen
                 name="ride-history"
+                options={{ href: null }}
+            />
+            <Tabs.Screen
+                name="safety"
                 options={{
                     title: 'SAFETY',
                     tabBarIcon: ({ focused }) => <TabIcon emoji="🛡️" focused={focused} />,

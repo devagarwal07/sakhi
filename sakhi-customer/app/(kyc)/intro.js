@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         gap: 24,
     },
 
-    // Card — selected state: #EDE9FE bg, 2px #7C3AED border
+    // Card — selected state: #EDE9FE bg, 2px #BEA3D8 border
     optionCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#EDE9FE',
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: '#7C3AED',
+        borderColor: '#BEA3D8',
     },
     cardBorderRing: {
         position: 'absolute',

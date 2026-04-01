@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Alert, ActivityIndicator, Pressable, Platform, Animated,
+    ActivityIndicator, Pressable, Platform, Animated,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { uploadFaceSelfie } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
+import SakhiModal from '../../src/components/SakhiModal';
 
 export default function FaceVerificationScreen() {
     const router = useRouter();
@@ -15,6 +16,7 @@ export default function FaceVerificationScreen() {
     const [captured, setCaptured] = useState(null);
     const [loading, setLoading] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
+    const [modal, setModal] = useState(null);
     const cameraRef = useRef(null);
     const scanLineAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -93,7 +95,12 @@ export default function FaceVerificationScreen() {
             router.replace('/(kyc)/pending');
         } catch (err) {
             const msg = err?.response?.data?.message || 'Selfie upload failed. Please try again.';
-            Alert.alert('Upload Failed', msg);
+            setModal({
+                icon: '⚠️',
+                title: 'Upload Failed',
+                message: msg,
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
         } finally {
             setLoading(false);
         }
@@ -167,7 +174,12 @@ export default function FaceVerificationScreen() {
                 {/* Shutter & Controls Row */}
                 <View style={styles.controlsRow}>
                     {/* Flash button */}
-                    <TouchableOpacity style={styles.sideBtn} onPress={() => Alert.alert('Flash', 'Flash is not available on the front camera.')}>
+                    <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
+                        icon: '💡',
+                        title: 'Flash',
+                        message: 'Flash is not available on the front camera.',
+                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                    })}>
                         <Text style={styles.sideBtnIcon}>💡</Text>
                     </TouchableOpacity>
 
@@ -188,7 +200,12 @@ export default function FaceVerificationScreen() {
                     </TouchableOpacity>
 
                     {/* Gallery button */}
-                    <TouchableOpacity style={styles.sideBtn} onPress={() => Alert.alert('Upload from Gallery', 'For security, KYC selfies must be taken live with your camera.', [{ text: 'OK' }])}>
+                    <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
+                        icon: '⚠️',
+                        title: 'Upload from Gallery',
+                        message: 'For security, KYC selfies must be taken live with your camera.',
+                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                    })}>
                         <Text style={styles.sideBtnIcon}>🖼️</Text>
                     </TouchableOpacity>
                 </View>
@@ -199,6 +216,7 @@ export default function FaceVerificationScreen() {
                     <Text style={styles.securityText}>SECURE VERIFICATION BY SAKHI SAFETY</Text>
                 </View>
             </View>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
     );
 }

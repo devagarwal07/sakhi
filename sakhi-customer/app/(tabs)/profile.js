@@ -1,14 +1,17 @@
-import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Image, Platform, Alert
+    Image, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
+import SakhiModal from '../../src/components/SakhiModal';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
+    const [modal, setModal] = useState(null);
 
     const handleLogout = async () => {
         await logout();
@@ -38,11 +41,16 @@ export default function ProfileScreen() {
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Settings</Text>
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => Alert.alert('Options', 'Choose an option', [
-                        { text: 'Edit Profile', onPress: () => router.push('/edit-profile') },
-                        { text: 'Change Phone', onPress: () => router.push('/change-phone') },
-                        { text: 'Cancel', style: 'cancel' },
-                    ])}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => setModal({
+                        icon: 'ⓘ',
+                        title: 'Options',
+                        message: 'Choose an option',
+                        buttons: [
+                            { text: 'Edit Profile', onPress: () => { setModal(null); router.push('/edit-profile'); } },
+                            { text: 'Change Phone', onPress: () => { setModal(null); router.push('/change-phone'); } },
+                            { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                        ]
+                    })}>
                         <Text style={styles.headerDots}>⋮</Text>
                     </TouchableOpacity>
                 </View>
@@ -90,7 +98,15 @@ export default function ProfileScreen() {
                         <Text style={styles.sectionHeading}>SAFETY</Text>
                         <View style={styles.cardGroup}>
                             <SettingRow icon="♃️" label="SOS Settings" onPress={() => router.push('/sos-settings')} />
-                            <SettingRow icon="🎯" label="Live Trip Sharing" onPress={() => Alert.alert('Live Trip Sharing', 'Share your real-time location with trusted contacts during every ride. Enable from emergency contacts settings.', [{ text: 'Go to Emergency Contacts', onPress: () => router.push('/emergency-contacts') }, { text: 'OK' }])} isLast />
+                            <SettingRow icon="🎯" label="Live Trip Sharing" onPress={() => setModal({
+                                icon: '🎯',
+                                title: 'Live Trip Sharing',
+                                message: 'Share your real-time location with trusted contacts during every ride. Enable from emergency contacts settings.',
+                                buttons: [
+                                    { text: 'Go to Emergency Contacts', style: 'primary', onPress: () => { setModal(null); router.push('/emergency-contacts'); } },
+                                    { text: 'OK', style: 'cancel', onPress: () => setModal(null) }
+                                ]
+                            })} isLast />
                         </View>
                     </View>
 
@@ -115,6 +131,8 @@ export default function ProfileScreen() {
 
                 </ScrollView>
             </View>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </SafeAreaView>
     );
 }
