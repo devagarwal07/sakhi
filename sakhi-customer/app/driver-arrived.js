@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Image, Platform, ScrollView
+    Dimensions, Image, Platform, ScrollView, Alert, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -10,9 +10,26 @@ const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
+    const TOTAL_WAIT = 3 * 60; // 3 minutes in seconds
+    const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
+    const intervalRef = useRef(null);
 
-    // Map Coordinates
-    const coords = { latitude: 12.9716, longitude: 77.5946 }; // Mock map center
+    useEffect(() => {
+        intervalRef.current = setInterval(() => {
+            setSecondsLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(intervalRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(intervalRef.current);
+    }, []);
+
+    const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+    const secs = String(secondsLeft % 60).padStart(2, '0');
+    const progress = secondsLeft / TOTAL_WAIT; // 1.0 → 0.0
 
     return (
         <View style={styles.container}>
@@ -57,12 +74,14 @@ export default function DriverArrivedScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
                     <Text style={styles.navIconArrow}>←</Text>
                 </TouchableOpacity>
-
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Arrived</Text>
                 </View>
-
-                <TouchableOpacity style={styles.navIconBtn}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Options', 'What would you like to do?', [
+                    { text: 'Report Issue', onPress: () => router.push('/complaint') },
+                    { text: 'Contact Support', onPress: () => Linking.openURL('tel:18001234567') },
+                    { text: 'Cancel', style: 'cancel' },
+                ])}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -103,10 +122,10 @@ export default function DriverArrivedScreen() {
                         </View>
 
                         <View style={styles.actionBtns}>
-                            <TouchableOpacity style={styles.callBtn}>
+                            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('tel:+919876500001')}>
                                 <Text style={styles.callIconText}>📞</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.msgBtn}>
+                            <TouchableOpacity style={styles.msgBtn} onPress={() => Alert.alert('Message Driver', 'Chat with driver feature coming soon.', [{ text: 'OK' }])}>
                                 <Text style={styles.msgIconText}>✉️</Text>
                             </TouchableOpacity>
                         </View>
@@ -118,21 +137,18 @@ export default function DriverArrivedScreen() {
                             <Text style={styles.timerLabel}>FREE WAITING WINDOW</Text>
                             <Text style={styles.timerLabel}>3:00 MINS</Text>
                         </View>
-                        
                         <View style={styles.timerDisplay}>
-                            <Text style={styles.timerBigText}>2:34</Text>
+                            <Text style={[styles.timerBigText, secondsLeft <= 30 && { color: '#BA1A1A' }]}>{mins}:{secs}</Text>
                         </View>
-
-                        {/* Progress Bar */}
+                        {/* Live Progress Bar */}
                         <View style={styles.progressBarBg}>
-                            <View style={styles.progressBarActive} />
+                            <View style={[styles.progressBarActive, { width: `${progress * 100}%`, backgroundColor: secondsLeft <= 30 ? '#BA1A1A' : '#BEA3D8' }]} />
                         </View>
-
                         <View style={styles.timerFooter}>
                             <View style={styles.infoIconWrapper}>
                                 <Text style={styles.infoIcon}>i</Text>
                             </View>
-                            <Text style={styles.timerFooterText}>NO WAITING CHARGES YET</Text>
+                            <Text style={styles.timerFooterText}>{secondsLeft <= 30 ? 'WAITING CHARGES MAY APPLY SOON' : 'NO WAITING CHARGES YET'}</Text>
                         </View>
                     </View>
 

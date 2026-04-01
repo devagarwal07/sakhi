@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, SafeAreaView, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function SOSActiveScreen() {
@@ -12,8 +12,10 @@ export default function SOSActiveScreen() {
     ];
 
     const handleCancel = () => {
-        alert('SOS Alert Cancelled.');
-        router.replace('/(tabs)/');
+        Alert.alert('Cancel SOS?', 'Are you sure you are safe? This will cancel the SOS alert.', [
+            { text: 'No, Keep SOS', style: 'cancel' },
+            { text: "Yes, I'm Safe", style: 'destructive', onPress: () => router.replace('/(tabs)/') },
+        ]);
     };
 
     return (
@@ -25,7 +27,7 @@ export default function SOSActiveScreen() {
                         <Text style={styles.navIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>Emergency SOS</Text>
-                    <TouchableOpacity style={styles.navIconBtn}>
+                    <TouchableOpacity onPress={() => router.push('/sos-settings')} style={styles.navIconBtn}>
                         <Text style={styles.navIcon}>⚙️</Text>
                     </TouchableOpacity>
                 </View>
@@ -98,17 +100,17 @@ export default function SOSActiveScreen() {
 
                 {/* Primary Actions */}
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity style={styles.callSakhiBtn} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.callSakhiBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:18001234567')}>
                         <Text style={styles.callIcon}>📞</Text>
                         <Text style={styles.callSakhiText}>Call Sakhi Team</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8} onPress={() => Alert.alert('Message Support', 'Opening Sakhi safety chat. Our team is on standby.', [{ text: 'OK' }])}>
                         <Text style={styles.msgIcon}>💬</Text>
                         <Text style={styles.msgSakhiText}>Message Sakhi Team</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.authoritiesBtn} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.authoritiesBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:112')}>
                         <Text style={styles.shieldIcon}>🛡️</Text>
                         <Text style={styles.authoritiesText}>Contact Authorities (112)</Text>
                     </TouchableOpacity>
