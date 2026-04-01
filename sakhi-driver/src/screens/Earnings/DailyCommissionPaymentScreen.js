@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ScrollView, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import { startLocationTracking } from '../../services/locationTask';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const PAYMENT_METHODS = [
   {
@@ -38,6 +39,7 @@ const PAYMENT_METHODS = [
 
 export default function DailyCommissionPaymentScreen({ navigation, route }) {
   const { driver, updateDriver } = useAuth();
+  const insets = useSafeAreaInsets();
   const period     = route?.params?.period ?? 'daily';
   const isWeekly   = period === 'weekly';
   const amount     = isWeekly ? 350 :  50;
@@ -94,13 +96,8 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
     <View style={s.root}>
       <StatusBar style="dark" />
 
-      {/* ── TOP BAR: back + title ── */}
-      <View style={s.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
-          <Text style={s.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={s.topTitle}>{screenTitle}</Text>
-      </View>
+      {/* ── HEADER ── */}
+      <ScreenHeader title={screenTitle} onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={s.scroll}
@@ -233,18 +230,11 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F5F0FF' },
 
   // ── Top bar
-  topBar: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12,
-    gap: 12, backgroundColor: '#F5F0FF',
-  },
-  backBtn:   { padding: 4 },
-  backArrow: { fontSize: 20, color: '#BEA3D8', fontWeight: '600' },
-  topTitle:  { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.3 },
+  // (removed — replaced by ScreenHeader)
 
   // ── Scroll
   scroll:        { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 160, gap: 16 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 160, gap: 16 },
 
   // ── Greeting
   greeting:    { gap: 4, paddingVertical: 4 },

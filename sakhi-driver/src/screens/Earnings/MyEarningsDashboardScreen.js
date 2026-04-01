@@ -3,9 +3,10 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ── Period tabs ──────────────────────────────────────────────────────────────
 const PERIODS = [
@@ -114,18 +115,11 @@ export default function MyEarningsDashboardScreen({ navigation }) {
   const pendingComm  = data?.pending_commission ?? 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Earnings</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="My Earnings" onBack={() => navigation.goBack()} />
 
       {/* Period tabs */}
-      <View style={styles.tabsWrap}>
+      <View style={[styles.tabsWrap, {}]}>
         <View style={styles.tabsRow}>
           {PERIODS.map((p) => (
             <TouchableOpacity
@@ -223,22 +217,14 @@ export default function MyEarningsDashboardScreen({ navigation }) {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-    backgroundColor: `${Colors.surfaceLow}CC`,
-  },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
 
-  tabsWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
+  tabsWrap: { paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing.sm },
   tabsRow: {
     flexDirection: 'row', backgroundColor: Colors.white,
     borderRadius: Radius.lg, padding: 4, ...Shadows.card,
@@ -249,7 +235,7 @@ const styles = StyleSheet.create({
   tabTextActive: { fontWeight: '800', color: Colors.primaryContainer },
 
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 32, gap: 14 },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 32, gap: 14 },
 
   // Hero
   heroCard: {
