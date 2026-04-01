@@ -160,13 +160,15 @@ export default function HomeScreen() {
                     {/* Row 2: Pill Tabs */}
                     <View style={styles.pillTabs}>
                         <TouchableOpacity
-                            style={[styles.pillTab, activeTab === 'book' && styles.pillTabActive]}
+                            style={[styles.pillTab, activeTab === 'book' && styles.pillTabActive,
+                            activeTab !== 'book' && styles.pillTabOutline]}
                             onPress={() => {
                                 setActiveTab('book');
                                 router.push('/location-search');
                             }}
                         >
-                            <Text style={[styles.pillTabText, activeTab === 'book' && styles.pillTabTextActive]}>
+                            <Text style={[styles.pillTabText, activeTab === 'book' && styles.pillTabTextActive,
+                            activeTab !== 'book' && styles.pillTabTextOutline]}>
                                 Book Now
                             </Text>
                         </TouchableOpacity>
