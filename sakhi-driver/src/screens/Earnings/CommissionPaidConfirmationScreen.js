@@ -1,36 +1,14 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { startLocationTracking } from '../../services/locationTask';
 import client from '../../api/client';
-
-// ── Bottom Tab Item ───────────────────────────────────────────────────────────
-function TabItem({ icon, label, active, onPress }) {
-  return (
-    <TouchableOpacity style={tab.item} onPress={onPress} activeOpacity={0.7}>
-      <View style={[tab.iconWrap, active && tab.iconWrapActive]}>
-        <Image source={icon} style={[tab.icon, active && tab.iconActive]} resizeMode="contain" />
-      </View>
-      <Text style={[tab.label, active && tab.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const tab = StyleSheet.create({
-  item:           { flex: 1, alignItems: 'center', gap: 4 },
-  iconWrap:       { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  iconWrapActive: { backgroundColor: '#F5F0FF' },
-  icon:           { width: 19, height: 18, tintColor: '#6B7280' },
-  iconActive:     { tintColor: '#BEA3D8' },
-  label: {
-    fontSize: 10, fontWeight: '500', letterSpacing: 1,
-    textTransform: 'uppercase', color: '#6B7280', lineHeight: 15,
-  },
-  labelActive: { color: '#BEA3D8' },
-});
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 
 // ── Receipt Row ───────────────────────────────────────────────────────────────
 function ReceiptRow({ label, value, valuePurple }) {
@@ -56,30 +34,27 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
     ? 'Your platform fee is active for 7 days. Earning starts now! 💜'
     : 'Your platform fee is active for today. Earning starts now! 💜';
 
-  const handleGoOnline = async () => {
-    try {
-      await client.post('/drivers/status', { is_online: true });
-      updateDriver({ is_online: true });
-      await startLocationTracking();
-    } catch { /* non-critical */ } finally {
-      navigation.reset({ index: 0, routes: [{ name: 'DriverOnlineDashboard' }] });
-    }
+  const handleGoOnline = () => {
+    // 1. Optimistic context update — toggle shows ONLINE instantly
+    updateDriver({ is_online: true });
+
+    // 2. Fire-and-forget background tasks (don't block navigation)
+    client.post('/drivers/status', { is_online: true }).catch(() => {});
+    startLocationTracking().catch(() => {});
+
+    // 3. Navigate immediately — no waiting
+    navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
   };
 
   return (
     <View style={s.root}>
       <StatusBar style="dark" />
 
-      {/* ── HEADER: absolute top, h:60 ── */}
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
-          style={s.closeBtn}
-        >
-          <Text style={s.closeIcon}>✕</Text>
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Payment Confirmed</Text>
-      </View>
+      {/* ── HEADER ── */}
+      <ScreenHeader
+        title="Payment Confirmed"
+        onBack={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
+      />
 
       {/* ── SCROLLABLE CONTENT ── */}
       <ScrollView
@@ -144,33 +119,7 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
       </ScrollView>
 
-      {/* ── BOTTOM NAV: absolute, h:77, radius 16/16/0/0 ── */}
-      <View style={s.nav}>
-        <TabItem
-          icon={require('../../../assets/home.png')}
-          label="HOME"
-          active={false}
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
-        />
-        <TabItem
-          icon={require('../../../assets/earning.png')}
-          label="EARNINGS"
-          active={false}
-          onPress={() => navigation.navigate('MyEarnings')}
-        />
-        <TabItem
-          icon={require('../../../assets/wallet.png')}
-          label="WALLET"
-          active={true}
-          onPress={() => {}}
-        />
-        <TabItem
-          icon={require('../../../assets/profile.png')}
-          label="ACCOUNT"
-          active={false}
-          onPress={() => navigation.navigate('MyProfile')}
-        />
-      </View>
+      <BottomNavBar navigation={navigation} activeTab="wallet" />
     </View>
   );
 }
@@ -180,32 +129,13 @@ const s = StyleSheet.create({
   /* Root */
   root: { flex: 1, backgroundColor: '#F5F0FF' },
 
-  /* ── Header: h:60, bg rgba(245,240,255,0.8), z:2
-        padding: 16px 112.17 16 24, gap:64 ── */
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: 60, zIndex: 2,
-    flexDirection: 'row', alignItems: 'center',
-    paddingLeft: 24, paddingRight: 112, paddingVertical: 16,
-    gap: 64,
-    backgroundColor: 'rgba(245,240,255,0.8)',
-  },
-  closeBtn:  { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  /* × icon: 14×14, #BEA3D8 */
-  closeIcon: { fontSize: 14, color: '#BEA3D8', lineHeight: 14 },
-  /* Heading 1: 18px 600w #1E1B2E, letter-spacing -0.45 */
-  headerTitle: {
-    fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45, lineHeight: 28,
-  },
-
-  /* ── Scroll: below header, above nav ── */
-  scroll: { flex: 1, marginTop: 60, marginBottom: 77 },
+  scroll: { flex: 1 },
   scrollContent: {
     flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
     gap: 24,
   },
 
@@ -327,24 +257,4 @@ const s = StyleSheet.create({
     fontSize: 16, fontWeight: '700', color: '#FFFFFF', lineHeight: 24, textAlign: 'center',
   },
 
-  /* ── Nav: absolute, bottom:0, h:77
-        row, align center
-        padding: 8 33.06 24 33.05, gap 34.1
-        bg: rgba(255,255,255,0.8), radius 16/16/0/0
-        shadow: 0 -16 32 rgba(124,58,237,0.08) ── */
-  nav: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: 77,
-    flexDirection: 'row', alignItems: 'center',
-    paddingLeft: 33, paddingRight: 33,
-    paddingTop: 8, paddingBottom: 24,
-    gap: 34,
-    backgroundColor: 'rgba(255,255,255,0.80)',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.08, shadowRadius: 32,
-    elevation: 10,
-    zIndex: 2,
-  },
 });
