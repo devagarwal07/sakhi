@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Image, Platform, ScrollView, Alert, Linking
+    Dimensions, Image, Platform, ScrollView, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
-    const TOTAL_WAIT = 3 * 60; // 3 minutes in seconds
+    const TOTAL_WAIT = 3 * 60;
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
     const intervalRef = useRef(null);
+    const [modal, setModal] = useState(null);
 
     useEffect(() => {
         intervalRef.current = setInterval(() => {
@@ -77,11 +79,16 @@ export default function DriverArrivedScreen() {
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Arrived</Text>
                 </View>
-                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Options', 'What would you like to do?', [
-                    { text: 'Report Issue', onPress: () => router.push('/complaint') },
-                    { text: 'Contact Support', onPress: () => Linking.openURL('tel:18001234567') },
-                    { text: 'Cancel', style: 'cancel' },
-                ])}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
+                    icon: '⚙️',
+                    title: 'Options',
+                    message: 'How can we help you?',
+                    buttons: [
+                        { text: 'Report Issue', onPress: () => { setModal(null); router.push('/complaint'); } },
+                        { text: 'Contact Support', onPress: () => { setModal(null); Linking.openURL('tel:18001234567'); } },
+                        { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
+                    ],
+                })}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -125,7 +132,7 @@ export default function DriverArrivedScreen() {
                             <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('tel:+919876500001')}>
                                 <Text style={styles.callIconText}>📞</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.msgBtn} onPress={() => Alert.alert('Message Driver', 'Chat with driver feature coming soon.', [{ text: 'OK' }])}>
+                            <TouchableOpacity style={styles.msgBtn} onPress={() => setModal({ icon: '✉️', title: 'Message Driver', message: 'Chat with driver feature coming soon.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] })}>
                                 <Text style={styles.msgIconText}>✉️</Text>
                             </TouchableOpacity>
                         </View>
@@ -176,6 +183,7 @@ export default function DriverArrivedScreen() {
                 </View>
             </View>
 
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

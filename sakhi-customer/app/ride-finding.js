@@ -1,17 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Animated, Platform, ScrollView, Alert
+    Dimensions, Animated, Platform, ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRide } from '../src/context/RideContext';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
 export default function RideFindingScreen() {
     const router = useRouter();
     const { ride } = useRide();
+    const [modal, setModal] = useState(null);
 
     // Reanimated pulses for the center pin
     const pulse1 = useRef(new Animated.Value(0)).current;
@@ -103,18 +105,28 @@ export default function RideFindingScreen() {
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
                 <TouchableOpacity onPress={() => {
-                    Alert.alert('Cancel Ride?', 'Are you sure you want to cancel the search?', [
-                        { text: 'Keep Searching', style: 'cancel' },
-                        { text: 'Cancel', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
-                    ]);
+                    setModal({
+                        icon: '🚗',
+                        title: 'Cancel Ride?',
+                        message: 'Are you sure you want to cancel the search?',
+                        buttons: [
+                            { text: 'Keep Searching', style: 'cancel', onPress: () => setModal(null) },
+                            { text: 'Cancel', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+                        ],
+                    });
                 }} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Ride Options', 'What would you like to do?', [
-                    { text: 'Contact Support', onPress: () => Alert.alert('Support', 'Our team will call you shortly.') },
-                    { text: 'Cancel Search', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
-                    { text: 'Close', style: 'cancel' },
-                ])}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
+                    icon: '📧',
+                    title: 'Ride Options',
+                    message: 'How can we help you?',
+                    buttons: [
+                        { text: 'Contact Support', onPress: () => { setModal(null); setTimeout(() => setModal({ icon: '📞', title: 'Support', message: 'Our team will call you shortly.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 300); } },
+                        { text: 'Cancel Search', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+                        { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
+                    ],
+                })}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -180,16 +192,22 @@ export default function RideFindingScreen() {
                 {/* Cancel Button */}
                 <View style={styles.cancelBtnWrap}>
                     <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={() => {
-                        Alert.alert('Cancel Ride?', 'Stop searching for a driver?', [
-                            { text: 'Keep Searching', style: 'cancel' },
-                            { text: 'Cancel Ride', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
-                        ]);
+                        setModal({
+                            icon: '❌',
+                            title: 'Cancel Ride?',
+                            message: 'Stop searching for a driver?',
+                            buttons: [
+                                { text: 'Keep Searching', style: 'cancel', onPress: () => setModal(null) },
+                                { text: 'Cancel Ride', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+                            ],
+                        });
                     }}>
                         <Text style={styles.cancelBtnText}>Cancel Ride</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.fadeBottom} />
             </View>
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }
