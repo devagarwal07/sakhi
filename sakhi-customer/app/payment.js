@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Platform 
+    SafeAreaView, Platform, Alert, Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
+    const [selectedMethod, setSelectedMethod] = useState('cash');
+    const [upiIds, setUpiIds] = useState(['priya@okaxis']);
+    const [showAddUpi, setShowAddUpi] = useState(false);
+    const [newUpi, setNewUpi] = useState('');
+
+    const handleDeleteUpi = (id) => {
+        Alert.alert('Remove UPI', `Remove ${id} from saved IDs?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => setUpiIds(prev => prev.filter(u => u !== id)) },
+        ]);
+    };
+
+    const handleAddUpi = () => {
+        if (!newUpi.includes('@')) { Alert.alert('Invalid UPI', 'Please enter a valid UPI ID (e.g. name@okaxis).'); return; }
+        setUpiIds(prev => [...prev, newUpi.trim()]);
+        setNewUpi('');
+        setShowAddUpi(false);
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -34,31 +52,34 @@ export default function PaymentMethodsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>SAVED UPI IDS</Text>
                         
-                        {/* UPI Card */}
-                        <View style={styles.upiCard}>
-                            <View style={styles.upiLeft}>
-                                <View style={styles.upiIconBg}>
-                                    <Text style={styles.upiIcon}>📱</Text>
-                                </View>
-                                <View style={styles.upiDetails}>
-                                    <Text style={styles.upiID}>priya@okaxis</Text>
-                                    <View style={styles.primaryBadge}>
-                                        <Text style={styles.primaryBadgeText}>PRIMARY</Text>
+                        {upiIds.map((id) => (
+                            <View key={id} style={styles.upiCard}>
+                                <TouchableOpacity style={styles.upiLeft} onPress={() => setSelectedMethod(id)} activeOpacity={0.8}>
+                                    <View style={[styles.upiIconBg, selectedMethod === id && { backgroundColor: '#EDE9FE' }]}>
+                                        <Text style={styles.upiIcon}>📱</Text>
                                     </View>
+                                    <View>
+                                        <Text style={styles.upiID}>{id}</Text>
+                                        {upiIds.indexOf(id) === 0 && (
+                                            <View style={styles.primaryBadge}>
+                                                <Text style={styles.primaryBadgeText}>PRIMARY</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                                <View style={styles.actionBtns}>
+                                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Edit UPI', 'UPI editing coming soon.')}>
+                                        <Text style={styles.actionIcon}>✎</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteUpi(id)}>
+                                        <Text style={styles.actionIcon}>🗑</Text>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
-                            <View style={styles.actionBtns}>
-                                <TouchableOpacity style={styles.actionBtn}>
-                                    <Text style={styles.actionIcon}>✎</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn}>
-                                    <Text style={styles.actionIcon}>🗑</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+                        ))}
 
                         {/* Add UPI Action */}
-                        <TouchableOpacity style={styles.addUpiBtn} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.addUpiBtn} activeOpacity={0.7} onPress={() => setShowAddUpi(true)}>
                             <Text style={styles.addUpiIcon}>+</Text>
                             <Text style={styles.addUpiText}>Add UPI ID</Text>
                         </TouchableOpacity>
@@ -69,7 +90,7 @@ export default function PaymentMethodsScreen() {
                         <Text style={styles.sectionTitle}>CASH</Text>
                         
                         {/* Cash Card */}
-                        <View style={styles.cashCard}>
+                        <TouchableOpacity style={[styles.cashCard, selectedMethod === 'cash' && styles.cashCardSelected]} onPress={() => setSelectedMethod('cash')} activeOpacity={0.8}>
                             <View style={styles.cashLeft}>
                                 <View style={styles.cashIconBg}>
                                     <Text style={styles.cashIcon}>💵</Text>
@@ -79,14 +100,16 @@ export default function PaymentMethodsScreen() {
                                     <Text style={styles.cashSubtitle}>Default for on-demand rides</Text>
                                 </View>
                             </View>
-                            <View style={styles.checkIconWrapper}>
-                                <Text style={styles.checkIcon}>✓</Text>
-                            </View>
-                        </View>
+                            {selectedMethod === 'cash' && (
+                                <View style={styles.checkIconWrapper}>
+                                    <Text style={styles.checkIcon}>✓</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                     </View>
 
                     {/* Transaction History Link */}
-                    <TouchableOpacity style={styles.historyBtn} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.historyBtn} activeOpacity={0.7} onPress={() => router.push('/wallet')}>
                         <View style={styles.historyLeft}>
                             <Text style={styles.historyIcon}>⏱</Text>
                             <Text style={styles.historyText}>Transaction History</Text>
@@ -107,6 +130,27 @@ export default function PaymentMethodsScreen() {
                 </View>
 
             </View>
+
+            {/* Add UPI Modal */}
+            <Modal visible={showAddUpi} transparent animationType="slide">
+                <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowAddUpi(false)} activeOpacity={1} />
+                <View style={styles.modalSheet}>
+                    <View style={styles.modalHandle} />
+                    <Text style={styles.modalTitle}>Add UPI ID</Text>
+                    <TextInput
+                        style={styles.modalInput}
+                        value={newUpi}
+                        onChangeText={setNewUpi}
+                        placeholder="example@okaxis"
+                        placeholderTextColor="#AAA"
+                        autoCapitalize="none"
+                        autoFocus
+                    />
+                    <TouchableOpacity style={styles.modalBtn} onPress={handleAddUpi}>
+                        <Text style={styles.modalBtnText}>Add UPI ID</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -183,7 +227,6 @@ const styles = StyleSheet.create({
     addUpiIcon: { fontSize: 20, color: '#BEA3D8', fontWeight: 'bold' },
     addUpiText: { fontSize: 16, fontWeight: '600', color: '#BEA3D8' },
 
-    /* Cash Card */
     cashCard: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         padding: 16,
@@ -192,6 +235,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
+    cashCardSelected: { borderColor: '#BEA3D8', backgroundColor: '#F6F1FF' },
     cashLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     cashIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
     cashIcon: { fontSize: 20 },
@@ -231,4 +275,26 @@ const styles = StyleSheet.create({
         fontSize: 11, fontWeight: '500', color: '#7B7487',
         textAlign: 'center', letterSpacing: 0.55, textTransform: 'uppercase', lineHeight: 16,
     },
+
+    /* Add UPI Modal */
+    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+    modalSheet: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    },
+    modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },
+    modalInput: {
+        backgroundColor: '#F6F1FF', borderRadius: 12,
+        paddingHorizontal: 16, paddingVertical: 14,
+        fontSize: 16, fontWeight: '500', color: '#1C1A25',
+        marginBottom: 16,
+    },
+    modalBtn: {
+        backgroundColor: '#9867D9', borderRadius: 12, height: 52,
+        justifyContent: 'center', alignItems: 'center',
+    },
+    modalBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });
+

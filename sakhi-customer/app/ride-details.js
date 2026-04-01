@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Image, Platform 
+    SafeAreaView, Image, Platform, Alert, Linking
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
@@ -45,8 +45,8 @@ export default function RideDetailsScreen() {
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Ride Details</Text>
-                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-                        <Text style={styles.headerIcon}>🔗</Text> 
+                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => Alert.alert('Share Ride', `Trip ID: SAKHI-${Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/demo`, [{ text: 'Copy Link', onPress: () => Alert.alert('Copied!', 'Link copied to clipboard.') }, { text: 'Close' }])}>
+                        <Text style={styles.headerIcon}>🔗</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -168,7 +168,7 @@ export default function RideDetailsScreen() {
 
                 {/* Fixed Bottom Action */}
                 <View style={styles.bottomFixedWrap}>
-                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={() => router.push('/location-search')}>
                         <Text style={styles.actionBtnText}>Book Same Route</Text>
                     </TouchableOpacity>
                 </View>

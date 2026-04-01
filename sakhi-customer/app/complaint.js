@@ -1,15 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, TextInput, Platform 
+    SafeAreaView, TextInput, Platform, Alert, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function HelpSupportScreen() {
     const router = useRouter();
 
-    const QuickHelpCard = ({ icon, label, isEmergency = false }) => (
-        <TouchableOpacity style={styles.quickCard} activeOpacity={0.7}>
+    const [search, setSearch] = useState('');
+
+    const helpCategories = {
+        ride: 'For ride issues, please rate the trip and submit a report from your Ride History.',
+        billing: 'For billing issues, check your Wallet for transaction history or contact us.',
+        safety: 'If you feel unsafe, please use the SOS button or call our safety helpline at 1800-SAKHI.',
+        subscription: 'For subscription help, go to the Subscriptions tab to manage your plan.',
+    };
+
+    const QuickHelpCard = ({ icon, label, category, isEmergency = false }) => (
+        <TouchableOpacity style={styles.quickCard} activeOpacity={0.7} onPress={() => Alert.alert(label, helpCategories[category] || 'Our team will assist you shortly.')}>
             <View style={[styles.quickIconBox, isEmergency && styles.quickIconBoxEmergency]}>
                 <Text style={[styles.quickIcon, isEmergency && styles.quickIconEmergency]}>{icon}</Text>
             </View>
@@ -29,7 +38,7 @@ export default function HelpSupportScreen() {
                     <Text style={styles.locationText} numberOfLines={1}>{dropoff}</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7} onPress={() => router.push('/(tabs)/ride-history')}>
                 <Text style={styles.getHelpText}>Get Help</Text>
             </TouchableOpacity>
         </View>
@@ -58,6 +67,9 @@ export default function HelpSupportScreen() {
                             style={styles.searchInput}
                             placeholder="Search for help..."
                             placeholderTextColor="#94A3B8"
+                            value={search}
+                            onChangeText={setSearch}
+                            returnKeyType="search"
                         />
                     </View>
 
@@ -65,12 +77,12 @@ export default function HelpSupportScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionHeading}>QUICK HELP</Text>
                         <View style={styles.quickGridRow}>
-                            <QuickHelpCard icon="🚙" label="My Ride Issue" />
-                            <QuickHelpCard icon="₹" label="Billing & Payments" />
+                            <QuickHelpCard icon="🚙" label="My Ride Issue" category="ride" />
+                            <QuickHelpCard icon="₹" label="Billing & Payments" category="billing" />
                         </View>
                         <View style={styles.quickGridRow}>
-                            <QuickHelpCard icon="🛡️" label="Safety Concern" isEmergency={true} />
-                            <QuickHelpCard icon="🔁" label="Subscription Help" />
+                            <QuickHelpCard icon="🛡️" label="Safety Concern" category="safety" isEmergency={true} />
+                            <QuickHelpCard icon="🔁" label="Subscription Help" category="subscription" />
                         </View>
                     </View>
 
@@ -78,7 +90,7 @@ export default function HelpSupportScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionHeading}>RECENT TRIPS</Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/ride-history')}>
                                 <Text style={styles.viewAllText}>View All</Text>
                             </TouchableOpacity>
                         </View>
@@ -101,7 +113,7 @@ export default function HelpSupportScreen() {
                         <View style={styles.contactCardContainer}>
                             
                             {/* Chat Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Alert.alert('Chat Support', 'Live chat will open. Average wait time: 2 minutes.', [{ text: 'OK' }])}>
                                 <View style={styles.contactRowLeft}>
                                     <Text style={styles.contactIcon}>💬</Text>
                                     <Text style={styles.contactLabel}>Chat with Support</Text>
@@ -112,7 +124,7 @@ export default function HelpSupportScreen() {
                             </TouchableOpacity>
 
                             {/* Call Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('tel:18001234567')}>
                                 <View style={styles.contactRowLeft}>
                                     <Text style={styles.contactIcon}>📞</Text>
                                     <View style={styles.contactTextCol}>
@@ -124,7 +136,7 @@ export default function HelpSupportScreen() {
                             </TouchableOpacity>
 
                             {/* Email Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:support@sakhi.app?subject=Help Request')}>
                                 <View style={styles.contactRowLeft}>
                                     <Text style={styles.contactIcon}>✉️</Text>
                                     <Text style={styles.contactLabel}>Email Us</Text>
@@ -136,7 +148,7 @@ export default function HelpSupportScreen() {
                     </View>
 
                     {/* Visit Help Centre Button */}
-                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7} onPress={() => Alert.alert('Help Centre', 'Opening help documentation. This will be available online at help.sakhi.app', [{ text: 'OK' }])}>
                         <Text style={styles.visitBtnText}>Visit Help Centre</Text>
                     </TouchableOpacity>
 

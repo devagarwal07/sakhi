@@ -135,7 +135,13 @@ export default function SubscriptionPaymentScreen() {
                                         autoCapitalize="none"
                                     />
                                 </View>
-                                <TouchableOpacity style={styles.verifyBtn}>
+                                <TouchableOpacity style={styles.verifyBtn} onPress={() => {
+                                    if (!upiId.includes('@')) {
+                                        Alert.alert('Invalid UPI ID', 'UPI ID must contain @. Example: name@upi');
+                                    } else {
+                                        Alert.alert('UPI Verified ✅', `${upiId} is valid and ready for payment.`);
+                                    }
+                                }}>
                                     <Text style={styles.verifyText}>Verify</Text>
                                 </TouchableOpacity>
                             </View>

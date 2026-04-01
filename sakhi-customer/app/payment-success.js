@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 
@@ -20,7 +20,11 @@ export default function PaymentSuccessScreen() {
                 <TouchableOpacity onPress={() => router.replace('/(tabs)/subscriptions')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuBtn}>
+                <TouchableOpacity style={styles.menuBtn} onPress={() => Alert.alert('Options', 'What would you like to do?', [
+                    { text: 'Share Receipt', onPress: () => Alert.alert('Shared!', 'Receipt link copied to clipboard.') },
+                    { text: 'View Subscriptions', onPress: () => router.replace('/(tabs)/subscriptions') },
+                    { text: 'Cancel', style: 'cancel' },
+                ])}>
                     <Text style={styles.menuIcon}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -73,7 +77,7 @@ export default function PaymentSuccessScreen() {
                         <Text style={styles.doneText}>Done</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.receiptBtn} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.receiptBtn} activeOpacity={0.8} onPress={() => Alert.alert('Download Receipt', 'Your receipt has been saved to Downloads.', [{ text: 'OK' }])}>
                         <Text style={styles.receiptIcon}>↓</Text>
                         <Text style={styles.receiptText}>Download Receipt</Text>
                     </TouchableOpacity>

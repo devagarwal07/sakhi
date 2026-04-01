@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Image, Platform 
+    SafeAreaView, Image, Platform, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
@@ -38,7 +38,11 @@ export default function ProfileScreen() {
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Settings</Text>
-                    <TouchableOpacity style={styles.iconBtn}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => Alert.alert('Options', 'Choose an option', [
+                        { text: 'Edit Profile', onPress: () => router.push('/edit-profile') },
+                        { text: 'Change Phone', onPress: () => router.push('/change-phone') },
+                        { text: 'Cancel', style: 'cancel' },
+                    ])}>
                         <Text style={styles.headerDots}>⋮</Text>
                     </TouchableOpacity>
                 </View>
@@ -85,8 +89,8 @@ export default function ProfileScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionHeading}>SAFETY</Text>
                         <View style={styles.cardGroup}>
-                            <SettingRow icon="✳️" label="SOS Settings" onPress={() => router.push('/sos-settings')} />
-                            <SettingRow icon="🎯" label="Live Trip Sharing" isLast />
+                            <SettingRow icon="♃️" label="SOS Settings" onPress={() => router.push('/sos-settings')} />
+                            <SettingRow icon="🎯" label="Live Trip Sharing" onPress={() => Alert.alert('Live Trip Sharing', 'Share your real-time location with trusted contacts during every ride. Enable from emergency contacts settings.', [{ text: 'Go to Emergency Contacts', onPress: () => router.push('/emergency-contacts') }, { text: 'OK' }])} isLast />
                         </View>
                     </View>
 

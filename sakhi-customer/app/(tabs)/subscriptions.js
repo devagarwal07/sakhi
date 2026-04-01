@@ -1,10 +1,37 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 
 export default function SubscriptionsDashboard() {
+    const router = useRouter();
     const { ride } = useRide();
     const sub = ride?.subscription || {};
+    const [isPaused, setIsPaused] = useState(false);
+
+    const handlePause = () => {
+        Alert.alert(
+            isPaused ? 'Resume Subscription' : 'Pause Subscription',
+            isPaused
+                ? 'Your subscription rides will resume from tomorrow.'
+                : 'Your upcoming rides will be paused until you resume.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: isPaused ? 'Resume' : 'Pause', onPress: () => setIsPaused(!isPaused) },
+            ]
+        );
+    };
+
+    const handleCancel = () => {
+        Alert.alert(
+            'Cancel Subscription?',
+            'This will permanently cancel your current plan. Any unused rides will be forfeited.',
+            [
+                { text: 'Keep Plan', style: 'cancel' },
+                { text: 'Yes, Cancel', style: 'destructive', onPress: () => Alert.alert('Subscription Cancelled', 'Your plan has been cancelled.') },
+            ]
+        );
+    };
     
     // Dynamic values mapped from context
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Koramangala';
@@ -41,13 +68,13 @@ export default function SubscriptionsDashboard() {
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
                 <View style={styles.headerLeft}>
-                    <TouchableOpacity style={styles.backBtn}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.title}>My Subscription</Text>
                 </View>
-                <TouchableOpacity style={styles.menuBtn}>
-                    <Text style={styles.menuIcon}>⋮</Text>
+                <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/subscription-plans')}>
+                    <Text style={styles.menuIcon}>＋</Text>
                 </TouchableOpacity>
             </View>
 
@@ -88,13 +115,13 @@ export default function SubscriptionsDashboard() {
 
                 {/* Actions */}
                 <View style={styles.actionsRow}>
-                    <TouchableOpacity style={[styles.actionBtn, styles.pauseBtn]} activeOpacity={0.8}>
-                        <Text style={styles.pauseText}>Pause</Text>
+                    <TouchableOpacity style={[styles.actionBtn, styles.pauseBtn]} activeOpacity={0.8} onPress={handlePause}>
+                        <Text style={styles.pauseText}>{isPaused ? 'Resume' : 'Pause'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.resumeBtn]} activeOpacity={0.8}>
-                        <Text style={styles.resumeText}>Resume</Text>
+                    <TouchableOpacity style={[styles.actionBtn, styles.resumeBtn]} activeOpacity={0.8} onPress={() => router.push('/subscription-ride')}>
+                        <Text style={styles.resumeText}>Modify</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} activeOpacity={0.8}>
+                    <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} activeOpacity={0.8} onPress={handleCancel}>
                         <Text style={styles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
                 </View>

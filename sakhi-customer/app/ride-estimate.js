@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Platform
+    Dimensions, Platform, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
@@ -27,12 +27,13 @@ export default function RideEstimateScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
-
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Sakhi</Text>
                 </View>
-
-                <TouchableOpacity style={styles.navIconBtn}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Options', 'Choose an option', [
+                    { text: 'Edit Locations', onPress: () => router.push('/location-search') },
+                    { text: 'Cancel', style: 'cancel' },
+                ])}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -57,7 +58,7 @@ export default function RideEstimateScreen() {
                                 {ride?.dropoff?.address || 'Hauz Khas Social, New Delhi'}
                             </Text>
                         </View>
-                        <TouchableOpacity style={styles.editBtn}>
+                        <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/location-search')}>
                             <Text style={{ fontSize: 16, transform: [{ rotate: '-45deg' }] }}>✏️</Text>
                         </TouchableOpacity>
                     </View>

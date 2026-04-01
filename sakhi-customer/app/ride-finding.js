@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Animated, Platform, ScrollView
+    Dimensions, Animated, Platform, ScrollView, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -102,11 +102,19 @@ export default function RideFindingScreen() {
 
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
+                <TouchableOpacity onPress={() => {
+                    Alert.alert('Cancel Ride?', 'Are you sure you want to cancel the search?', [
+                        { text: 'Keep Searching', style: 'cancel' },
+                        { text: 'Cancel', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
+                    ]);
+                }} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity style={styles.navIconBtn}>
+                <TouchableOpacity style={styles.navIconBtn} onPress={() => Alert.alert('Ride Options', 'What would you like to do?', [
+                    { text: 'Contact Support', onPress: () => Alert.alert('Support', 'Our team will call you shortly.') },
+                    { text: 'Cancel Search', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
+                    { text: 'Close', style: 'cancel' },
+                ])}>
                     <Text style={styles.navDots}>⋮</Text>
                 </TouchableOpacity>
             </View>
@@ -169,7 +177,17 @@ export default function RideFindingScreen() {
 
                 </ScrollView>
                 
-                {/* Fade out over content & Optional Cancel Button */}
+                {/* Cancel Button */}
+                <View style={styles.cancelBtnWrap}>
+                    <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={() => {
+                        Alert.alert('Cancel Ride?', 'Stop searching for a driver?', [
+                            { text: 'Keep Searching', style: 'cancel' },
+                            { text: 'Cancel Ride', style: 'destructive', onPress: () => router.replace('/(tabs)/') },
+                        ]);
+                    }}>
+                        <Text style={styles.cancelBtnText}>Cancel Ride</Text>
+                    </TouchableOpacity>
+                </View>
                 <View style={styles.fadeBottom} />
             </View>
         </View>
@@ -402,6 +420,17 @@ const styles = StyleSheet.create({
         opacity: 0.5,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.1)',
-        // Could place a cancel button here explicitly if needed!
-    }
+    },
+    cancelBtnWrap: {
+        paddingHorizontal: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        paddingTop: 8,
+    },
+    cancelBtn: {
+        width: '100%', height: 52,
+        borderWidth: 2, borderColor: '#EF4444',
+        borderRadius: 12, justifyContent: 'center', alignItems: 'center',
+    },
+    cancelBtnText: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
 });
+

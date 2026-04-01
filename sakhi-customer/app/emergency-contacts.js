@@ -1,18 +1,46 @@
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Switch, Platform, Modal, TextInput 
+    SafeAreaView, Switch, Platform, Modal, TextInput, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function EmergencyContactsScreen() {
     const router = useRouter();
 
-    const [autoShareAnita, setAutoShareAnita] = useState(true);
-    const [autoShareRiya, setAutoShareRiya] = useState(false);
-    
-    // Bottom Sheet State
+    const [contacts, setContacts] = useState([
+        { id: '1', name: 'Anita Sharma', relation: 'MOTHER', phone: '+91 98765 00001', autoShare: true, color: '#BEA3D8', initial: 'A' },
+        { id: '2', name: 'Riya Sharma', relation: 'SISTER', phone: '+91 98765 00002', autoShare: false, color: '#AB8FFE', initial: 'R' },
+    ]);
+
     const [isAddModalVisible, setAddModalVisible] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [newPhone, setNewPhone] = useState('');
+    const [newRelation, setNewRelation] = useState('Friend');
+
+    const toggleAutoShare = (id) => {
+        setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: !c.autoShare } : c));
+    };
+
+    const handleDelete = (id, name) => {
+        Alert.alert('Remove Contact', `Remove ${name} from emergency contacts?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => setContacts(prev => prev.filter(c => c.id !== id)) },
+        ]);
+    };
+
+    const handleSaveContact = () => {
+        if (!newName.trim()) { Alert.alert('Missing Info', 'Please enter a name.'); return; }
+        if (newPhone.replace(/\D/g, '').length < 10) { Alert.alert('Invalid Number', 'Please enter a 10-digit phone number.'); return; }
+        const colors = ['#BEA3D8', '#AB8FFE', '#68C4AF'];
+        setContacts(prev => [...prev, {
+            id: String(Date.now()), name: newName.trim(), relation: newRelation.toUpperCase(),
+            phone: `+91 ${newPhone.trim()}`, autoShare: false,
+            color: colors[prev.length % colors.length], initial: newName[0].toUpperCase(),
+        }]);
+        setNewName(''); setNewPhone(''); setNewRelation('Friend');
+        setAddModalVisible(false);
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -45,98 +73,59 @@ export default function EmergencyContactsScreen() {
 
                     {/* List of Contacts */}
                     <View style={styles.contactsList}>
-
-                        {/* Contact Card 1 */}
-                        <View style={styles.contactCard}>
-                            <View style={styles.cardTop}>
-                                <View style={[styles.avatar, { backgroundColor: '#BEA3D8' }]}>
-                                    <Text style={styles.avatarText}>M</Text>
-                                </View>
-                                <View style={styles.contactInfo}>
-                                    <View style={styles.nameRow}>
-                                        <Text style={styles.contactName}>Anita{'\n'}Sharma</Text>
-                                        <View style={styles.relationBadge}>
-                                            <Text style={styles.relationBadgeText}>MOTHER</Text>
-                                        </View>
+                        {contacts.map(contact => (
+                            <View key={contact.id} style={styles.contactCard}>
+                                <View style={styles.cardTop}>
+                                    <View style={[styles.avatar, { backgroundColor: contact.color }]}>
+                                        <Text style={styles.avatarText}>{contact.initial}</Text>
                                     </View>
-                                    <Text style={styles.contactPhone}>+91 98765 00001</Text>
-                                </View>
-                                <View style={styles.actionBtnsRow}>
-                                    <TouchableOpacity style={styles.editBtn}>
-                                        <Text style={styles.editIcon}>✎</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.deleteBtn}>
-                                        <Text style={styles.deleteIcon}>🗑</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            <View style={styles.cardBottom}>
-                                <View style={styles.autoShareInfo}>
-                                    <Text style={styles.shareIcon}>⛑</Text>
-                                    <Text style={styles.shareText}>Auto-share trip on start</Text>
-                                </View>
-                                <Switch
-                                    trackColor={{ false: '#EBE6F5', true: '#BEA3D8' }}
-                                    thumbColor="#FFFFFF"
-                                    ios_backgroundColor="#EBE6F5"
-                                    onValueChange={() => setAutoShareAnita(!autoShareAnita)}
-                                    value={autoShareAnita}
-                                    style={styles.switchControl}
-                                />
-                            </View>
-                        </View>
-
-                        {/* Contact Card 2 */}
-                        <View style={styles.contactCard}>
-                            <View style={styles.cardTop}>
-                                <View style={[styles.avatar, { backgroundColor: '#AB8FFE' }]}>
-                                    <Text style={styles.avatarText}>S</Text>
-                                </View>
-                                <View style={styles.contactInfo}>
-                                    <View style={styles.nameRow}>
-                                        <Text style={styles.contactName}>Riya{'\n'}Sharma</Text>
-                                        <View style={styles.relationBadge}>
-                                            <Text style={styles.relationBadgeText}>SISTER</Text>
+                                    <View style={styles.contactInfo}>
+                                        <View style={styles.nameRow}>
+                                            <Text style={styles.contactName}>{contact.name}</Text>
+                                            <View style={styles.relationBadge}>
+                                                <Text style={styles.relationBadgeText}>{contact.relation}</Text>
+                                            </View>
                                         </View>
+                                        <Text style={styles.contactPhone}>{contact.phone}</Text>
                                     </View>
-                                    <Text style={styles.contactPhone}>+91 98765 00002</Text>
+                                    <View style={styles.actionBtnsRow}>
+                                        <TouchableOpacity style={styles.editBtn} onPress={() => Alert.alert('Edit Contact', 'Contact editing coming soon.')}>
+                                            <Text style={styles.editIcon}>✎</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(contact.id, contact.name)}>
+                                            <Text style={styles.deleteIcon}>🗑</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <View style={styles.actionBtnsRow}>
-                                    <TouchableOpacity style={styles.editBtn}>
-                                        <Text style={styles.editIcon}>✎</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.deleteBtn}>
-                                        <Text style={styles.deleteIcon}>🗑</Text>
-                                    </TouchableOpacity>
+                                <View style={styles.cardBottom}>
+                                    <View style={styles.autoShareInfo}>
+                                        <Text style={styles.shareIcon}>⛑</Text>
+                                        <Text style={styles.shareText}>Auto-share trip on start</Text>
+                                    </View>
+                                    <Switch
+                                        trackColor={{ false: '#EBE6F5', true: '#BEA3D8' }}
+                                        thumbColor="#FFFFFF"
+                                        ios_backgroundColor="#EBE6F5"
+                                        onValueChange={() => toggleAutoShare(contact.id)}
+                                        value={contact.autoShare}
+                                        style={styles.switchControl}
+                                    />
                                 </View>
                             </View>
-                            <View style={styles.cardBottom}>
-                                <View style={styles.autoShareInfo}>
-                                    <Text style={styles.shareIcon}>⛑</Text>
-                                    <Text style={styles.shareText}>Auto-share trip on start</Text>
-                                </View>
-                                <Switch
-                                    trackColor={{ false: '#EBE6F5', true: '#BEA3D8' }}
-                                    thumbColor="#FFFFFF"
-                                    ios_backgroundColor="#EBE6F5"
-                                    onValueChange={() => setAutoShareRiya(!autoShareRiya)}
-                                    value={autoShareRiya}
-                                    style={styles.switchControl}
-                                />
-                            </View>
-                        </View>
+                        ))}
 
-                        {/* Add Contact Button */}
-                        <TouchableOpacity style={styles.addContactBtn} activeOpacity={0.7} onPress={() => setAddModalVisible(true)}>
-                            <View style={styles.addIconBg}>
-                                <Text style={styles.addIcon}>👤+</Text>
-                            </View>
-                            <View style={styles.addContactContent}>
-                                <Text style={styles.addContactText}>Add Emergency Contact</Text>
-                                <Text style={styles.slotText}>1 slot remaining</Text>
-                            </View>
-                        </TouchableOpacity>
-
+                        {/* Add Contact Button - show only if < 3 */}
+                        {contacts.length < 3 && (
+                            <TouchableOpacity style={styles.addContactBtn} activeOpacity={0.7} onPress={() => setAddModalVisible(true)}>
+                                <View style={styles.addIconBg}>
+                                    <Text style={styles.addIcon}>👤+</Text>
+                                </View>
+                                <View style={styles.addContactContent}>
+                                    <Text style={styles.addContactText}>Add Emergency Contact</Text>
+                                    <Text style={styles.slotText}>{3 - contacts.length} slot{3 - contacts.length !== 1 ? 's' : ''} remaining</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                 </ScrollView>
@@ -156,25 +145,18 @@ export default function EmergencyContactsScreen() {
                     onRequestClose={() => setAddModalVisible(false)}
                 >
                     <View style={styles.modalOverlay}>
-                        {/* Dimmed Background triggers close */}
                         <TouchableOpacity 
                             style={styles.modalBackdropClose} 
                             activeOpacity={1} 
                             onPress={() => setAddModalVisible(false)} 
                         />
-                        
-                        {/* Bottom Sheet Card */}
                         <View style={styles.bottomSheet}>
                             <View style={styles.dragHandle} />
-                            
                             <View style={styles.sheetHeader}>
                                 <Text style={styles.sheetTitle}>Add New Contact</Text>
                                 <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
                             </View>
-
                             <View style={styles.formContent}>
-                                
-                                {/* Full Name Field */}
                                 <View style={styles.fieldGroup}>
                                     <Text style={styles.fieldLabel}>FULL NAME</Text>
                                     <View style={styles.inputWrap}>
@@ -182,43 +164,34 @@ export default function EmergencyContactsScreen() {
                                             style={styles.input} 
                                             placeholder="Enter name"
                                             placeholderTextColor="#6B7280"
+                                            value={newName}
+                                            onChangeText={setNewName}
                                         />
                                         <Text style={styles.inputIcon}>👤</Text>
                                     </View>
                                 </View>
-
-                                {/* Phone Field */}
                                 <View style={styles.fieldGroup}>
                                     <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
                                     <View style={styles.inputWrap}>
                                         <TextInput 
                                             style={styles.input} 
-                                            placeholder="+91 00000 00000"
+                                            placeholder="10-digit mobile number"
                                             placeholderTextColor="#6B7280"
                                             keyboardType="phone-pad"
+                                            maxLength={10}
+                                            value={newPhone}
+                                            onChangeText={setNewPhone}
                                         />
                                         <Text style={styles.inputIcon}>📞</Text>
                                     </View>
                                 </View>
-
-                                {/* Relationship Field (Mock Dropdown) */}
-                                <View style={styles.fieldGroup}>
-                                    <Text style={styles.fieldLabel}>RELATIONSHIP</Text>
-                                    <View style={styles.inputWrap}>
-                                        <Text style={styles.dropdownPlaceholder}>Select relationship</Text>
-                                        <Text style={[styles.inputIcon, { fontSize: 14 }]}>▼</Text>
-                                    </View>
-                                </View>
-
-                                {/* Action Button */}
                                 <TouchableOpacity 
                                     style={styles.sheetActionBtn} 
                                     activeOpacity={0.8}
-                                    onPress={() => setAddModalVisible(false)}
+                                    onPress={handleSaveContact}
                                 >
                                     <Text style={styles.sheetActionText}>Save Contact</Text>
                                 </TouchableOpacity>
-
                             </View>
                         </View>
                     </View>

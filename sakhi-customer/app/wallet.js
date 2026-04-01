@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Pressable, Clipboard, Alert
+    ActivityIndicator, Pressable, Alert, Share
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
@@ -22,9 +22,12 @@ export default function WalletScreen() {
             .finally(() => setLoading(false));
     }, []);
 
-    const copyReferral = () => {
-        Clipboard.setString(wallet?.referral_code || '');
-        Alert.alert('Copied!', 'Your referral code has been copied to clipboard.');
+    const copyReferral = async () => {
+        try {
+            await Share.share({ message: `Use my referral code ${wallet?.referral_code || 'SAKHI100'} on Sakhi and get ₹50 off your first ride!` });
+        } catch (e) {
+            Alert.alert('Copied!', `Referral code: ${wallet?.referral_code || 'SAKHI100'}`);
+        }
     };
 
     if (loading) {

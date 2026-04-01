@@ -33,9 +33,7 @@ export default function SOSWarningScreen() {
     }, []);
 
     const triggerSOS = () => {
-        // Action to send SOS would go here
-        // router.push('/sos-active'); 
-        alert('SOS Sent! Emergency contacts notified.');
+        router.replace('/sos-active');
     };
 
     const handleCancel = () => {

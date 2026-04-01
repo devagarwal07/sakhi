@@ -162,15 +162,21 @@ export default function LocationSearchScreen() {
                 <View style={styles.savedSection}>
                     <Text style={styles.sectionTitle}>SAVED PLACES</Text>
                     <View style={styles.chipsRow}>
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => {
+                            const homeAddr = ride?.savedPlaces?.home || 'Home';
+                            setQuery(homeAddr);
+                        }}>
                             <Text style={styles.chipIcon}>🏠</Text>
                             <Text style={styles.chipText}>Home</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => {
+                            const workAddr = ride?.savedPlaces?.work || 'Work';
+                            setQuery(workAddr);
+                        }}>
                             <Text style={styles.chipIcon}>💼</Text>
                             <Text style={styles.chipText}>Work</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip}>
+                        <TouchableOpacity style={styles.chip} onPress={() => router.push('/saved-places')}>
                             <Text style={styles.chipIcon}>+</Text>
                             <Text style={styles.chipText}>Add New</Text>
                         </TouchableOpacity>

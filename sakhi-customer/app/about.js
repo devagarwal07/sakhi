@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Platform 
+    SafeAreaView, Platform, Alert, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -82,35 +82,35 @@ export default function AboutScreen() {
 
                     {/* Social Share Icons */}
                     <View style={styles.socialRow}>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://twitter.com/sakhirides')}>
                             <Text style={styles.socialIcon}>🔗</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://sakhi.app')}>
                             <Text style={styles.socialIcon}>🌍</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:hello@sakhi.app')}>
                             <Text style={styles.socialIcon}>✉️</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Legal Links */}
                     <View style={styles.legalSection}>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Terms of Service', 'Opening terms of service at sakhi.app/terms', [{ text: 'OK' }])}>
                             <Text style={styles.legalLabel}>Terms of Service</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Privacy Policy', 'Opening privacy policy at sakhi.app/privacy', [{ text: 'OK' }])}>
                             <Text style={styles.legalLabel}>Privacy Policy</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => Alert.alert('Cookie Policy', 'Opening cookie policy at sakhi.app/cookies', [{ text: 'OK' }])}>
                             <Text style={styles.legalLabel}>Cookie Policy</Text>
                             <Text style={styles.legalChevron}>›</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Rate Button */}
-                    <TouchableOpacity style={styles.rateBtn} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.rateBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.sakhi.rider')}>
                         <Text style={styles.rateIcon}>★</Text>
                         <Text style={styles.rateText}>Rate Sakhi on Play Store</Text>
                     </TouchableOpacity>
