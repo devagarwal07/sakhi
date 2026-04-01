@@ -26,7 +26,7 @@ export default function RideEstimateScreen() {
         <View style={styles.container}>
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
