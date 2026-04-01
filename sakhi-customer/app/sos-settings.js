@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-export default function SOSSettingsScreen() {
+export default function SOSSettingsScreen({ isTab = false }) {
     const router = useRouter();
 
     const [preferences, setPreferences] = useState({
@@ -26,9 +26,11 @@ export default function SOSSettingsScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={styles.headerIcon}>←</Text>
-                        </TouchableOpacity>
+                        {!isTab && (
+                            <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                                <Text style={styles.headerIcon}>←</Text>
+                            </TouchableOpacity>
+                        )}
                         <Text style={styles.headerTitle}>Safety & SOS</Text>
                     </View>
                 </View>
