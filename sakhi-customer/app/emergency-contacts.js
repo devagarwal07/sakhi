@@ -1,9 +1,11 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Switch, Platform, Modal, TextInput, Alert
+    Switch, Platform, Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function EmergencyContactsScreen() {
     const router = useRouter();
@@ -17,21 +19,50 @@ export default function EmergencyContactsScreen() {
     const [newName, setNewName] = useState('');
     const [newPhone, setNewPhone] = useState('');
     const [newRelation, setNewRelation] = useState('Friend');
+    const [alertModal, setAlertModal] = useState(null);
 
     const toggleAutoShare = (id) => {
         setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: !c.autoShare } : c));
     };
 
     const handleDelete = (id, name) => {
-        Alert.alert('Remove Contact', `Remove ${name} from emergency contacts?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => setContacts(prev => prev.filter(c => c.id !== id)) },
-        ]);
+        setAlertModal({
+            icon: '🗑️',
+            title: 'Remove Contact',
+            message: `Remove ${name} from emergency contacts?`,
+            buttons: [
+                { text: 'Cancel', style: 'cancel', onPress: () => setAlertModal(null) },
+                { 
+                    text: 'Remove', 
+                    style: 'destructive', 
+                    onPress: () => {
+                        setAlertModal(null);
+                        setContacts(prev => prev.filter(c => c.id !== id));
+                    } 
+                },
+            ]
+        });
     };
 
     const handleSaveContact = () => {
-        if (!newName.trim()) { Alert.alert('Missing Info', 'Please enter a name.'); return; }
-        if (newPhone.replace(/\D/g, '').length < 10) { Alert.alert('Invalid Number', 'Please enter a 10-digit phone number.'); return; }
+        if (!newName.trim()) { 
+            setAlertModal({
+                icon: '⚠️',
+                title: 'Missing Info',
+                message: 'Please enter a name.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+            return; 
+        }
+        if (newPhone.replace(/\D/g, '').length < 10) { 
+            setAlertModal({
+                icon: '⚠️',
+                title: 'Invalid Number',
+                message: 'Please enter a 10-digit phone number.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+            return; 
+        }
         const colors = ['#BEA3D8', '#AB8FFE', '#68C4AF'];
         setContacts(prev => [...prev, {
             id: String(Date.now()), name: newName.trim(), relation: newRelation.toUpperCase(),
@@ -89,7 +120,12 @@ export default function EmergencyContactsScreen() {
                                         <Text style={styles.contactPhone}>{contact.phone}</Text>
                                     </View>
                                     <View style={styles.actionBtnsRow}>
-                                        <TouchableOpacity style={styles.editBtn} onPress={() => Alert.alert('Edit Contact', 'Contact editing coming soon.')}>
+                                        <TouchableOpacity style={styles.editBtn} onPress={() => setAlertModal({
+                                            icon: '✏️',
+                                            title: 'Edit Contact',
+                                            message: 'Contact editing coming soon.',
+                                            buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+                                        })}>
                                             <Text style={styles.editIcon}>✎</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(contact.id, contact.name)}>
@@ -196,7 +232,7 @@ export default function EmergencyContactsScreen() {
                         </View>
                     </View>
                 </Modal>
-
+                {alertModal && <SakhiModal config={alertModal} onClose={() => setAlertModal(null)} />}
             </View>
         </SafeAreaView>
     );

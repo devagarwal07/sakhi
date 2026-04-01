@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, Switch, Platform 
+    Switch, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 

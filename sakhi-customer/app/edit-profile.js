@@ -1,11 +1,13 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    SafeAreaView, TextInput, Image, KeyboardAvoidingView,
-    Platform, Modal, Alert, FlatList, Pressable,
+    TextInput, Image, KeyboardAvoidingView,
+    Platform, Modal, FlatList, Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import SakhiModal from '../src/components/SakhiModal';
 
 const LANGUAGES = [
     'English', 'Hindi', 'Marathi', 'Bengali', 'Tamil',
@@ -17,6 +19,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 
 export default function EditProfileScreen() {
     const router = useRouter();
+    const [modal, setModal] = useState(null);
 
     // Form state
     const [name, setName] = useState('Priya Sharma');
@@ -40,7 +43,12 @@ export default function EditProfileScreen() {
     const handlePickAvatar = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Required', 'Please allow photo library access to update your profile picture.');
+            setModal({
+                icon: '⚠️',
+                title: 'Permission Required',
+                message: 'Please allow photo library access to update your profile picture.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -66,10 +74,17 @@ export default function EditProfileScreen() {
         const d = parseInt(tempDay, 10);
         const m = parseInt(tempMonth, 10);
         const y = parseInt(tempYear, 10);
-        if (!d || d < 1 || d > 31) { Alert.alert('Invalid Day', 'Please enter a valid day (1-31).'); return; }
-        if (!m || m < 1 || m > 12) { Alert.alert('Invalid Month', 'Please enter a valid month (1-12).'); return; }
+        if (!d || d < 1 || d > 31) { 
+            setModal({ icon: '⚠️', title: 'Invalid Day', message: 'Please enter a valid day (1-31).', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            return; 
+        }
+        if (!m || m < 1 || m > 12) { 
+            setModal({ icon: '⚠️', title: 'Invalid Month', message: 'Please enter a valid month (1-12).', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            return; 
+        }
         if (!y || y < 1920 || y > new Date().getFullYear() - 5) {
-            Alert.alert('Invalid Year', 'Please enter a valid birth year.'); return;
+            setModal({ icon: '⚠️', title: 'Invalid Year', message: 'Please enter a valid birth year.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            return;
         }
         setDobDay(String(d).padStart(2, '0'));
         setDobMonth(String(m).padStart(2, '0'));
@@ -79,13 +94,20 @@ export default function EditProfileScreen() {
 
     // ── Save Profile ───────────────────────────────────────────
     const handleSave = () => {
-        if (!name.trim()) { Alert.alert('Missing Info', 'Full name cannot be empty.'); return; }
-        if (!email.includes('@')) { Alert.alert('Invalid Email', 'Please enter a valid email address.'); return; }
-        Alert.alert(
-            'Profile Updated! ✅',
-            'Your profile changes have been saved successfully.',
-            [{ text: 'Done', onPress: () => router.back() }]
-        );
+        if (!name.trim()) { 
+            setModal({ icon: '⚠️', title: 'Missing Info', message: 'Full name cannot be empty.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            return; 
+        }
+        if (!email.includes('@')) { 
+            setModal({ icon: '⚠️', title: 'Invalid Email', message: 'Please enter a valid email address.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            return; 
+        }
+        setModal({
+            icon: '✅',
+            title: 'Profile Updated!',
+            message: 'Your profile changes have been saved successfully.',
+            buttons: [{ text: 'Done', onPress: () => { setModal(null); router.back(); } }]
+        });
     };
 
     return (
@@ -317,6 +339,7 @@ export default function EditProfileScreen() {
                 </View>
             </Modal>
 
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </SafeAreaView>
     );
 }
@@ -370,7 +393,7 @@ const styles = StyleSheet.create({
     // ── Form Card ──
     formCard: {
         backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, gap: 20,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
     },
     fieldGroup: { gap: 6 },
     fieldLabel: { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 2 },
@@ -400,9 +423,9 @@ const styles = StyleSheet.create({
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
     },
     actionBtn: {
-        width: '100%', height: 56, backgroundColor: '#9867D9',
+        width: '100%', height: 56, backgroundColor: '#BEA3D8',
         borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#9867D9', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
+        shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
     },
     actionBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
 
@@ -436,7 +459,7 @@ const styles = StyleSheet.create({
     cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#7B7487' },
     confirmBtn: {
         flex: 1, height: 50, borderRadius: 12,
-        backgroundColor: '#9867D9', justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center',
     },
     confirmBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
 
@@ -448,6 +471,6 @@ const styles = StyleSheet.create({
     },
     langItemActive: { backgroundColor: '#F6F1FF', borderRadius: 10, marginHorizontal: -8, paddingHorizontal: 16 },
     langItemText: { fontSize: 15, fontWeight: '500', color: '#1C1A25' },
-    langItemTextActive: { fontWeight: '700', color: '#9867D9' },
-    langCheck: { fontSize: 16, color: '#9867D9', fontWeight: '700' },
+    langItemTextActive: { fontWeight: '700', color: '#BEA3D8' },
+    langCheck: { fontSize: 16, color: '#BEA3D8', fontWeight: '700' },
 });
