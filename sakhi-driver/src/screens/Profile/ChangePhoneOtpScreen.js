@@ -4,9 +4,10 @@ import {
   Alert, ActivityIndicator, Platform, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Phone, ShieldCheck, MessageSquare, ArrowRight, Delete } from 'lucide-react-native';
+import { Phone, ShieldCheck, MessageSquare, ArrowRight, Delete } from 'lucide-react-native';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -200,21 +201,11 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
   return (
     <View style={s.root}>
 
-      {/* ── Header ── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          style={s.backBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={16} color={VIOLET} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Change Phone Number</Text>
-      </View>
+      <ScreenHeader title="Change Phone Number" onBack={() => navigation?.goBack()} />
 
       {/* ── Scrollable content ── */}
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingTop: HEADER_H + 24 }]}
+        contentContainerStyle={[s.scroll, { }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={false}
@@ -334,23 +325,8 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    paddingHorizontal: 24, paddingBottom: 14,
-    height: 'auto',
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12 },
-      android: { elevation: 4 },
-    }),
-  },
-  backBtn:     { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: HEADER, letterSpacing: -0.45, lineHeight: 28 },
-
   // ── Scroll ────────────────────────────────────────────────────────────────
-  scroll: { paddingHorizontal: 24, paddingBottom: 24, gap: 24 },
+  scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24, gap: 24 },
 
   // ── Instruction ───────────────────────────────────────────────────────────
   instruction:     { gap: 6.88 },
