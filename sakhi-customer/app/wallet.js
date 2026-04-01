@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Pressable, Alert, Share
+    ActivityIndicator, Pressable, Share
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { getWalletDetails } from '../src/api/endpoints';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function WalletScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [wallet, setWallet] = useState(null);
+    const [modal, setModal] = useState(null);
 
     useEffect(() => {
         getWalletDetails()
@@ -26,7 +28,12 @@ export default function WalletScreen() {
         try {
             await Share.share({ message: `Use my referral code ${wallet?.referral_code || 'SAKHI100'} on Sakhi and get ₹50 off your first ride!` });
         } catch (e) {
-            Alert.alert('Copied!', `Referral code: ${wallet?.referral_code || 'SAKHI100'}`);
+            setModal({
+                icon: '✅',
+                title: 'Copied!',
+                message: `Referral code: ${wallet?.referral_code || 'SAKHI100'} copied to clipboard.`,
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
         }
     };
 
@@ -103,6 +110,8 @@ export default function WalletScreen() {
                     )}
                 </View>
             </ScrollView>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

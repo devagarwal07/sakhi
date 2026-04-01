@@ -146,9 +146,9 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 24,
         alignItems: 'center',
-        shadowColor: '#7C3AED',
+        shadowColor: '#BEA3D8',
         shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.18,
+        shadowOpacity: 0.25,
         shadowRadius: 40,
         elevation: 20,
     },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 16,
-        backgroundColor: '#F0ECFA',
+        backgroundColor: '#F5F0FF',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     btnPrimary: {
-        backgroundColor: '#7C3AED',
+        backgroundColor: '#BEA3D8',
     },
     btnCancel: {
-        backgroundColor: '#F0ECFA',
+        backgroundColor: '#F5F0FF',
     },
     btnDestructive: {
         backgroundColor: '#FFF0EF',

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, TextInput, Alert, ActivityIndicator
+    Dimensions, ScrollView, Platform, TextInput, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,7 @@ export default function SubscriptionPaymentScreen() {
     const [selectedMethod, setSelectedMethod] = useState('UPI'); 
     const [upiId, setUpiId] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [modal, setModal] = useState(null);
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
     const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
@@ -27,7 +29,12 @@ export default function SubscriptionPaymentScreen() {
 
     const handlePay = () => {
         if (selectedMethod === 'UPI' && upiId.trim() === '') {
-            Alert.alert('UPI ID Required', 'Please enter your UPI ID to verify and proceed.');
+            setModal({
+                icon: '⚠️',
+                title: 'UPI ID Required',
+                message: 'Please enter your UPI ID to verify and proceed.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         setIsProcessing(true);
@@ -137,9 +144,19 @@ export default function SubscriptionPaymentScreen() {
                                 </View>
                                 <TouchableOpacity style={styles.verifyBtn} onPress={() => {
                                     if (!upiId.includes('@')) {
-                                        Alert.alert('Invalid UPI ID', 'UPI ID must contain @. Example: name@upi');
+                                        setModal({
+                                            icon: '⚠️',
+                                            title: 'Invalid UPI ID',
+                                            message: 'UPI ID must contain @. Example: name@upi',
+                                            buttons: [{ text: 'GOT IT', onPress: () => setModal(null) }]
+                                        });
                                     } else {
-                                        Alert.alert('UPI Verified ✅', `${upiId} is valid and ready for payment.`);
+                                        setModal({
+                                            icon: '✅',
+                                            title: 'UPI Verified',
+                                            message: `${upiId} is valid and ready for payment.`,
+                                            buttons: [{ text: 'PROCEED', style: 'primary', onPress: () => setModal(null) }]
+                                        });
                                     }
                                 }}>
                                     <Text style={styles.verifyText}>Verify</Text>
@@ -235,6 +252,7 @@ export default function SubscriptionPaymentScreen() {
                 </View>
             )}
 
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

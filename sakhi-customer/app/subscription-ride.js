@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, TextInput, Alert
+    Dimensions, ScrollView, Platform, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +13,7 @@ export default function SubscriptionRideScreen() {
     const router = useRouter();
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
+    const [modal, setModal] = useState(null);
 
     const toggleDay = (day) => {
         if (sub.days.includes(day)) {
@@ -23,27 +25,57 @@ export default function SubscriptionRideScreen() {
 
     const handleContinue = () => {
         if (!ride?.pickup?.address) {
-            Alert.alert('Missing Field', 'Please select a pickup location.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please select a pickup location.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         if (!ride?.dropoff?.address) {
-            Alert.alert('Missing Field', 'Please select a drop-off location.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please select a drop-off location.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         if (!sub?.startDate || sub.startDate.trim() === '') {
-            Alert.alert('Missing Field', 'Please enter a valid start date.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please enter a valid start date.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         if (!sub?.morningTime || sub.morningTime.trim() === '') {
-            Alert.alert('Missing Field', 'Please enter a morning pickup time.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please enter a morning pickup time.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         if (sub?.isTwoWay && (!sub?.returnTime || sub.returnTime.trim() === '')) {
-            Alert.alert('Missing Field', 'Please enter a return pickup time.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please enter a return pickup time.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         if (!sub?.days || sub.days.length === 0) {
-            Alert.alert('Missing Field', 'Please select at least one day for the subscription.');
+            setModal({
+                icon: '⚠️',
+                title: 'Missing Field',
+                message: 'Please select at least one day for the subscription.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
 
@@ -202,6 +234,7 @@ export default function SubscriptionRideScreen() {
                 </TouchableOpacity>
             </View>
 
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }
