@@ -167,10 +167,21 @@ function RootNavigator() {
 
 // ── App root ──────────────────────────────────────────────────────────────────
 export default function App() {
+  const [pageLoading, setPageLoading] = useState(false);
+  const loaderTimer = useRef(null);
+
+  const handleNavStateChange = () => {
+    // Show loader immediately on any navigation event
+    setPageLoading(true);
+    // Auto-hide after 400ms — enough for most screens to paint
+    if (loaderTimer.current) clearTimeout(loaderTimer.current);
+    loaderTimer.current = setTimeout(() => setPageLoading(false), 400);
+  };
+
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
+        <NavigationContainer onStateChange={handleNavStateChange}>
           <StatusBar style="dark" />
           {/* Splash screen sits outside the RootNavigator so it always
               shows first before checkAuth completes */}
@@ -178,6 +189,8 @@ export default function App() {
             <Stack.Screen name="Splash"    component={DriverSplashScreen} />
             <Stack.Screen name="RootShell" component={RootNavigator}       />
           </Stack.Navigator>
+          {/* Global page transition loader */}
+          {pageLoading && <PageLoader />}
         </NavigationContainer>
       </AuthProvider>
     </SafeAreaProvider>
