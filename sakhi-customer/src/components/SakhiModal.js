@@ -190,10 +190,12 @@ const styles = StyleSheet.create({
     },
     btn: {
         flex: 1,
-        height: 48,
+        minHeight: 48,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 12,
     },
     btnFull: {
         flex: undefined,
@@ -211,8 +213,9 @@ const styles = StyleSheet.create({
         borderColor: '#FECACA',
     },
     btnText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '700',
+        textAlign: 'center',
     },
     btnTextPrimary: {
         color: '#FFFFFF',
