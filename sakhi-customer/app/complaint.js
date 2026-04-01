@@ -1,14 +1,17 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, TextInput, Platform, Alert, Linking
+    TextInput, Platform, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import SakhiModal from '../src/components/SakhiModal';
 
 export default function HelpSupportScreen() {
     const router = useRouter();
 
     const [search, setSearch] = useState('');
+    const [modal, setModal] = useState(null);
 
     const helpCategories = {
         ride: 'For ride issues, please rate the trip and submit a report from your Ride History.',
@@ -18,7 +21,12 @@ export default function HelpSupportScreen() {
     };
 
     const QuickHelpCard = ({ icon, label, category, isEmergency = false }) => (
-        <TouchableOpacity style={styles.quickCard} activeOpacity={0.7} onPress={() => Alert.alert(label, helpCategories[category] || 'Our team will assist you shortly.')}>
+        <TouchableOpacity style={styles.quickCard} activeOpacity={0.7} onPress={() => setModal({
+            icon: isEmergency ? '🛡️' : '💡',
+            title: label,
+            message: helpCategories[category] || 'Our team will assist you shortly.',
+            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+        })}>
             <View style={[styles.quickIconBox, isEmergency && styles.quickIconBoxEmergency]}>
                 <Text style={[styles.quickIcon, isEmergency && styles.quickIconEmergency]}>{icon}</Text>
             </View>
@@ -113,7 +121,12 @@ export default function HelpSupportScreen() {
                         <View style={styles.contactCardContainer}>
                             
                             {/* Chat Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Alert.alert('Chat Support', 'Live chat will open. Average wait time: 2 minutes.', [{ text: 'OK' }])}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => setModal({
+                                icon: '💬',
+                                title: 'Chat Support',
+                                message: 'Live chat will open. Average wait time: 2 minutes.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            })}>
                                 <View style={styles.contactRowLeft}>
                                     <Text style={styles.contactIcon}>💬</Text>
                                     <Text style={styles.contactLabel}>Chat with Support</Text>
@@ -148,12 +161,18 @@ export default function HelpSupportScreen() {
                     </View>
 
                     {/* Visit Help Centre Button */}
-                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7} onPress={() => Alert.alert('Help Centre', 'Opening help documentation. This will be available online at help.sakhi.app', [{ text: 'OK' }])}>
+                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7} onPress={() => setModal({
+                        icon: '🌐',
+                        title: 'Help Centre',
+                        message: 'Opening help documentation. This will be available online at help.sakhi.app',
+                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                    })}>
                         <Text style={styles.visitBtnText}>Visit Help Centre</Text>
                     </TouchableOpacity>
 
                 </ScrollView>
             </View>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </SafeAreaView>
     );
 }

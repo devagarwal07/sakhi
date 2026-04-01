@@ -33,6 +33,8 @@ export default function DriverArrivedScreen() {
     const secs = String(secondsLeft % 60).padStart(2, '0');
     const progress = secondsLeft / TOTAL_WAIT; // 1.0 → 0.0
 
+    const coords = { latitude: 12.9716, longitude: 77.5946 };
+
     return (
         <View style={styles.container}>
             {/* Map Area */}
@@ -159,7 +161,8 @@ export default function DriverArrivedScreen() {
                         </View>
                     </View>
 
-                    <View style={{ height: 120 }} /> {/* Padding for tab bar */}
+                    {/* Padding for tab bar */}
+                    <View style={{ height: 120 }} />
                 </ScrollView>
             </View>
 

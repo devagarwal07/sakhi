@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator, Alert, Pressable,
+    ScrollView, ActivityIndicator, Pressable,
     Animated, Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useAuth } from '../src/context/AuthContext';
 import apiClient from '../src/api/client';
+import SakhiModal from '../src/components/SakhiModal';
 
 const STEPS = { ENTER_PHONE: 'enter_phone', VERIFY_OTP: 'verify_otp', SUCCESS: 'success' };
 const OTP_LENGTH = 6;
@@ -20,6 +21,7 @@ export default function ChangePhoneScreen() {
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
+    const [modal, setModal] = useState(null);
     const otpRefs = useRef(Array(OTP_LENGTH).fill(null));
     const checkScale = useRef(new Animated.Value(0)).current;
     const timerRef = useRef(null);
@@ -37,7 +39,12 @@ export default function ChangePhoneScreen() {
     const handleSendOtp = async () => {
         const cleaned = newPhone.replace(/\D/g, '');
         if (cleaned.length !== 10) {
-            Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
+            setModal({
+                icon: '⚠️',
+                title: 'Invalid Number',
+                message: 'Please enter a valid 10-digit mobile number.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         setLoading(true);
@@ -49,7 +56,12 @@ export default function ChangePhoneScreen() {
             startResendTimer();
             setTimeout(() => otpRefs.current[0]?.focus(), 300);
         } catch (err) {
-            Alert.alert('Error', err?.response?.data?.message || 'Could not send OTP. Try again.');
+            setModal({
+                icon: '⚠️',
+                title: 'Error',
+                message: err?.response?.data?.message || 'Could not send OTP. Try again.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
         } finally {
             setLoading(false);
         }
@@ -82,7 +94,12 @@ export default function ChangePhoneScreen() {
             setStep(STEPS.SUCCESS);
             Animated.spring(checkScale, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }).start();
         } catch (err) {
-            Alert.alert('Incorrect OTP', err?.response?.data?.message || 'The code you entered is wrong. Try again.');
+            setModal({
+                icon: '⚠️',
+                title: 'Incorrect OTP',
+                message: err?.response?.data?.message || 'The code you entered is wrong. Try again.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             setOtp(Array(OTP_LENGTH).fill(''));
             otpRefs.current[0]?.focus();
         } finally {
@@ -231,6 +248,8 @@ export default function ChangePhoneScreen() {
                     </>
                 )}
             </ScrollView>
+
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
 }

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator, Alert, Pressable,
+    ScrollView, ActivityIndicator, Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { addEmergencyContact } from '../src/api/endpoints';
+import SakhiModal from '../src/components/SakhiModal';
 
 const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Husband', 'Friend', 'Other'];
 
@@ -15,10 +16,16 @@ export default function AddContactScreen() {
     const [phone, setPhone] = useState('');
     const [relation, setRelation] = useState('');
     const [saving, setSaving] = useState(false);
+    const [modal, setModal] = useState(null);
 
     const handleSave = async () => {
         if (!name.trim() || phone.trim().length < 10) {
-            Alert.alert('Invalid Details', 'Please enter a valid name and 10-digit phone number.');
+            setModal({
+                icon: '⚠️',
+                title: 'Invalid Details',
+                message: 'Please enter a valid name and 10-digit phone number.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
             return;
         }
         setSaving(true);
@@ -30,7 +37,12 @@ export default function AddContactScreen() {
             });
             router.back();
         } catch (err) {
-            Alert.alert('Error', err?.response?.data?.message || 'Failed to add contact.');
+            setModal({
+                icon: '⚠️',
+                title: 'Error',
+                message: err?.response?.data?.message || 'Failed to add contact.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
         } finally {
             setSaving(false);
         }
@@ -117,6 +129,7 @@ export default function AddContactScreen() {
                     }
                 </TouchableOpacity>
             </ScrollView>
+            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
     );
 }
