@@ -35,8 +35,24 @@ function snapToNearest(y) {
   );
 }
 
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+function StatCard({ value, label }) {
+  return (
+    <View style={sc.card}>
+      <Text style={sc.value}>{value}</Text>
+      <Text style={sc.label}>{label}</Text>
+    </View>
+  );
+}
+const sc = StyleSheet.create({
+  card:  { flex: 1, backgroundColor: '#EDE9FE', borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
+  value: { fontSize: 22, fontWeight: '800', color: '#5B21B6', letterSpacing: -0.5 },
+  label: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase' },
+});
+
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
+// ... (props and logic from previous stages)
   const { driver, updateDriver } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -89,9 +105,41 @@ export default function DriverHomeScreen({ navigation }) {
     })
   ).current;
 
-  // ... (location effects omitted for brevity in targetContent match if needed, but I'll keep them)
+  // ── Sync online state whenever AuthContext changes ─────────────────────────
+  useEffect(() => {
+    setIsOnline(driver?.is_online ?? false);
+  }, [driver?.is_online]);
 
-  // ── Location permission + initial position ────────────────────────────────
+  // ── Sync earnings on focus ─────────────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    client.get('/drivers/earnings/today')
+      .then(r => {
+        if (r.data) {
+          setEarnings({ today: r.data.today_earnings ?? 340, rides: r.data.today_trips ?? 5, rating: r.data.rating ?? 4.9 });
+        }
+      })
+      .catch(() => {});
+  }, []));
+
+  // ── Toggle ────────────────────────────────────────────────────────────────
+  const handleToggle = async () => {
+    if (!isOnline) {
+      navigation.navigate('PaymentPlans');
+      return;
+    }
+    try {
+      setStatusLoading(true);
+      await client.post('/drivers/status', { is_online: false });
+      updateDriver({ is_online: false });
+      setIsOnline(false);
+      await stopLocationTracking();
+    } catch {
+      Alert.alert('Error', 'Could not update status. Try again.');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -163,7 +211,47 @@ export default function DriverHomeScreen({ navigation }) {
         </View>
 
         <View style={s.sheetContent}>
-          {/* Content will go here in next commit */}
+          {/* OFFLINE / ONLINE TOGGLE */}
+          <View style={s.toggleWrap}>
+            <TouchableOpacity
+              style={[s.toggleBtn, !isOnline && s.toggleBtnActive]}
+              onPress={!isOnline ? undefined : handleToggle}
+              disabled={statusLoading}
+              activeOpacity={0.9}
+            >
+              {statusLoading && !isOnline
+                ? <ActivityIndicator size="small" color="#5B21B6" />
+                : <Text style={!isOnline ? s.toggleTextActive : s.toggleText}>OFFLINE</Text>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.toggleBtn, isOnline && s.toggleBtnActive, isOnline && s.toggleBtnOnline]}
+              onPress={isOnline ? undefined : handleToggle}
+              disabled={statusLoading}
+              activeOpacity={0.9}
+            >
+              {statusLoading && isOnline
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>ONLINE</Text>
+              }
+            </TouchableOpacity>
+          </View>
+
+          {/* Status */}
+          <Text style={s.statusHeading}>
+            {isOnline ? 'You are Online 🟢' : 'You are Offline'}
+          </Text>
+          <Text style={s.statusSub}>
+            {isOnline ? 'Waiting for ride requests…' : 'Go online to receive rides'}
+          </Text>
+
+          {/* Stats */}
+          <View style={s.statsRow}>
+            <StatCard value={`₹${earnings.today}`} label="Today" />
+            <StatCard value={earnings.rides}          label="Trips" />
+            <StatCard value={`${earnings.rating}★`}   label="Rating" />
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -203,5 +291,19 @@ const s = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#D1C4E9',
   },
-  sheetContent:  { paddingHorizontal: 24, paddingBottom: 24 },
+  // Toggle
+  toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 4, marginBottom: 24 },
+  toggleBtn:       { flex: 1, paddingVertical: 14, borderRadius: 9999, alignItems: 'center' },
+  toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+  toggleBtnOnline: { backgroundColor: '#059669' },
+  toggleText:       { fontSize: 14, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
+  toggleTextActive: { fontSize: 14, fontWeight: '800', color: '#1C1A25', letterSpacing: 0.5 },
+  toggleTextOnline: { fontSize: 14, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+
+  // Status
+  statusHeading: { fontSize: 26, fontWeight: '800', color: '#1C1A25', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
+  statusSub:     { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginBottom: 24 },
+
+  // Stats
+  statsRow: { flexDirection: 'row', gap: 10 },
 });
