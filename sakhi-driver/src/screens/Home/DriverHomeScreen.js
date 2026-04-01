@@ -23,6 +23,18 @@ import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
+// ── Snap positions (Y from top of screen where sheet starts) ─────────────────
+const SNAP_PEEK      = SCREEN_H * 0.72;   // Most of map visible
+const SNAP_DEFAULT   = SCREEN_H * 0.50;   // 50/50 split
+const SNAP_EXPANDED  = SCREEN_H * 0.18;   // Sheet nearly full screen
+const SNAP_POINTS    = [SNAP_PEEK, SNAP_DEFAULT, SNAP_EXPANDED];
+
+function snapToNearest(y) {
+  return SNAP_POINTS.reduce((prev, curr) =>
+    Math.abs(curr - y) < Math.abs(prev - y) ? curr : prev
+  );
+}
+
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
   const { driver, updateDriver } = useAuth();
@@ -36,6 +48,48 @@ export default function DriverHomeScreen({ navigation }) {
   const [locGranted,    setLocGranted]    = useState(false);
 
   const mapRef  = useRef(null);
+
+  // ── Bottom sheet drag state ───────────────────────────────────────────────
+  const sheetY     = useRef(new Animated.Value(SNAP_DEFAULT)).current;
+  const lastY      = useRef(SNAP_DEFAULT);
+  const isDragging = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder:        () => true,
+      onMoveShouldSetPanResponder:         (_, { dy }) => Math.abs(dy) > 5,
+      onPanResponderGrant: () => {
+        isDragging.current = true;
+        sheetY.stopAnimation(val => { lastY.current = val; });
+        sheetY.setOffset(lastY.current);
+        sheetY.setValue(0);
+      },
+      onPanResponderMove: (_, { dy }) => {
+        const next = lastY.current + dy;
+        const clamped = Math.max(SNAP_EXPANDED - 20, Math.min(SNAP_PEEK + 20, next));
+        sheetY.setValue(clamped - lastY.current);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        sheetY.flattenOffset();
+        isDragging.current = false;
+        const currentY = lastY.current + dy;
+        let target;
+        if (vy < -0.5) target = SNAP_EXPANDED;
+        else if (vy > 0.5) target = SNAP_PEEK;
+        else target = snapToNearest(currentY);
+
+        lastY.current = target;
+        Animated.spring(sheetY, {
+          toValue: target,
+          useNativeDriver: false,
+          tension: 68,
+          friction: 12,
+        }).start();
+      },
+    })
+  ).current;
+
+  // ... (location effects omitted for brevity in targetContent match if needed, but I'll keep them)
 
   // ── Location permission + initial position ────────────────────────────────
   useEffect(() => {
@@ -100,6 +154,18 @@ export default function DriverHomeScreen({ navigation }) {
           </View>
         )}
       </View>
+
+      {/* ── DRAGGABLE BOTTOM SHEET ── */}
+      <Animated.View style={[s.sheet, { top: sheetY }]}>
+        {/* ── Drag handle (pan area) ── */}
+        <View style={s.handleArea} {...panResponder.panHandlers}>
+          <View style={s.handle} />
+        </View>
+
+        <View style={s.sheetContent}>
+          {/* Content will go here in next commit */}
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -112,8 +178,30 @@ const s = StyleSheet.create({
   mapLoadingText: { fontSize: 14, color: '#7C6FA0', fontWeight: '500' },
   driverMarker:       { alignItems: 'center' },
   driverMarkerInner:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#5B21B6' },
-  driverMarkerOnline: { backgroundColor: '#5B21B6', borderColor: '#5B21B6' },
-  markerLabel:        { backgroundColor: '#5B21B6', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
-  markerLabelOnline:  { backgroundColor: '#059669' },
-  markerLabelText:    { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1.5 },
+  // ── Bottom sheet ──────────────────────────────────────────────────────────
+  sheet: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+  handleArea: {
+    width: '100%',
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  handle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#D1C4E9',
+  },
+  sheetContent:  { paddingHorizontal: 24, paddingBottom: 24 },
 });
