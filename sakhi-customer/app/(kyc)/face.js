@@ -167,7 +167,7 @@ export default function FaceVerificationScreen() {
                 {/* Shutter & Controls Row */}
                 <View style={styles.controlsRow}>
                     {/* Flash button */}
-                    <TouchableOpacity style={styles.sideBtn}>
+                    <TouchableOpacity style={styles.sideBtn} onPress={() => Alert.alert('Flash', 'Flash is not available on the front camera.')}>
                         <Text style={styles.sideBtnIcon}>💡</Text>
                     </TouchableOpacity>
 
@@ -188,7 +188,7 @@ export default function FaceVerificationScreen() {
                     </TouchableOpacity>
 
                     {/* Gallery button */}
-                    <TouchableOpacity style={styles.sideBtn}>
+                    <TouchableOpacity style={styles.sideBtn} onPress={() => Alert.alert('Upload from Gallery', 'For security, KYC selfies must be taken live with your camera.', [{ text: 'OK' }])}>
                         <Text style={styles.sideBtnIcon}>🖼️</Text>
                     </TouchableOpacity>
                 </View>
