@@ -129,7 +129,7 @@ export default function RideHistoryScreen() {
                 
                 {/* Fixed App Bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+                    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn} activeOpacity={0.7}>
                         <Text style={styles.backArrow}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Ride History</Text>
@@ -193,22 +193,41 @@ export default function RideHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
     
     /* App Bar */
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 24, paddingVertical: 16,
-        backgroundColor: 'rgba(245,240,255,0.95)',
-        zIndex: 10,
-    },
+    
     backBtn: { width: 32, height: 32, justifyContent: 'center' },
     backArrow: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
-    headerTitle: { 
-        fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45,
-        position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 
-    },
+    
     
     /* Filter Row */
     filterScroll: {

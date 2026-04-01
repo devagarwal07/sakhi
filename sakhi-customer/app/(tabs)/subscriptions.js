@@ -92,7 +92,7 @@ export default function SubscriptionsDashboard() {
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
                 <View style={styles.headerLeft}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.title}>My Subscription</Text>
