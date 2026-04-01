@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator, Modal, TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Lucide icons ─────────────────────────────────────────────────────────────
 import {
@@ -220,22 +221,12 @@ export default function PaymentDetailsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <View style={s.safe}>
 
-      {/* ── Frosted Header ── */}
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          style={s.backBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Payment Details</Text>
-      </View>
+      <ScreenHeader title="Payment Details" onBack={() => navigation?.goBack()} />
 
       <ScrollView
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -371,7 +362,7 @@ export default function PaymentDetailsScreen({ navigation }) {
         onClose={closeBankModal}
       />
 
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -379,26 +370,10 @@ export default function PaymentDetailsScreen({ navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    height: 64,
-    gap: 16,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 4 },
-    }),
-  },
-  backBtn:     { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: DARK, letterSpacing: -0.5, lineHeight: 28 },
-
   // ── Scroll ────────────────────────────────────────────────────────────────
   scroll: {
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 0,
     paddingBottom: 48,
     gap: 32,
   },
