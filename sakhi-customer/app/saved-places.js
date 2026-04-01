@@ -1,12 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    SafeAreaView, ImageBackground, Platform 
+    SafeAreaView, Platform, Alert, Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function SavedPlacesScreen() {
     const router = useRouter();
+    const [homeAddress, setHomeAddress] = useState('');
+    const [workAddress, setWorkAddress] = useState('');
+    const [customPlaces, setCustomPlaces] = useState([
+        { id: '1', name: 'Cafe Coffee Day', address: '24, MG Road, Bangalore, Karnataka 560001' },
+        { id: '2', name: 'Central Library', address: 'Cubbon Park, Ambedkar Veedhi, Bengaluru' },
+    ]);
+    const [showModal, setShowModal] = useState(false);
+    const [modalType, setModalType] = useState('custom'); // 'home' | 'work' | 'custom'
+    const [inputAddress, setInputAddress] = useState('');
+    const [inputName, setInputName] = useState('');
+
+    const openModal = (type) => {
+        setModalType(type);
+        setInputAddress(type === 'home' ? homeAddress : type === 'work' ? workAddress : '');
+        setInputName('');
+        setShowModal(true);
+    };
+
+    const handleSave = () => {
+        if (!inputAddress.trim()) { Alert.alert('Missing Info', 'Please enter an address.'); return; }
+        if (modalType === 'home') { setHomeAddress(inputAddress.trim()); }
+        else if (modalType === 'work') { setWorkAddress(inputAddress.trim()); }
+        else {
+            if (!inputName.trim()) { Alert.alert('Missing Info', 'Please enter a place name.'); return; }
+            setCustomPlaces(prev => [...prev, { id: String(Date.now()), name: inputName.trim(), address: inputAddress.trim() }]);
+        }
+        setShowModal(false);
+    };
+
+    const handleDelete = (id, name) => {
+        Alert.alert('Remove Place', `Remove "${name}" from saved places?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => setCustomPlaces(prev => prev.filter(p => p.id !== id)) },
+        ]);
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -28,100 +63,73 @@ export default function SavedPlacesScreen() {
                     
                     {/* Primary Address Card Setup */}
                     <View style={styles.primaryCard}>
-                        
-                        {/* Row: Home */}
-                        <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => openModal('home')}>
                             <View style={[styles.iconWrap, { backgroundColor: '#10B981' }]}>
                                 <Text style={styles.whiteIcon}>🏠</Text>
                             </View>
                             <View style={styles.rowTextWrap}>
                                 <Text style={styles.rowTitle}>Home</Text>
-                                <Text style={styles.rowActionText}>Add Home Address</Text>
+                                <Text style={styles.rowActionText}>{homeAddress || 'Add Home Address'}</Text>
                             </View>
+                            <Text style={styles.chevron}>›</Text>
                         </TouchableOpacity>
-
                         <View style={styles.divider} />
-
-                        {/* Row: Work */}
-                        <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
+                        <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => openModal('work')}>
                             <View style={[styles.iconWrap, { backgroundColor: '#3B82F6' }]}>
                                 <Text style={styles.whiteIcon}>💼</Text>
                             </View>
                             <View style={styles.rowTextWrap}>
                                 <Text style={styles.rowTitle}>Work</Text>
-                                <Text style={styles.rowActionText}>Add Work Address</Text>
+                                <Text style={styles.rowActionText}>{workAddress || 'Add Work Address'}</Text>
                             </View>
+                            <Text style={styles.chevron}>›</Text>
                         </TouchableOpacity>
-
                         <View style={styles.divider} />
-
-                        {/* Row: Favourites */}
                         <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
                             <View style={[styles.iconWrap, { backgroundColor: '#A78BFA' }]}>
                                 <Text style={styles.whiteIcon}>🤍</Text>
                             </View>
                             <View style={styles.rowTextWrap}>
                                 <Text style={styles.rowTitle}>Favourites</Text>
-                                <Text style={styles.rowSubtext}>2 places saved</Text>
+                                <Text style={styles.rowSubtext}>{customPlaces.length} places saved</Text>
                             </View>
+                            <Text style={styles.chevron}>›</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Add New Place CTA */}
-                    <TouchableOpacity style={styles.addPlaceBtn} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.addPlaceBtn} activeOpacity={0.7} onPress={() => openModal('custom')}>
                         <Text style={styles.addTextIcon}>+</Text>
                         <Text style={styles.addText}>Add New Place</Text>
                     </TouchableOpacity>
 
                     {/* Custom Saved Locations Heading */}
                     <Text style={styles.sectionHeader}>My Saved Locations</Text>
+                    {customPlaces.map(place => (
+                        <View key={place.id} style={styles.customPlaceCard}>
+                            <View style={styles.customPlaceLeft}>
+                                <View style={styles.pinIconWrap}>
+                                    <Text style={styles.pinIcon}>📍</Text>
+                                </View>
+                                <View style={styles.customPlaceInfo}>
+                                    <Text style={styles.customPlaceName}>{place.name}</Text>
+                                    <Text style={styles.customPlaceAddress}>{place.address}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.actionIconsRow}>
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Edit Place', 'Place editing coming soon.')}>
+                                    <Text style={styles.actionEdit}>✏️</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(place.id, place.name)}>
+                                    <Text style={styles.actionDelete}>🗑️</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ))}
 
-                    {/* Saved Location 1 */}
-                    <View style={styles.customPlaceCard}>
-                        <View style={styles.customPlaceLeft}>
-                            <View style={styles.pinIconWrap}>
-                                <Text style={styles.pinIcon}>📍</Text>
-                            </View>
-                            <View style={styles.customPlaceInfo}>
-                                <Text style={styles.customPlaceName}>Cafe Coffee Day</Text>
-                                <Text style={styles.customPlaceAddress}>24, MG Road, Bangalore,{'\n'}Karnataka 560001</Text>
-                            </View>
-                        </View>
-                        <View style={styles.actionIconsRow}>
-                            <TouchableOpacity style={styles.actionBtn}>
-                                <Text style={styles.actionEdit}>✏️</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionBtn}>
-                                <Text style={styles.actionDelete}>🗑️</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* Saved Location 2 */}
-                    <View style={styles.customPlaceCard}>
-                        <View style={styles.customPlaceLeft}>
-                            <View style={styles.pinIconWrap}>
-                                <Text style={styles.pinIcon}>📍</Text>
-                            </View>
-                            <View style={styles.customPlaceInfo}>
-                                <Text style={styles.customPlaceName}>Central Library</Text>
-                                <Text style={styles.customPlaceAddress}>Cubbon Park, Ambedkar{'\n'}Veedhi, Bengaluru</Text>
-                            </View>
-                        </View>
-                        <View style={styles.actionIconsRow}>
-                            <TouchableOpacity style={styles.actionBtn}>
-                                <Text style={styles.actionEdit}>✏️</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionBtn}>
-                                <Text style={styles.actionDelete}>🗑️</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* Map Visualizer Graphic */}
+                    {/* Map Placeholder */}
                     <View style={styles.mapThumbnail}>
                         <View style={styles.mapOverlayBg}>
-                            {/* Abstract representation of map pins since we can't reliably load the user's specific map graphic statically here */}
                             <Text style={[styles.mapGraphicPin, { top: '30%', right: '30%' }]}>📍</Text>
                             <Text style={[styles.mapGraphicPin, { top: '65%', left: '42%' }]}>📍</Text>
                             <Text style={[styles.mapGraphicPin, { top: '75%', left: '55%' }]}>📍</Text>
@@ -130,6 +138,37 @@ export default function SavedPlacesScreen() {
 
                 </ScrollView>
             </View>
+
+            {/* Add/Edit Place Modal */}
+            <Modal visible={showModal} transparent animationType="slide">
+                <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowModal(false)} activeOpacity={1} />
+                <View style={styles.modalSheet}>
+                    <View style={styles.modalHandle} />
+                    <Text style={styles.modalTitle}>
+                        {modalType === 'home' ? 'Set Home Address' : modalType === 'work' ? 'Set Work Address' : 'Add New Place'}
+                    </Text>
+                    {modalType === 'custom' && (
+                        <TextInput
+                            style={styles.modalInput}
+                            value={inputName}
+                            onChangeText={setInputName}
+                            placeholder="Place name (e.g. Gym, Parents' Home)"
+                            placeholderTextColor="#AAA"
+                        />
+                    )}
+                    <TextInput
+                        style={styles.modalInput}
+                        value={inputAddress}
+                        onChangeText={setInputAddress}
+                        placeholder="Enter full address"
+                        placeholderTextColor="#AAA"
+                        multiline
+                    />
+                    <TouchableOpacity style={styles.modalBtn} onPress={handleSave}>
+                        <Text style={styles.modalBtnText}>Save Place</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -239,5 +278,25 @@ const styles = StyleSheet.create({
         position: 'absolute',
         fontSize: 24,
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6,
-    }
+    },
+    chevron: { fontSize: 20, color: '#CCC3D8' },
+    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+    modalSheet: {
+        backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    },
+    modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },
+    modalInput: {
+        backgroundColor: '#F6F1FF', borderRadius: 12,
+        paddingHorizontal: 16, paddingVertical: 14,
+        fontSize: 15, fontWeight: '500', color: '#1C1A25',
+        marginBottom: 12,
+    },
+    modalBtn: {
+        backgroundColor: '#9867D9', borderRadius: 12, height: 52,
+        justifyContent: 'center', alignItems: 'center', marginTop: 4,
+    },
+    modalBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });
+
