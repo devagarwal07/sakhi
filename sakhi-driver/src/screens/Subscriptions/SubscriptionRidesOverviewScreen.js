@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -42,9 +43,12 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
       <View style={styles.blurTopRight} />
       <View style={styles.blurBottomLeft} />
 
+      {/* ── Header ── */}
+      <ScreenHeader title="Subscription Rides" onBack={() => navigation.goBack()} />
+
       {/* Main Content Area */}
       <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 24) + 60 }]}
+        contentContainerStyle={[styles.scrollContent, { }]}
         showsVerticalScrollIndicator={false}
       >
         
@@ -83,6 +87,7 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
               key={ride.id} 
               style={[styles.rideCard, idx === 1 && { opacity: 0.9 }]}
               activeOpacity={0.8}
+              onPress={() => navigation.navigate('SubscriptionAssignmentDetails', { subscription: ride })}
             >
               <View style={styles.rideMarkerLine} />
               
@@ -132,18 +137,6 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
           ))}
         </View>
       </ScrollView>
-
-      {/* Top Floating App Bar */}
-      <View style={[styles.headerAppBar, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity 
-          style={styles.backBtn} 
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Feather name="arrow-left" size={24} color="#BEA3D8" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription Rides</Text>
-      </View>
     </View>
   );
 }
@@ -178,6 +171,7 @@ const styles = StyleSheet.create({
   // -- MAIN CONTENT --
   scrollContent: {
     paddingHorizontal: 24,
+    paddingTop: 16,
     paddingBottom: 40,
   },
 
@@ -372,36 +366,5 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontSize: 12,
     color: '#64748B',
-  },
-
-  // -- FLOATING HEADER --
-  headerAppBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    // Note: React Native doesn't support backdrop-filter natively without special blurred views,
-    // so we use a semi-transparent white.
-  },
-  backBtn: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 18,
-    color: '#1E1B4B',
-    marginLeft: 16,
-    letterSpacing: -0.36,
   },
 });
