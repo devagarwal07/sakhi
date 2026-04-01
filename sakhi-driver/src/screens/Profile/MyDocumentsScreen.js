@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -87,6 +88,16 @@ const COLORS = {
   },
 };
 
+function HelpIcon() {
+  return (
+    <TouchableOpacity>
+      <View style={styles.helpIconCircle}>
+        <Text style={styles.helpIconText}>?</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function MyDocumentsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
@@ -124,26 +135,15 @@ export default function MyDocumentsScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      {/* Absolute Navbar matching Figma Spec */}
-      <View style={[styles.navBar, { top: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
-          style={styles.navIconButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={24} color="#BEA3D8" />
-        </TouchableOpacity>
-        
-        <Text style={styles.navTitle}>Documents</Text>
-
-        <TouchableOpacity style={styles.navIconButton}>
-          <View style={styles.helpIconCircle}>
-            <Text style={styles.helpIconText}>?</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      {/* ── Header ── */}
+      <ScreenHeader
+        title="Documents"
+        onBack={() => navigation.goBack()}
+        rightSlot={<HelpIcon />}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 16) + 60 }]}
+        contentContainerStyle={[styles.scrollContent, { }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Title Section */}
@@ -218,29 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F7FF',
   },
 
-  // Navbar
-  navBar: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    zIndex: 10,
-  },
-  navIconButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 20,
-    color: '#111827',
-  },
+  // Help icon (used in rightSlot of ScreenHeader)
   helpIconCircle: {
     width: 24,
     height: 24,

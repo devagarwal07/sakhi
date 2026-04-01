@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, Alert, ActivityIndicator, TextInput, Platform,
@@ -7,10 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import {
-  ArrowLeft, Pencil, Home, Wallet, User, TrendingUp,
-  Circle, CheckCircle,
-} from 'lucide-react-native';
+import { Pencil } from 'lucide-react-native';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -142,26 +141,7 @@ const ec = StyleSheet.create({
   saveText:  { fontSize: 14, fontWeight: '700', color: WHITE },
 });
 
-// ─── Bottom nav tab ───────────────────────────────────────────────────────────
-function NavTab({ icon, label, active, onPress }) {
-  const color = active ? DEEP : '#6B7280';
-  return (
-    <TouchableOpacity
-      style={[nav.tab, active && nav.tabActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      {React.cloneElement(icon, { color, size: 18, strokeWidth: 2 })}
-      <Text style={[nav.label, active && nav.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const nav = StyleSheet.create({
-  tab:         { alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4, flex: 1 },
-  tabActive:   { },
-  label:       { fontSize: 10, fontWeight: '500', color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
-  labelActive: { color: DEEP, fontWeight: '700' },
-});
+
 
 // ─── Initials avatar ──────────────────────────────────────────────────────────
 function InitialsAvatar({ name, size = 68 }) {
@@ -179,7 +159,6 @@ function InitialsAvatar({ name, size = 68 }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function MyProfileScreen({ navigation }) {
-  const insets = useSafeAreaInsets();
   const { driver, checkAuth } = useAuth();
 
   const [editField, setEditField]     = useState(null);
@@ -228,28 +207,18 @@ export default function MyProfileScreen({ navigation }) {
     finally { setUploading(false); }
   };
 
-  const HEADER_H = Math.max(insets.top, 0) + 64;
-  const NAV_H    = 77 + Math.max(insets.bottom, 0);
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={s.root}>
 
-      {/* ── Absolute Header ── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16), height: HEADER_H + Math.max(insets.top, 0) }]}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={16} color={DEEP} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>My Profile</Text>
-      </View>
+      <ScreenHeader title="My Profile" onBack={() => navigation?.goBack()} />
 
       {/* ── Scrollable body ── */}
       <ScrollView
         contentContainerStyle={[s.scroll, {
-          paddingTop: HEADER_H + 16,
-          paddingBottom: NAV_H + 24,
+          paddingTop: 16,
+          paddingBottom: 24,
         }]}
         showsVerticalScrollIndicator={false}
       >
@@ -361,13 +330,7 @@ export default function MyProfileScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* ── Bottom Nav ── */}
-      <View style={[s.bottomNav, { paddingBottom: Math.max(insets.bottom, 8), height: NAV_H }]}>
-        <NavTab icon={<Home />}        label="HOME"     active={false} onPress={() => navigation?.navigate('DriverHome')} />
-        <NavTab icon={<TrendingUp />}  label="EARNINGS" active={false} onPress={() => navigation?.navigate('MyEarnings')} />
-        <NavTab icon={<Wallet />}      label="WALLET"   active={false} onPress={() => navigation?.navigate('TransactionHistory')} />
-        <NavTab icon={<User />}        label="ACCOUNT"  active={true}  onPress={() => {}} />
-      </View>
+      <BottomNavBar navigation={navigation} activeTab="account" />
 
     </View>
   );
@@ -377,21 +340,10 @@ export default function MyProfileScreen({ navigation }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    paddingHorizontal: 24, paddingBottom: 14,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 4 },
-    }),
-  },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.5, lineHeight: 28 },
+
 
   // ── Scroll ────────────────────────────────────────────────────────────────
-  scroll: { paddingHorizontal: 24, gap: 24 },
+  scroll: { paddingHorizontal: 24, paddingTop: 16, gap: 24 },
 
   // ── Profile Header Card ───────────────────────────────────────────────────
   profileCard: {
@@ -439,16 +391,4 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 8, ...CARD_SH,
   },
 
-  // ── Bottom Nav ────────────────────────────────────────────────────────────
-  bottomNav: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 8, paddingTop: 8,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: -16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 12 },
-    }),
-  },
 });
