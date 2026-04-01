@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Image, Platform, Linking, Alert,
@@ -9,6 +9,8 @@ import {
   ArrowLeft, Calendar, MapPin, Route, Clock, Car,
   Phone, CheckCircle2,
 } from 'lucide-react-native';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
@@ -152,25 +154,7 @@ const fr = StyleSheet.create({
   valuePurple: { color: PURPLE },
 });
 
-// ─── Bottom nav tab ───────────────────────────────────────────────────────────
-function NavTab({ icon, label, active = false, onPress }) {
-  return (
-    <TouchableOpacity
-      style={[nav.tab, active && nav.tabActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      {icon}
-      <Text style={[nav.label, active && nav.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const nav = StyleSheet.create({
-  tab:         { alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
-  tabActive:   { },
-  label:       { fontSize: 10, fontWeight: '500', color: FAINT, letterSpacing: 1, textTransform: 'uppercase', lineHeight: 15 },
-  labelActive: { color: PURPLE },
-});
+
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function CompletedRideDetailsScreen({ navigation, route }) {
@@ -191,22 +175,10 @@ export default function CompletedRideDetailsScreen({ navigation, route }) {
 
   return (
     <View style={s.root}>
+      <ScreenHeader title="Ride Details" onBack={() => navigation?.goBack()} />
 
-      {/* ── Floating Header ── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          style={s.backBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Ride Details</Text>
-      </View>
-
-      {/* ── Scrollable body ── */}
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: BOTTOM_H + 16 }]}
+        contentContainerStyle={[s.scroll, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -321,31 +293,7 @@ export default function CompletedRideDetailsScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      {/* ── Bottom Nav ── */}
-      <View style={[s.bottomNav, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <NavTab
-          icon={<View style={[s.navIcon, { backgroundColor: FAINT }]} />}
-          label="HOME"
-          onPress={() => navigation?.navigate('DriverHome')}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, s.navIconWide, { backgroundColor: FAINT }]} />}
-          label="EARNINGS"
-          onPress={() => navigation?.navigate('MyEarnings')}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, s.navIconWide, { backgroundColor: PURPLE }]} />}
-          label="WALLET"
-          active
-          onPress={() => {}}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, { backgroundColor: FAINT, borderRadius: 8 }]} />}
-          label="ACCOUNT"
-          onPress={() => navigation?.navigate('MyProfile')}
-        />
-      </View>
-
+      <BottomNavBar navigation={navigation} activeTab="wallet" />
     </View>
   );
 }
@@ -369,7 +317,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '600', color: DARK, letterSpacing: -0.45, lineHeight: 28 },
 
   // Scroll
-  scroll: { paddingTop: 72, paddingHorizontal: 16, gap: 16 },
+  scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 16 },
 
   // Details card
   detailsCard: {
@@ -465,19 +413,4 @@ const s = StyleSheet.create({
   paymentTextOnline:  { color: DEEP },
 
   // Bottom Nav
-  bottomNav: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    height: 77,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: -16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 12 },
-    }),
-  },
-  navIcon:      { width: 16, height: 18, backgroundColor: FAINT, borderRadius: 3 },
-  navIconWide:  { width: 22 },
-  navActiveBg:  { backgroundColor: '#F5F0FF', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 },
 });
