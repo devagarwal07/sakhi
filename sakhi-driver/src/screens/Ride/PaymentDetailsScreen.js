@@ -3,10 +3,11 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
   ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useSocket } from '../../context/SocketContext';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ── Star rating component ────────────────────────────────────────────────────
 function StarRating({ value, onChange }) {
@@ -105,13 +106,9 @@ export default function PaymentDetailsScreen({ navigation, route }) {
   const commission = summary?.platform_commission ?? 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Payment Details</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={styles.safe}>
+      <ScreenHeader title="Payment Details" />
+      <ScrollView contentContainerStyle={[styles.scroll, { }]} showsVerticalScrollIndicator={false}>
         {/* Success icon */}
         <View style={styles.iconCircle}>
           <Text style={{ fontSize: 44 }}>✅</Text>
@@ -199,7 +196,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -207,9 +204,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.surfaceLow },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loaderText: { fontSize: 14, color: Colors.onSurfaceVariant },
-  header: { paddingTop: Spacing.md, paddingBottom: Spacing.sm, alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: Colors.onSurface },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 40, alignItems: 'center' },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: 16, paddingBottom: 40, alignItems: 'center' },
 
   iconCircle: {
     width: 96, height: 96, borderRadius: 48,
