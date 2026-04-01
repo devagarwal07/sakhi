@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+﻿import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList,
   TouchableOpacity, Platform, TextInput, ActivityIndicator,
@@ -7,7 +7,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius } from '../../utils/theme';
 import client from '../../api/client';
-import { ArrowLeft, Search, MapPin, Flag, ChevronRight, BarChart2 } from 'lucide-react-native';
+import { Search, MapPin, Flag, ChevronRight, BarChart2 } from 'lucide-react-native';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -291,30 +292,23 @@ export default function RideHistoryScreen({ navigation }) {
   return (
     <View style={[s.root, { paddingTop: 0 }]}>
 
-      {/* ── Header ── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <View style={s.headerLeft}>
+      <ScreenHeader
+        title="Ride History"
+        onBack={() => navigation?.goBack()}
+        rightSlot={
           <TouchableOpacity
-            onPress={() => navigation?.goBack()}
-            style={s.headerBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={s.searchBtn}
+            onPress={() => setShowSearch((v) => !v)}
+            activeOpacity={0.8}
           >
-            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+            <Search size={18} color={PURPLE} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Ride History</Text>
-        </View>
-        <TouchableOpacity
-          style={s.searchBtn}
-          onPress={() => setShowSearch((v) => !v)}
-          activeOpacity={0.8}
-        >
-          <Search size={18} color={PURPLE} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
+        }
+      />
 
       {/* ── Search bar (conditional) ── */}
       {showSearch && (
-        <View style={s.searchBar}>
+        <View style={[s.searchBar, {}]}>
           <Search size={15} color={MUTED} strokeWidth={2} />
           <TextInput
             style={s.searchInput}
@@ -334,7 +328,7 @@ export default function RideHistoryScreen({ navigation }) {
       )}
 
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: Math.max(insets.bottom, 24) + 72 }]}
+        contentContainerStyle={[s.scroll, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />
@@ -411,20 +405,7 @@ export default function RideHistoryScreen({ navigation }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingBottom: 14,
-    backgroundColor: 'rgba(245, 240, 255, 0.88)',
-    ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 4 },
-    }),
-  },
-  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  headerBtn:   { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: DARK, letterSpacing: -0.45, lineHeight: 28 },
-  searchBtn:   { width: 40, height: 40, borderRadius: 20, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', ...Shadows.card },
+  searchBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', ...Shadows.card },
 
   // ── Search bar ────────────────────────────────────────────────────────────
   searchBar: {
