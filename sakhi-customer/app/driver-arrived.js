@@ -75,7 +75,7 @@ export default function DriverArrivedScreen() {
 
             {/* Top Navigation AppBar */}
             <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                     <Text style={styles.navIconArrow}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>

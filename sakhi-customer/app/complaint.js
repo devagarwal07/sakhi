@@ -58,10 +58,12 @@ export default function HelpSupportScreen() {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Help & Support</Text>
+                        <Text style={styles.headerTitle}>Help & Support</Text>
+                    </View>
                     <View style={styles.iconBtn} /> 
                 </View>
 
@@ -178,21 +180,40 @@ export default function HelpSupportScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
     
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingVertical: 16,
-        backgroundColor: 'rgba(245, 240, 255, 0.9)',
-        zIndex: 10,
-    },
-    iconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'flex-start' },
-    headerIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
-    headerTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5, position: 'absolute', left: 0, right: 0, textAlign: 'center', zIndex: -1 },
+    
+    
+    
+    
 
     scrollContent: {
         paddingHorizontal: 24,

@@ -131,7 +131,7 @@ export default function ChangePhoneScreen() {
                 <Text style={styles.successSub}>
                     Your new phone number +91 {newPhone} is now linked to your account.
                 </Text>
-                <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.doneBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.doneBtnText}>Done</Text>
                 </TouchableOpacity>
             </View>
@@ -141,7 +141,7 @@ export default function ChangePhoneScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
+                <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Change Phone Number</Text>
@@ -255,17 +255,41 @@ export default function ChangePhoneScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F0FF' },
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
     },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
+    container: { flex: 1, backgroundColor: '#F5F0FF' },
+    
     backBtn: {
         width: 40, height: 40, borderRadius: 20,
         backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
     },
     backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { ...Typography.titleMedium, color: Colors.onBackground },
+    
     content: { paddingHorizontal: 20, paddingBottom: 48, gap: 16 },
     currentCard: {
         backgroundColor: Colors.surfaceContainerLow, borderRadius: 14,
