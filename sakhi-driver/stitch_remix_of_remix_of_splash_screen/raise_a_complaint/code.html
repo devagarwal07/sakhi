@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sakhi Driver App - Support</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#f0ecfa",
+                        "on-background": "#1c1a25",
+                        "on-tertiary-container": "#ffe0cd",
+                        "inverse-primary": "#d2bbff",
+                        "primary-container": "#7c3aed",
+                        "outline-variant": "#ccc3d8",
+                        "surface-container-high": "#ebe6f5",
+                        "surface-dim": "#dcd8e6",
+                        "tertiary": "#7d3d00",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#630ed4",
+                        "outline": "#7b7487",
+                        "inverse-surface": "#312f3a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1c1a25",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#fcf8ff",
+                        "secondary-fixed-dim": "#cebdff",
+                        "surface-container-highest": "#e5e0ef",
+                        "on-secondary-container": "#3f1e8c",
+                        "secondary": "#674bb5",
+                        "primary-fixed-dim": "#d2bbff",
+                        "primary-fixed": "#eaddff",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-tint": "#732ee4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#a15100",
+                        "surface-bright": "#fcf8ff",
+                        "on-primary-fixed": "#25005a",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "inverse-on-surface": "#f3eefd",
+                        "on-surface-variant": "#4a4455",
+                        "on-primary": "#ffffff",
+                        "surface": "#fcf8ff",
+                        "secondary-fixed": "#e8ddff",
+                        "surface-container-low": "#f6f1ff",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#ede0ff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "secondary-container": "#ab8ffe",
+                        "surface-variant": "#e5e0ef",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#21005e"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #F5F0FF;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex items-center justify-center min-h-screen p-0 m-0">
+<!-- Mobile Container (390x844px) -->
+<div class="relative w-[390px] h-[844px] bg-[#F5F0FF] overflow-hidden flex flex-col shadow-2xl">
+<!-- TopAppBar (Mapped from Shared Components JSON) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-[#F5F0FF]/80 backdrop-blur-md shadow-[0_16px_32px_rgba(124,58,237,0.08)]">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#F6F1FF] transition-colors active:scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#7C3AED]" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline font-semibold tracking-tight text-[#1E1B2E] text-lg">Support</h1>
+</div>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto px-6 pt-24 pb-12">
+<!-- Header Section -->
+<div class="mb-8">
+<h2 class="text-[2rem] font-headline font-extrabold text-[#1E1B2E] tracking-tight leading-tight">Raise a Complaint</h2>
+<p class="text-[#6B7280] font-body mt-2">We'll get back to you within 24 hours.</p>
+</div>
+<!-- Complaint Form Card -->
+<div class="bg-surface-container-lowest rounded-[16px] p-6 shadow-[0_16px_32px_rgba(124,58,237,0.08)] space-y-6">
+<!-- Issue Type -->
+<div class="space-y-2">
+<label class="block text-[0.75rem] font-label font-medium uppercase tracking-[0.05em] text-[#6B7280]">Issue Type</label>
+<div class="relative">
+<select class="w-full h-14 bg-surface-container-low border-none rounded-xl px-4 font-body text-[#1E1B2E] focus:ring-2 focus:ring-[#A78BFA] appearance-none">
+<option>Ride Issue</option>
+<option>Commission Dispute</option>
+<option>Document Problem</option>
+<option>Payment Not Received</option>
+<option>Safety Concern</option>
+<option>Other</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-4 text-[#7C3AED] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Related Ride (Optional) -->
+<div class="space-y-2">
+<label class="block text-[0.75rem] font-label font-medium uppercase tracking-[0.05em] text-[#6B7280]">Related Ride (optional)</label>
+<button class="w-full flex items-center justify-between h-14 px-4 bg-surface-container-low rounded-full hover:bg-[#F6F1FF] transition-colors active:scale-95 duration-200">
+<span class="font-body text-[#1E1B2E]">Select recent ride</span>
+<span class="material-symbols-outlined text-[#7C3AED]">history</span>
+</button>
+</div>
+<!-- Description -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="block text-[0.75rem] font-label font-medium uppercase tracking-[0.05em] text-[#6B7280]">Describe Your Issue</label>
+<span class="text-[0.7rem] font-label text-[#6B7280]">0/500</span>
+</div>
+<textarea class="w-full bg-surface-container-low border-none rounded-xl p-4 font-body text-[#1E1B2E] placeholder-[#6B7280] focus:ring-2 focus:ring-[#A78BFA] resize-none" placeholder="Tell us what happened…" rows="4"></textarea>
+</div>
+<!-- Attach Screenshot (Optional) -->
+<div class="space-y-4">
+<label class="block text-[0.75rem] font-label font-medium uppercase tracking-[0.05em] text-[#6B7280]">Attach Screenshot (optional)</label>
+<div class="border-2 border-dashed border-[#ccc3d8]/40 rounded-xl p-6 flex flex-col items-center justify-center bg-surface-container-low/50">
+<span class="material-symbols-outlined text-[#A78BFA] text-4xl mb-3" data-icon="image">image</span>
+<button class="bg-secondary-container text-on-secondary-container font-label font-semibold py-2 px-6 rounded-full hover:bg-[#cebdff] transition-colors active:scale-95 duration-200">
+                            Upload Image
+                        </button>
+</div>
+</div>
+</div>
+<!-- Submit Action -->
+<div class="mt-10">
+<button class="w-full h-14 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#630ed4] text-white font-headline font-bold text-lg shadow-[0_16px_32px_rgba(124,58,237,0.15)] hover:-translate-y-0.5 transition-all active:scale-95 duration-200">
+                    Submit Complaint
+                </button>
+</div>
+</main>
+<!-- Visual Decorative Layer -->
+<div class="absolute top-0 right-0 -z-10 w-64 h-64 bg-primary-fixed-dim/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+<div class="absolute bottom-0 left-0 -z-10 w-64 h-64 bg-secondary-fixed-dim/20 blur-[100px] rounded-full -translate-x-1/2 translate-y-1/2"></div>
+</div>
+</body></html>

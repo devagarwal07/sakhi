@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-container": "#ede0ff",
+              "on-surface-variant": "#4a4455",
+              "on-surface": "#1c1a25",
+              "on-primary-fixed": "#25005a",
+              "on-error-container": "#93000a",
+              "on-error": "#ffffff",
+              "primary-container": "#7c3aed",
+              "on-primary-fixed-variant": "#5a00c6",
+              "surface-container-highest": "#e5e0ef",
+              "secondary-fixed": "#e8ddff",
+              "primary": "#630ed4",
+              "surface-variant": "#e5e0ef",
+              "inverse-on-surface": "#f3eefd",
+              "on-secondary-fixed": "#21005e",
+              "surface-tint": "#732ee4",
+              "on-background": "#1c1a25",
+              "surface-bright": "#fcf8ff",
+              "outline": "#7b7487",
+              "inverse-surface": "#312f3a",
+              "secondary-fixed-dim": "#cebdff",
+              "secondary": "#674bb5",
+              "on-secondary-fixed-variant": "#4f319c",
+              "error": "#ba1a1a",
+              "tertiary-fixed-dim": "#ffb784",
+              "secondary-container": "#ab8ffe",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#a15100",
+              "tertiary": "#7d3d00",
+              "on-tertiary-fixed-variant": "#713700",
+              "on-tertiary": "#ffffff",
+              "surface-container": "#f0ecfa",
+              "surface-container-high": "#ebe6f5",
+              "surface": "#fcf8ff",
+              "primary-fixed-dim": "#d2bbff",
+              "on-secondary": "#ffffff",
+              "inverse-primary": "#d2bbff",
+              "on-primary": "#ffffff",
+              "on-tertiary-container": "#ffe0cd",
+              "tertiary-fixed": "#ffdcc6",
+              "outline-variant": "#ccc3d8",
+              "primary-fixed": "#eaddff",
+              "background": "#fcf8ff",
+              "surface-dim": "#dcd8e6",
+              "on-secondary-container": "#3f1e8c",
+              "surface-container-low": "#f6f1ff",
+              "on-tertiary-fixed": "#301400",
+              "surface-container-lowest": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F0FF; }
+        .soft-lavender-shadow { box-shadow: 0px 16px 32px 0px rgba(124, 58, 237, 0.08); }
+        .otp-input:focus { border-color: #7C3AED; outline: none; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#F5F0FF] min-h-screen flex flex-col items-center">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F5F0FF] dark:bg-slate-950 backdrop-blur-md bg-opacity-80 flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="text-[#7C3AED] dark:text-[#A78BFA] hover:bg-[#FFFFFF]/50 transition-all duration-300 active:scale-95 rounded-full p-1">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-lg text-[#1E1B2E] dark:text-white">Change Phone Number</h1>
+</div>
+<div class="w-6"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[390px] px-6 pt-24 pb-8 flex flex-col gap-6">
+<!-- Instruction Section -->
+<div class="flex flex-col gap-2">
+<h2 class="text-on-background font-bold text-2xl tracking-tight">Verify New Number</h2>
+<p class="text-on-surface-variant text-sm leading-relaxed">Please enter the 6-digit code sent to your new mobile number to complete the update.</p>
+</div>
+<!-- Central Action Card -->
+<div class="bg-surface-container-lowest rounded-[16px] p-6 soft-lavender-shadow flex flex-col gap-6">
+<!-- Phone Number Overview -->
+<div class="flex flex-col gap-4">
+<!-- Current Number -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[0.7rem] uppercase tracking-wider font-bold text-on-surface-variant/60">Current Number</label>
+<div class="flex items-center gap-2 text-on-surface-variant/50">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span class="font-medium">+91 98765 43210</span>
+</div>
+</div>
+<!-- Divider (Tonal shift, no line) -->
+<div class="h-px bg-surface-container-low w-full"></div>
+<!-- New Number -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[0.7rem] uppercase tracking-wider font-bold text-primary">New Number</label>
+<div class="flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-primary text-sm">phone_iphone</span>
+<span class="font-bold text-lg">+91 99887 76655</span>
+</div>
+</div>
+</div>
+<!-- OTP Input Section -->
+<div class="flex flex-col gap-4 mt-2">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-on-surface uppercase tracking-widest">Enter OTP</span>
+<button class="text-xs font-semibold text-primary hover:underline">Resend code</button>
+</div>
+<div class="flex justify-between gap-2">
+<!-- OTP Individual Boxes -->
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant/30 soft-lavender-shadow">
+<span class="text-xl font-bold text-on-surface">8</span>
+</div>
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant/30 soft-lavender-shadow">
+<span class="text-xl font-bold text-on-surface">4</span>
+</div>
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-primary/50 soft-lavender-shadow ring-2 ring-primary/10">
+<span class="text-xl font-bold text-on-surface">1</span>
+<div class="absolute w-[2px] h-6 bg-primary animate-pulse ml-0"></div>
+</div>
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant/30 soft-lavender-shadow">
+<span class="text-xl font-bold text-on-surface opacity-0">0</span>
+</div>
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant/30 soft-lavender-shadow">
+<span class="text-xl font-bold text-on-surface opacity-0">0</span>
+</div>
+<div class="w-11 h-14 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant/30 soft-lavender-shadow">
+<span class="text-xl font-bold text-on-surface opacity-0">0</span>
+</div>
+</div>
+<!-- Confirmation Label -->
+<div class="flex items-center gap-2 justify-center mt-2 py-2 bg-emerald-50 rounded-full">
+<span class="material-symbols-outlined text-emerald-600 text-sm">sms</span>
+<span class="text-emerald-700 text-xs font-semibold">OTP sent via SMS</span>
+</div>
+</div>
+</div>
+<!-- Security Message -->
+<div class="flex items-start gap-3 px-4">
+<span class="material-symbols-outlined text-on-surface-variant/40 mt-1">verified_user</span>
+<p class="text-[0.75rem] text-on-surface-variant leading-snug italic">Your security is our priority. Changing your phone number will require re-authentication for future payments.</p>
+</div>
+</main>
+<!-- Fixed Bottom Button -->
+<div class="fixed bottom-0 w-full max-w-[390px] p-6 bg-gradient-to-t from-[#F5F0FF] via-[#F5F0FF] to-transparent">
+<button class="w-full h-14 bg-gradient-to-br from-[#7C3AED] to-[#630ED4] rounded-xl text-white font-bold text-base soft-lavender-shadow flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200">
+            Verify &amp; Update
+            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+<!-- Virtual Keyboard Mock (Contextual Visual) -->
+<div class="mt-auto w-full max-w-[390px] bg-surface-container-highest/80 backdrop-blur-xl rounded-t-3xl p-2 pb-8 grid grid-cols-3 gap-2 opacity-50 select-none pointer-events-none">
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">1</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">2</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">3</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">4</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">5</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">6</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">7</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">8</div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">9</div>
+<div class="h-12 flex items-center justify-center"></div>
+<div class="h-12 flex items-center justify-center text-on-surface font-semibold text-xl">0</div>
+<div class="h-12 flex items-center justify-center"><span class="material-symbols-outlined">backspace</span></div>
+</div>
+</body></html>

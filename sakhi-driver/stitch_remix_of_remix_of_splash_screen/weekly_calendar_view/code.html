@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary": "#ffffff",
+              "surface-dim": "#dcd8e6",
+              "inverse-on-surface": "#f3eefd",
+              "surface-container-high": "#ebe6f5",
+              "surface-bright": "#fcf8ff",
+              "error-container": "#ffdad6",
+              "inverse-primary": "#d2bbff",
+              "tertiary-fixed": "#ffdcc6",
+              "on-tertiary-fixed": "#301400",
+              "primary-fixed-dim": "#d2bbff",
+              "on-tertiary-container": "#ffe0cd",
+              "on-secondary-container": "#3f1e8c",
+              "surface-container-lowest": "#ffffff",
+              "on-primary": "#ffffff",
+              "background": "#fcf8ff",
+              "secondary-container": "#ab8ffe",
+              "on-primary-container": "#ede0ff",
+              "surface-tint": "#732ee4",
+              "surface-variant": "#e5e0ef",
+              "surface-container-low": "#f6f1ff",
+              "inverse-surface": "#312f3a",
+              "on-primary-fixed": "#25005a",
+              "primary-fixed": "#eaddff",
+              "on-secondary-fixed": "#21005e",
+              "secondary-fixed-dim": "#cebdff",
+              "secondary-fixed": "#e8ddff",
+              "on-error": "#ffffff",
+              "error": "#ba1a1a",
+              "on-surface-variant": "#4a4455",
+              "surface": "#fcf8ff",
+              "outline-variant": "#ccc3d8",
+              "surface-container-highest": "#e5e0ef",
+              "on-secondary-fixed-variant": "#4f319c",
+              "on-error-container": "#93000a",
+              "secondary": "#674bb5",
+              "primary-container": "#7c3aed",
+              "on-primary-fixed-variant": "#5a00c6",
+              "primary": "#630ed4",
+              "on-tertiary-fixed-variant": "#713700",
+              "outline": "#7b7487",
+              "on-background": "#1c1a25",
+              "tertiary-fixed-dim": "#ffb784",
+              "tertiary-container": "#a15100",
+              "on-surface": "#1c1a25",
+              "tertiary": "#7d3d00",
+              "surface-container": "#f0ecfa",
+              "on-tertiary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F0FF;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-lavender-shadow {
+            box-shadow: 0px 16px 32px rgba(124, 58, 237, 0.08);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F5F0FF]/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-[0px_16px_32px_rgba(124,58,237,0.08)] flex items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 text-[#7C3AED] dark:text-[#A78BFA] hover:bg-[#F6F1FF] p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold tracking-tight text-indigo-950 dark:text-white text-lg">This Week's Rides</h1>
+</div>
+</header>
+<main class="pt-20 px-4 space-y-6">
+<!-- Week Strip -->
+<section class="flex justify-between items-center bg-surface-container-low/50 p-4 rounded-xl overflow-x-auto hide-scrollbar">
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Mon</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">12</span>
+<div class="h-1 w-1 rounded-full bg-primary-container"></div>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Tue</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">13</span>
+<div class="h-1 w-1 rounded-full bg-primary-container"></div>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2">
+<span class="text-[10px] font-bold uppercase tracking-wider text-primary-container">Wed</span>
+<div class="bg-primary-container text-white h-10 w-10 flex flex-col items-center justify-center rounded-full shadow-lg scale-110">
+<span class="text-sm font-bold">14</span>
+</div>
+<div class="h-1 w-1 rounded-full bg-primary-container"></div>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Thu</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">15</span>
+<div class="h-1 w-1 rounded-full bg-primary-container"></div>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Fri</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">16</span>
+<div class="h-1 w-1 rounded-full bg-primary-container"></div>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Sat</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">17</span>
+</div>
+<div class="flex flex-col items-center min-w-[44px] space-y-2 opacity-70">
+<span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Sun</span>
+<span class="text-sm font-semibold h-10 w-10 flex items-center justify-center rounded-full">18</span>
+</div>
+</section>
+<!-- Active Day Label -->
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">Wednesday, Oct 14</h2>
+<span class="text-xs font-medium text-primary bg-primary-fixed/30 px-3 py-1 rounded-full">3 Rides</span>
+</div>
+<!-- Rides List -->
+<div class="space-y-4">
+<!-- Ride Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 soft-lavender-shadow border-l-4 border-primary-container flex flex-col gap-3 relative overflow-hidden active:scale-[0.98] transition-transform duration-200">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="text-primary-container font-extrabold text-lg tracking-tight">08:30 AM</span>
+<span class="text-on-surface font-bold text-base leading-tight">Vasant Kunj ➔ Cyber City</span>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-[#F6F1FF] text-primary-container text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Morning</span>
+<span class="bg-secondary-container/20 text-on-secondary-container text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Upcoming</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2 border-t border-surface-variant/30">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="person">person</span>
+</div>
+<span class="text-outline text-sm font-medium">Ananya Sharma</span>
+<div class="ml-auto flex gap-3">
+<button class="text-primary-container"><span class="material-symbols-outlined" data-icon="call">call</span></button>
+<button class="text-primary-container"><span class="material-symbols-outlined" data-icon="chat">chat</span></button>
+</div>
+</div>
+</div>
+<!-- Ride Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 soft-lavender-shadow border-l-4 border-primary-container flex flex-col gap-3 relative overflow-hidden active:scale-[0.98] transition-transform duration-200">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="text-primary-container font-extrabold text-lg tracking-tight">05:45 PM</span>
+<span class="text-on-surface font-bold text-base leading-tight">Cyber City ➔ Vasant Kunj</span>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-[#F6F1FF] text-primary-container text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Evening</span>
+<span class="bg-secondary-container/20 text-on-secondary-container text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Upcoming</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2 border-t border-surface-variant/30">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="person">person</span>
+</div>
+<span class="text-outline text-sm font-medium">Ananya Sharma</span>
+<div class="ml-auto flex gap-3">
+<button class="text-primary-container"><span class="material-symbols-outlined" data-icon="call">call</span></button>
+<button class="text-primary-container"><span class="material-symbols-outlined" data-icon="chat">chat</span></button>
+</div>
+</div>
+</div>
+<!-- Ride Card 3 (Alternate User) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 soft-lavender-shadow border-l-4 border-primary-container flex flex-col gap-3 relative overflow-hidden active:scale-[0.98] transition-transform duration-200 opacity-60">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="text-primary-container font-extrabold text-lg tracking-tight">07:15 PM</span>
+<span class="text-on-surface font-bold text-base leading-tight">DLF Phase 3 ➔ Hauz Khas</span>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="bg-[#F6F1FF] text-primary-container text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Evening</span>
+<span class="bg-surface-variant text-on-surface-variant text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Delayed</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2 border-t border-surface-variant/30">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="person">person</span>
+</div>
+<span class="text-outline text-sm font-medium">Meera Kapur</span>
+<div class="ml-auto flex gap-3">
+<button class="text-primary-container"><span class="material-symbols-outlined" data-icon="call">call</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Monthly Summary Card -->
+<section class="mt-8">
+<div class="bg-surface-container-lowest rounded-xl p-6 soft-lavender-shadow border-t-4 border-secondary-container">
+<h3 class="text-sm font-bold text-outline uppercase tracking-[0.1em] mb-4">Performance Report</h3>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-on-surface-variant text-xs mb-1">This Month</p>
+<p class="text-sm font-medium text-on-surface">
+<span class="text-primary-container font-extrabold text-base">22</span> rides completed
+                        </p>
+</div>
+<div class="text-right">
+<p class="text-on-surface-variant text-xs mb-1">Earnings</p>
+<p class="text-primary-container font-extrabold text-xl">₹1,914</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-surface-variant/20 flex justify-between items-center">
+<span class="text-[10px] text-outline italic">Updated 2h ago</span>
+<button class="text-primary-container text-xs font-bold flex items-center gap-1">
+                        VIEW HISTORY <span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex justify-around items-center px-4 pb-2 z-50 rounded-t-[16px] shadow-[0px_-16px_32px_rgba(124,58,237,0.08)]">
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-400 opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-[11px] font-['Inter'] uppercase tracking-widest font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7C3AED] dark:text-[#A78BFA] scale-110 transition-transform active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="directions_car" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+<span class="text-[11px] font-['Inter'] uppercase tracking-widest font-medium">Rides</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-400 opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="payments">payments</span>
+<span class="text-[11px] font-['Inter'] uppercase tracking-widest font-medium">Earnings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#6B7280] dark:text-slate-400 opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="text-[11px] font-['Inter'] uppercase tracking-widest font-medium">Account</span>
+</a>
+</nav>
+<!-- FAB (Suppressed on this view as it's a detail list) -->
+</body></html>
