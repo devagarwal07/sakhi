@@ -31,7 +31,7 @@ export default function SOSActiveScreen() {
             {/* Top Navigation Bar */}
             <SafeAreaView style={styles.topNavSafe}>
                 <View style={styles.topNav}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
+                    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                         <Text style={styles.navIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>Emergency SOS</Text>

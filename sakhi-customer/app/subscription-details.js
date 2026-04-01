@@ -83,7 +83,7 @@ export default function SubscriptionDetailsScreen() {
         return (
             <View style={styles.centered}>
                 <Text style={styles.emptyText}>Subscription not found.</Text>
-                <TouchableOpacity onPress={() => router.back()} style={styles.smallBack}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.smallBack}>
                     <Text style={styles.smallBackText}>← Go Back</Text>
                 </TouchableOpacity>
             </View>
@@ -106,7 +106,7 @@ export default function SubscriptionDetailsScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Pressable style={styles.backBtn} onPress={() => router.back()}>
+                <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Subscription</Text>
@@ -281,21 +281,45 @@ export default function SubscriptionDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        paddingHorizontal: 20, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+        marginLeft: 16
+    },
     container: { flex: 1, backgroundColor: '#F5F0FF' },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     emptyText: { ...Typography.bodyLarge, color: Colors.onSurfaceVariant, marginBottom: 16 },
     smallBack: { padding: 10 },
     smallBackText: { color: Colors.primaryContainer, fontWeight: '600', fontSize: 14 },
-    header: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingTop: 56, paddingHorizontal: 20, paddingBottom: 16,
-    },
+    
     backBtn: {
         width: 40, height: 40, borderRadius: 20,
         backgroundColor: Colors.surfaceContainer, alignItems: 'center', justifyContent: 'center',
     },
     backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
-    headerTitle: { flex: 1, ...Typography.titleMedium, color: Colors.onBackground },
+    
     statusBadge: {
         borderRadius: BorderRadius.full, paddingHorizontal: 12, paddingVertical: 5,
     },

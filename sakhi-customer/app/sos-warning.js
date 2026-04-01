@@ -39,7 +39,7 @@ export default function SOSWarningScreen() {
     const handleCancel = () => {
         // Go back safely
         if (router.canGoBack()) {
-            router.back();
+            if (router.canGoBack()) router.back(); else router.replace("/");
         } else {
             router.replace('/(tabs)/');
         }
