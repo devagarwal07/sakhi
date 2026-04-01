@@ -1,49 +1,30 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Animated, Alert, Dimensions, Image, ScrollView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import { stopLocationTracking } from '../../services/locationTask';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 
 const SCREEN_W = Dimensions.get('window').width;
-
-// ── Bottom Tab Item ────────────────────────────────────────────────────────────
-function TabItem({ icon, label, active, onPress }) {
-  return (
-    <TouchableOpacity style={tab.item} onPress={onPress} activeOpacity={0.7}>
-      <View style={[tab.iconWrap, active && tab.iconWrapActive]}>
-        <Image source={icon} style={[tab.icon, active && tab.iconActive]} resizeMode="contain" />
-      </View>
-      <Text style={[tab.label, active && tab.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const tab = StyleSheet.create({
-  item:           { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  iconWrap:       { paddingHorizontal: 16, paddingVertical: 4, borderRadius: 12 },
-  iconWrapActive: { backgroundColor: '#F5F0FF' },
-  icon:           { width: 22, height: 22, tintColor: '#9CA3AF' },
-  iconActive:     { tintColor: '#BEA3D8' },
-  label: {
-    fontSize: 10, fontWeight: '700', letterSpacing: 0.5,
-    textTransform: 'uppercase', color: '#9CA3AF', lineHeight: 14,
-  },
-  labelActive: { color: '#BEA3D8' },
-});
 
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
   const { driver, updateDriver } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [isOnline,       setIsOnline]       = useState(driver?.is_online ?? false);
   const [earnings,       setEarnings]       = useState({ today: 340, trips: 5, rating: 4.9 });
   const [statusLoading,  setStatusLoading]  = useState(false);
-  const [countdown,      setCountdown]      = useState(25 * 60); // 25:00
+  const [countdown,      setCountdown]      = useState(25 * 60);
+  const [sidebarOpen,    setSidebarOpen]    = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -165,14 +146,11 @@ export default function DriverHomeScreen({ navigation }) {
       </View>
 
       {/* ════════════════════════════════════════════
-          TOP APP BAR (absolute)
-          padding: 24, h: 96
-          row justify-between
+          TOP APP BAR (absolute) — respects safe area
       ════════════════════════════════════════════ */}
-      <View style={s.topBar}>
-        {/* Hamburger button: 48×48 white circle, shadow */}
-        <TouchableOpacity style={s.hamburgerBtn} activeOpacity={0.8}>
-          {/* Icon: 18×12, #BEA3D8 (3 bars) */}
+      <View style={[s.topBar, { paddingTop: Math.max(insets.top, 16) + 8 }]}>
+        {/* Hamburger button */}
+        <TouchableOpacity style={s.hamburgerBtn} onPress={() => setSidebarOpen(true)} activeOpacity={0.8}>
           <View style={s.hamburgerIcon}>
             <View style={s.hamburgerLine} />
             <View style={s.hamburgerLine} />
@@ -180,11 +158,9 @@ export default function DriverHomeScreen({ navigation }) {
           </View>
         </TouchableOpacity>
 
-        {/* Earnings chip: white pill, padding 8/16, shadow, radius 16 */}
+        {/* Earnings chip */}
         <View style={s.earningsChip}>
-          {/* "Today:": 12px 500w #4A4455, letter-spacing -0.3 */}
           <Text style={s.earningsChipLabel}>Today:</Text>
-          {/* "₹340": 14px 700w #BEA3D8, letter-spacing -0.35 */}
           <Text style={s.earningsChipValue}>₹{earnings.today}</Text>
         </View>
       </View>
@@ -281,38 +257,17 @@ export default function DriverHomeScreen({ navigation }) {
         </ScrollView>
       </View>
 
-      {/* ════════════════════════════════════════════
-          BOTTOM NAV (absolute)
-          h: 77, padding: 8 33.06 24 33.05, gap: 34.1
-          bg: rgba(255,255,255,0.8)
-          radius: 16/16/0/0
-      ════════════════════════════════════════════ */}
-      <View style={s.nav}>
-        <TabItem
-          icon={require('../../../assets/home.png')}
-          label="HOME"
-          active={activeTab === 'home'}
-          onPress={() => {}}
+      {/* ── BOTTOM NAV ── */}
+      <BottomNavBar navigation={navigation} activeTab="home" />
+
+      {/* ── SIDEBAR ── */}
+      {sidebarOpen && (
+        <DriverSidebarMenu
+          navigation={navigation}
+          onClose={() => setSidebarOpen(false)}
+          activeRoute="DriverOnlineDashboard"
         />
-        <TabItem
-          icon={require('../../../assets/earning.png')}
-          label="EARNINGS"
-          active={activeTab === 'earnings'}
-          onPress={() => navigation.navigate('MyEarnings')}
-        />
-        <TabItem
-          icon={require('../../../assets/wallet.png')}
-          label="WALLET"
-          active={activeTab === 'wallet'}
-          onPress={() => navigation.navigate('TransactionHistory')}
-        />
-        <TabItem
-          icon={require('../../../assets/profile.png')}
-          label="ACCOUNT"
-          active={activeTab === 'account'}
-          onPress={() => navigation.navigate('MyProfile')}
-        />
-      </View>
+      )}
     </View>
   );
 }
@@ -411,11 +366,12 @@ const s = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 1, lineHeight: 15,
   },
 
-  /* ── TOP BAR: absolute, h:96, padding:24, row justify-between ── */
+  /* ── TOP BAR: absolute, padding respects insets ── */
   topBar: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 96,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    padding: 24, zIndex: 10,
+    position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingBottom: 16,
+    zIndex: 10,
   },
   /* Hamburger: 48×48 white circle, shadow */
   hamburgerBtn: {
@@ -542,20 +498,5 @@ const s = StyleSheet.create({
   /* Countdown: 12px 900w #7D3D00 */
   subCountdown: { fontSize: 12, fontWeight: '900', color: '#7D3D00', lineHeight: 16 },
 
-  /* ── NAV: absolute, bottom:-3, h:77
-      row, padding: 8 33.06 24 33.05, gap 34.1
-      bg: rgba(255,255,255,0.8), radius 16/16/0/0
-      shadow: 0 -16 32 rgba(124,58,237,0.08) ── */
-  nav: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 77,
-    flexDirection: 'row', alignItems: 'center',
-    paddingLeft: 33, paddingRight: 33, paddingTop: 8, paddingBottom: 24,
-    gap: 34,
-    backgroundColor: 'rgba(255,255,255,0.80)',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.08, shadowRadius: 32,
-    elevation: 10, zIndex: 20,
-  },
 });
+
