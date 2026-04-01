@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const NOTIFICATION_GROUPS = [
   {
@@ -60,16 +61,10 @@ export default function NotificationSettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notification Settings</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Notification Settings" onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scroll, { }]} showsVerticalScrollIndicator={false}>
         {NOTIFICATION_GROUPS.map((group) => (
           <View key={group.title}>
             <Text style={styles.groupTitle}>{group.title.toUpperCase()}</Text>
@@ -95,21 +90,13 @@ export default function NotificationSettingsScreen({ navigation }) {
           </View>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-  },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
-
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 40, gap: 6 },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: 16, paddingBottom: 40, gap: 6 },
   groupTitle: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5, marginBottom: 6, marginTop: 10 },
   card: { backgroundColor: Colors.white, borderRadius: Radius.lg, ...Shadows.card },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: 14 },

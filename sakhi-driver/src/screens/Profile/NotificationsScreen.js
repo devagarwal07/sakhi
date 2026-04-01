@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 const ICON_MAP = {
   ride_completed:   '🛺',
@@ -48,23 +49,17 @@ export default function NotificationsScreen({ navigation }) {
   const onRefresh = () => { setRefreshing(true); fetchNotifications(); };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Notifications" onBack={() => navigation.goBack()} />
 
       {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primaryContainer} /></View>
+        <View style={[styles.loader, {}]}><ActivityIndicator size="large" color={Colors.primaryContainer} /></View>
       ) : (
         <FlatList
           data={notifications}
           keyExtractor={(item, i) => item.id ?? String(i)}
           renderItem={({ item }) => <NotifCard item={item} />}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { }]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
           ListEmptyComponent={
@@ -77,22 +72,14 @@ export default function NotificationsScreen({ navigation }) {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-  },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backArrow: { fontSize: 22, color: Colors.primaryContainer },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.onSurface },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  list: { paddingHorizontal: Spacing.base, paddingBottom: 40, paddingTop: 4 },
+  list: { paddingHorizontal: Spacing.base, paddingBottom: 40 },
   card: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, ...Shadows.card,
