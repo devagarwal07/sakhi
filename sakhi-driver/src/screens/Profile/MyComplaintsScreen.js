@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, ActivityIndicator, RefreshControl, Image,
+  Platform, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, Clock, ChevronRight, Ticket } from 'lucide-react-native';
+import { Plus, Clock, ChevronRight, Ticket } from 'lucide-react-native';
 import client from '../../api/client';
+import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const BG      = '#F6F1FF';
@@ -310,29 +312,8 @@ const empty = StyleSheet.create({
   },
 });
 
-// ─── Bottom nav tab ─────────────────────────────────────────────────────────────
-function NavTab({ icon, label, active, onPress }) {
-  return (
-    <TouchableOpacity style={nav.tab} onPress={onPress} activeOpacity={0.7}>
-      <View style={[nav.iconWrap, active && nav.iconWrapActive]}>
-        {icon}
-      </View>
-      <Text style={[nav.label, active && nav.labelActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-const nav = StyleSheet.create({
-  tab:           { alignItems: 'center', justifyContent: 'center', gap: 4 },
-  iconWrap:      { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  iconWrapActive:{ backgroundColor: '#F5F0FF' },
-  label:         { fontFamily: 'Inter', fontWeight: '500', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: MUTED, lineHeight: 15 },
-  labelActive:   { color: PURPLE },
-});
-
 // ─── Main Screen ────────────────────────────────────────────────────────────────
 export default function MyComplaintsScreen({ navigation }) {
-  const insets = useSafeAreaInsets();
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [complaints, setComplaints]     = useState(SEED);
@@ -383,29 +364,21 @@ export default function MyComplaintsScreen({ navigation }) {
     navigation.navigate('RaiseAComplaint');
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={s.root}>
-
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={[s.header, { paddingTop: Math.max(insets.top, 16) }]}>
-        <View style={s.headerLeft}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={s.headerBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <ArrowLeft size={16} color={PURPLE} strokeWidth={2.5} />
+      <ScreenHeader
+        title="My Complaints"
+        onBack={() => navigation.goBack()}
+        rightSlot={
+          <TouchableOpacity style={s.newBtn} onPress={handleNewComplaint} activeOpacity={0.85}>
+            <Plus size={13} color={WHITE} strokeWidth={2.5} />
+            <Text style={s.newBtnText}>New</Text>
           </TouchableOpacity>
-          <Text style={s.headerTitle}>My Complaints</Text>
-        </View>
-
-        <TouchableOpacity style={s.newBtn} onPress={handleNewComplaint} activeOpacity={0.85}>
-          <Plus size={13} color={WHITE} strokeWidth={2.5} />
-          <Text style={s.newBtnText}>New</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Filter Pills ────────────────────────────────────────────────────── */}
+        }
+      />
+      {/* ── Filter Pills ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -429,14 +402,9 @@ export default function MyComplaintsScreen({ navigation }) {
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <ScrollView
-        contentContainerStyle={[
-          s.scroll,
-          { paddingBottom: Math.max(insets.bottom, 24) + 77 + 16 },
-        ]}
+        contentContainerStyle={[s.scroll, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
       >
         {loading ? (
           <View style={s.loader}>
@@ -459,33 +427,7 @@ export default function MyComplaintsScreen({ navigation }) {
         )}
       </ScrollView>
 
-      {/* ── Bottom Nav ──────────────────────────────────────────────────────── */}
-      <View style={[s.bottomNav, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <NavTab
-          icon={<View style={[s.navIcon, { width: 16, height: 18 }]} />}
-          label="HOME"
-          active={false}
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, { width: 22, height: 16 }]} />}
-          label="EARNINGS"
-          active={false}
-          onPress={() => navigation.navigate('MyEarnings')}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, { width: 19, height: 18, backgroundColor: PURPLE }]} />}
-          label="WALLET"
-          active={true}
-          onPress={() => {}}
-        />
-        <NavTab
-          icon={<View style={[s.navIcon, { width: 16, height: 16 }]} />}
-          label="ACCOUNT"
-          active={false}
-          onPress={() => navigation.navigate('MyProfile')}
-        />
-      </View>
+      <BottomNavBar navigation={navigation} activeTab="account" />
     </View>
   );
 }
@@ -606,32 +548,5 @@ const s = StyleSheet.create({
     gap: 16,
   },
 
-  // ── Bottom Nav ──────────────────────────────────────────────────────────────
-  bottomNav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 77,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 33,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: DEEP,
-        shadowOffset: { width: 0, height: -16 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
-      },
-      android: { elevation: 10 },
-    }),
-  },
-  navIcon: {
-    backgroundColor: MUTED,
-    borderRadius: 3,
-  },
+  // ── Bottom Nav (kept for BottomNavBar component, styles removed) ─────────────
 });
