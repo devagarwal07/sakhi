@@ -139,7 +139,7 @@ export default function RideHistoryScreen() {
                     ) : (
                         <View style={styles.backBtn} /* Left Spacer if no back btn */ />
                     )}
-                    <Text style={styles.headerTitle}>Ride History</Text>
+                    <Text style={styles.headerTitle}>Activity</Text>
                     <View style={styles.backBtn} /* Spacer */ />
                 </View>
 
@@ -202,6 +202,7 @@ export default function RideHistoryScreen() {
 const styles = StyleSheet.create({
     header: { 
         flexDirection: 'row', 
+        justifyContent: 'space-between',
         alignItems: 'center', 
         paddingHorizontal: 20, 
         height: 64,
@@ -225,7 +226,6 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#1E1B2E', 
         letterSpacing: -0.5,
-        marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },

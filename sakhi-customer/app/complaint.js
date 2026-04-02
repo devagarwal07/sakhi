@@ -46,7 +46,7 @@ export default function HelpSupportScreen() {
                     <Text style={styles.locationText} numberOfLines={1}>{dropoff}</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7} onPress={() => router.push('/(tabs)/ride-history')}>
+            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7} onPress={() => router.push('/ride-history')}>
                 <Text style={styles.getHelpText}>Get Help</Text>
             </TouchableOpacity>
         </View>
@@ -58,12 +58,10 @@ export default function HelpSupportScreen() {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                         <Text style={styles.headerIcon}>←</Text>
                     </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Help & Support</Text>
-                    </View>
+                    <Text style={styles.headerTitle}>Help & Support</Text>
                     <View style={styles.iconBtn} /> 
                 </View>
 
@@ -100,7 +98,7 @@ export default function HelpSupportScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionHeading}>RECENT TRIPS</Text>
-                            <TouchableOpacity onPress={() => router.push('/(tabs)/ride-history')}>
+                            <TouchableOpacity onPress={() => router.push('/ride-history')}>
                                 <Text style={styles.viewAllText}>View All</Text>
                             </TouchableOpacity>
                         </View>
@@ -182,6 +180,7 @@ export default function HelpSupportScreen() {
 const styles = StyleSheet.create({
     header: { 
         flexDirection: 'row', 
+        justifyContent: 'space-between',
         alignItems: 'center', 
         paddingHorizontal: 20, 
         height: 64,
@@ -205,7 +204,6 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#1E1B2E', 
         letterSpacing: -0.5,
-        marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
