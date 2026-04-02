@@ -1,5 +1,299 @@
-import SOSSettingsScreen from '../sos-settings';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { 
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+    Switch, Platform 
+} from 'react-native';
+import { useRouter } from 'expo-router';
 
-export default function SafetyTab() {
-    return <SOSSettingsScreen isTab={true} />;
+export default function SafetyTab({ isTab = true }) {
+    const router = useRouter();
+
+    const [preferences, setPreferences] = useState({
+        autoSend: true,
+        vibrate: true,
+        playSound: true,
+    });
+
+    const toggleSwitch = (key) => {
+        setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                
+                {/* Header */}
+                <View style={styles.header}>
+                    {!isTab ? (
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.iconBtn} /* Spacer for centering */ />
+                    )}
+                    <Text style={styles.headerTitle}>Safety & SOS</Text>
+                    <View style={styles.iconBtn} /* Spacer for centering */ />
+                </View>
+
+                {/* Main Scroll Content */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Top subtext */}
+                    <Text style={styles.pageSubText}>Customise your SOS alert behaviour</Text>
+
+                    {/* Master Settings Card */}
+                    <View style={styles.settingsCard}>
+                        
+                        {/* Section 1: Alert Behaviour */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionHeading}>Alert Behaviour</Text>
+                            
+                            <View style={styles.row}>
+                                <View style={styles.rowTextCol}>
+                                    <Text style={styles.rowTitle}>Auto-send after 5 seconds</Text>
+                                    <Text style={styles.rowSubtitle}>SOS auto-sends if you don't cancel</Text>
+                                </View>
+                                <Switch
+                                    trackColor={{ false: '#E5E0EF', true: '#BEA3D8' }}
+                                    thumbColor="#FFFFFF"
+                                    ios_backgroundColor="#E5E0EF"
+                                    onValueChange={() => toggleSwitch('autoSend')}
+                                    value={preferences.autoSend}
+                                    style={styles.switchControl}
+                                />
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowTextCol}>
+                                    <Text style={styles.rowTitle}>Vibrate on SOS trigger</Text>
+                                </View>
+                                <Switch
+                                    trackColor={{ false: '#E5E0EF', true: '#BEA3D8' }}
+                                    thumbColor="#FFFFFF"
+                                    ios_backgroundColor="#E5E0EF"
+                                    onValueChange={() => toggleSwitch('vibrate')}
+                                    value={preferences.vibrate}
+                                    style={styles.switchControl}
+                                />
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowTextCol}>
+                                    <Text style={styles.rowTitle}>Play alert sound</Text>
+                                </View>
+                                <Switch
+                                    trackColor={{ false: '#E5E0EF', true: '#BEA3D8' }}
+                                    thumbColor="#FFFFFF"
+                                    ios_backgroundColor="#E5E0EF"
+                                    onValueChange={() => toggleSwitch('playSound')}
+                                    value={preferences.playSound}
+                                    style={styles.switchControl}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        {/* Section 2: Who Gets Notified */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionHeading}>Who Gets Notified</Text>
+                            
+                            <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/emergency-contacts')}>
+                                <View style={styles.rowTextCol}>
+                                    <Text style={styles.rowTitle}>Emergency Contacts</Text>
+                                    <View style={styles.badgeWrapper}>
+                                        <View style={styles.purpleBadge}>
+                                            <Text style={styles.purpleBadgeText}>3 saved</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                <Text style={styles.chevron}>›</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowTextCol}>
+                                    <View style={styles.lockedRow}>
+                                        <Text style={styles.rowTitle}>Sakhi Safety Team</Text>
+                                        <Text style={styles.padlockIcon}>🔒</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.greenBadge}>
+                                    <Text style={styles.greenBadgeText}>ALWAYS NOTIFIED</Text>
+                                </View>
+                            </View>
+
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        {/* Section 3: Test SOS */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionHeading}>Test SOS</Text>
+                            
+                            <View style={styles.testBox}>
+                                <TouchableOpacity 
+                                    style={styles.testBtn} 
+                                    activeOpacity={0.7}
+                                    onPress={() => router.push('/sos-warning')}
+                                >
+                                    <Text style={styles.testBtnText}>Test Alert</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.testSubText}>
+                                    Sends test notification only — no real alert
+                                </Text>
+                            </View>
+                        </View>
+
+                    </View>
+
+                </ScrollView>
+            </View>
+        </SafeAreaView>
+    );
 }
+
+const styles = StyleSheet.create({
+    header: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between',
+        alignItems: 'center', 
+        paddingHorizontal: 24, 
+        height: 64,
+        backgroundColor: '#F5F0FF', 
+        zIndex: 10
+    },
+    iconBtn: { 
+        width: 32, 
+        height: 32, 
+        justifyContent: 'center', 
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent'
+    },
+    headerIcon: { 
+        fontSize: 24, 
+        color: '#BEA3D8', 
+        fontWeight: 'bold' 
+    },
+    headerTitle: { 
+        fontSize: 20, 
+        fontWeight: '700', 
+        color: '#1E1B2E', 
+        letterSpacing: -0.5,
+    },
+    safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
+    container: { flex: 1 },
+    
+    
+    
+    
+    
+
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 120, // ensure room for the absolute tab bar
+    },
+    pageSubText: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginBottom: 24,
+    },
+
+    /* Master Card */
+    settingsCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+    },
+
+    divider: {
+        height: 1,
+        backgroundColor: '#EADDFF', // Slightly darker purple line as per CSS
+        marginHorizontal: 24,
+    },
+
+    /* Standard Sections */
+    section: {
+        padding: 24,
+        gap: 24,
+    },
+    sectionHeading: {
+        fontSize: 18, fontWeight: '700', color: '#1E1B2E',
+    },
+
+    /* Row Layouts */
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 16,
+    },
+    rowTextCol: {
+        flex: 1,
+        justifyContent: 'center',
+        gap: 4,
+    },
+    rowTitle: {
+        fontSize: 16, fontWeight: '600', color: '#1E1B2E', lineHeight: 24,
+    },
+    rowSubtitle: {
+        fontSize: 12, fontWeight: '400', color: '#6B7280', lineHeight: 16,
+    },
+    switchControl: {
+        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
+    },
+
+    /* Specific Row Elements */
+    badgeWrapper: { flexDirection: 'row', marginTop: 4 },
+    purpleBadge: {
+        backgroundColor: '#F5F0FF',
+        paddingHorizontal: 8, paddingVertical: 2,
+        borderRadius: 9999,
+    },
+    purpleBadgeText: {
+        fontSize: 12, fontWeight: '500', color: '#BEA3D8',
+    },
+    lockedRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+    },
+    padlockIcon: {
+        fontSize: 10, color: '#6B7280',
+    },
+    greenBadge: {
+        backgroundColor: '#D1FAE5',
+        paddingHorizontal: 8, paddingVertical: 4,
+        borderRadius: 4,
+    },
+    greenBadgeText: {
+        fontSize: 10, fontWeight: '700', color: '#047857', letterSpacing: 0.5, textTransform: 'uppercase',
+    },
+    chevron: {
+        fontSize: 24, color: '#CBD5E1', paddingBottom: 2,
+    },
+
+    /* Test SOS Box */
+    testBox: {
+        width: '100%',
+        backgroundColor: 'rgba(255, 247, 237, 0.4)', // Faint orange tint
+        borderWidth: 2, borderColor: '#FED7AA',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+    },
+    testBtn: {
+        width: '100%',
+        height: 52,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 2, borderColor: '#F97316',
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    testBtnText: {
+        fontSize: 16, fontWeight: '700', color: '#EA580C',
+    },
+    testSubText: {
+        fontSize: 11, color: '#6B7280', textAlign: 'center',
+    },
+});

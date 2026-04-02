@@ -25,7 +25,7 @@ export default function SOSSettingsScreen({ isTab = false }) {
                 
                 {/* Header */}
                 <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {!isTab && (
                             <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                                 <Text style={styles.headerIcon}>←</Text>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     header: { 
         flexDirection: 'row', 
         alignItems: 'center', 
-        paddingHorizontal: 24, 
+        paddingHorizontal: 20, 
         height: 64,
         backgroundColor: '#F5F0FF', 
         zIndex: 10
@@ -178,6 +178,7 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#1E1B2E', 
         letterSpacing: -0.5,
+        marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },

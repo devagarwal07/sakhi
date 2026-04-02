@@ -105,7 +105,7 @@ export default function ProfileScreen() {
                                     </Svg>
                                 } 
                                 label="Ride History" 
-                                onPress={() => router.push({ pathname: '/(tabs)/ride-history', params: { fromSettings: 'true' } })} 
+                                onPress={() => router.push({ pathname: '/ride-history', params: { fromSettings: 'true' } })} 
                             />
                             <SettingRow 
                                 icon={
