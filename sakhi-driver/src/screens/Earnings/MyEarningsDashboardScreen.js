@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 
 // ── Period tabs ──────────────────────────────────────────────────────────────
 const PERIODS = [
@@ -14,6 +15,7 @@ const PERIODS = [
   { label: 'This Week', value: 'weekly'  },
   { label: 'Monthly',   value: 'monthly' },
   { label: 'All Time',  value: 'all'     },
+  { label: '📅 Custom', value: 'custom'  },
 ];
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -83,10 +85,27 @@ export default function MyEarningsDashboardScreen({ navigation }) {
   const [data, setData]             = useState(null);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [customStart,  setCustomStart]  = useState(null);
+  const [customEnd,    setCustomEnd]    = useState(null);
 
-  const fetchEarnings = useCallback(async (p = period) => {
+  const customTabLabel = () => {
+    if (!customStart) return '📅 Custom';
+    const fmt = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    if (customEnd && customEnd.getTime() !== customStart.getTime()) {
+      return `${fmt(customStart)} – ${fmt(customEnd)}`;
+    }
+    return fmt(customStart);
+  };
+
+  const fetchEarnings = useCallback(async (p = period, start = customStart, end = customEnd) => {
     try {
-      const { data: res } = await client.get(`/drivers/earnings?period=${p}`);
+      const params = { period: p };
+      if (p === 'custom' && start) {
+        params.start_date = start.toISOString().split('T')[0];
+        params.end_date   = (end ?? start).toISOString().split('T')[0];
+      }
+      const { data: res } = await client.get(`/drivers/earnings`, { params });
       setData(res);
     } catch (err) {
       console.warn('[Earnings]', err.message);
@@ -94,7 +113,7 @@ export default function MyEarningsDashboardScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [period]);
+  }, [period, customStart, customEnd]);
 
   useEffect(() => { fetchEarnings(period); }, [period]);
 
@@ -115,25 +134,38 @@ export default function MyEarningsDashboardScreen({ navigation }) {
   const pendingComm  = data?.pending_commission ?? 0;
 
   return (
+    <>
     <View style={styles.safe}>
       <ScreenHeader title="My Earnings" onBack={() => navigation.goBack()} />
 
-      {/* Period tabs */}
       <View style={[styles.tabsWrap, {}]}>
-        <View style={styles.tabsRow}>
-          {PERIODS.map((p) => (
-            <TouchableOpacity
-              key={p.value}
-              style={[styles.tab, period === p.value && styles.tabActive]}
-              onPress={() => setPeriod(p.value)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabText, period === p.value && styles.tabTextActive]}>
-                {p.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsRow}
+        >
+          {PERIODS.map((p) => {
+            const isActive = period === p.value;
+            const lbl = p.value === 'custom' ? customTabLabel() : p.label;
+            return (
+              <TouchableOpacity
+                key={p.value}
+                style={[styles.tab, isActive && styles.tabActive]}
+                onPress={() => {
+                  if (p.value === 'custom') { setShowCalendar(true); return; }
+                  setPeriod(p.value);
+                  setLoading(true);
+                  fetchEarnings(p.value, null, null);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  {lbl}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -149,7 +181,9 @@ export default function MyEarningsDashboardScreen({ navigation }) {
           {/* Hero Card */}
           <View style={styles.heroCard}>
             <Text style={styles.heroLabel}>
-              {PERIODS.find((p) => p.value === period)?.label ?? ''} Earnings
+              {period === 'custom' && customStart
+                ? customTabLabel()
+                : (PERIODS.find((p) => p.value === period)?.label ?? '')} Earnings
             </Text>
             <Text style={styles.heroAmount}>₹{netEarnings.toLocaleString('en-IN')}</Text>
             <View style={styles.heroMeta}>
@@ -218,6 +252,22 @@ export default function MyEarningsDashboardScreen({ navigation }) {
         </ScrollView>
       )}
     </View>
+
+    <SakhiDateRangePicker
+      visible={showCalendar}
+      onClose={() => setShowCalendar(false)}
+      initialStart={customStart}
+      initialEnd={customEnd}
+      onApply={(start, end) => {
+        setCustomStart(start);
+        setCustomEnd(end);
+        setPeriod('custom');
+        setShowCalendar(false);
+        setLoading(true);
+        fetchEarnings('custom', start, end);
+      }}
+    />
+    </>
   );
 }
 
@@ -226,10 +276,11 @@ const styles = StyleSheet.create({
 
   tabsWrap: { paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing.sm },
   tabsRow: {
-    flexDirection: 'row', backgroundColor: Colors.white,
+    flexDirection: 'row',
+    backgroundColor: Colors.white,
     borderRadius: Radius.lg, padding: 4, ...Shadows.card,
   },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: Radius.md, alignItems: 'center' },
+  tab: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: Radius.md, alignItems: 'center' },
   tabActive: { backgroundColor: Colors.surfaceLow },
   tabText: { fontSize: 11, fontWeight: '600', color: Colors.onSurfaceVariant },
   tabTextActive: { fontWeight: '800', color: Colors.primaryContainer },
