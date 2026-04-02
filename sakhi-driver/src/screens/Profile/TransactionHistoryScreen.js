@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl,
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 
 // ─── Icon components (no SVG library needed) ──────────────────────────────────
 
@@ -155,7 +156,6 @@ const FALLBACK_SECTIONS = [
 ];
 
 const TYPE_FILTERS = ['All', 'Ride', 'Subscription', 'Commission'];
-const DATE_RANGES  = ['1 Mar – 15 Mar', '16 Mar – 31 Mar', '1 Feb – 28 Feb', 'Custom Range'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatAmount(raw, isCredit) {
@@ -277,13 +277,28 @@ export default function TransactionHistoryScreen({ navigation }) {
   const [loading,        setLoading]        = useState(false);
   const [refreshing,     setRefreshing]     = useState(false);
   const [typeFilter,     setTypeFilter]     = useState('All');
-  const [dateRange,      setDateRange]      = useState('1 Mar – 15 Mar');
+  const [customStart,    setCustomStart]    = useState(null);
+  const [customEnd,      setCustomEnd]      = useState(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCalendar,   setShowCalendar]   = useState(false);
+
+  const dateRangeLabel = () => {
+    if (!customStart) return 'Date Range';
+    const fmt = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    if (customEnd && customEnd.getTime() !== customStart.getTime()) {
+      return `${fmt(customStart)} – ${fmt(customEnd)}`;
+    }
+    return fmt(customStart);
+  };
 
   const fetchData = useCallback(async () => {
     try {
-      const { data } = await client.get('/drivers/transactions');
+      const params = {};
+      if (customStart) {
+        params.start_date = customStart.toISOString().split('T')[0];
+        params.end_date   = (customEnd ?? customStart).toISOString().split('T')[0];
+      }
+      const { data } = await client.get('/drivers/transactions', { params });
       const grouped  = groupApiData(data.transactions ?? []);
       if (grouped.length) setSections(grouped);
     } catch {
@@ -292,7 +307,7 @@ export default function TransactionHistoryScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [customStart, customEnd]);
 
   useEffect(() => { fetchData(); }, []);
   const onRefresh = () => { setRefreshing(true); fetchData(); };
@@ -335,10 +350,16 @@ export default function TransactionHistoryScreen({ navigation }) {
 
           {/* ── Filter Row ── */}
           <View style={s.filterRow}>
-            {/* Date Range Pill */}
-            <TouchableOpacity style={s.pill} onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+            {/* Date Range Pill — opens real calendar */}
+            <TouchableOpacity
+              style={[s.pill, customStart && s.pillActive]}
+              onPress={() => setShowCalendar(true)}
+              activeOpacity={0.8}
+            >
               <CalendarIcon />
-              <Text style={s.pillText} numberOfLines={1}>{dateRange}</Text>
+              <Text style={[s.pillText, customStart && s.pillTextActive]} numberOfLines={1}>
+                {dateRangeLabel()}
+              </Text>
             </TouchableOpacity>
 
             {/* Type Pill */}
@@ -379,13 +400,17 @@ export default function TransactionHistoryScreen({ navigation }) {
         onSelect={setTypeFilter}
         onClose={() => setShowTypePicker(false)}
       />
-      <PickerModal
-        visible={showDatePicker}
-        title="Select Date Range"
-        options={DATE_RANGES}
-        selected={dateRange}
-        onSelect={setDateRange}
-        onClose={() => setShowDatePicker(false)}
+
+      <SakhiDateRangePicker
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        initialStart={customStart}
+        initialEnd={customEnd}
+        onApply={(start, end) => {
+          setCustomStart(start);
+          setCustomEnd(end);
+          setShowCalendar(false);
+        }}
       />
 
     </View>
@@ -418,7 +443,9 @@ const s = StyleSheet.create({
     borderRadius: 9999,
     ...Shadows.card,
   },
-  pillText: { fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 20 },
+  pillActive:     { backgroundColor: '#BEA3D8' },
+  pillText:       { fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 20 },
+  pillTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
   exportBtn: {
     flexDirection: 'row',

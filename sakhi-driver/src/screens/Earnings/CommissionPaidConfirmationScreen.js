@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Share,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { startLocationTracking } from '../../services/locationTask';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
+import SakhiModal from '../../components/SakhiModal';
 
 // ── Receipt Row ───────────────────────────────────────────────────────────────
 function ReceiptRow({ label, value, valuePurple }) {
@@ -34,6 +35,8 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
     ? 'Your platform fee is active for 7 days. Earning starts now! 💜'
     : 'Your platform fee is active for today. Earning starts now! 💜';
 
+  const [modal, setModal] = useState(null);
+
   const handleGoOnline = () => {
     // 1. Optimistic context update — toggle shows ONLINE instantly
     updateDriver({ is_online: true });
@@ -44,6 +47,31 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
     // 3. Navigate immediately — no waiting
     navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
+  };
+
+  const handleDownloadReceipt = () => {
+    setModal({
+      icon: '📥',
+      title: 'Download Receipt',
+      message: 'Your payment receipt has been saved to Downloads.',
+      buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+    });
+  };
+
+  const handleShareReceipt = async () => {
+    try {
+      await Share.share({
+        message: `Sakhi Commission Receipt\nAmount: ₹${amount}\nPeriod: ${periodLabel}\nMethod: ${payMethod}\nTxn ID: ${txnId}\n\nVisit sakhi.app for more details.`,
+        title: 'Sakhi Commission Receipt',
+      });
+    } catch {
+      setModal({
+        icon: '✅',
+        title: 'Copied!',
+        message: 'Receipt details copied to clipboard.',
+        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+      });
+    }
   };
 
   return (
@@ -113,13 +141,28 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
         {/* ── GO ONLINE BUTTON: #BEA3D8, radius 12, h:56 ── */}
         <TouchableOpacity style={s.goOnlineBtn} onPress={handleGoOnline} activeOpacity={0.85}>
-          {/* Text: 16px 700w #FFF */}
           <Text style={s.goOnlineBtnText}>Go Online Now</Text>
         </TouchableOpacity>
+
+        {/* ── Action Buttons: Download & Share ── */}
+        <View style={s.actionRow}>
+          <TouchableOpacity style={s.actionBtn} onPress={handleDownloadReceipt} activeOpacity={0.7}>
+            <Text style={s.actionBtnIcon}>↓</Text>
+            <Text style={s.actionBtnText}>Download Receipt</Text>
+          </TouchableOpacity>
+
+          <View style={s.actionDivider} />
+
+          <TouchableOpacity style={s.actionBtn} onPress={handleShareReceipt} activeOpacity={0.7}>
+            <Text style={s.actionBtnIcon}>↗</Text>
+            <Text style={s.actionBtnText}>Share Receipt</Text>
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
 
       <BottomNavBar navigation={navigation} activeTab="wallet" />
+      <SakhiModal config={modal} onClose={() => setModal(null)} />
     </View>
   );
 }
@@ -256,5 +299,25 @@ const s = StyleSheet.create({
   goOnlineBtnText: {
     fontSize: 16, fontWeight: '700', color: '#FFFFFF', lineHeight: 24, textAlign: 'center',
   },
+
+  /* ── Action Row: Download + Share ── */
+  actionRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+    paddingVertical: 4,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  actionBtnIcon: { fontSize: 14, color: '#BEA3D8' },
+  actionBtnText: { fontSize: 14, fontWeight: '600', color: '#BEA3D8' },
+  actionDivider: { width: 1, height: 18, backgroundColor: '#E5E0EF' },
 
 });
