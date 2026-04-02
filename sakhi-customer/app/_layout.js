@@ -84,10 +84,8 @@ export default function RootLayout() {
                                     name="change-phone"
                                     options={{ animation: 'slide_from_right' }}
                                 />
-                                <Stack.Screen
-                                    name="wallet"
-                                    options={{ animation: 'slide_from_right' }}
-                                />
+                                <Stack.Screen name="wallet" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="ride-history" options={{ animation: 'slide_from_right' }} />
                                 {/* Newly registered routes for complete stack consistency */}
                                 <Stack.Screen name="payment" options={{ animation: 'slide_from_right' }} />
                                 <Stack.Screen name="payment-success" options={{ animation: 'slide_from_bottom' }} />

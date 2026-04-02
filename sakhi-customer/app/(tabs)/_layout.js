@@ -42,7 +42,7 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="ride-history"
+                name="activity"
                 options={{
                     title: 'ACTIVITY',
                     tabBarIcon: ({ focused }) => (
