@@ -19,6 +19,7 @@
       }
     },
     "android": {
+      "package": "com.sakhi.driver",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1E1B2E"
@@ -43,6 +44,12 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "40fcb58d-0bed-4945-a919-e3d9ebd88d23"
+      }
+    },
+    "owner": "devagarwal0178"
   }
 }
