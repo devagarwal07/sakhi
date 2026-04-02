@@ -5,7 +5,7 @@ import {
     TouchableOpacity, ActivityIndicator, Pressable,
     ScrollView, Platform
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getRideHistory } from '../../src/api/endpoints';
 import { format, parseISO } from 'date-fns';
 
@@ -13,6 +13,9 @@ const FILTERS = ['All', 'This Week', 'This Month', 'Last Month'];
 
 export default function RideHistoryScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
+    const showBack = params.fromSettings || params.fromSidebar;
+    
     const [rides, setRides] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
@@ -129,9 +132,13 @@ export default function RideHistoryScreen() {
                 
                 {/* Fixed App Bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.push('/profile')} style={styles.backBtn} activeOpacity={0.7}>
-                        <Text style={styles.backArrow}>←</Text>
-                    </TouchableOpacity>
+                    {showBack ? (
+                        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/profile')} style={styles.backBtn} activeOpacity={0.7}>
+                            <Text style={styles.backArrow}>←</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.backBtn} /* Left Spacer if no back btn */ />
+                    )}
                     <Text style={styles.headerTitle}>Ride History</Text>
                     <View style={styles.backBtn} /* Spacer */ />
                 </View>
