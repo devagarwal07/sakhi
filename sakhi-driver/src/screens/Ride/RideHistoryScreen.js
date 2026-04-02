@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList,
   TouchableOpacity, Platform, TextInput, ActivityIndicator,
@@ -7,8 +7,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius } from '../../utils/theme';
 import client from '../../api/client';
-import { Search, MapPin, Flag, ChevronRight, BarChart2 } from 'lucide-react-native';
+import { Search, MapPin, Flag, ChevronRight, BarChart2, Calendar } from 'lucide-react-native';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -231,13 +232,19 @@ export default function RideHistoryScreen({ navigation }) {
   const [searchQuery,  setSearchQuery]  = useState('');
   const [page,         setPage]         = useState(1);
   const [hasMore,      setHasMore]      = useState(true);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [customStart,  setCustomStart]  = useState(null);
+  const [customEnd,    setCustomEnd]    = useState(null);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
-  const fetchRides = useCallback(async (filter = activeFilter, pg = 1, append = false) => {
+  const fetchRides = useCallback(async (filter = activeFilter, pg = 1, append = false, start = customStart, end = customEnd) => {
     try {
-      const { data } = await client.get('/drivers/rides', {
-        params: { period: filter, page: pg, limit: 20, q: searchQuery || undefined },
-      });
+      const params = { period: filter, page: pg, limit: 20, q: searchQuery || undefined };
+      if (filter === 'custom' && start) {
+        params.start_date = start.toISOString().split('T')[0];
+        params.end_date   = (end ?? start).toISOString().split('T')[0];
+      }
+      const { data } = await client.get('/drivers/rides', { params });
       const newRides = data.rides ?? [];
       setRides((prev) => append ? [...prev, ...newRides] : newRides);
       setSummary(data.summary ?? SEED_SUMMARY);
@@ -250,7 +257,7 @@ export default function RideHistoryScreen({ navigation }) {
       setRefreshing(false);
       setLoadingMore(false);
     }
-  }, [activeFilter, searchQuery]);
+  }, [activeFilter, searchQuery, customStart, customEnd]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -264,11 +271,37 @@ export default function RideHistoryScreen({ navigation }) {
   };
 
   const handleFilterChange = (key) => {
+    if (key === 'custom') {
+      setShowCalendar(true);
+      return;
+    }
     setActiveFilter(key);
+    setCustomStart(null);
+    setCustomEnd(null);
     setPage(1);
     setHasMore(true);
     setLoading(true);
-    fetchRides(key, 1, false);
+    fetchRides(key, 1, false, null, null);
+  };
+
+  const handleCalendarApply = (start, end) => {
+    setCustomStart(start);
+    setCustomEnd(end);
+    setActiveFilter('custom');
+    setShowCalendar(false);
+    setPage(1);
+    setHasMore(true);
+    setLoading(true);
+    fetchRides('custom', 1, false, start, end);
+  };
+
+  const customLabel = () => {
+    if (!customStart) return 'Custom';
+    const fmt = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    if (customEnd && customEnd.getTime() !== customStart.getTime()) {
+      return `${fmt(customStart)} – ${fmt(customEnd)}`;
+    }
+    return fmt(customStart);
   };
 
   // ── Navigate to detail ────────────────────────────────────────────────────
@@ -344,15 +377,19 @@ export default function RideHistoryScreen({ navigation }) {
         >
           {FILTERS.map((f) => {
             const active = activeFilter === f.key;
+            const label  = f.key === 'custom' ? customLabel() : f.label;
             return (
               <TouchableOpacity
                 key={f.key}
                 style={[s.filterChip, active && s.filterChipActive]}
-                onPress={() => handleFilterChange(f.key)}
+                onPress={() => f.key === 'custom' ? setShowCalendar(true) : handleFilterChange(f.key)}
                 activeOpacity={0.8}
               >
+                {f.key === 'custom' && (
+                  <Calendar size={13} color={active ? WHITE : MUTED} strokeWidth={2} />
+                )}
                 <Text style={[s.filterChipText, active && s.filterChipTextActive]}>
-                  {f.label}
+                  {label}
                 </Text>
               </TouchableOpacity>
             );
@@ -397,6 +434,14 @@ export default function RideHistoryScreen({ navigation }) {
         )}
 
       </ScrollView>
+
+      <SakhiDateRangePicker
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        onApply={handleCalendarApply}
+        initialStart={customStart}
+        initialEnd={customEnd}
+      />
     </View>
   );
 }
