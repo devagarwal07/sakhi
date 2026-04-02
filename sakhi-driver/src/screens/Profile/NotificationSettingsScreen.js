@@ -1,43 +1,97 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert,
+  View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
-import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import ScreenHeader from '../../components/ScreenHeader';
+import SakhiModal from '../../components/SakhiModal';
 
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const PURPLE   = '#BEA3D8';
+const DARK     = '#1C1A25';
+const MUTED    = '#6B7280';
+const WHITE    = '#FFFFFF';
+const BG       = '#F5F0FF';
+const RED_TEXT = '#BA1A1A';
+const CARD_SH  = {
+  shadowColor: '#7C3AED',
+  shadowOffset: { width: 0, height: 16 },
+  shadowOpacity: 0.08,
+  shadowRadius: 32,
+  elevation: 4,
+};
+
+// ─── Notification Group data ───────────────────────────────────────────────────
 const NOTIFICATION_GROUPS = [
   {
-    title: 'Rides',
+    title: 'RIDE NOTIFICATIONS',
     items: [
-      { key: 'new_ride_requests', label: 'New Ride Requests', sub: 'Alert when a new ride is assigned' },
-      { key: 'ride_cancelled',    label: 'Ride Cancellations', sub: 'Rider cancels before pickup'       },
+      { key: 'new_ride_requests', label: 'New Ride Requests',  sub: 'Alert when a new ride is assigned to you' },
+      { key: 'ride_cancelled',    label: 'Ride Cancellations', sub: 'When a rider cancels before pickup'      },
     ],
   },
   {
-    title: 'Earnings',
+    title: 'EARNINGS',
     items: [
-      { key: 'commission_due',    label: 'Commission Due Reminder', sub: 'Daily/weekly fee reminders' },
-      { key: 'payout_received',   label: 'Payout Received',        sub: 'When money hits your account'},
+      { key: 'commission_due',  label: 'Commission Due Reminder', sub: 'Daily/weekly fee reminders' },
+      { key: 'payout_received', label: 'Payout Received',        sub: 'When money hits your account' },
     ],
   },
   {
-    title: 'Subscriptions',
+    title: 'SUBSCRIPTIONS',
     items: [
-      { key: 'upcoming_sub_ride', label: 'Upcoming Subscription Ride', sub: '30 min before scheduled pickup' },
-      { key: 'sub_assigned',      label: 'New Subscription Assigned',  sub: 'When a rider books you'        },
+      { key: 'upcoming_sub_ride', label: 'Upcoming Subscription Ride', sub: null, badge: '30 MINS BEFORE' },
+      { key: 'sub_assigned',      label: 'New Subscription Assigned',  sub: 'When a rider books you for subscription' },
     ],
   },
   {
-    title: 'Account',
+    title: 'ACCOUNT',
     items: [
-      { key: 'doc_expiry',        label: 'Document Expiry Alerts', sub: '30 days before any doc expires' },
-      { key: 'promotions',        label: 'Promotions & Offers',    sub: 'Bonuses and incentive schemes'  },
+      { key: 'doc_expiry',  label: 'Document Expiry Alerts', sub: '30 days before any document expires' },
+      { key: 'promotions',  label: 'Promotions & Offers',    sub: 'Bonuses and incentive schemes' },
     ],
   },
 ];
 
+// ─── Toggle Row ───────────────────────────────────────────────────────────────
+function ToggleRow({ label, sub, badge, stateKey, value, onToggle }) {
+  return (
+    <View style={tr.row}>
+      <View style={tr.textCol}>
+        <Text style={tr.label}>{label}</Text>
+        {badge ? (
+          <View style={tr.badgeWrap}>
+            <View style={tr.badge}>
+              <Text style={tr.badgeText}>{badge}</Text>
+            </View>
+          </View>
+        ) : sub ? (
+          <Text style={tr.sub} numberOfLines={2}>{sub}</Text>
+        ) : null}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onToggle}
+        trackColor={{ false: '#E5E0EF', true: PURPLE }}
+        thumbColor={WHITE}
+        ios_backgroundColor="#E5E0EF"
+        style={tr.switch}
+      />
+    </View>
+  );
+}
+const tr = StyleSheet.create({
+  row:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
+  textCol:  { flex: 1, justifyContent: 'center', gap: 4 },
+  label:    { fontSize: 14, fontWeight: '700', color: DARK, lineHeight: 20 },
+  sub:      { fontSize: 12, fontWeight: '400', color: MUTED, lineHeight: 16 },
+  badgeWrap:{ flexDirection: 'row', marginTop: 2 },
+  badge:    { backgroundColor: BG, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 9999 },
+  badgeText:{ fontSize: 10, fontWeight: '600', color: PURPLE, letterSpacing: -0.5, textTransform: 'uppercase' },
+  switch:   { transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function NotificationSettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({
     new_ride_requests: true,
@@ -49,58 +103,147 @@ export default function NotificationSettingsScreen({ navigation }) {
     doc_expiry:        true,
     promotions:        false,
   });
+  const [modal, setModal] = useState(null);
 
   const toggle = async (key, val) => {
     setSettings((prev) => ({ ...prev, [key]: val }));
     try {
       await client.patch('/drivers/notification-settings', { [key]: val });
     } catch {
-      setSettings((prev) => ({ ...prev, [key]: !val })); // revert
-      Alert.alert('Error', 'Could not update setting.');
+      setSettings((prev) => ({ ...prev, [key]: !val })); // revert on error
+      setModal({
+        icon: '⚠️',
+        title: 'Update Failed',
+        message: 'Could not update notification setting. Please try again.',
+        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+      });
     }
   };
 
-  return (
-    <View style={styles.safe}>
-      <ScreenHeader title="Notification Settings" onBack={() => navigation.goBack()} />
+  const handleRestoreDefaults = () => {
+    setModal({
+      icon: '🔄',
+      title: 'Restore Defaults?',
+      message: 'This will reset all notification preferences to their default values.',
+      buttons: [
+        { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+        {
+          text: 'Restore',
+          onPress: () => {
+            setSettings({
+              new_ride_requests: true,
+              ride_cancelled:    true,
+              commission_due:    true,
+              payout_received:   true,
+              upcoming_sub_ride: true,
+              sub_assigned:      true,
+              doc_expiry:        true,
+              promotions:        false,
+            });
+            setModal(null);
+          },
+        },
+      ],
+    });
+  };
 
-      <ScrollView contentContainerStyle={[styles.scroll, { }]} showsVerticalScrollIndicator={false}>
+  return (
+    <View style={s.root}>
+      <ScreenHeader title="Notification Settings" onBack={() => navigation?.goBack()} />
+
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── Standard Groups ── */}
         {NOTIFICATION_GROUPS.map((group) => (
-          <View key={group.title}>
-            <Text style={styles.groupTitle}>{group.title.toUpperCase()}</Text>
-            <View style={styles.card}>
+          <View key={group.title} style={s.section}>
+            <Text style={s.sectionHeading}>{group.title}</Text>
+            <View style={[s.card, { paddingVertical: 4 }]}>
               {group.items.map((item, i, arr) => (
                 <View key={item.key}>
-                  <View style={styles.row}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemLabel}>{item.label}</Text>
-                      <Text style={styles.itemSub}>{item.sub}</Text>
-                    </View>
-                    <Switch
+                  <View style={s.rowPad}>
+                    <ToggleRow
+                      label={item.label}
+                      sub={item.sub}
+                      badge={item.badge}
+                      stateKey={item.key}
                       value={settings[item.key] ?? false}
-                      onValueChange={(v) => toggle(item.key, v)}
-                      trackColor={{ false: Colors.outlineVariant, true: Colors.primaryContainer }}
-                      thumbColor={Colors.white}
+                      onToggle={(v) => toggle(item.key, v)}
                     />
                   </View>
-                  {i < arr.length - 1 && <View style={styles.divider} />}
+                  {i < arr.length - 1 && <View style={s.divider} />}
                 </View>
               ))}
             </View>
           </View>
         ))}
+
+        {/* ── Emergency Section (non-toggleable) ── */}
+        <View style={s.section}>
+          <Text style={[s.sectionHeading, { color: RED_TEXT }]}>EMERGENCY</Text>
+          <View style={[s.card, s.emergencyCard]}>
+            <View style={s.rowPad}>
+              <View style={tr.row}>
+                <View style={tr.textCol}>
+                  <Text style={tr.label}>SOS Confirmations</Text>
+                  <Text style={tr.sub}>Critical safety alerts — cannot be disabled</Text>
+                </View>
+                <View style={s.padlockBadge}>
+                  <Text style={s.padlockIcon}>🔒</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Restore Defaults ── */}
+        <TouchableOpacity style={s.restoreBtn} activeOpacity={0.7} onPress={handleRestoreDefaults}>
+          <Text style={s.restoreText}>Restore Defaults</Text>
+        </TouchableOpacity>
+
       </ScrollView>
+
+      <SakhiModal config={modal} onClose={() => setModal(null)} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.surfaceLow },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: 16, paddingBottom: 40, gap: 6 },
-  groupTitle: { fontSize: 10, fontWeight: '700', color: Colors.onSurfaceVariant, letterSpacing: 1.5, marginBottom: 6, marginTop: 10 },
-  card: { backgroundColor: Colors.white, borderRadius: Radius.lg, ...Shadows.card },
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: 14 },
-  itemLabel: { fontSize: 14, fontWeight: '600', color: Colors.onSurface },
-  itemSub: { fontSize: 11, color: Colors.onSurfaceVariant, marginTop: 2 },
-  divider: { height: 1, backgroundColor: Colors.surfaceLow, marginHorizontal: Spacing.md },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: BG },
+  scroll:{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 48, gap: 24 },
+
+  section:        { gap: 12 },
+  sectionHeading: {
+    fontSize: 11, fontWeight: '700', color: PURPLE,
+    letterSpacing: 0.55, textTransform: 'uppercase', opacity: 0.8,
+    paddingLeft: 4,
+  },
+
+  card: {
+    backgroundColor: WHITE, borderRadius: 16,
+    ...CARD_SH,
+  },
+  emergencyCard: {
+    backgroundColor: 'rgba(246, 241, 255, 0.6)',
+  },
+  rowPad: { paddingHorizontal: 20, paddingVertical: 16 },
+  divider:{ height: 1, backgroundColor: BG, marginHorizontal: 20 },
+
+  // Emergency lock badge
+  padlockBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#F0ECFA',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  padlockIcon: { fontSize: 14 },
+
+  // Restore Defaults
+  restoreBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  restoreText: {
+    fontSize: 14, fontWeight: '500', color: MUTED, textAlign: 'center',
+  },
 });

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, Alert, ActivityIndicator, TextInput, Platform,
@@ -262,7 +262,7 @@ export default function MyProfileScreen({ navigation }) {
           {/* Edit Profile button */}
           <TouchableOpacity
             style={s.editBtn}
-            onPress={() => openEdit('name', driver?.name)}
+            onPress={() => navigation?.navigate('EditProfile')}
             activeOpacity={0.8}
           >
             <Text style={s.editBtnText}>{'Edit\nProfile'}</Text>
