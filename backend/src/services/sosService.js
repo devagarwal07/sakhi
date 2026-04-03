@@ -54,12 +54,15 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
     await supabase.from('rides').update({ sos_triggered: true }).eq('id', rideId);
   }
 
-  // 3. Fetch user name + emergency contacts
+  // 3. Fetch user name + emergency contacts (riders: users + emergency_contacts; drivers: drivers + driver_emergency_contacts)
   const userTable = role === 'rider' ? 'users' : 'drivers';
-  const [{ data: userRows }, { data: contacts }] = await Promise.all([
+  const [{ data: userRows }, contactsRes] = await Promise.all([
     supabase.from(userTable).select('name').eq('id', userId).limit(1),
-    supabase.from('emergency_contacts').select('phone, name').eq('user_id', userId).limit(3),
+    role === 'rider'
+      ? supabase.from('emergency_contacts').select('phone, name').eq('user_id', userId).limit(3)
+      : supabase.from('driver_emergency_contacts').select('phone, name').eq('driver_id', userId).limit(3),
   ]);
+  const contacts = contactsRes.data || [];
 
   const userName = userRows?.[0]?.name || 'A Sakhi user';
   const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
@@ -115,10 +118,13 @@ async function handleBatteryLow(userId, role, level, lat, lng) {
 
   if (level > 5) return { notified: false };
 
-  const [{ data: userRows }, { data: contacts }] = await Promise.all([
+  const [{ data: userRows }, contactsRes] = await Promise.all([
     supabase.from(table).select('name').eq('id', userId).limit(1),
-    supabase.from('emergency_contacts').select('phone').eq('user_id', userId).limit(3),
+    role === 'rider'
+      ? supabase.from('emergency_contacts').select('phone').eq('user_id', userId).limit(3)
+      : supabase.from('driver_emergency_contacts').select('phone').eq('driver_id', userId).limit(3),
   ]);
+  const contacts = contactsRes.data || [];
 
   const userName = userRows?.[0]?.name || 'A Sakhi user';
   const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
