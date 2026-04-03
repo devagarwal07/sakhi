@@ -54,9 +54,8 @@ export default function LocationSearchScreen() {
         setSearching(true);
         searchTimer.current = setTimeout(async () => {
             try {
-                const { data } = await apiClient.get('/maps/autocomplete', {
-                    params: { input: text, sessiontoken: Date.now() },
-                });
+                const response = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}&sessiontoken=${Date.now()}`);
+                const data = await response.json();
                 setResults(data.predictions || []);
             } catch {
                 setResults(RECENT_SEARCHES.filter((p) =>
@@ -75,9 +74,8 @@ export default function LocationSearchScreen() {
             if (place.lat && place.lng) {
                 coords = { latitude: place.lat, longitude: place.lng };
             } else {
-                const { data } = await apiClient.get('/maps/place-detail', {
-                    params: { place_id: place.place_id },
-                });
+                const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
+                const data = await response.json();
                 coords = {
                     latitude: data.result.geometry.location.lat,
                     longitude: data.result.geometry.location.lng,
@@ -85,14 +83,14 @@ export default function LocationSearchScreen() {
             }
             setDropoff({
                 ...coords,
-                address: place.description || place.main,
+                address: place.structured_formatting?.main_text || place.description || place.main,
             });
             router.replace(returnRoute);
         } catch {
             setDropoff({
                 latitude: 28.6139,
                 longitude: 77.2090,
-                address: place.description || place.main,
+                address: place.structured_formatting?.main_text || place.description || place.main,
             });
             router.replace(returnRoute);
         }

@@ -7,15 +7,18 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import SakhiModal from '../../src/components/SakhiModal';
+import LogoutBottomSheet from '../../src/components/LogoutBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
     const [modal, setModal] = useState(null);
+    const [showLogoutSheet, setShowLogoutSheet] = useState(false);
 
     const handleLogout = async () => {
         await logout();
+        setShowLogoutSheet(false);
         router.replace('/(auth)/login');
     };
 
@@ -206,7 +209,7 @@ export default function ProfileScreen() {
                     </View>
 
                     {/* Logout Button */}
-                    <TouchableOpacity style={styles.logoutCard} onPress={handleLogout} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.logoutCard} onPress={() => setShowLogoutSheet(true)} activeOpacity={0.8}>
                         <View style={styles.logoutIconBg}>
                             <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                                 <Path d="M2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H9V2H2V16H9V18H2ZM13 14L11.625 12.55L14.175 10H6V8H14.175L11.625 5.45L13 4L18 9L13 14Z" fill="#BA1A1A"/>
@@ -219,6 +222,11 @@ export default function ProfileScreen() {
             </View>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
+            <LogoutBottomSheet 
+                visible={showLogoutSheet} 
+                onClose={() => setShowLogoutSheet(false)} 
+                onLogout={handleLogout} 
+            />
         </SafeAreaView>
     );
 }
@@ -402,7 +410,6 @@ const styles = StyleSheet.create({
     settingLabel: {
         flex: 1,
         fontSize: 16,
-        fontWeight: '700',
         color: '#1E1B2E',
     },
     chevron: {

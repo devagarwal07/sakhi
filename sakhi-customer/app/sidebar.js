@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
     View, Text, StyleSheet, TouchableOpacity, Animated, 
     Dimensions, PanResponder, ScrollView, Platform, Image
@@ -7,6 +7,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
+import LogoutBottomSheet from '../src/components/LogoutBottomSheet';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75; // Drawer takes exactly 75% width per Figma CSS right:25%
@@ -14,6 +15,7 @@ const DRAWER_WIDTH = width * 0.75; // Drawer takes exactly 75% width per Figma C
 export default function SidebarScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
+    const [showLogoutSheet, setShowLogoutSheet] = useState(false);
     
     // Animation refs for dynamic slide-in and fade overlay
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -205,12 +207,7 @@ export default function SidebarScreen() {
                 <View style={styles.bottomSection}>
                     <TouchableOpacity 
                         style={styles.logoutBtn} 
-                        onPress={() => {
-                            handleClose(async () => {
-                                await logout();
-                                router.replace('/(auth)/login');
-                            });
-                        }} 
+                        onPress={() => setShowLogoutSheet(true)} 
                         activeOpacity={0.7}
                     >
                         <View style={styles.logoutIconBox}>
@@ -222,6 +219,19 @@ export default function SidebarScreen() {
                     </TouchableOpacity>
                 </View>
             </Animated.View>
+
+            {/* Render Bottom Sheet Modal locally but visually it stands out */}
+            <LogoutBottomSheet 
+                visible={showLogoutSheet} 
+                onClose={() => setShowLogoutSheet(false)} 
+                onLogout={async () => {
+                   setShowLogoutSheet(false);
+                   handleClose(async () => {
+                       await logout();
+                       router.replace('/(auth)/login');
+                   });
+                }} 
+            />
         </View>
     );
 }

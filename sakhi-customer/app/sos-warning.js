@@ -22,7 +22,6 @@ export default function SOSWarningScreen() {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    triggerSOS();
                     return 0;
                 }
                 return prev - 1;
@@ -31,6 +30,12 @@ export default function SOSWarningScreen() {
 
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        if (timeLeft === 0) {
+            triggerSOS();
+        }
+    }, [timeLeft]);
 
     const triggerSOS = () => {
         router.replace('/sos-active');

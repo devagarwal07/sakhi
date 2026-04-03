@@ -118,12 +118,12 @@ export default function EditProfileScreen() {
             >
                 {/* ── Header ── */}
                 <View style={styles.header}>
-                    <View style={styles.headerLeftWrap}>
+                    <View style={styles.headerTitleWrap}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                             <Text style={styles.headerIcon}>←</Text>
                         </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Edit Profile</Text>
                     </View>
-                    <Text style={styles.headerTitle}>Edit Profile</Text>
                     <View style={styles.headerRightWrap}>
                         <TouchableOpacity style={styles.saveTopBtn} onPress={handleSave}>
                             <Text style={styles.saveTopText}>Save</Text>
@@ -348,6 +348,7 @@ const styles = StyleSheet.create({
     header: { 
         flexDirection: 'row', 
         alignItems: 'center', 
+        justifyContent: 'space-between',
         paddingHorizontal: 20, 
         height: 64,
         backgroundColor: '#F5F0FF', 
@@ -364,6 +365,10 @@ const styles = StyleSheet.create({
         fontSize: 24, 
         color: '#BEA3D8', 
         fontWeight: 'bold' 
+    },
+    headerTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     headerTitle: { 
         fontSize: 20, 

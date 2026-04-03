@@ -15,6 +15,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.sakhirides.customer",
+      "config": {
+        "googleMapsApiKey": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Sakhi needs your location to find nearby drivers and track your ride.",
         "NSLocationAlwaysUsageDescription": "Sakhi needs your location to share it with emergency contacts during an active ride.",
@@ -26,6 +29,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F5F0FF"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
+        }
       },
       "package": "in.sakhirides.customer",
       "permissions": [
