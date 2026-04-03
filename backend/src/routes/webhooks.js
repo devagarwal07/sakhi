@@ -89,17 +89,42 @@ router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
 
     // Payment captured
     if (event === 'payment.captured') {
-      const paymentId    = payload?.payment?.entity?.id;
-      const orderId      = payload?.payment?.entity?.order_id;
-      const amount       = payload?.payment?.entity?.amount; // paise
-      const notes        = payload?.payment?.entity?.notes || {};
+      const paymentId = payload?.payment?.entity?.id;
+      const orderId   = payload?.payment?.entity?.order_id;
+      const amount    = payload?.payment?.entity?.amount; // paise
+      const notes     = payload?.payment?.entity?.notes || {};
 
-      // Lazy-load paymentService to avoid circular deps
       const paymentService = require('../services/paymentService');
-      if (paymentService.handlePaymentCaptured) {
-        await paymentService.handlePaymentCaptured({ paymentId, orderId, amount, notes }).catch((e) =>
-          logger.error('webhooks.razorpay — handlePaymentCaptured error', { error: e.message })
-        );
+      const supabase       = require('../config/supabase');
+      const io             = req.app.get('io');
+
+      // ── 1. Check if this order belongs to a RIDE ─────────────────────────
+      const { data: rides } = await supabase
+        .from('rides')
+        .select('id, driver_id, rider_id, payment_status')
+        .eq('razorpay_order_id', orderId)
+        .limit(1);
+
+      const ride = rides?.[0];
+      if (ride && ride.payment_status !== 'paid') {
+        await supabase.from('rides').update({
+          payment_status:     'paid',
+          razorpay_payment_id: paymentId,
+        }).eq('id', ride.id);
+
+        // Notify driver via socket
+        if (io && ride.driver_id) {
+          io.of('/rides').to(`driver:${ride.driver_id}`).emit('payment:success', { ride_id: ride.id });
+        }
+
+        logger.info('webhooks.razorpay — ride payment captured', { rideId: ride.id, paymentId });
+      } else {
+        // ── 2. Otherwise handle as subscription payment ─────────────────────
+        if (paymentService.handlePaymentCaptured) {
+          await paymentService.handlePaymentCaptured({ paymentId, orderId, amount, notes }).catch((e) =>
+            logger.error('webhooks.razorpay — handlePaymentCaptured error', { error: e.message })
+          );
+        }
       }
     }
 
