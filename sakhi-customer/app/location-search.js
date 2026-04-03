@@ -1,37 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    FlatList, ActivityIndicator, Pressable, Keyboard, Platform,
+    ActivityIndicator, Pressable, Keyboard, Platform,
     ScrollView,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
-import apiClient from '../src/api/client';
+import { getRideHistory } from '../src/api/endpoints';
 
-const RECENT_SEARCHES = [
-    {
-        place_id: 'rs1',
-        main: 'Hauz Khas Social',
-        secondary: '9A & 12, Hauz Khas Village, New Delhi',
-        lat: 28.5494,
-        lng: 77.2001,
-    },
-    {
-        place_id: 'rs2',
-        main: 'Select Citywalk',
-        secondary: 'A-3, District Centre, Saket, New Delhi',
-        lat: 28.5286,
-        lng: 77.2189,
-    },
-    {
-        place_id: 'rs3',
-        main: 'Indira Gandhi International Airport',
-        secondary: 'Terminal 3, New Delhi, Delhi 110037',
-        lat: 28.5562,
-        lng: 77.1000,
-    },
-];
 
 export default function LocationSearchScreen() {
     const router = useRouter();
@@ -40,9 +17,41 @@ export default function LocationSearchScreen() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
-    const searchTimer = React.useRef(null);
+    const [recentDestinations, setRecentDestinations] = useState([]);
+    const [loadingRecent, setLoadingRecent] = useState(true);
+    const searchTimer = useRef(null);
 
     const returnRoute = params?.returnRoute || '/ride-estimate';
+    const isSearching = query.trim().length >= 3;
+
+    // Load real recent destinations from ride history
+    useEffect(() => {
+        getRideHistory(1)
+            .then(({ data }) => {
+                const rides = data.rides || data.data || [];
+                // Extract unique drop-off addresses with coords
+                const seen = new Set();
+                const destinations = rides
+                    .filter((r) => r.dropoff_address || r.dropoff?.address)
+                    .filter((r) => {
+                        const addr = r.dropoff_address || r.dropoff?.address;
+                        if (seen.has(addr)) return false;
+                        seen.add(addr);
+                        return true;
+                    })
+                    .slice(0, 5)
+                    .map((r, i) => ({
+                        place_id: `recent_${i}`,
+                        main: r.dropoff_address || r.dropoff?.address,
+                        secondary: r.pickup_address || r.pickup?.address || '',
+                        lat: r.dropoff?.latitude || null,
+                        lng: r.dropoff?.longitude || null,
+                    }));
+                setRecentDestinations(destinations);
+            })
+            .catch(() => setRecentDestinations([]))
+            .finally(() => setLoadingRecent(false));
+    }, []);
 
     const handleSearch = (text) => {
         setQuery(text);
@@ -54,13 +63,19 @@ export default function LocationSearchScreen() {
         setSearching(true);
         searchTimer.current = setTimeout(async () => {
             try {
-                const response = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}&sessiontoken=${Date.now()}`);
+                // Build location bias + country restriction
+                const lat = ride?.pickup?.latitude;
+                const lng = ride?.pickup?.longitude;
+                const locationParam = (lat && lng)
+                    ? `&location=${lat},${lng}&radius=50000`
+                    : '';
+                const response = await fetch(
+                    `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}&sessiontoken=${Date.now()}&components=country:in${locationParam}`
+                );
                 const data = await response.json();
                 setResults(data.predictions || []);
             } catch {
-                setResults(RECENT_SEARCHES.filter((p) =>
-                    p.main.toLowerCase().includes(text.toLowerCase()),
-                ));
+                setResults([]);
             } finally {
                 setSearching(false);
             }
@@ -87,9 +102,12 @@ export default function LocationSearchScreen() {
             });
             router.replace(returnRoute);
         } catch {
+            // If details fetch fails, use pickup coords as approximate fallback
+            const fallbackLat = ride?.pickup?.latitude || null;
+            const fallbackLng = ride?.pickup?.longitude || null;
             setDropoff({
-                latitude: 28.6139,
-                longitude: 77.2090,
+                latitude: fallbackLat,
+                longitude: fallbackLng,
                 address: place.structured_formatting?.main_text || place.description || place.main,
             });
             router.replace(returnRoute);
@@ -133,7 +151,7 @@ export default function LocationSearchScreen() {
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>PICKUP LOCATION</Text>
                                     <Text style={styles.inputValue} numberOfLines={2}>
-                                        {ride?.pickup?.address || '12, Green Park Avenue, New Delhi'}
+                                        {ride?.pickup?.address || 'Detecting your location…'}
                                     </Text>
                                 </View>
 
@@ -147,6 +165,9 @@ export default function LocationSearchScreen() {
                                         value={query}
                                         onChangeText={handleSearch}
                                         returnKeyType="search"
+                                        autoFocus
+                                        autoCorrect={false}
+                                        autoCapitalize="words"
                                     />
                                 </View>
                             </View>
@@ -165,19 +186,13 @@ export default function LocationSearchScreen() {
                 <View style={styles.savedSection}>
                     <Text style={styles.sectionTitle}>SAVED PLACES</Text>
                     <View style={styles.chipsRow}>
-                        <TouchableOpacity style={styles.chip} onPress={() => {
-                            const homeAddr = ride?.savedPlaces?.home || 'Home';
-                            setQuery(homeAddr);
-                        }}>
+                        <TouchableOpacity style={styles.chip} onPress={() => handleSearch('Home')}>
                             <Svg width="12" height="14" viewBox="0 0 12 14" fill="none" style={styles.chipIcon}>
                                 <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8"/>
                             </Svg>
                             <Text style={styles.chipText}>Home</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip} onPress={() => {
-                            const workAddr = ride?.savedPlaces?.work || 'Work';
-                            setQuery(workAddr);
-                        }}>
+                        <TouchableOpacity style={styles.chip} onPress={() => handleSearch('Work')}>
                             <Svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={styles.chipIcon}>
                                 <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8"/>
                             </Svg>
@@ -190,43 +205,82 @@ export default function LocationSearchScreen() {
                     </View>
                 </View>
 
-                {/* Recent Searches */}
+                {/* Recent / Suggestions Section */}
                 <View style={styles.recentSection}>
-                    <Text style={styles.sectionTitle}>RECENT SEARCHES</Text>
+                    <Text style={styles.sectionTitle}>
+                        {isSearching ? 'SUGGESTIONS' : 'RECENT DESTINATIONS'}
+                    </Text>
 
-                    {(query.length >= 3 ? results : RECENT_SEARCHES).map((item, index) => (
-                        <React.Fragment key={item.place_id}>
-                            <Pressable
-                                style={styles.recentRow}
-                                onPress={() => handleSelectPlace(item)}
-                            >
-                                <View style={styles.recentIconBg}>
-                                    <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <Path d="M13.3 14.7L14.7 13.3L11 9.6V5H9V10.4L13.3 14.7ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2167 18 14.1042 17.2208 15.6625 15.6625C17.2208 14.1042 18 12.2167 18 10C18 7.78333 17.2208 5.89583 15.6625 4.3375C14.1042 2.77917 12.2167 2 10 2C7.78333 2 5.89583 2.77917 4.3375 4.3375C2.77917 5.89583 2 7.78333 2 10C2 12.2167 2.77917 14.1042 4.3375 15.6625C5.89583 17.2208 7.78333 18 10 18Z" fill="#7B7487"/>
-                                    </Svg>
-                                </View>
-                                <View style={styles.recentInfo}>
-                                    <Text style={styles.recentMain} numberOfLines={1}>
-                                        {item.structured_formatting?.main_text || item.main}
-                                    </Text>
-                                    <Text style={styles.recentSub} numberOfLines={1}>
-                                        {item.structured_formatting?.secondary_text || item.secondary}
-                                    </Text>
-                                </View>
-                                <Text style={styles.recentArrow}>→</Text>
-                            </Pressable>
-                            {index < (query.length >= 3 ? results : RECENT_SEARCHES).length - 1 && (
-                                <View style={styles.divider} />
-                            )}
-                        </React.Fragment>
-                    ))}
-
+                    {/* Searching spinner */}
                     {searching && (
                         <View style={styles.loadingRow}>
                             <ActivityIndicator size="small" color="#BEA3D8" />
                             <Text style={styles.loadingText}>Searching…</Text>
                         </View>
                     )}
+
+                    {/* Loading recent (skeleton state) */}
+                    {!isSearching && loadingRecent && (
+                        <View style={styles.loadingRow}>
+                            <ActivityIndicator size="small" color="#BEA3D8" />
+                            <Text style={styles.loadingText}>Loading recent destinations…</Text>
+                        </View>
+                    )}
+
+                    {/* No results */}
+                    {isSearching && !searching && results.length === 0 && (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyIcon}>🔍</Text>
+                            <Text style={styles.emptyText}>No results found for "{query}"</Text>
+                            <Text style={styles.emptySubText}>Try a different search term</Text>
+                        </View>
+                    )}
+
+                    {/* No recent destinations */}
+                    {!isSearching && !loadingRecent && recentDestinations.length === 0 && (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyIcon}>🗺️</Text>
+                            <Text style={styles.emptyText}>No recent destinations yet</Text>
+                            <Text style={styles.emptySubText}>Your past drop-offs will appear here</Text>
+                        </View>
+                    )}
+
+                    {/* Results / Recent list */}
+                    {(isSearching ? results : recentDestinations).map((item, index) => {
+                        const displayList = isSearching ? results : recentDestinations;
+                        return (
+                            <React.Fragment key={item.place_id || index}>
+                                <Pressable
+                                    style={styles.recentRow}
+                                    onPress={() => handleSelectPlace(item)}
+                                >
+                                    <View style={styles.recentIconBg}>
+                                        {isSearching ? (
+                                            <Svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+                                                <Path d="M8 10C8.55 10 9.02083 9.80417 9.4125 9.4125C9.80417 9.02083 10 8.55 10 8C10 7.45 9.80417 6.97917 9.4125 6.5875C9.02083 6.19583 8.55 6 8 6C7.45 6 6.97917 6.19583 6.5875 6.5875C6.19583 6.97917 6 7.45 6 8C6 8.55 6.19583 9.02083 6.5875 9.4125C6.97917 9.80417 7.45 10 8 10ZM8 20C5.31667 17.7167 3.3125 15.6042 1.9875 13.6625C0.6625 11.7208 0 9.93333 0 8.3C0 5.8 0.804167 3.79167 2.4125 2.275C4.02083 0.758333 5.88333 0 8 0C10.1167 0 11.9792 0.758333 13.5875 2.275C15.1958 3.79167 16 5.8 16 8.3C16 9.93333 15.3375 11.7208 14.0125 13.6625C12.6875 15.6042 10.6833 17.7167 8 20Z" fill="#BEA3D8"/>
+                                            </Svg>
+                                        ) : (
+                                            <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                                <Path d="M13.3 14.7L14.7 13.3L11 9.6V5H9V10.4L13.3 14.7ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2167 18 14.1042 17.2208 15.6625 15.6625C17.2208 14.1042 18 12.2167 18 10C18 7.78333 17.2208 5.89583 15.6625 4.3375C14.1042 2.77917 12.2167 2 10 2C7.78333 2 5.89583 2.77917 4.3375 4.3375C2.77917 5.89583 2 7.78333 2 10C2 12.2167 2.77917 14.1042 4.3375 15.6625C5.89583 17.2208 7.78333 18 10 18Z" fill="#7B7487"/>
+                                            </Svg>
+                                        )}
+                                    </View>
+                                    <View style={styles.recentInfo}>
+                                        <Text style={styles.recentMain} numberOfLines={1}>
+                                            {item.structured_formatting?.main_text || item.main}
+                                        </Text>
+                                        <Text style={styles.recentSub} numberOfLines={1}>
+                                            {item.structured_formatting?.secondary_text || item.secondary}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.recentArrow}>→</Text>
+                                </Pressable>
+                                {index < displayList.length - 1 && (
+                                    <View style={styles.divider} />
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
                 </View>
             </ScrollView>
 
@@ -495,6 +549,29 @@ const styles = StyleSheet.create({
     loadingText: {
         fontSize: 14,
         color: '#6B7280',
+    },
+
+    // Empty state
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: 32,
+        gap: 8,
+    },
+    emptyIcon: {
+        fontSize: 32,
+        marginBottom: 4,
+    },
+    emptyText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#4A4455',
+        textAlign: 'center',
+    },
+    emptySubText: {
+        fontSize: 13,
+        fontWeight: '400',
+        color: '#7B7487',
+        textAlign: 'center',
     },
 
     // Footer

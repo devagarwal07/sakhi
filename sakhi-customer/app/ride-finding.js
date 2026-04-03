@@ -59,8 +59,8 @@ export default function RideFindingScreen() {
                     style={StyleSheet.absoluteFill}
                     provider={PROVIDER_GOOGLE}
                     initialRegion={{
-                        latitude: 12.9716, // Bangalore fallback
-                        longitude: 77.5946,
+                        latitude: ride?.pickup?.latitude || 19.0760,
+                        longitude: ride?.pickup?.longitude || 72.8777,
                         latitudeDelta: 0.05,
                         longitudeDelta: 0.05,
                     }}
@@ -161,7 +161,7 @@ export default function RideFindingScreen() {
                             <View style={styles.textCol}>
                                 <Text style={styles.label}>PICKUP</Text>
                                 <Text style={styles.value} numberOfLines={1}>
-                                    {ride?.pickup?.address || '12, Green Park Avenue, New Delhi'}
+                                    {ride?.pickup?.address || 'Locating pickup...'}
                                 </Text>
                             </View>
                         </View>
@@ -174,7 +174,7 @@ export default function RideFindingScreen() {
                             <View style={styles.textCol}>
                                 <Text style={styles.label}>DROP</Text>
                                 <Text style={styles.value} numberOfLines={1}>
-                                    {ride?.dropoff?.address || 'Hauz Khas Social, New Delhi'}
+                                    {ride?.dropoff?.address || 'Finalizing destination...'}
                                 </Text>
                             </View>
                         </View>
