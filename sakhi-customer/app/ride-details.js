@@ -1,42 +1,58 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Image, Platform, Linking
+    Image, Platform, Linking, ActivityIndicator
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { getRideById } from '../src/api/endpoints';
 
 export default function RideDetailsScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [modal, setModal] = useState(null);
+    const [rideData, setRideData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock data for display based on design spec
-    const ride = {
-        date: "Monday, 15 Mar 2026, 08:30 AM",
-        duration: "14 mins",
-        distance: "3.2 km",
-        pickup: "12, Green Park Avenue, New Delhi",
-        dropoff: "Hauz Khas Social, New Delhi",
+    useEffect(() => {
+        const rideId = params?.rideId || params?.id;
+        if (!rideId) { setLoading(false); return; }
+        getRideById(rideId)
+            .then(({ data }) => setRideData(data?.ride || data))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    // Derive display values from API data
+    const ride = rideData ? {
+        date: rideData.created_at
+            ? new Date(rideData.created_at).toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '—',
+        duration: rideData.duration || '—',
+        distance: rideData.distance || rideData.route_distance || '—',
+        pickup: rideData.pickup_address || rideData.pickup?.address || '—',
+        dropoff: rideData.dropoff_address || rideData.dropoff?.address || '—',
         fare: {
-            base: 30,
-            dist: 55,
-            wait: 2,
-            total: 87
+            base: rideData.fare?.base ?? '—',
+            dist: rideData.fare?.distance_fare ?? rideData.fare?.distance ?? '—',
+            wait: rideData.fare?.waiting ?? 0,
+            total: rideData.fare?.total ?? '—',
         },
-        paymentMethod: "Cash",
+        paymentMethod: rideData.payment_method || 'Cash',
         driver: {
-            name: "Meena R.",
-            vehicle: "Auto · KA 05 AB 1234",
-            rating: "4.8"
+            name: rideData.driver?.name || '—',
+            vehicle: rideData.driver?.vehicle
+                ? `${rideData.driver.vehicle.type || 'Auto'} · ${rideData.driver.vehicle.plate || ''}`
+                : '—',
+            rating: rideData.driver?.rating?.toFixed(1) || '—',
         },
         userReview: {
-            rating: 5,
-            comment: "\"Very safe and comfortable ride.\""
+            rating: rideData.rating || 0,
+            comment: rideData.review ? `"${rideData.review}"` : '',
         },
-        isSubscription: false // Set to true to see the SUB badge
-    };
+        isSubscription: rideData.fare?.total === 0 || rideData.is_subscription || false,
+    } : null;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -53,7 +69,7 @@ export default function RideDetailsScreen() {
                     <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => setModal({
                         icon: '🔗',
                         title: 'Share Ride',
-                        message: `Trip ID: SAKHI-${Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/demo`,
+                        message: `Trip ID: SAKHI-${params?.rideId || Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/${params?.rideId || 'demo'}`,
                         buttons: [
                             { text: 'Copy Link', onPress: () => {
                                 setModal({
@@ -70,7 +86,23 @@ export default function RideDetailsScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Main Content Area */}
+                {/* Loading State */}
+                {loading && (
+                    <View style={styles.loadingState}>
+                        <ActivityIndicator size="large" color="#BEA3D8" />
+                        <Text style={styles.loadingText}>Loading ride details…</Text>
+                    </View>
+                )}
+
+                {/* No data state */}
+                {!loading && !ride && (
+                    <View style={styles.loadingState}>
+                        <Text style={{ fontSize: 36 }}>🎫</Text>
+                        <Text style={styles.loadingText}>Ride details not found.</Text>
+                    </View>
+                )}
+                {/* Main Content Area - only show if ride data loaded */}
+                {!loading && ride && (
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     
                     {/* Simulated Map Background Area */}
@@ -124,11 +156,11 @@ export default function RideDetailsScreen() {
                             <View style={styles.fareBox}>
                                 <View style={styles.fareRow}>
                                     <Text style={styles.fareLabel}>Base Fare</Text>
-                                    <Text style={styles.fareValue}>₹{ride.fare.base}</Text>
+                                    <Text style={styles.fareValue}>{ride.fare.base !== '—' ? `₹${ride.fare.base}` : '—'}</Text>
                                 </View>
                                 <View style={styles.fareRow}>
                                     <Text style={styles.fareLabel}>Distance ({ride.distance})</Text>
-                                    <Text style={styles.fareValue}>₹{ride.fare.dist}</Text>
+                                    <Text style={styles.fareValue}>{ride.fare.dist !== '—' ? `₹${ride.fare.dist}` : '—'}</Text>
                                 </View>
                                 <View style={styles.fareRow}>
                                     <Text style={styles.fareLabel}>Waiting</Text>
@@ -139,7 +171,7 @@ export default function RideDetailsScreen() {
                                 
                                 <View style={styles.fareTotalRow}>
                                     <Text style={styles.fareTotalLabel}>Total</Text>
-                                    <Text style={styles.fareTotalValue}>₹{ride.fare.total}</Text>
+                                    <Text style={styles.fareTotalValue}>{ride.fare.total !== '—' ? `₹${ride.fare.total}` : '—'}</Text>
                                 </View>
                                 
                                 <View style={styles.paymentMetaRow}>
@@ -152,7 +184,6 @@ export default function RideDetailsScreen() {
                             <View style={styles.driverSection}>
                                 <View style={styles.driverLeft}>
                                     <View style={styles.driverImgWrap}>
-                                        {/* Placeholder for driver image */}
                                         <Text style={{fontSize: 24}}>👩🏽</Text>
                                     </View>
                                     <View style={styles.driverInfo}>
@@ -167,6 +198,7 @@ export default function RideDetailsScreen() {
                             </View>
 
                             {/* User Review / Rating given */}
+                            {ride.userReview.rating > 0 && (
                             <View style={styles.reviewSection}>
                                 <View style={styles.reviewScoreRow}>
                                     <Text style={styles.reviewLabel}>Your Rating:</Text>
@@ -178,13 +210,17 @@ export default function RideDetailsScreen() {
                                         ))}
                                     </View>
                                 </View>
-                                <Text style={styles.reviewComment}>{ride.userReview.comment}</Text>
+                                {!!ride.userReview.comment && (
+                                    <Text style={styles.reviewComment}>{ride.userReview.comment}</Text>
+                                )}
                             </View>
+                            )}
                             
                         </View>
                     </View>
 
                 </ScrollView>
+                )}
 
                 {/* Fixed Bottom Action */}
                 <View style={styles.bottomFixedWrap}>
@@ -208,6 +244,19 @@ const styles = StyleSheet.create({
         height: 64,
         backgroundColor: '#F5F0FF', 
         zIndex: 10
+    },
+    loadingState: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        padding: 40,
+    },
+    loadingText: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#6B7280',
+        textAlign: 'center',
     },
     iconBtn: { 
         width: 32, 
