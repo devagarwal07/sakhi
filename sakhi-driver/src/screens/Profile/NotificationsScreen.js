@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl,
@@ -39,8 +39,18 @@ export default function NotificationsScreen({ navigation }) {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const { data } = await client.get('/drivers/notifications');
-      setNotifications(data.notifications ?? []);
+      const { data } = await client.get('/notifications');
+      const raw = data.notifications ?? [];
+      setNotifications(
+        raw.map((n) => ({
+          ...n,
+          time_label:
+            n.time_label
+            ?? (n.sent_at
+              ? new Date(n.sent_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+              : ''),
+        })),
+      );
     } catch { setNotifications([]); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);

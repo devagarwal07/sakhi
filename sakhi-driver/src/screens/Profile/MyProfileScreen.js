@@ -200,8 +200,8 @@ export default function MyProfileScreen({ navigation }) {
     try {
       setUploading(true);
       const form = new FormData();
-      form.append('avatar', { uri: result.assets[0].uri, type: 'image/jpeg', name: 'avatar.jpg' });
-      await client.post('/drivers/profile/avatar', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      form.append('selfie', { uri: result.assets[0].uri, type: 'image/jpeg', name: 'selfie.jpg' });
+      await client.post('/drivers/verify-identity', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       await checkAuth?.();
     } catch { Alert.alert('Upload failed', 'Could not upload photo. Try again.'); }
     finally { setUploading(false); }

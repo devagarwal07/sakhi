@@ -59,7 +59,11 @@ export default function ChangePhoneInputScreen({ navigation, route }) {
         session_token: data?.session_token ?? null,
       });
     } catch (err) {
-      setError(err?.response?.data?.message ?? 'Could not send OTP. Please try again.');
+      setError(
+        err?.response?.data?.error?.message
+        ?? err?.response?.data?.message
+        ?? 'Could not send OTP. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
