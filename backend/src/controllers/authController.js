@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 const { blockJti } = require('../middleware/authMiddleware');
 
 // ── Zod Schemas ────────────────────────────────────────────────────────────────
-const phoneSchema = z.string().regex(/^\+[1-9]\d{1,14}$/, 'Phone must be in E.164 format');
+const phoneSchema = z.string().regex(/^\+?[1-9]\d{9,14}$/, 'Phone must be a valid 10-15 digit number');
 
 const sendOtpSchema = z.object({
   phone: phoneSchema,
