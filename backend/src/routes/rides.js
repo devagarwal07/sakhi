@@ -17,6 +17,9 @@ router.get('/estimate',       authMiddleware, roleGuard('rider', 'driver'), esti
 /** POST /rides — book a new ride (rider only) */
 router.post('/',              authMiddleware, roleGuard('rider'),           rideController.createRide);
 
+/** POST /rides/subscription/:id/initiate — driver starts subscription leg */
+router.post('/subscription/:id/initiate', authMiddleware, roleGuard('driver'), rideController.initiateSubscriptionRide);
+
 /** GET /rides/:id — fetch full ride details */
 router.get('/:id',            authMiddleware,                               rideController.getRide);
 

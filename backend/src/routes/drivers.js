@@ -1,12 +1,18 @@
 'use strict';
 
 const { Router }   = require('express');
+const multer       = require('multer');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleGuard    = require('../middleware/roleGuard');
 const { uploadDriverDocs, uploadSelfie } = require('../middleware/upload');
 const kycService   = require('../services/kycService');
 const driverController = require('../controllers/driverController');
 const { apiLimiter } = require('../middleware/rateLimiter');
+
+const uploadComplaint = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 5 * 1024 * 1024 },
+});
 
 const router = Router();
 router.use(apiLimiter);
@@ -34,6 +40,23 @@ router.post('/kyc/re-upload', authMiddleware, roleGuard('driver'), multerErrorHa
   try { return res.status(200).json(await kycService.resubmitKYC(req.user.userId, req.files)); }
   catch (err) { return err.code && err.status ? res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } }) : next(err); }
 });
+
+// ── Phone change (authenticated) ────────────────────────────────────────────────
+router.post('/profile/phone/send-otp',  authMiddleware, roleGuard('driver'), driverController.sendDriverPhoneChangeOtp);
+router.post('/profile/phone/resend-otp', authMiddleware, roleGuard('driver'), driverController.sendDriverPhoneChangeOtp);
+router.post('/profile/phone/verify-otp', authMiddleware, roleGuard('driver'), driverController.verifyDriverPhoneChangeOtp);
+
+// ── Onboarding ───────────────────────────────────────────────────────────────────
+router.post('/vehicle',           authMiddleware, roleGuard('driver'), driverController.submitVehicleDetails);
+router.post('/verify-identity',   authMiddleware, roleGuard('driver'), multerErrorHandler(uploadSelfie), driverController.submitSelfieVerification);
+
+// ── Complaints ────────────────────────────────────────────────────────────────────
+router.get('/complaints',         authMiddleware, roleGuard('driver'), driverController.listDriverComplaints);
+router.post('/complaints',        authMiddleware, roleGuard('driver'), uploadComplaint.single('screenshot'), driverController.submitDriverComplaint);
+
+// ── Settings ────────────────────────────────────────────────────────────────────
+router.patch('/notification-settings', authMiddleware, roleGuard('driver'), driverController.updateNotificationSettings);
+router.patch('/payment-details',       authMiddleware, roleGuard('driver'), driverController.updatePaymentDetails);
 
 // ── Online / Offline ──────────────────────────────────────────────────────────
 router.patch('/status',          authMiddleware, roleGuard('driver'), driverController.updateDriverStatus);
