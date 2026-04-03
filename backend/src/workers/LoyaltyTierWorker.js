@@ -2,7 +2,7 @@
 
 const cron = require('node-cron');
 const supabase   = require('../config/supabase');
-const fcmService = require('./fcmService');
+const fcmService = require('../services/fcmService');
 const logger     = require('../utils/logger');
 
 // ── Tier thresholds (combined active_days over current + previous month) ──────

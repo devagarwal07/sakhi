@@ -2,8 +2,8 @@
 
 const cron = require('node-cron');
 const supabase  = require('../config/supabase');
-const fcmService = require('./fcmService');
-const payoutService = require('./payoutService');
+const fcmService = require('../services/fcmService');
+const payoutService = require('../services/payoutService');
 const logger    = require('../utils/logger');
 
 // ── Constants ────────────────────────────────────────────────────────────────
