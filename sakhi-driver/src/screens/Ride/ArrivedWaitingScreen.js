@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, Animated, Platform, Image
+  Alert, ActivityIndicator, Animated, Platform, Image, Modal,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
+import ChatModal from '../../components/ChatModal';
 
 const FREE_WAIT_SECONDS = 180; // 3 minutes free waiting
 
@@ -22,6 +23,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
 
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -64,6 +66,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
   };
 
   return (
+    <>
     <View style={styles.root}>
       {/* ── MAP CONTAINER ────────────────────────────────────────────── */}
       <View style={styles.mapContainer}>
@@ -115,7 +118,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
             <TouchableOpacity 
               style={styles.sosBtn} 
               activeOpacity={0.8}
-              onPress={() => Alert.alert('SOS', 'Emergency services will be contacted.')}
+              onPress={() => navigation.navigate('SOSWarning', { location: null })}
             >
               <Feather name="alert-triangle" size={14} color="#FFFFFF" />
               <Text style={styles.sosText}>SOS</Text>
@@ -141,10 +144,14 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
                     <Image source={{ uri: 'https://i.pravatar.cc/150?u=priya' }} style={styles.avatarImage} />
                   )}
                 </View>
-                {/* Purple Chat Icon overlaps image */}
-                <View style={styles.chatBadge}>
+                {/* Purple Chat Badge — tappable to open chat */}
+                <TouchableOpacity
+                  style={styles.chatBadge}
+                  onPress={() => setChatVisible(true)}
+                  activeOpacity={0.8}
+                >
                   <MaterialCommunityIcons name="chat-processing-outline" size={10} color="#BEA3D8" />
-                </View>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.riderInfoCol}>
@@ -201,6 +208,18 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
         </View>
       </View>
     </View>
+
+    {/* ── Chat Modal ── */}
+    <Modal
+      visible={chatVisible}
+      animationType="slide"
+      transparent={false}
+      presentationStyle="pageSheet"
+      onRequestClose={() => setChatVisible(false)}
+    >
+      <ChatModal rideId={ride?.ride_id} onClose={() => setChatVisible(false)} />
+    </Modal>
+    </>
   );
 }
 

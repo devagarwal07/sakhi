@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Vibration, Image, Dimensions, Platform
+  Alert, Vibration, Image, Dimensions, Platform, Modal,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
+import ChatModal from '../../components/ChatModal';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ export default function TripInProgressScreen({ navigation, route }) {
 
   const [myLocation, setMyLocation] = useState(null);
   const [completing, setCompleting] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
 
   const dropoff = ride?.dropoff_coords ?? { latitude: 28.6280, longitude: 77.2300 };
 
@@ -85,6 +87,7 @@ export default function TripInProgressScreen({ navigation, route }) {
   };
 
   return (
+    <>
     <View style={styles.root}>
       {/* ── MAP CONTAINER ────────────────────────────────────────────── */}
       <View style={styles.mapContainer}>
@@ -138,7 +141,7 @@ export default function TripInProgressScreen({ navigation, route }) {
             <TouchableOpacity 
               style={styles.sosBtn} 
               activeOpacity={0.8}
-              onPress={() => Alert.alert('SOS', 'Emergency services will be contacted.')}
+              onPress={() => navigation.navigate('SOSWarning', { location: myLocation })}
             >
               <Feather name="alert-triangle" size={14} color="#FFFFFF" />
               <Text style={styles.sosText}>SOS</Text>
@@ -178,7 +181,7 @@ export default function TripInProgressScreen({ navigation, route }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => setChatVisible(true)}>
               <MaterialCommunityIcons name="chat-outline" size={20} color="#BEA3D8" />
             </TouchableOpacity>
           </View>
@@ -211,6 +214,18 @@ export default function TripInProgressScreen({ navigation, route }) {
         </View>
       </View>
     </View>
+
+    {/* ── Chat Modal ── */}
+    <Modal
+      visible={chatVisible}
+      animationType="slide"
+      transparent={false}
+      presentationStyle="pageSheet"
+      onRequestClose={() => setChatVisible(false)}
+    >
+      <ChatModal rideId={ride?.ride_id} onClose={() => setChatVisible(false)} />
+    </Modal>
+    </>
   );
 }
 

@@ -1,13 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Linking, Image, Dimensions, Platform
+  Alert, Linking, Image, Dimensions, Platform, Modal,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
+import ChatModal from '../../components/ChatModal';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
 
   const [myLocation, setMyLocation] = useState(null);
+  const [chatVisible, setChatVisible] = useState(false);
 
   const pickup = ride?.pickup_coords ?? { latitude: 28.6139, longitude: 77.2090 };
 
@@ -78,6 +80,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
   };
 
   return (
+    <>
     <View style={styles.root}>
       {/* MAP SECTION (Top bound to avoid overlapping Bottom Sheet logic) */}
       <View style={styles.mapContainer}>
@@ -139,7 +142,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
             <TouchableOpacity 
               style={styles.sosBtn} 
               activeOpacity={0.8}
-              onPress={() => Alert.alert('SOS', 'Emergency services will be contacted.')}
+              onPress={() => navigation.navigate('SOSWarning', { location: myLocation })}
             >
               <Feather name="alert-triangle" size={14} color="#FFFFFF" />
               <Text style={styles.sosText}>SOS</Text>
@@ -196,6 +199,15 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
             <TouchableOpacity style={styles.callBtn} onPress={handleCall} activeOpacity={0.85}>
               <MaterialCommunityIcons name="phone" size={20} color="#FFFFFF" />
             </TouchableOpacity>
+
+            {/* Chat Button */}
+            <TouchableOpacity
+              style={[styles.callBtn, { backgroundColor: '#F6F1FF' }]}
+              onPress={() => setChatVisible(true)}
+              activeOpacity={0.85}
+            >
+              <MaterialCommunityIcons name="chat-outline" size={20} color="#BEA3D8" />
+            </TouchableOpacity>
           </View>
 
           {/* Primary Action Button */}
@@ -205,6 +217,18 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         </View>
       </View>
     </View>
+
+    {/* ── Chat Modal ── */}
+    <Modal
+      visible={chatVisible}
+      animationType="slide"
+      transparent={false}
+      presentationStyle="pageSheet"
+      onRequestClose={() => setChatVisible(false)}
+    >
+      <ChatModal rideId={ride?.ride_id} onClose={() => setChatVisible(false)} />
+    </Modal>
+    </>
   );
 }
 
