@@ -78,6 +78,41 @@ export function SocketProvider({ children }) {
         }
     };
 
+    // Join a specific ride room so we receive ride_assigned, driver_location, etc.
+    const joinRideRoom = (rideId) => new Promise((resolve, reject) => {
+        if (DEV_BYPASS_AUTH) {
+            console.log('[DEV Socket] joinRideRoom:', rideId);
+            return resolve();
+        }
+        if (!socketRef.current?.connected) {
+            console.warn('[Socket] Cannot join room — not connected');
+            return reject(new Error('Socket not connected'));
+        }
+        // Optimistic: emit + listen for 'joined' ack or error
+        const onJoined = ({ ride_id }) => {
+            if (ride_id === rideId) {
+                socketRef.current?.off('joined', onJoined);
+                socketRef.current?.off('error', onError);
+                resolve();
+            }
+        };
+        const onError = (err) => {
+            socketRef.current?.off('joined', onJoined);
+            socketRef.current?.off('error', onError);
+            reject(new Error(err?.message ?? 'Room join failed'));
+        };
+        socketRef.current.once('joined', onJoined);
+        socketRef.current.once('error', onError);
+        socketRef.current.emit('rider:join_ride', { ride_id: rideId });
+
+        // Timeout safety — resolve anyway after 5s to not block the booking flow
+        setTimeout(() => {
+            socketRef.current?.off('joined', onJoined);
+            socketRef.current?.off('error', onError);
+            resolve();
+        }, 5000);
+    });
+
     const on = (event, callback) => {
         if (!DEV_BYPASS_AUTH) socketRef.current?.on(event, callback);
     };
@@ -87,7 +122,7 @@ export function SocketProvider({ children }) {
     };
 
     return (
-        <SocketContext.Provider value={{ socket: socketRef, emit, on, off, isConnected }}>
+        <SocketContext.Provider value={{ socket: socketRef, emit, on, off, joinRideRoom, isConnected }}>
             {children}
         </SocketContext.Provider>
     );

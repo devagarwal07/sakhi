@@ -48,10 +48,13 @@ export default function ActiveRideScreen() {
             toValue: 0, tension: 60, friction: 10, useNativeDriver: true,
         }).start();
 
-        // Socket listeners
-        const handleLocationUpdate = (coords) => {
+        // Socket listeners — registered here so they fire as long as this screen is mounted
+        const handleLocationUpdate = ({ lat, lng, heading }) => {
+            const coords = { latitude: lat, longitude: lng, heading };
             updateDriverLocation(coords);
-            mapRef.current?.animateCamera({ center: coords }, { duration: 600 });
+            if (mapRef.current) {
+                mapRef.current.animateCamera?.({ center: coords }, { duration: 600 });
+            }
         };
 
         const handleStatusUpdate = ({ status }) => {
@@ -61,16 +64,23 @@ export default function ActiveRideScreen() {
             }
         };
 
-        const handleWaitingTick = ({ seconds, charge }) => tickWaiting({ seconds, charge });
+        const handleWaitingTick  = ({ seconds, charge }) => tickWaiting({ seconds, charge });
 
-        on('driver_location', handleLocationUpdate);
+        // Payment success from driver confirms cash collection on their end
+        const handlePaymentSuccess = () => {
+            router.replace('/ride-summary');
+        };
+
+        on('driver_location',    handleLocationUpdate);
         on('ride:status_update', handleStatusUpdate);
-        on('waiting_tick', handleWaitingTick);
+        on('waiting_tick',       handleWaitingTick);
+        on('payment:success',    handlePaymentSuccess);
 
         return () => {
-            off('driver_location', handleLocationUpdate);
+            off('driver_location',    handleLocationUpdate);
             off('ride:status_update', handleStatusUpdate);
-            off('waiting_tick', handleWaitingTick);
+            off('waiting_tick',       handleWaitingTick);
+            off('payment:success',    handlePaymentSuccess);
         };
     }, []);
 

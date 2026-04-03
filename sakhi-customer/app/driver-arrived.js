@@ -8,16 +8,19 @@ import SmartMapView from '../src/components/SmartMapView';
 
 import SakhiModal from '../src/components/SakhiModal';
 import { useRide } from '../src/context/RideContext';
+import { useSocket } from '../src/context/SocketContext';
 
 const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
-    const { ride } = useRide();
+    const { ride, updateStatus, updateDriverLocation } = useRide();
+    const { on, off } = useSocket();
     const TOTAL_WAIT = 3 * 60;
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
     const intervalRef = useRef(null);
     const [modal, setModal] = useState(null);
+    const mountedRef = useRef(true);
 
     // Use real pickup coords from RideContext; fall back to Mumbai center
     const pickupLat = ride?.pickup?.latitude || 19.0760;
@@ -33,17 +36,58 @@ export default function DriverArrivedScreen() {
     const driverPhone = ride?.driver?.phone || null;
     const driverPhoto = ride?.driver?.photo || 'https://i.pravatar.cc/150?img=11';
 
+    // ── Countdown timer for free-wait display ───────────────────────────────────────
     useEffect(() => {
         intervalRef.current = setInterval(() => {
             setSecondsLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(intervalRef.current);
-                    return 0;
-                }
+                if (prev <= 1) { clearInterval(intervalRef.current); return 0; }
                 return prev - 1;
             });
         }, 1000);
-        return () => clearInterval(intervalRef.current);
+        return () => {
+            clearInterval(intervalRef.current);
+            mountedRef.current = false;
+        };
+    }, []);
+
+    // ── Socket: ride status updates from backend ───────────────────────────────
+    useEffect(() => {
+        const handleStatusUpdate = ({ status }) => {
+            if (!mountedRef.current) return;
+            updateStatus(status);
+            if (status === 'in_progress') {
+                // Driver started the trip — move to active ride screen
+                router.replace('/active-ride');
+            } else if (status === 'completed') {
+                router.replace('/ride-summary');
+            }
+        };
+
+        const handleDriverLocation = ({ lat, lng, heading }) => {
+            if (!mountedRef.current) return;
+            // Update driver position on the map
+            updateDriverLocation({ latitude: lat, longitude: lng, heading });
+        };
+
+        const handleDriverReconnecting = ({ message }) => {
+            if (!mountedRef.current) return;
+            setModal({
+                icon: '📶',
+                title: 'Connection Issue',
+                message: message ?? 'Your driver lost connection. Waiting for reconnect…',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+            });
+        };
+
+        on('ride:status_update',   handleStatusUpdate);
+        on('driver_location',      handleDriverLocation);
+        on('driver_reconnecting',  handleDriverReconnecting);
+
+        return () => {
+            off('ride:status_update',   handleStatusUpdate);
+            off('driver_location',      handleDriverLocation);
+            off('driver_reconnecting',  handleDriverReconnecting);
+        };
     }, []);
 
     const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');

@@ -1,26 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Animated, Platform, ScrollView
+    Dimensions, Animated, Platform, ScrollView, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
 
 import { useRide } from '../src/context/RideContext';
+import { useSocket } from '../src/context/SocketContext';
+import { bookRide, cancelRide } from '../src/api/endpoints';
 import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
 export default function RideFindingScreen() {
     const router = useRouter();
-    const { ride } = useRide();
+    const { ride, setRideId, setDriver, updateStatus } = useRide();
+    const { on, off, joinRideRoom } = useSocket();
     const [modal, setModal] = useState(null);
+    const [bookingError, setBookingError] = useState(null);
+    const rideIdRef  = useRef(null);    // persists across re-renders without re-triggering effects
+    const mountedRef = useRef(true);     // guard against setState after unmount
 
     // Reanimated pulses for the center pin
     const pulse1 = useRef(new Animated.Value(0)).current;
     const pulse2 = useRef(new Animated.Value(0)).current;
     const pulse3 = useRef(new Animated.Value(0)).current;
 
+    // ── Animate search pulses ──────────────────────────────────────────────────
     useEffect(() => {
         const createLoop = (anim, delay) => {
             Animated.loop(
@@ -44,12 +51,137 @@ export default function RideFindingScreen() {
         createLoop(pulse2, 600);
         createLoop(pulse3, 1200);
 
-        // Dummy timeout to simulate finding driver
-        const timer = setTimeout(() => {
-            router.replace('/driver-arrived');
-        }, 5000);
+        return () => { mountedRef.current = false; };
+    }, []);
 
-        return () => clearTimeout(timer);
+    // ── Book ride + wire real-time socket listeners ───────────────────────────
+    useEffect(() => {
+        let booked = false;
+
+        const handleRideAssigned = ({ ride_id, driver, status }) => {
+            if (!mountedRef.current) return;
+            if (rideIdRef.current && ride_id !== rideIdRef.current) return; // stale event
+
+            // Normalise driver payload from matchingEngine
+            const normalised = {
+                id:      driver?.id,
+                name:    driver?.name    ?? 'Your Driver',
+                phone:   driver?.phone   ?? null,
+                photo:   driver?.profile_photo_url ?? null,
+                rating:  driver?.avg_rating ?? 4.8,
+                vehicle: {
+                    type:  driver?.vehicle_type   ?? 'Auto',
+                    plate: driver?.vehicle_reg_no ?? '',
+                    model: driver?.vehicle_model  ?? '',
+                    color: driver?.vehicle_color  ?? '',
+                },
+            };
+
+            setDriver(normalised);
+            updateStatus(status ?? 'assigned');
+            router.replace('/driver-arrived');
+        };
+
+        const handleNoDrivers = ({ ride_id }) => {
+            if (!mountedRef.current) return;
+            if (rideIdRef.current && ride_id !== rideIdRef.current) return;
+            setBookingError('No drivers available nearby. Please try again in a few minutes.');
+        };
+
+        // Register socket listeners BEFORE booking so we never miss the event
+        on('ride_assigned',    handleRideAssigned);
+        on('ride:no_drivers',  handleNoDrivers);
+
+        const doBooking = async () => {
+            try {
+                if (!ride?.pickup || !ride?.dropoff) {
+                    setBookingError('Pickup or dropoff location missing. Please go back and try again.');
+                    return;
+                }
+
+                const { data } = await bookRide({
+                    pickup_lat:     ride.pickup.latitude,
+                    pickup_lng:     ride.pickup.longitude,
+                    pickup_address: ride.pickup.address ?? '',
+                    drop_lat:       ride.dropoff.latitude,
+                    drop_lng:       ride.dropoff.longitude,
+                    drop_address:   ride.dropoff.address ?? '',
+                    payment_method: ride.paymentMethod  ?? 'cash',
+                });
+
+                if (!mountedRef.current) return;
+
+                booked = true;
+                const rideId = data.ride_id;
+                rideIdRef.current = rideId;
+                setRideId(rideId);
+
+                // Join the ride room — backend will now forward ride_assigned to us
+                await joinRideRoom(rideId).catch(() => {
+                    // Non-fatal: we still get events via rider:<userId> room
+                    console.warn('[RideFinding] joinRideRoom failed — relying on rider room fallback');
+                });
+
+            } catch (err) {
+                if (!mountedRef.current) return;
+                const msg = err.response?.data?.error?.message ?? 'Could not book ride. Please try again.';
+                // Handle "already active ride" gracefully
+                if (err.response?.data?.error?.code === 'ACTIVE_RIDE_EXISTS') {
+                    const existingId = err.response?.data?.error?.details?.ride_id;
+                    if (existingId) {
+                        rideIdRef.current = existingId;
+                        setRideId(existingId);
+                        await joinRideRoom(existingId).catch(() => {});
+                        return; // reconnected to existing ride
+                    }
+                }
+                setBookingError(msg);
+            }
+        };
+
+        doBooking();
+
+        return () => {
+            off('ride_assigned',   handleRideAssigned);
+            off('ride:no_drivers', handleNoDrivers);
+        };
+    }, []); // run once on mount
+
+    // ── Show booking error ─────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!bookingError) return;
+        setModal({
+            icon: '❌',
+            title: 'Booking Failed',
+            message: bookingError,
+            buttons: [
+                { text: 'Go Back', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+            ],
+        });
+    }, [bookingError]);
+
+    // ── Cancel ride handler ────────────────────────────────────────────────────
+    const handleCancel = useCallback(() => {
+        setModal({
+            icon: '❌',
+            title: 'Cancel Ride?',
+            message: 'Stop searching for a driver?',
+            buttons: [
+                { text: 'Keep Searching', style: 'cancel', onPress: () => setModal(null) },
+                {
+                    text: 'Cancel Ride',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setModal(null);
+                        if (rideIdRef.current) {
+                            // Fire-and-forget — don't block navigation on cancel response
+                            cancelRide(rideIdRef.current, 'Rider cancelled during search').catch(() => {});
+                        }
+                        router.replace('/(tabs)/');
+                    },
+                },
+            ],
+        });
     }, []);
 
     return (
@@ -103,17 +235,7 @@ export default function RideFindingScreen() {
 
             {/* Top Navigation Bar */}
             <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => {
-                    setModal({
-                        icon: '🚗',
-                        title: 'Cancel Ride?',
-                        message: 'Are you sure you want to cancel the search?',
-                        buttons: [
-                            { text: 'Keep Searching', style: 'cancel', onPress: () => setModal(null) },
-                            { text: 'Cancel', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
-                        ],
-                    });
-                }} style={styles.navIconBtn}>
+                    <TouchableOpacity onPress={handleCancel} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
@@ -190,17 +312,7 @@ export default function RideFindingScreen() {
                 
                 {/* Cancel Button */}
                 <View style={styles.cancelBtnWrap}>
-                    <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={() => {
-                        setModal({
-                            icon: '❌',
-                            title: 'Cancel Ride?',
-                            message: 'Stop searching for a driver?',
-                            buttons: [
-                                { text: 'Keep Searching', style: 'cancel', onPress: () => setModal(null) },
-                                { text: 'Cancel Ride', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
-                            ],
-                        });
-                    }}>
+                    <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={handleCancel}>
                         <Text style={styles.cancelBtnText}>Cancel Ride</Text>
                     </TouchableOpacity>
                 </View>
