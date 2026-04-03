@@ -58,10 +58,13 @@ async function triggerSOS(req, res, next) {
 // ── GET /safety/emergency-contacts ───────────────────────────────────────────
 async function getEmergencyContacts(req, res, next) {
   try {
+    const { userId, role } = req.user;
+    const table = role === 'rider' ? 'emergency_contacts' : 'driver_emergency_contacts';
+    const ownerCol = role === 'rider' ? 'user_id' : 'driver_id';
     const { data, error } = await supabase
-      .from('emergency_contacts')
+      .from(table)
       .select('id, name, phone, relation')
-      .eq('user_id', req.user.userId)
+      .eq(ownerCol, userId)
       .order('created_at', { ascending: true });
 
     if (error) throw new AppError('Failed to fetch contacts.', 500, 'DB_ERROR');
@@ -79,21 +82,23 @@ const contactSchema = z.object({
 async function addEmergencyContact(req, res, next) {
   try {
     const body = contactSchema.parse(req.body);
-    const userId = req.user.userId;
+    const { userId, role } = req.user;
+    const table = role === 'rider' ? 'emergency_contacts' : 'driver_emergency_contacts';
+    const ownerCol = role === 'rider' ? 'user_id' : 'driver_id';
 
-    // Max 3 contacts
     const { count } = await supabase
-      .from('emergency_contacts')
+      .from(table)
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId);
+      .eq(ownerCol, userId);
 
     if (count >= 3) {
       throw new AppError('Maximum 3 emergency contacts allowed.', 422, 'MAX_CONTACTS_REACHED');
     }
 
+    const insertPayload = role === 'rider' ? { user_id: userId, ...body } : { driver_id: userId, ...body };
     const { data, error } = await supabase
-      .from('emergency_contacts')
-      .insert({ user_id: userId, ...body })
+      .from(table)
+      .insert(insertPayload)
       .select('id, name, phone, relation')
       .single();
 
@@ -105,19 +110,44 @@ async function addEmergencyContact(req, res, next) {
 // ── DELETE /safety/emergency-contacts/:id ─────────────────────────────────────
 async function deleteEmergencyContact(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const { userId, role } = req.user;
+    const table = role === 'rider' ? 'emergency_contacts' : 'driver_emergency_contacts';
+    const ownerCol = role === 'rider' ? 'user_id' : 'driver_id';
 
     const { data } = await supabase
-      .from('emergency_contacts')
+      .from(table)
       .select('id')
       .eq('id', req.params.id)
-      .eq('user_id', userId)
+      .eq(ownerCol, userId)
       .limit(1);
 
     if (!data?.length) throw new AppError('Contact not found.', 404, 'NOT_FOUND');
 
-    await supabase.from('emergency_contacts').delete().eq('id', req.params.id);
+    await supabase.from(table).delete().eq('id', req.params.id);
     return res.status(200).json({ success: true });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ── POST /safety/sos/cancel ───────────────────────────────────────────────────
+async function cancelSOS(req, res, next) {
+  try {
+    const { userId, role } = req.user;
+    const { data: rows } = await supabase
+      .from('sos_events')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('triggered_by', role)
+      .is('resolved_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (rows?.[0]) {
+      await supabase
+        .from('sos_events')
+        .update({ resolved_at: new Date().toISOString() })
+        .eq('id', rows[0].id);
+    }
+    return res.status(200).json({ ok: true });
   } catch (err) { return handleError(err, res, next); }
 }
 
@@ -261,6 +291,7 @@ async function batteryLow(req, res, next) {
 
 module.exports = {
   triggerSOS,
+  cancelSOS,
   getEmergencyContacts,
   addEmergencyContact,
   deleteEmergencyContact,
