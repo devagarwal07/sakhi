@@ -35,11 +35,11 @@ router.post('/:id/accept',    authMiddleware, roleGuard('driver'),          ride
 /** POST /rides/:id/reject — driver rejects a ride request */
 router.post('/:id/reject',    authMiddleware, roleGuard('driver'),          rideController.rejectRide);
 
-/** POST /rides/:id/payment/order  — create Razorpay order for ride fare (rider only) */
-router.post('/:id/payment/order',  authMiddleware, roleGuard('rider'), rideController.createRidePaymentOrder);
+/** POST /rides/:id/payment/order  — create Razorpay order for ride fare (rider books, driver can also trigger if applicable) */
+router.post('/:id/payment/order',  authMiddleware, roleGuard('rider', 'driver'), rideController.createRidePaymentOrder);
 
 /** POST /rides/:id/payment/verify — verify Razorpay signature and mark ride paid */
-router.post('/:id/payment/verify', authMiddleware, roleGuard('rider'), rideController.verifyRidePayment);
+router.post('/:id/payment/verify', authMiddleware, roleGuard('rider', 'driver'), rideController.verifyRidePayment);
 
 /** GET /rides/:id/fare-summary — driver fetches fare breakdown after completion */
 router.get('/:id/fare-summary',    authMiddleware, roleGuard('driver', 'rider'), rideController.fareSummary);

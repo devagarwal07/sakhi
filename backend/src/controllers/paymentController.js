@@ -100,4 +100,48 @@ async function verifyPayment(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
-module.exports = { createOrder, verifyPayment };
+// ── POST /payments/commission/order — driver creates platform commission order ────
+async function createCommissionOrder(req, res, next) {
+  try {
+    const { amount, period, driver_id } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Amount must be positive.' } });
+    }
+    const receipt = `commission_${req.user.userId}_${Date.now()}`.slice(0, 40);
+    const order = await paymentService.createOrder(amount, receipt);
+    return res.status(200).json({
+      order_id: order.id,
+      amount:   order.amount,   // in paise
+      currency: order.currency,
+      key_id:   process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ── POST /payments/commission/verify — driver verifies commission payment ────────
+async function verifyCommissionPayment(req, res, next) {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, period, amount } = req.body;
+    const driverId = req.user.userId;
+
+    const valid = paymentService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!valid) {
+      throw new AppError('Payment signature verification failed.', 400, 'PAYMENT_VERIFICATION_FAILED');
+    }
+
+    // Log the commission payment (non-fatal — table may not exist yet)
+    await supabase.from('driver_commission_payments').insert({
+      driver_id:           driverId,
+      period:              period ?? 'daily',
+      amount_inr:          amount ?? 0,
+      razorpay_order_id,
+      razorpay_payment_id,
+      status:              'paid',
+      paid_at:             new Date().toISOString(),
+    }).catch(() => { /* non-fatal if table doesn't exist */ });
+
+    return res.status(200).json({ success: true, payment_id: razorpay_payment_id });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+module.exports = { createOrder, verifyPayment, createCommissionOrder, verifyCommissionPayment };

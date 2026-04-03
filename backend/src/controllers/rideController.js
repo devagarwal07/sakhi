@@ -420,16 +420,21 @@ async function rateRider(req, res, next) {
 async function createRidePaymentOrder(req, res, next) {
   try {
     const { id } = req.params;
-    const riderId = req.user.userId;
+    const callerId = req.user.userId;
     const paymentService = require('../services/paymentService');
 
     const { data: rides } = await supabase
-      .from('rides').select('id, rider_id, net_fare, estimated_fare, payment_method, payment_status')
+      .from('rides').select('id, rider_id, driver_id, net_fare, estimated_fare, payment_method, payment_status')
       .eq('id', id).limit(1);
 
     const ride = rides?.[0];
     if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
-    if (ride.rider_id !== riderId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+
+    // Allow either the rider or the assigned driver to create the order
+    const isRider  = ride.rider_id  === callerId;
+    const isDriver = ride.driver_id === callerId;
+    if (!isRider && !isDriver) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+
     if (ride.payment_status === 'paid') throw new AppError('Already paid.', 409, 'ALREADY_PAID');
 
     const amount = ride.net_fare ?? ride.estimated_fare ?? 0;
