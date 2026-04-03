@@ -154,10 +154,11 @@ export default function RideEstimateScreen() {
                             </Text>
                         </View>
                         <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/location-search')}>
-                            <Text style={{ fontSize: 16, transform: [{ rotate: '-45deg' }] }}>✏️</Text>
+                            <Text style={styles.editBtnText}>✏️</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
+
 
                 {/* Map Section */}
                 <View style={styles.mapArea}>
@@ -169,16 +170,16 @@ export default function RideEstimateScreen() {
                     <SmartMapView
                         style={StyleSheet.absoluteFill}
                         center={{ latitude: midLat, longitude: midLng }}
-                        zoom={13}
+                        latDelta={latDelta}
+                        lngDelta={lngDelta}
                         markers={[
-                            pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#BEA3D8', label: 'P' },
-                            dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#1E1B2E', label: 'D' },
+                            pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#10B981', label: 'P' },
+                            dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#BEA3D8', label: 'D' },
                         ].filter(Boolean)}
-                        polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#BEA3D8', width: 4 }] : []}
+                        polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#7C3AED', width: 5 }] : []}
                         scrollEnabled
                         zoomEnabled
                     />
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]} />
                 </View>
 
                 {/* Main Content Area */}
@@ -372,8 +373,9 @@ const styles = StyleSheet.create({
     },
     addressIcons: {
         alignItems: 'center',
-        gap: 4,
+        paddingVertical: 6,
         width: 12,
+        alignSelf: 'stretch',
     },
     solidDot: {
         width: 8,
@@ -383,7 +385,8 @@ const styles = StyleSheet.create({
     },
     dotLine: {
         width: 2,
-        height: 16,
+        flex: 1,
+        marginVertical: 4,
         backgroundColor: 'rgba(204, 195, 216, 0.3)',
     },
     hollowDot: {
@@ -395,8 +398,9 @@ const styles = StyleSheet.create({
     },
     addressTexts: {
         flex: 1,
-        gap: 0,
-        justifyContent: 'center',
+        gap: 12,
+        justifyContent: 'space-between',
+        paddingVertical: 0,
     },
     pickupText: {
         fontSize: 13,
@@ -411,7 +415,18 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     editBtn: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F5F0FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 4, // push slightly away from text
+    },
+    editBtnText: {
+        fontSize: 16,
+        // Emojis often have a weird baseline, moving it up 1px fixes visual centering
+        marginTop: Platform.OS === 'ios' ? -2 : 0, 
     },
 
     // Map Area

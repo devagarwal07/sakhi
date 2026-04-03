@@ -13,8 +13,10 @@ import { getRideHistory } from '../src/api/endpoints';
 export default function LocationSearchScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { setDropoff, ride } = useRide();
-    const [query, setQuery] = useState('');
+    const { setDropoff, setPickup, ride } = useRide();
+    const [pickupQuery, setPickupQuery] = useState(ride?.pickup?.address || '');
+    const [dropoffQuery, setDropoffQuery] = useState('');
+    const [activeInput, setActiveInput] = useState('dropoff');
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [recentDestinations, setRecentDestinations] = useState([]);
@@ -22,7 +24,7 @@ export default function LocationSearchScreen() {
     const searchTimer = useRef(null);
 
     const returnRoute = params?.returnRoute || '/ride-estimate';
-    const isSearching = query.trim().length >= 3;
+    const isSearching = (activeInput === 'pickup' ? pickupQuery : dropoffQuery).trim().length >= 3;
 
     // Load real recent destinations from ride history
     useEffect(() => {
@@ -53,8 +55,11 @@ export default function LocationSearchScreen() {
             .finally(() => setLoadingRecent(false));
     }, []);
 
-    const handleSearch = (text) => {
-        setQuery(text);
+    const handleSearch = (text, type = activeInput) => {
+        if (type === 'pickup') setPickupQuery(text);
+        if (type === 'dropoff') setDropoffQuery(text);
+        setActiveInput(type);
+
         clearTimeout(searchTimer.current);
         if (text.trim().length < 3) {
             setResults([]);
@@ -87,35 +92,65 @@ export default function LocationSearchScreen() {
         try {
             let coords;
             if (place.lat && place.lng) {
-                coords = { latitude: place.lat, longitude: place.lng };
-            } else {
+                coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lng) };
+            } else if (place.place_id && !place.place_id.startsWith('recent')) {
+                // Normal Places API fetch
                 const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
                 const data = await response.json();
-                coords = {
-                    latitude: data.result.geometry.location.lat,
-                    longitude: data.result.geometry.location.lng,
-                };
+                if (data.result?.geometry?.location) {
+                    coords = {
+                        latitude: data.result.geometry.location.lat,
+                        longitude: data.result.geometry.location.lng,
+                    };
+                }
             }
-            setDropoff({
-                ...coords,
-                address: place.structured_formatting?.main_text || place.description || place.main,
-            });
-            router.replace(returnRoute);
-        } catch {
-            // If details fetch fails, use pickup coords as approximate fallback
-            const fallbackLat = ride?.pickup?.latitude || null;
-            const fallbackLng = ride?.pickup?.longitude || null;
-            setDropoff({
-                latitude: fallbackLat,
-                longitude: fallbackLng,
-                address: place.structured_formatting?.main_text || place.description || place.main,
-            });
-            router.replace(returnRoute);
+            
+            // Fallback to text search if recent pin lacked place_id and coords
+            const newAddress = place.structured_formatting?.main_text || place.description || place.main;
+            if (!coords && newAddress) {
+                const textSearch = await fetch(`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(newAddress)}&inputtype=textquery&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
+                const textData = await textSearch.json();
+                if (textData.candidates && textData.candidates.length > 0) {
+                    coords = {
+                        latitude: textData.candidates[0].geometry.location.lat,
+                        longitude: textData.candidates[0].geometry.location.lng,
+                    };
+                }
+            }
+
+            if (!coords || !coords.latitude) throw new Error("Could not compute valid coordinates for this location.");
+            if (activeInput === 'pickup') {
+                setPickup({ ...coords, address: newAddress });
+                setPickupQuery(newAddress);
+                setActiveInput('dropoff');
+                setResults([]);
+            } else {
+                setDropoff({ ...coords, address: newAddress });
+                router.replace(returnRoute);
+            }
+        } catch (error) {
+            console.error("Location Search Error:", error);
+            // In case of complete failure, do NOT wipe out existing coordinates with nulls!
+            // Just return early so the UI doesn't visually break.
+            Keyboard.dismiss();
         }
     };
 
     const handleConfirm = () => {
         router.replace(returnRoute);
+    };
+
+    const handleSwap = () => {
+        const tempRide = ride.pickup;
+        const tempQuery = pickupQuery;
+        
+        if (ride.dropoff || tempRide) {
+            setPickup(ride.dropoff || null);
+            setDropoff(tempRide || null);
+            
+            setPickupQuery(dropoffQuery);
+            setDropoffQuery(tempQuery);
+        }
     };
 
     return (
@@ -150,34 +185,47 @@ export default function LocationSearchScreen() {
                                 {/* Pickup */}
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>PICKUP LOCATION</Text>
-                                    <Text style={styles.inputValue} numberOfLines={2}>
-                                        {ride?.pickup?.address || 'Detecting your location…'}
-                                    </Text>
+                                    <TextInput
+                                        style={activeInput === 'pickup' ? styles.dropInputActive : styles.dropInput}
+                                        placeholder="Current Location"
+                                        placeholderTextColor="rgba(190, 163, 216, 0.6)"
+                                        value={pickupQuery}
+                                        onFocus={() => { setActiveInput('pickup'); setResults([]); }}
+                                        onChangeText={(v) => handleSearch(v, 'pickup')}
+                                        returnKeyType="search"
+                                        autoCorrect={false}
+                                        autoCapitalize="words"
+                                        multiline={true}
+                                        blurOnSubmit={true}
+                                    />
                                 </View>
 
                                 {/* Drop-off */}
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>DROP-OFF LOCATION</Text>
                                     <TextInput
-                                        style={styles.dropInput}
+                                        style={activeInput === 'dropoff' ? styles.dropInputActive : styles.dropInput}
                                         placeholder="Where to?"
                                         placeholderTextColor="rgba(190, 163, 216, 0.6)"
-                                        value={query}
-                                        onChangeText={handleSearch}
+                                        value={dropoffQuery}
+                                        onFocus={() => { setActiveInput('dropoff'); setResults([]); }}
+                                        onChangeText={(v) => handleSearch(v, 'dropoff')}
                                         returnKeyType="search"
                                         autoFocus
                                         autoCorrect={false}
                                         autoCapitalize="words"
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                     />
                                 </View>
                             </View>
 
                             {/* Swap button */}
-                            <View style={styles.swapBtn}>
+                            <TouchableOpacity style={styles.swapBtn} onPress={handleSwap} activeOpacity={0.8}>
                                 <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                     <Path d="M4.66667 14L4.66667 4.55333L2.61333 6.60667L1.66667 5.66667L5.33333 2L9 5.66667L8.05333 6.60667L6 4.55333L6 14L4.66667 14ZM10.6667 14L7 10.3333L7.94667 9.39333L10 11.4467V2H11.3333V11.4467L13.3867 9.39333L14.3333 10.3333L10.6667 14Z" fill="#BEA3D8"/>
                                 </Svg>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -231,7 +279,7 @@ export default function LocationSearchScreen() {
                     {isSearching && !searching && results.length === 0 && (
                         <View style={styles.emptyState}>
                             <Text style={styles.emptyIcon}>🔍</Text>
-                            <Text style={styles.emptyText}>No results found for "{query}"</Text>
+                            <Text style={styles.emptyText}>No results found for "{(activeInput === 'pickup' ? pickupQuery : dropoffQuery)}"</Text>
                             <Text style={styles.emptySubText}>Try a different search term</Text>
                         </View>
                     )}
@@ -373,8 +421,11 @@ const styles = StyleSheet.create({
     // Icon column
     iconColumn: {
         alignItems: 'center',
-        paddingTop: 10,
-        width: 14,
+        paddingTop: 11, // Pushes dot to the exact gap between "PICKUP LOCATION" and the input
+        paddingBottom: 10, // Pushes pin to the exact gap between "DROP-OFF LOCATION" and the input
+        width: 16,
+        alignSelf: 'stretch',
+        justifyContent: 'space-between',
     },
     dotGreen: {
         width: 14,
@@ -383,12 +434,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#10B981',
     },
     dashedLine: {
-        width: 2,
-        height: 48,
-        borderLeftWidth: 2,
+        position: 'absolute',
+        top: 32, // Safely clears the 11px padding + 14px green dot
+        bottom: 34, // Safely clears the 10px padding + 17px purple pin
+        width: 0,
+        borderWidth: 1, 
         borderStyle: 'dashed',
         borderColor: '#CCC3D8',
-        marginVertical: 4,
     },
     dropPin: {
         fontSize: 14,
@@ -399,6 +451,7 @@ const styles = StyleSheet.create({
     inputColumn: {
         flex: 1,
         gap: 20,
+        paddingRight: 40, // Avoid overlapping the absolute swap button
     },
     inputGroup: {
         gap: 4,
@@ -428,15 +481,20 @@ const styles = StyleSheet.create({
     // Swap button
     swapBtn: {
         position: 'absolute',
-        right: -4,
+        right: 0,
         top: '50%',
         marginTop: -20,
         width: 40,
         height: 40,
-        borderRadius: 9999,
+        borderRadius: 20,
         backgroundColor: '#F5F0FF',
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     swapIcon: {
         fontSize: 16,
