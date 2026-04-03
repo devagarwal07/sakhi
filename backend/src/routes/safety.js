@@ -13,11 +13,12 @@ router.use(apiLimiter);
 
 // ── SOS ───────────────────────────────────────────────────────────────────────
 router.post('/sos',                    authMiddleware, roleGuard('rider', 'driver'), sosLimiter, safetyController.triggerSOS);
+router.post('/sos/cancel',             authMiddleware, roleGuard('rider', 'driver'), safetyController.cancelSOS);
 
-// ── Emergency Contacts ────────────────────────────────────────────────────────
-router.get('/emergency-contacts',      authMiddleware, roleGuard('rider'),           safetyController.getEmergencyContacts);
-router.post('/emergency-contacts',     authMiddleware, roleGuard('rider'),           safetyController.addEmergencyContact);
-router.delete('/emergency-contacts/:id', authMiddleware, roleGuard('rider'),         safetyController.deleteEmergencyContact);
+// ── Emergency Contacts (riders: emergency_contacts; drivers: driver_emergency_contacts) ──
+router.get('/emergency-contacts',      authMiddleware, roleGuard('rider', 'driver'), safetyController.getEmergencyContacts);
+router.post('/emergency-contacts',     authMiddleware, roleGuard('rider', 'driver'), safetyController.addEmergencyContact);
+router.delete('/emergency-contacts/:id', authMiddleware, roleGuard('rider', 'driver'), safetyController.deleteEmergencyContact);
 
 // ── Live Sharing ──────────────────────────────────────────────────────────────
 router.post('/share-trip/:ride_id',    authMiddleware, roleGuard('rider'),           safetyController.shareTrip);
