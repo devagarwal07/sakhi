@@ -36,8 +36,16 @@ export const Colors = {
   // Text
   onSurface: '#1c1a25',
   onSurfaceVariant: '#4a4455',
+  onBackground: '#1c1a25',
+  onPrimary: '#ffffff',
   outline: '#7b7487',
   outlineVariant: '#ccc3d8',
+
+  // Surfaces (extended aliases for customer-pattern compatibility)
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow:    '#f6f1ff',
+  surfaceContainerHigh:   '#ebe6f5',
+  surfaceContainerHighest:'#e5e0ef',
 
   // Semantic
   error: '#ba1a1a',
@@ -72,6 +80,9 @@ export const Radius = {
   full: 9999,
 };
 
+// Alias to match customer-app naming
+export const BorderRadius = Radius;
+
 export const Shadows = {
   lavender: {
     shadowColor: '#7c3aed',
@@ -90,14 +101,22 @@ export const Shadows = {
 };
 
 export const Typography = {
-  displayLarge:   { fontFamily: 'Inter_800ExtraBold', fontSize: 40, lineHeight: 48 },
-  headline:       { fontFamily: 'Inter_700Bold',      fontSize: 24, lineHeight: 32 },
-  headlineSmall:  { fontFamily: 'Inter_700Bold',      fontSize: 20, lineHeight: 28 },
-  titleLarge:     { fontFamily: 'Inter_600SemiBold',  fontSize: 18, lineHeight: 24 },
-  titleMedium:    { fontFamily: 'Inter_600SemiBold',  fontSize: 16, lineHeight: 22 },
-  bodyLarge:      { fontFamily: 'Inter_400Regular',   fontSize: 16, lineHeight: 24 },
-  bodyMedium:     { fontFamily: 'Inter_400Regular',   fontSize: 14, lineHeight: 20 },
-  labelBold:      { fontFamily: 'Inter_700Bold',      fontSize: 12, lineHeight: 16 },
-  label:          { fontFamily: 'Inter_500Medium',    fontSize: 12, lineHeight: 16 },
-  labelSmall:     { fontFamily: 'Inter_500Medium',    fontSize: 10, lineHeight: 14 },
+  displayLarge:   { fontSize: 40, lineHeight: 48, fontWeight: '800' },
+  headline:       { fontSize: 24, lineHeight: 32, fontWeight: '700' },
+  headlineSmall:  { fontSize: 20, lineHeight: 28, fontWeight: '700' },
+  titleLarge:     { fontSize: 18, lineHeight: 24, fontWeight: '600' },
+  titleMedium:    { fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  bodyLarge:      { fontSize: 16, lineHeight: 24, fontWeight: '400' },
+  bodyMedium:     { fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  labelBold:      { fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  label:          { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  labelSmall:     { fontSize: 10, lineHeight: 14, fontWeight: '500' },
+};
+
+// Gradient presets (for expo-linear-gradient)
+export const Gradients = {
+  primary:     ['#BEA3D8', '#7C3AED'],
+  splash:      ['#F5F0FF', '#EDE9FE'],
+  lavender:    ['#F0ECFA', '#E8E3F5'],
+  surfaceFade: ['rgba(245,240,255,0)', '#F5F0FF'],
 };

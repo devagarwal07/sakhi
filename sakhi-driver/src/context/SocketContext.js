@@ -30,6 +30,23 @@ export function SocketProvider({ children }) {
   const socketRef  = useRef(null);
   const [connected, setConnected] = useState(false);
 
+  // ── Generic event listeners (for useSocketEvent hook) ─────────────────────
+  const listenersRef = useRef({}); // { [eventName]: Set<handler> }
+
+  const on = useCallback((event, handler) => {
+    if (!listenersRef.current[event]) {
+      listenersRef.current[event] = new Set();
+    }
+    listenersRef.current[event].add(handler);
+    // Also register on the live socket if already connected
+    socketRef.current?.on(event, handler);
+  }, []);
+
+  const off = useCallback((event, handler) => {
+    listenersRef.current[event]?.delete(handler);
+    socketRef.current?.off(event, handler);
+  }, []);
+
   // ── Incoming ride request state ────────────────────────────────────────
   const [incomingRide, setIncomingRide] = useState(null);
 
@@ -149,6 +166,8 @@ export function SocketProvider({ children }) {
     connect,
     disconnect,
     emit,
+    on,
+    off,
     acceptRide,
     rejectRide,
     incomingRide,
