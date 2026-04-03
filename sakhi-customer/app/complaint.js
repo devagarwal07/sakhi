@@ -105,12 +105,12 @@ export default function HelpSupportScreen() {
                         
                         <View style={styles.tripsList}>
                             <RecentTripCard 
-                                pickup="124 Sector 4, HSR Layout" 
-                                dropoff="Venture Park, Indiranagar" 
+                                pickup="Current Location" 
+                                dropoff="Destination" 
                             />
                             <RecentTripCard 
-                                pickup="Forum Mall, Koramangala" 
-                                dropoff="124 Sector 4, HSR Layout" 
+                                pickup="Search Location" 
+                                dropoff="Current Location" 
                             />
                         </View>
                     </View>
