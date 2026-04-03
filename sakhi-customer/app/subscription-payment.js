@@ -15,8 +15,6 @@ export default function SubscriptionPaymentScreen() {
     const { ride } = useRide();
     const sub = ride.subscription || {};
     
-    const [selectedMethod, setSelectedMethod] = useState('UPI'); 
-    const [upiId, setUpiId] = useState('');
     const [modal, setModal] = useState(null);
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
@@ -27,23 +25,12 @@ export default function SubscriptionPaymentScreen() {
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}` 
         : (sub.days?.join(', ') || 'Mon–Fri');
 
-    const handlePay = () => {
-        if (selectedMethod === 'UPI' && upiId.trim() === '') {
-            setModal({
-                icon: '⚠️',
-                title: 'UPI ID Required',
-                message: 'Please enter your UPI ID to verify and proceed.',
-                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-            });
-            return;
-        }
-
-        const priceInPaise = (sub.price || 364) * 100;
+    const handlePay = () => {        const priceInPaise = (sub.price || 364) * 100;
         const options = {
             description: 'Sakhi Ride Subscription',
             image: 'https://cdn-icons-png.flaticon.com/512/3209/3209935.png', // Default icon for Razorpay checkout, can be changed later
             currency: 'INR',
-            key: process.env.EXPO_PUBLIC_RAZORPAY_KEY,
+            key: process.env.EXPO_PUBLIC_RAZORPAY_KEY?.startsWith('rzp_') ? process.env.EXPO_PUBLIC_RAZORPAY_KEY : 'rzp_test_1DP5mmOlF5G5ag',
             amount: priceInPaise,
             name: 'Sakhi',
             prefill: {
@@ -135,93 +122,7 @@ export default function SubscriptionPaymentScreen() {
                     </View>
                 </View>
 
-                {/* Payment Methods */}
-                <View style={styles.paymentSection}>
-                    <Text style={styles.sectionHeader}>PAY VIA</Text>
-
-                    {/* UPI Option */}
-                    <View style={[styles.payMethodCard, selectedMethod === 'UPI' && styles.payMethodCardActive]}>
-                        <TouchableOpacity 
-                            style={styles.payMethodRow}
-                            onPress={() => setSelectedMethod('UPI')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.payMethodLeft}>
-                                <View style={selectedMethod === 'UPI' ? styles.radioSelected : styles.radioUnselected}>
-                                    {selectedMethod === 'UPI' && <View style={styles.radioInner} />}
-                                </View>
-                                <Text style={styles.payMethodTitle}>UPI (PhonePe/GPay)</Text>
-                            </View>
-                            <Text style={styles.minusIcon}>-</Text>
-                        </TouchableOpacity>
-
-                        {/* Expanded UPI State */}
-                        {selectedMethod === 'UPI' && (
-                            <View style={styles.upiInputRow}>
-                                <View style={styles.upiInputBox}>
-                                    <TextInput 
-                                        style={styles.upiInput}
-                                        placeholder="Enter UPI ID"
-                                        placeholderTextColor="rgba(107, 114, 128, 0.5)"
-                                        value={upiId}
-                                        onChangeText={setUpiId}
-                                        autoCapitalize="none"
-                                    />
-                                </View>
-                                <TouchableOpacity style={styles.verifyBtn} onPress={() => {
-                                    if (!upiId.includes('@')) {
-                                        setModal({
-                                            icon: '⚠️',
-                                            title: 'Invalid UPI ID',
-                                            message: 'UPI ID must contain @. Example: name@upi',
-                                            buttons: [{ text: 'GOT IT', onPress: () => setModal(null) }]
-                                        });
-                                    } else {
-                                        setModal({
-                                            icon: '✅',
-                                            title: 'UPI Verified',
-                                            message: `${upiId} is valid and ready for payment.`,
-                                            buttons: [{ text: 'PROCEED', style: 'primary', onPress: () => setModal(null) }]
-                                        });
-                                    }
-                                }}>
-                                    <Text style={styles.verifyText}>Verify</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Debit/Credit Card */}
-                    <TouchableOpacity 
-                        style={styles.payMethodCardFlat}
-                        onPress={() => setSelectedMethod('CARD')}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.payMethodLeft}>
-                            <View style={selectedMethod === 'CARD' ? styles.radioSelected : styles.radioUnselected}>
-                                {selectedMethod === 'CARD' && <View style={styles.radioInner} />}
-                            </View>
-                            <Text style={styles.payMethodTitle}>Debit/Credit Card</Text>
-                        </View>
-                        <Text style={styles.cardIcon}>💳</Text>
-                    </TouchableOpacity>
-
-                    {/* Net Banking */}
-                    <TouchableOpacity 
-                        style={styles.payMethodCardFlat}
-                        onPress={() => setSelectedMethod('NET')}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.payMethodLeft}>
-                            <View style={selectedMethod === 'NET' ? styles.radioSelected : styles.radioUnselected}>
-                                {selectedMethod === 'NET' && <View style={styles.radioInner} />}
-                            </View>
-                            <Text style={styles.payMethodTitle}>Net Banking</Text>
-                        </View>
-                        <Text style={styles.bankIcon}>🏦</Text>
-                    </TouchableOpacity>
-                </View>
-
+                {/* Removed Custom Payment UI - Razorpay completely takes over this logic naturally! */}
                 {/* Policy Note */}
                 <View style={styles.policyNote}>
                     <Text style={styles.policyIcon}>ⓘ</Text>
@@ -236,7 +137,7 @@ export default function SubscriptionPaymentScreen() {
             {/* Footer Action Button */}
             <View style={styles.footerOverlay}>
                 <TouchableOpacity style={styles.submitBtn} onPress={handlePay}>
-                    <Text style={styles.submitText}>Pay ₹{sub.price || 364} & Confirm</Text>
+                    <Text style={styles.submitText}>Proceed to Pay ₹{sub.price || 364}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -326,39 +227,6 @@ const styles = StyleSheet.create({
     totalGst: { fontSize: 10, fontWeight: '400', color: '#6B7280' },
     totalAmt: { fontSize: 24, fontWeight: '700', color: '#BEA3D8' },
 
-    // Payment Methods Section
-    paymentSection: { gap: 16, marginBottom: 24 },
-    sectionHeader: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 0.8, textTransform: 'uppercase' },
-
-    payMethodCard: {
-        backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2,
-    },
-    payMethodCardActive: {
-        backgroundColor: '#F5F0FF', borderWidth: 1, borderColor: 'rgba(190, 163, 216, 0.2)',
-    },
-    payMethodCardFlat: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 2,
-    },
-
-    payMethodRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    payMethodLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    radioUnselected: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#E5E0EF' },
-    radioSelected: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center' },
-    radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#BEA3D8' },
-    payMethodTitle: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
-    minusIcon: { fontSize: 16, color: '#6B7280', fontWeight: 'bold' },
-    cardIcon: { fontSize: 16, color: '#6B7280' },
-    bankIcon: { fontSize: 16, color: '#6B7280' },
-
-    // UPI Expansion 
-    upiInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
-    upiInputBox: { flex: 1, height: 56, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(190, 163, 216, 0.1)', borderRadius: 8, paddingHorizontal: 12 },
-    upiInput: { flex: 1, fontSize: 14, color: '#1E1B2E' },
-    verifyBtn: { width: 68, height: 56, backgroundColor: '#BEA3D8', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-    verifyText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
 
     // Policy Note
     policyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#EDE9FE', borderRadius: 12, padding: 16 },

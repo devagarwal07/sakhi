@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
+import SakhiModal from '../src/components/SakhiModal';
 
 const { width } = Dimensions.get('window');
 
@@ -12,9 +13,22 @@ export default function SubscriptionPlansScreen() {
     const router = useRouter();
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
+    const [modal, setModal] = useState(null);
 
     const handleSelectPlan = (plan, price) => {
         updateSubscription({ plan, price });
+    };
+
+    const handleProceed = () => {
+        if (!sub.plan) {
+            return setModal({
+                icon: '🛒',
+                title: 'Select a Plan',
+                message: 'Please choose a subscription plan package before proceeding to payment.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        }
+        router.push('/subscription-payment');
     };
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
@@ -33,6 +47,9 @@ export default function SubscriptionPlansScreen() {
                 </View>
                 <View style={{ width: 32 }} />
             </View>
+
+            {/* Sakhi Validation Modal */}
+            <SakhiModal config={modal} onClose={() => setModal(null)} />
 
             <ScrollView 
                 contentContainerStyle={styles.scrollContent}
@@ -123,7 +140,7 @@ export default function SubscriptionPlansScreen() {
 
             {/* Footer Action Button */}
             <View style={styles.footerOverlay}>
-                <TouchableOpacity style={styles.submitBtn} onPress={() => router.push('/subscription-payment')}>
+                <TouchableOpacity style={styles.submitBtn} onPress={handleProceed} activeOpacity={0.8}>
                     <Text style={styles.submitText}>Proceed to Payment</Text>
                 </TouchableOpacity>
             </View>
