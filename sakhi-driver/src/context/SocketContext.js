@@ -63,7 +63,9 @@ export function SocketProvider({ children }) {
     const token = await getAccessToken();
     if (!token) return;
 
-    const socket = io(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000', {
+    const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+    const socket = io(`${BASE_URL}/rides`, {   // ← /rides namespace (where driver rooms live)
       transports: ['websocket'],
       auth: { token },
       reconnectionAttempts: 5,
@@ -71,9 +73,9 @@ export function SocketProvider({ children }) {
     });
 
     socket.on('connect', () => {
-      console.log('[Socket] connected:', socket.id);
+      console.log('[Socket] connected to /rides namespace:', socket.id);
       setConnected(true);
-      // Announce presence to server
+      // Announce presence — joins driver:<id> room server-side automatically
       socket.emit('driver:online', { driver_id: driver?.id });
     });
 
@@ -86,13 +88,23 @@ export function SocketProvider({ children }) {
       console.warn('[Socket] connection error:', err.message);
     });
 
-    // ── Incoming ride request ──────────────────────────────────────────
-    socket.on('ride:new_request', (rideData) => {
-      console.log('[Socket] ride:new_request', rideData.ride_id);
+    // ── Incoming ride request (matchingEngine emits 'ride_request') ──────────
+    socket.on('ride_request', (rideData) => {
+      console.log('[Socket] ride_request received', rideData.ride_id);
       setIncomingRide(rideData);
     });
 
-    // ── Ride cancelled before decision ────────────────────────────────
+    // ── Ride request expired (driver didn't respond in time) ─────────────────
+    socket.on('ride_request_expired', ({ ride_id }) => {
+      setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
+    });
+
+    // ── Ride cancelled before driver decision ─────────────────────────────────
+    socket.on('ride_cancelled', ({ ride_id }) => {
+      setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
+    });
+
+    // ── Legacy alias (keep for safety) ──────────────────────────────────────
     socket.on('ride:request_cancelled', ({ ride_id }) => {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
     });
@@ -143,6 +155,23 @@ export function SocketProvider({ children }) {
     setIncomingRide(null);
   }, []);
 
+  // ── DEV: simulate an incoming ride request (useful for UI testing) ────────
+  const simulateRide = useCallback(() => {
+    setIncomingRide({
+      ride_id: `DEV_${Date.now()}`,
+      rider_name: 'Priya Sharma',
+      rider_photo: null,
+      rider_rating: 4.8,
+      fare: 124,
+      pickup_address: 'Versova Metro Station, Mumbai',
+      dropoff_address: 'Andheri West, JVLR Corner',
+      distance_to_pickup_km: 2.1,
+      eta_to_pickup_min: 4,
+      pickup_coords:  { latitude: 19.1136, longitude: 72.8270 },
+      dropoff_coords: { latitude: 19.1197, longitude: 72.8468 },
+    });
+  }, []);
+
   // ── Auto-connect while authenticated, disconnect on logout ────────────
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return; // skip in dev mode
@@ -170,6 +199,7 @@ export function SocketProvider({ children }) {
     off,
     acceptRide,
     rejectRide,
+    simulateRide,
     incomingRide,
     clearIncomingRide: () => setIncomingRide(null),
   };
