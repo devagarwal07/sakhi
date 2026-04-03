@@ -8,7 +8,7 @@ import SmartMapView from '../../components/SmartMapView';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import client from '../../api/client';
+import { patchRideStatus } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
@@ -21,6 +21,7 @@ const MAP_STYLE = [
 
 export default function TripInProgressScreen({ navigation, route }) {
   const { ride } = route.params ?? {};
+  const rideId = ride?.ride_id ?? ride?.id;
   const { emit } = useSocket();
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
@@ -43,7 +44,7 @@ export default function TripInProgressScreen({ navigation, route }) {
             setMyLocation(loc.coords);
             // Stream live location to rider via socket
             emit('driver:location_update', {
-              ride_id: ride?.ride_id,
+              ride_id: rideId,
               lat:     loc.coords.latitude,
               lng:     loc.coords.longitude,
               heading: loc.coords.heading ?? 0,
@@ -56,7 +57,7 @@ export default function TripInProgressScreen({ navigation, route }) {
       }
     })();
     return () => { locSubscription?.remove(); };
-  }, [ride?.ride_id]);
+  }, [rideId]);
 
   const region = myLocation
     ? {
@@ -85,8 +86,8 @@ export default function TripInProgressScreen({ navigation, route }) {
             try {
               setCompleting(true);
               // PATCH status — backend records final coords + creates driver_earnings row
-              await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'completed' });
-              emit('ride:complete', { ride_id: ride?.ride_id });
+              await patchRideStatus(rideId, 'completed');
+              emit('ride:complete', { ride_id: rideId });
               Vibration.vibrate(200);
               navigation.replace('PaymentDetails', { ride });
             } catch (err) {
@@ -148,7 +149,16 @@ export default function TripInProgressScreen({ navigation, route }) {
           <TouchableOpacity
             style={s.sosBtn}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('SOSWarning', { location: myLocation })}
+            onPress={() => {
+              const loc = myLocation ?? dropoff;
+              navigation.navigate('SOSWarning', {
+                location: {
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                  ride_id: rideId,
+                },
+              });
+            }}
           >
             <Feather name="alert-circle" size={13} color="#FFFFFF" />
             <Text style={s.sosText}>SOS</Text>
