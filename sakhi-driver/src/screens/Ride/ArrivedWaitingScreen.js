@@ -8,7 +8,7 @@ import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import client from '../../api/client';
+import { patchRideStatus } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 
@@ -22,6 +22,7 @@ const MAP_STYLE = [
 
 export default function ArrivedWaitingScreen({ navigation, route }) {
   const { ride } = route.params ?? {};
+  const rideId = ride?.ride_id ?? ride?.id;
   const { emit } = useSocket();
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
@@ -63,8 +64,8 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
     try {
       setLoading(true);
       // REST PATCH — backend records in_progress, broadcasts ride:status_update to rider
-      await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'in_progress' });
-      emit('ride:start', { ride_id: ride?.ride_id });
+      await patchRideStatus(rideId, 'in_progress');
+      emit('ride:start', { ride_id: rideId });
       navigation.replace('TripInProgress', { ride });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not start trip.');
@@ -127,7 +128,13 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
             <TouchableOpacity 
               style={s.sosBtn} 
               activeOpacity={0.8}
-              onPress={() => navigation.navigate('SOSWarning', { location: pickup })}
+              onPress={() => navigation.navigate('SOSWarning', {
+                location: {
+                  latitude: pickup.latitude,
+                  longitude: pickup.longitude,
+                  ride_id: rideId,
+                },
+              })}
             >
               <Feather name="alert-circle" size={14} color="#FFFFFF" />
               <Text style={s.sosText}>SOS</Text>

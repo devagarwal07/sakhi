@@ -35,7 +35,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
         const asset = uploads[key];
         form.append(key, { uri: asset.uri, type: 'image/jpeg', name: `${key}.jpg` });
       });
-      await client.post('/drivers/kyc/reupload', form, {
+      await client.post('/drivers/kyc/re-upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       updateDriver({ onboarding_status: 'kyc_submitted' });

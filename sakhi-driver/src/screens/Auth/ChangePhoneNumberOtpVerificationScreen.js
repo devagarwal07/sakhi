@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
-import client from '../../api/client';
+import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 
 const OTP_LENGTH = 6;
@@ -43,7 +43,7 @@ export default function ChangePhoneNumberOtpVerificationScreen({ route, navigati
 
   const handleResend = async () => {
     try {
-      await client.post('/drivers/change-phone/send-otp', { phone });
+      await client.post('/drivers/profile/phone/resend-otp', { new_phone: phone });
       setOtp(Array(OTP_LENGTH).fill(''));
       setTimer(RESEND_SECONDS);
       inputRefs.current[0]?.focus();
@@ -56,14 +56,21 @@ export default function ChangePhoneNumberOtpVerificationScreen({ route, navigati
     if (code.length < OTP_LENGTH) return;
     try {
       setLoading(true);
-      const { data } = await client.post('/drivers/change-phone/verify-otp', { phone, otp: code });
-      // Update driver context with new phone
-      updateDriver({ phone: data.phone });
+      const { data } = await client.post('/drivers/profile/phone/verify-otp', { new_phone: phone, otp: code });
+      if (data?.accessToken && data?.refreshToken) {
+        await saveTokens(data.accessToken, data.refreshToken);
+      }
+      if (data?.driver?.phone) {
+        updateDriver({ phone: data.driver.phone });
+      }
       Alert.alert('Success', 'Your phone number has been updated.', [
         { text: 'OK', onPress: () => navigation.popToTop() },
       ]);
     } catch (err) {
-      Alert.alert('Invalid OTP', err.response?.data?.message ?? 'Please try again.');
+      Alert.alert(
+        'Invalid OTP',
+        err.response?.data?.error?.message ?? err.response?.data?.message ?? 'Please try again.',
+      );
       setOtp(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } finally {

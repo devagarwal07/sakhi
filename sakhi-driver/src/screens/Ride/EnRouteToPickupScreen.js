@@ -9,7 +9,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import client from '../../api/client';
+import { patchRideStatus } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 
@@ -36,6 +36,20 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         longitude: ride.pickup_coords.longitude ?? ride.pickup_coords.lng  ?? 77.2090,
       }
     : { latitude: 28.6139, longitude: 77.2090 };
+
+  const rideId = ride?.ride_id ?? ride?.id;
+
+  // After accept, ride is `assigned` — backend requires `driver_en_route` before `arrived`
+  useEffect(() => {
+    if (!rideId) return;
+    (async () => {
+      try {
+        await patchRideStatus(rideId, 'driver_en_route');
+      } catch {
+        // Already transitioned or race — user can still try "I've arrived"
+      }
+    })();
+  }, [rideId]);
 
   // ── Get initial location ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -73,7 +87,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
           (loc) => {
             setMyLocation(loc.coords);
             emit('driver:location_update', {
-              ride_id: ride?.ride_id,
+              ride_id: rideId,
               lat:     loc.coords.latitude,
               lng:     loc.coords.longitude,
               heading: loc.coords.heading ?? 0,
@@ -87,7 +101,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
     })();
 
     return () => { locSubscription?.remove(); };
-  }, [ride?.ride_id]);
+  }, [rideId]);
 
   const region = myLocation
     ? {
@@ -109,8 +123,8 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
   const handleArrived = async () => {
     try {
       // REST PATCH — triggers rideService.updateRideStatus which broadcasts to rider
-      await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'arrived' });
-      emit('ride:arrived', { ride_id: ride?.ride_id });
+      await patchRideStatus(rideId, 'arrived');
+      emit('ride:arrived', { ride_id: rideId });
       navigation.replace('ArrivedWaiting', { ride });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not update arrival status.');
@@ -178,7 +192,16 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
             <TouchableOpacity 
               style={s.sosBtn} 
               activeOpacity={0.8}
-              onPress={() => navigation.navigate('SOSWarning', { location: myLocation })}
+              onPress={() => {
+                const loc = myLocation ?? pickup;
+                navigation.navigate('SOSWarning', {
+                  location: {
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                    ride_id: rideId,
+                  },
+                });
+              }}
             >
               <Feather name="alert-circle" size={14} color="#FFFFFF" />
               <Text style={s.sosText}>SOS</Text>

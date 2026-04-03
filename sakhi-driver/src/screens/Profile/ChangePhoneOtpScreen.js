@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Phone, ShieldCheck, MessageSquare, ArrowRight, Delete } from 'lucide-react-native';
-import client from '../../api/client';
+import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
@@ -109,7 +109,6 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
   const { checkAuth }    = useAuth();
   const currentPhone     = route?.params?.current_phone ?? '+91 98765 43210';
   const newPhone         = route?.params?.new_phone     ?? '+91 99887 76655';
-  const sessionToken     = route?.params?.session_token ?? null;
 
   const [otp,           setOtp]          = useState('');
   const [verifying,     setVerifying]    = useState(false);
@@ -150,7 +149,7 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
     try {
       setResending(true);
       setOtp('');
-      await client.post('/drivers/profile/phone/resend-otp', { session_token: sessionToken });
+      await client.post('/drivers/profile/phone/resend-otp', { new_phone: newPhone });
       setResendCountdown(30);
       clearInterval(countdownRef.current);
       countdownRef.current = setInterval(() => {
@@ -174,17 +173,19 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
     }
     try {
       setVerifying(true);
-      await client.post('/drivers/profile/phone/verify-otp', {
+      const { data } = await client.post('/drivers/profile/phone/verify-otp', {
         otp: code,
-        session_token: sessionToken,
         new_phone: newPhone,
       });
+      if (data?.accessToken && data?.refreshToken) {
+        await saveTokens(data.accessToken, data.refreshToken);
+      }
       await checkAuth?.();
       Alert.alert('Success ✓', 'Phone number updated successfully!', [
         { text: 'OK', onPress: () => navigation?.goBack?.() },
       ]);
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Incorrect OTP. Please try again.';
+      const msg = err.response?.data?.error?.message ?? err.response?.data?.message ?? 'Incorrect OTP. Please try again.';
       Alert.alert('Verification Failed', msg);
       setOtp('');
     } finally {

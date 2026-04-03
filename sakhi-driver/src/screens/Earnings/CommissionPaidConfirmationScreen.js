@@ -42,7 +42,7 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
     updateDriver({ is_online: true });
 
     // 2. Fire-and-forget background tasks (don't block navigation)
-    client.post('/drivers/status', { is_online: true }).catch(() => {});
+    client.patch('/drivers/status', { is_online: true }).catch(() => {});
     startLocationTracking().catch(() => {});
 
     // 3. Navigate immediately — no waiting

@@ -46,7 +46,9 @@ export default function EditProfileScreen({ navigation }) {
   const [tempYear,  setTempYear]  = useState('1990');
 
   // Language state
-  const [language, setLanguage] = useState(driver?.preferred_language ?? 'English');
+  const [language, setLanguage] = useState(
+    driver?.language_pref === 'kn' ? 'Kannada' : 'English',
+  );
   const [showLangPicker, setShowLangPicker] = useState(false);
 
   // ── Avatar Picker ────────────────────────────────────────────────────────
@@ -114,13 +116,12 @@ export default function EditProfileScreen({ navigation }) {
     }
     try {
       setSaving(true);
+      // Backend: language_pref is 'en' | 'kn' (see drivers.language_pref CHECK)
+      const language_pref = language === 'Kannada' ? 'kn' : 'en';
       await client.patch('/drivers/profile', {
         name: name.trim(),
         email: email.trim(),
-        preferred_language: language,
-        dob_day: dobDay,
-        dob_month: dobMonth,
-        dob_year: dobYear,
+        language_pref,
       });
       await checkAuth?.();
       setModal({
@@ -133,7 +134,10 @@ export default function EditProfileScreen({ navigation }) {
       setModal({
         icon: '⚠️',
         title: 'Save Failed',
-        message: err?.response?.data?.message ?? 'Could not save changes. Please try again.',
+        message:
+          err?.response?.data?.error?.message
+          ?? err?.response?.data?.message
+          ?? 'Could not save changes. Please try again.',
         buttons: [{ text: 'OK', onPress: () => setModal(null) }],
       });
     } finally {
