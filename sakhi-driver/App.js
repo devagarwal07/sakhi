@@ -33,6 +33,8 @@ import DriverHomeScreen              from './src/screens/Home/DriverHomeScreen';
 import DriverOnlineDashboardScreen   from './src/screens/Home/DriverOnlineDashboardScreen';
 import IncomingRideRequestScreen     from './src/screens/Home/IncomingRideRequestScreen';
 import PaymentPlansScreen            from './src/screens/Home/PaymentPlansScreen';
+import SOSWarningScreen              from './src/screens/Home/SOSWarningScreen';
+import SOSActiveScreen               from './src/screens/Home/SOSActiveScreen';
 
 // Ride flow screens
 import EnRouteToPickupScreen from './src/screens/Ride/EnRouteToPickupScreen';
@@ -53,7 +55,6 @@ import SubscriptionRidesOverviewScreen   from './src/screens/Subscriptions/Subsc
 import WeeklyCalendarViewScreen          from './src/screens/Subscriptions/WeeklyCalendarViewScreen';
 import SubscriptionAssignmentDetailsScreen from './src/screens/Subscriptions/SubscriptionAssignmentDetailsScreen';
 
-// Profile / Settings screens
 import MyProfileScreen                 from './src/screens/Profile/MyProfileScreen';
 import MyDocumentsScreen               from './src/screens/Profile/MyDocumentsScreen';
 import MyComplaintsScreen              from './src/screens/Profile/MyComplaintsScreen';
@@ -63,6 +64,7 @@ import NotificationsScreen             from './src/screens/Profile/Notifications
 import TransactionHistoryScreen        from './src/screens/Profile/TransactionHistoryScreen';
 import ProfilePaymentDetailsScreen     from './src/screens/Profile/PaymentDetailsScreen';
 import SakhiLogoutConfirmationSheet    from './src/screens/Profile/SakhiLogoutConfirmationSheet';
+import ChangePhoneInputScreen          from './src/screens/Profile/ChangePhoneInputScreen';
 import ChangePhoneOtpScreen            from './src/screens/Profile/ChangePhoneOtpScreen';
 import HelpSupportScreen               from './src/screens/Profile/HelpSupportScreen';
 import AboutSakhiScreen               from './src/screens/Profile/AboutSakhiScreen';
@@ -111,6 +113,9 @@ function MainStack() {
         <Stack.Screen name="PaymentDetails"         component={PaymentDetailsScreen}       />
         <Stack.Screen name="CompletedRideDetails"   component={CompletedRideDetailsScreen}  />
         <Stack.Screen name="RideHistory"            component={RideHistoryScreen}           />
+        {/* SOS Flow */}
+        <Stack.Screen name="SOSWarning" component={SOSWarningScreen} />
+        <Stack.Screen name="SOSActive"  component={SOSActiveScreen}  />
         {/* Earnings */}
         <Stack.Screen name="MyEarnings"                component={MyEarningsDashboardScreen}      />
         <Stack.Screen name="DailyCommissionPayment"    component={DailyCommissionPaymentScreen}   />
@@ -129,6 +134,7 @@ function MainStack() {
         <Stack.Screen name="Notifications"          component={NotificationsScreen}         />
         <Stack.Screen name="TransactionHistory"     component={TransactionHistoryScreen}    />
         <Stack.Screen name="ProfilePaymentDetails"   component={ProfilePaymentDetailsScreen}  />
+        <Stack.Screen name="ChangePhoneInput"        component={ChangePhoneInputScreen}       />
         <Stack.Screen name="ChangePhoneOtp"         component={ChangePhoneOtpScreen}        />
         <Stack.Screen name="HelpSupport"            component={HelpSupportScreen}           />
         <Stack.Screen name="AboutSakhi"             component={AboutSakhiScreen}            />

@@ -11,13 +11,14 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SIDEBAR_W = 293;
 
 const MENU_ITEMS = [
-  { id: 'DriverHome',            label: 'Home',               iconName: 'home',                 iconType: 'feather' },
-  { id: 'PaymentDetails',       label: 'Pay Commission',     iconName: 'cash-multiple',        iconType: 'materialCommunity' },
-  { id: 'RideHistory',           label: 'Ride History',       iconName: 'history',              iconType: 'materialCommunity' },
-  { id: 'SubscriptionRides',    label: 'Subscription Rides', iconName: 'car-outline',          iconType: 'materialCommunity' },
-  { id: 'MyEarnings',           label: 'Earnings',           iconName: 'wallet-outline',       iconType: 'materialCommunity' },
-  { id: 'MyDocuments',          label: 'My Documents',       iconName: 'file-document-outline',iconType: 'materialCommunity' },
-  { id: 'Notifications',        label: 'Notifications',      iconName: 'bell-outline',         iconType: 'materialCommunity', badge: '3' },
+  { id: 'DriverHome',              label: 'Home',               iconName: 'home',                  iconType: 'feather' },
+  { id: 'DailyCommissionPayment',  label: 'Pay Commission',     iconName: 'cash-multiple',         iconType: 'materialCommunity' },
+  { id: 'RideHistory',             label: 'Ride History',       iconName: 'history',               iconType: 'materialCommunity' },
+  { id: 'SubscriptionRides',       label: 'Subscription Rides', iconName: 'car-outline',           iconType: 'materialCommunity' },
+  { id: 'MyEarnings',              label: 'Earnings',           iconName: 'wallet-outline',        iconType: 'materialCommunity' },
+  { id: 'MyDocuments',             label: 'My Documents',       iconName: 'file-document-outline', iconType: 'materialCommunity' },
+  { id: 'Notifications',           label: 'Notifications',      iconName: 'bell-outline',          iconType: 'materialCommunity', badge: '3' },
+  { id: 'MyProfile',               label: 'My Profile',         iconName: 'account-outline',       iconType: 'materialCommunity' },
 ];
 
 const SECONDARY_MENU_ITEMS = [
