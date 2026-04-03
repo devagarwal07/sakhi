@@ -4,7 +4,8 @@ import {
     Dimensions, Image, Platform, ScrollView, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import SmartMapView from '../src/components/SmartMapView';
+
 import SakhiModal from '../src/components/SakhiModal';
 import { useRide } from '../src/context/RideContext';
 
@@ -53,35 +54,14 @@ export default function DriverArrivedScreen() {
         <View style={styles.container}>
             {/* Map Area */}
             <View style={styles.mapArea}>
-                <MapView
+                <SmartMapView
                     style={StyleSheet.absoluteFill}
-                    provider={PROVIDER_GOOGLE}
-                            showsUserLocation={false}
-                    region={{
-                        latitude: pickupLat,
-                        longitude: pickupLng,
-                        latitudeDelta: 0.02,
-                        longitudeDelta: 0.02,
-                    }}
-                    customMapStyle={mapStyle}
-                >
-                    <Marker coordinate={coords} anchor={{ x: 0.5, y: 0.4 }}>
-                        <View style={styles.driverMarkerContainer}>
-                            {/* Floating 'Arrived' Badge */}
-                            <View style={styles.arrivedBadge}>
-                                <View style={styles.arrivedDot} />
-                                <Text style={styles.arrivedBadgeText}>Arrived</Text>
-                            </View>
-
-                            {/* Driver Icon */}
-                            <View style={styles.driverIconOuter}>
-                                <View style={styles.driverIconInner}>
-                                    <Text style={{ fontSize: 18 }}>🛺</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </Marker>
-                </MapView>
+                    center={{ latitude: pickupLat, longitude: pickupLng }}
+                    zoom={15}
+                    markers={[{ id: 'driver', latitude: pickupLat, longitude: pickupLng, color: '#BEA3D8', pulse: true }]}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                />
                 
                 {/* Gradient fade at the bottom of the map */}
                 <View style={styles.mapGradientFade} />

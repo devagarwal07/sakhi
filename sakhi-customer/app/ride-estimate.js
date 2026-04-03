@@ -4,7 +4,8 @@ import {
     Dimensions, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import SmartMapView from '../src/components/SmartMapView';
+
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
@@ -164,36 +165,18 @@ export default function RideEstimateScreen() {
                             <ActivityIndicator size="large" color="#BEA3D8" />
                         </View>
                     )}
-                    <MapView
+                    <SmartMapView
                         style={StyleSheet.absoluteFill}
-                        provider={PROVIDER_GOOGLE}
-                        showsUserLocation={false}
-                        region={{
-                            latitude: midLat,
-                            longitude: midLng,
-                            latitudeDelta: latDelta,
-                            longitudeDelta: lngDelta,
-                        }}
-                        customMapStyle={mapStyle}
-                    >
-                        {pickup && (
-                            <Marker coordinate={pickup}>
-                                <View style={styles.mapStartMarker} />
-                            </Marker>
-                        )}
-                        {dropoff && (
-                            <Marker coordinate={dropoff}>
-                                <View style={styles.mapEndMarker} />
-                            </Marker>
-                        )}
-                        {routePolyline.length > 1 && (
-                            <Polyline
-                                coordinates={routePolyline}
-                                strokeColor="#BEA3D8"
-                                strokeWidth={4}
-                            />
-                        )}
-                    </MapView>
+                        center={{ latitude: midLat, longitude: midLng }}
+                        zoom={13}
+                        markers={[
+                            pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#BEA3D8', label: 'P' },
+                            dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#1E1B2E', label: 'D' },
+                        ].filter(Boolean)}
+                        polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#BEA3D8', width: 4 }] : []}
+                        scrollEnabled
+                        zoomEnabled
+                    />
                     <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]} />
                 </View>
 

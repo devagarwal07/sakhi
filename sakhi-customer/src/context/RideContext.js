@@ -7,28 +7,25 @@ const initialState = {
     status: null,
     pickup: null,    // { latitude, longitude, address }
     dropoff: null,   // { latitude, longitude, address }
-    driver: null,    // { id, name, photo, rating, vehicle, plate }
-    fare: null,      // { base, distance, waiting, promo, total }
+    driver: null,    // { id, name, photo, rating, vehicle, plate, phone }
+    fare: null,      // { base, distance_fare, waiting, promo, total }
+    paymentMethod: 'cash',
     estimatedETA: null,
     waitingSeconds: 0,
     waitingCharge: 0,
     polyline: [],
-    subscription: {
-        startDate: 'Oct 28, 2024',
-        morningTime: '08:30 AM',
-        isTwoWay: true,
-        returnTime: '05:30 PM',
-        days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-        plan: 7, // 7, 14, 21, 30
-        price: 364
-    }
 };
+
 
 export function RideProvider({ children }) {
     const [ride, setRide] = useState(initialState);
 
     const setPickup = useCallback((pickup) => setRide((r) => ({ ...r, pickup })), []);
     const setDropoff = useCallback((dropoff) => setRide((r) => ({ ...r, dropoff })), []);
+    const setRideId = useCallback((rideId) => setRide((r) => ({ ...r, rideId })), []);
+    const setDriver = useCallback((driver) => setRide((r) => ({ ...r, driver })), []);
+    const setFare   = useCallback((fare)   => setRide((r) => ({ ...r, fare })), []);
+    const setPaymentMethod = useCallback((paymentMethod) => setRide((r) => ({ ...r, paymentMethod })), []);
 
     const startRide = useCallback((rideId, driver, fare) => {
         setRide((r) => ({ ...r, rideId, driver, fare, status: 'assigned' }));
@@ -65,13 +62,16 @@ export function RideProvider({ children }) {
                 ride,
                 setPickup,
                 setDropoff,
+                setRideId,
+                setDriver,
+                setFare,
+                setPaymentMethod,
                 startRide,
                 updateStatus,
                 updateDriverLocation,
                 tickWaiting,
                 updateFare,
                 setPolyline,
-                updateSubscription,
                 clearRide,
             }}
         >

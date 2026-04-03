@@ -4,7 +4,8 @@ import {
     Dimensions, Animated, Platform, ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import SmartMapView from '../src/components/SmartMapView';
+
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 
@@ -55,17 +56,15 @@ export default function RideFindingScreen() {
         <View style={styles.container}>
             {/* Map Area (Top 55%) */}
             <View style={styles.mapArea}>
-                <MapView
+                <SmartMapView
                     style={StyleSheet.absoluteFill}
-                    provider={PROVIDER_GOOGLE}
-                    initialRegion={{
-                        latitude: ride?.pickup?.latitude || 19.0760,
+                    center={{
+                        latitude:  ride?.pickup?.latitude  || 19.0760,
                         longitude: ride?.pickup?.longitude || 72.8777,
-                        latitudeDelta: 0.05,
-                        longitudeDelta: 0.05,
                     }}
-                    customMapStyle={mapStyle}
-                    showsUserLocation={false}
+                    zoom={13}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
                 />
                 
                 {/* Desaturation overlay to match ethereal look */}

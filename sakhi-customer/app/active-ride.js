@@ -3,7 +3,8 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, Image, Animated, Modal,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import SmartMapView from '../src/components/SmartMapView';
+
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useRide } from '../src/context/RideContext';
@@ -154,40 +155,18 @@ export default function ActiveRideScreen() {
     return (
         <View style={styles.container}>
             {/* Map */}
-            <MapView
+            <SmartMapView
                 ref={mapRef}
                 style={StyleSheet.absoluteFill}
-                provider={PROVIDER_GOOGLE}
-                initialRegion={{
-                    latitude: ride.pickup?.latitude || 19.0760,
-                    longitude: ride.pickup?.longitude || 72.8777,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                }}
-            >
-                {ride.pickup && (
-                    <Marker coordinate={ride.pickup} title="Pickup">
-                        <View style={styles.pickupMarker}><Text>📍</Text></View>
-                    </Marker>
-                )}
-                {ride.dropoff && (
-                    <Marker coordinate={ride.dropoff} title="Dropoff">
-                        <View style={styles.dropoffMarker}><Text>🏁</Text></View>
-                    </Marker>
-                )}
-                {ride.driver?.currentLocation && (
-                    <Marker coordinate={ride.driver.currentLocation} title="Driver">
-                        <View style={styles.carMarker}><Text style={{ fontSize: 24 }}>🚗</Text></View>
-                    </Marker>
-                )}
-                {ride.polyline.length > 1 && (
-                    <Polyline
-                        coordinates={ride.polyline}
-                        strokeColor={Colors.primaryContainer}
-                        strokeWidth={3}
-                    />
-                )}
-            </MapView>
+                center={ride.pickup || { latitude: 19.0760, longitude: 72.8777 }}
+                zoom={15}
+                markers={[
+                    ride.pickup          && { id: 'pickup',  latitude: ride.pickup.latitude,                    longitude: ride.pickup.longitude,                    color: '#BEA3D8', label: 'P' },
+                    ride.dropoff         && { id: 'dropoff', latitude: ride.dropoff.latitude,                   longitude: ride.dropoff.longitude,                   color: '#1E1B2E', label: 'D' },
+                    ride.driver?.currentLocation && { id: 'driver',  latitude: ride.driver.currentLocation.latitude, longitude: ride.driver.currentLocation.longitude, color: '#7C3AED', pulse: true },
+                ].filter(Boolean)}
+                polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#BEA3D8', width: 3 }] : []}
+            />
 
             {/* SOS Pills and Share Pill */}
             <View style={styles.topRightPills}>

@@ -12,14 +12,12 @@ export function SocketProvider({ children }) {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // Skip real socket connection in dev bypass mode
         if (DEV_BYPASS_AUTH) {
             console.log('[DEV] SocketProvider — skipping connection in bypass mode');
             return;
         }
 
         if (!isAuthenticated) {
-            // Disconnect if the user logs out
             if (socketRef.current) {
                 socketRef.current.disconnect();
                 socketRef.current = null;
@@ -32,7 +30,8 @@ export function SocketProvider({ children }) {
             const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
             if (!token) return;
 
-            const socket = io(API_BASE_URL, {
+            // ── Connect to /rides namespace — matches backend socket server ──
+            const socket = io(`${API_BASE_URL}/rides`, {
                 auth: { token },
                 transports: ['websocket'],
                 reconnection: true,
@@ -42,7 +41,7 @@ export function SocketProvider({ children }) {
 
             socket.on('connect', () => {
                 setIsConnected(true);
-                console.log('[Socket] Connected:', socket.id);
+                console.log('[Socket] Connected to /rides:', socket.id);
             });
 
             socket.on('disconnect', (reason) => {
@@ -67,7 +66,6 @@ export function SocketProvider({ children }) {
         };
     }, [isAuthenticated]);
 
-    // In dev mode, emit/on/off are no-ops (just log)
     const emit = (event, data) => {
         if (DEV_BYPASS_AUTH) {
             console.log('[DEV Socket] emit:', event, data);

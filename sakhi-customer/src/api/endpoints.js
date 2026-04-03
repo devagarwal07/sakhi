@@ -34,18 +34,22 @@ export const estimateFare = (pickup, dropoff) =>
         params: {
             pickup_lat: pickup.latitude,
             pickup_lng: pickup.longitude,
-            dropoff_lat: dropoff.latitude,
-            dropoff_lng: dropoff.longitude,
+            drop_lat:   dropoff.latitude,   // backend uses drop_lat not dropoff_lat
+            drop_lng:   dropoff.longitude,  // backend uses drop_lng not dropoff_lng
         },
     });
 export const bookRide = (data) => apiClient.post('/rides', data);
-export const cancelRide = (rideId) => apiClient.patch(`/rides/${rideId}/cancel`);
+export const cancelRide = (rideId, reason) => apiClient.patch(`/rides/${rideId}/cancel`, { reason });
 export const getRideDetails = (rideId) => apiClient.get(`/rides/${rideId}`);
 export const getRideById = getRideDetails; // Alias expected by UI
 export const rateDriver = (rideId, rating, comment) =>
     apiClient.post(`/rides/${rideId}/rating`, { rating, comment });
 export const submitRating = rateDriver; // Alias expected by UI
 export const getChatHistory = (rideId) => apiClient.get(`/rides/${rideId}/chat`);
+
+// ── Ride Payments ──────────────────────────────────────────────────────────
+export const createRidePaymentOrder  = (rideId) => apiClient.post(`/rides/${rideId}/payment/order`);
+export const verifyRidePayment = (rideId, data) => apiClient.post(`/rides/${rideId}/payment/verify`, data);
 
 // ── Safety ────────────────────────────────────────────────────────────────
 export const triggerSOS = (location) => apiClient.post('/safety/sos', { location });
