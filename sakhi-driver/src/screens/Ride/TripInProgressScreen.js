@@ -39,14 +39,24 @@ export default function TripInProgressScreen({ navigation, route }) {
         if (status !== 'granted') return;
         locSubscription = await Location.watchPositionAsync(
           { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 20 },
-          (loc) => setMyLocation(loc.coords),
+          (loc) => {
+            setMyLocation(loc.coords);
+            // Stream live location to rider via socket
+            emit('driver:location_update', {
+              ride_id: ride?.ride_id,
+              lat:     loc.coords.latitude,
+              lng:     loc.coords.longitude,
+              heading: loc.coords.heading ?? 0,
+              speed:   loc.coords.speed   ?? 0,
+            });
+          },
         );
       } catch {
         // silently ignore emulator location errors
       }
     })();
     return () => { locSubscription?.remove(); };
-  }, []);
+  }, [ride?.ride_id]);
 
   const region = myLocation
     ? {
@@ -74,16 +84,13 @@ export default function TripInProgressScreen({ navigation, route }) {
           onPress: async () => {
             try {
               setCompleting(true);
+              // PATCH status — backend records final coords + creates driver_earnings row
+              await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'completed' });
               emit('ride:complete', { ride_id: ride?.ride_id });
-              const coords = myLocation ?? dropoff;
-              await client.post(`/rides/${ride?.ride_id}/complete`, {
-                final_latitude: coords.latitude,
-                final_longitude: coords.longitude,
-              }).catch(() => {});
               Vibration.vibrate(200);
               navigation.replace('PaymentDetails', { ride });
             } catch (err) {
-              Alert.alert('Error', 'Could not complete trip.');
+              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not complete trip.');
               setCompleting(false);
             }
           },

@@ -310,6 +310,89 @@ async function updateDriverProfile(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/subscription  — subscription expiry for home screen countdown
+// ──────────────────────────────────────────────────────────────────────────────
+async function getSubscriptionStatus(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+
+    const { data: rows, error } = await supabase
+      .from('drivers')
+      .select('subscription_expiry, subscription_plan')
+      .eq('id', driverId)
+      .limit(1);
+
+    if (error) throw new AppError('Failed to fetch subscription.', 500, 'DB_ERROR');
+
+    const driver = rows?.[0];
+    return res.status(200).json({
+      expiry_date:       driver?.subscription_expiry  ?? null,
+      subscription_plan: driver?.subscription_plan    ?? null,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/commission/status  — unpaid commission summary
+// ──────────────────────────────────────────────────────────────────────────────
+async function getCommissionStatus(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+
+    const { data: entries, error } = await supabase
+      .from('commission_ledger')
+      .select('date, amount, type, paid, active_day')
+      .eq('driver_id', driverId)
+      .eq('paid', false)
+      .order('date', { ascending: false });
+
+    if (error) throw new AppError('Failed to fetch commission status.', 500, 'DB_ERROR');
+
+    const rows = entries || [];
+    const total_due = +rows
+      .reduce((sum, r) => sum + parseFloat(r.amount || 0), 0)
+      .toFixed(2);
+
+    return res.status(200).json({ total_due, entries: rows });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/location  — REST fallback for background location task
+// (primary channel is socket driver:location_update)
+// ──────────────────────────────────────────────────────────────────────────────
+const locationSchema = z.object({
+  latitude:  z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  heading:   z.number().optional(),
+  speed:     z.number().optional(),
+  accuracy:  z.number().optional(),
+});
+
+async function updateLocation(req, res, next) {
+  try {
+    const { latitude, longitude, heading, speed } = locationSchema.parse(req.body);
+    const driverId = req.user.userId;
+
+    await supabase
+      .from('driver_locations')
+      .upsert(
+        {
+          driver_id:  driverId,
+          lat:        latitude,
+          lng:        longitude,
+          heading:    heading ?? 0,
+          speed:      speed   ?? 0,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'driver_id' }
+      );
+
+    return res.status(200).json({ ok: true });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   updateDriverStatus,
   getEarningsToday,
@@ -318,4 +401,7 @@ module.exports = {
   getDriverRides,
   getDriverProfile,
   updateDriverProfile,
+  getSubscriptionStatus,
+  getCommissionStatus,
+  updateLocation,
 };

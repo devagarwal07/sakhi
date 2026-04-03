@@ -372,11 +372,15 @@ export default function DriverHomeScreen({ navigation }) {
 
   // ── Sync earnings + subscription expiry on focus ───────────────────────────
   useFocusEffect(useCallback(() => {
-    // Earnings
+    // Earnings — backend returns { rides_completed, gross_earnings, net_earnings }
     client.get('/drivers/earnings/today')
-      .then(r => {
+      .then((r) => {
         if (r.data) {
-          setEarnings({ today: r.data.today_earnings ?? 340, rides: r.data.today_trips ?? 5, rating: r.data.rating ?? 4.9 });
+          setEarnings({
+            today:  r.data.net_earnings      ?? 0,
+            rides:  r.data.rides_completed   ?? 0,
+            rating: driver?.avg_rating       ?? 4.9,
+          });
         }
       })
       .catch(() => {});
@@ -411,7 +415,7 @@ export default function DriverHomeScreen({ navigation }) {
   const handleGoOffline = async () => {
     try {
       setStatusLoading(true);
-      await client.post('/drivers/status', { is_online: false });
+      await client.patch('/drivers/status', { is_online: false });
       updateDriver({ is_online: false });
       setIsOnline(false);
       await stopLocationTracking();
@@ -431,12 +435,19 @@ export default function DriverHomeScreen({ navigation }) {
     }
     try {
       setStatusLoading(true);
-      await client.post('/drivers/status', { is_online: true });
+      // Pass current location so backend can immediately upsert driver_locations
+      const body = { is_online: true };
+      if (location) {
+        body.lat = location.latitude;
+        body.lng = location.longitude;
+      }
+      await client.patch('/drivers/status', body);
       updateDriver({ is_online: true });
       setIsOnline(true);
       await startLocationTracking();
-    } catch {
-      Alert.alert('Error', 'Could not go online. Try again.');
+    } catch (err) {
+      const msg = err.response?.data?.error?.message ?? 'Could not go online. Try again.';
+      Alert.alert('Error', msg);
     } finally {
       setStatusLoading(false);
     }

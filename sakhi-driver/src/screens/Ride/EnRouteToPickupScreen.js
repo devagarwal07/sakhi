@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, Linking, Image, Dimensions, Platform, Modal,
@@ -9,6 +9,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
+import client from '../../api/client';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 
@@ -29,8 +30,14 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
   const [myLocation, setMyLocation] = useState(null);
   const [chatVisible, setChatVisible] = useState(false);
 
-  const pickup = ride?.pickup_coords ?? { latitude: 28.6139, longitude: 77.2090 };
+  const pickup = ride?.pickup_coords
+    ? {
+        latitude:  ride.pickup_coords.latitude  ?? ride.pickup_coords.lat  ?? 28.6139,
+        longitude: ride.pickup_coords.longitude ?? ride.pickup_coords.lng  ?? 77.2090,
+      }
+    : { latitude: 28.6139, longitude: 77.2090 };
 
+  // ── Get initial location ──────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -48,6 +55,39 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
       }
     })();
   }, []);
+
+  // ── Live location stream → socket emit every 5s (rider sees driver moving) ───
+  useEffect(() => {
+    let locSubscription;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        locSubscription = await Location.watchPositionAsync(
+          {
+            accuracy:         Location.Accuracy.High,
+            timeInterval:     5000,
+            distanceInterval: 20,
+          },
+          (loc) => {
+            setMyLocation(loc.coords);
+            emit('driver:location_update', {
+              ride_id: ride?.ride_id,
+              lat:     loc.coords.latitude,
+              lng:     loc.coords.longitude,
+              heading: loc.coords.heading ?? 0,
+              speed:   loc.coords.speed   ?? 0,
+            });
+          }
+        );
+      } catch {
+        // Location unavailable (emulator / permissions)
+      }
+    })();
+
+    return () => { locSubscription?.remove(); };
+  }, [ride?.ride_id]);
 
   const region = myLocation
     ? {
@@ -68,10 +108,12 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
 
   const handleArrived = async () => {
     try {
+      // REST PATCH — triggers rideService.updateRideStatus which broadcasts to rider
+      await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'arrived' });
       emit('ride:arrived', { ride_id: ride?.ride_id });
       navigation.replace('ArrivedWaiting', { ride });
     } catch (err) {
-      Alert.alert('Error', 'Could not update arrival status.');
+      Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not update arrival status.');
     }
   };
 

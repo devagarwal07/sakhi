@@ -100,12 +100,72 @@ export default function MyEarningsDashboardScreen({ navigation }) {
 
   const fetchEarnings = useCallback(async (p = period, start = customStart, end = customEnd) => {
     try {
-      const params = { period: p };
-      if (p === 'custom' && start) {
-        params.start_date = start.toISOString().split('T')[0];
-        params.end_date   = (end ?? start).toISOString().split('T')[0];
+      let res;
+
+      if (p === 'today') {
+        // { rides_completed, gross_earnings, net_earnings }
+        const { data } = await client.get('/drivers/earnings/today');
+        res = {
+          net_earnings:       data.net_earnings      ?? 0,
+          ride_count:         data.rides_completed   ?? 0,
+          average_rating:     0,      // not returned by this endpoint
+          days_online:        1,
+          take_home:          data.net_earnings      ?? 0,
+          platform_fee:       data.gross_earnings - data.net_earnings || 0,
+          daily_earnings:     [],
+          pending_commission: 0,
+        };
+      } else if (p === 'weekly') {
+        // { breakdown: [{ date, gross, commission, net, rides }] }
+        const { data } = await client.get('/drivers/earnings/weekly');
+        const breakdown = data.breakdown || [];
+        const totals    = breakdown.reduce(
+          (acc, day) => ({
+            net:    acc.net    + day.net,
+            gross:  acc.gross  + day.gross,
+            rides:  acc.rides  + day.rides,
+            commission: acc.commission + day.commission,
+          }),
+          { net: 0, gross: 0, rides: 0, commission: 0 }
+        );
+        // Build 7-bar array Mon..Sun aligned to current week
+        const today  = new Date();
+        const dow    = (today.getDay() + 6) % 7; // Mon=0
+        const bars   = Array(7).fill(0);
+        breakdown.forEach((d) => {
+          const dayDate = new Date(d.date);
+          const diff    = Math.round((today - dayDate) / 86400000);
+          const idx     = dow - diff;
+          if (idx >= 0 && idx < 7) bars[idx] = d.net;
+        });
+        res = {
+          net_earnings:       +totals.net.toFixed(2),
+          ride_count:         totals.rides,
+          average_rating:     0,
+          days_online:        breakdown.filter((d) => d.rides > 0).length,
+          take_home:          +totals.net.toFixed(2),
+          platform_fee:       +totals.commission.toFixed(2),
+          daily_earnings:     bars,
+          pending_commission: 0,
+        };
+      } else {
+        // monthly / all / ledger → /drivers/earnings/ledger
+        // { month, ledger, total_active_days, loyalty }
+        const { data } = await client.get('/drivers/earnings/ledger');
+        const ledger   = data.ledger || [];
+        const netTotal = ledger.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+        res = {
+          net_earnings:       +netTotal.toFixed(2),
+          ride_count:         ledger.length,
+          average_rating:     0,
+          days_online:        data.total_active_days ?? 0,
+          take_home:          +netTotal.toFixed(2),
+          platform_fee:       0,
+          daily_earnings:     [],
+          pending_commission: ledger.filter((l) => !l.paid).reduce((s, r) => s + parseFloat(r.amount || 0), 0),
+        };
       }
-      const { data: res } = await client.get(`/drivers/earnings`, { params });
+
       setData(res);
     } catch (err) {
       console.warn('[Earnings]', err.message);

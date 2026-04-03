@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, ScrollView, ActivityIndicator,
@@ -166,6 +166,20 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
   const [rzpHtml, setRzpHtml]               = useState(null);
   const [showWebView, setShowWebView]       = useState(false);
   const [modal, setModal]                   = useState(null);
+  const [commissionDue, setCommissionDue]   = useState(amount);   // amount prop is initial/fallback
+  const [commissionEntries, setCommissionEntries] = useState([]);
+
+  // ── Fetch actual unpaid commission on mount ────────────────────────────────────────
+  useEffect(() => {
+    client.get('/drivers/commission/status')
+      .then(({ data }) => {
+        if (data.total_due > 0) setCommissionDue(data.total_due);
+        setCommissionEntries(data.entries || []);
+      })
+      .catch(() => {
+        // Non-fatal — falls back to route.params.amount
+      });
+  }, []);
 
   // ── Build Razorpay checkout HTML ────────────────────────────────────────
   function buildRzpHtml({ key_id, order_id, amount, currency }) {
@@ -228,7 +242,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
     try {
       setPaymentLoading(true);
       const { data } = await client.post('/payments/commission/order', {
-        amount,
+        amount:    commissionDue,          // use live amount from /commission/status
         period,
         driver_id: driver?.id,
       });

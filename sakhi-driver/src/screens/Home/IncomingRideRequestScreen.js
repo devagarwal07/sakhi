@@ -60,7 +60,7 @@ export default function IncomingRideRequestScreen() {
       await acceptRide(incomingRide.ride_id);
       clearIncomingRide();
       if (navigationRef.isReady()) {
-        navigationRef.navigate('ActiveTrip', { ride: incomingRide });
+        navigationRef.navigate('EnRouteToPickup', { ride: incomingRide });
       }
     } catch (err) {
       Alert.alert('Oops', err.message ?? 'Could not accept ride.');
@@ -77,11 +77,23 @@ export default function IncomingRideRequestScreen() {
     fare = 87,
     pickup_address = 'Versova Metro Station',
     dropoff_address = 'Oberoi Mall, Goregaon',
+    drop_address,
     distance_to_pickup_km = 3.2,
     eta_to_pickup_min = 6,
-    pickup_coords = { latitude: 28.61, longitude: 77.20 },
-    dropoff_coords = { latitude: 28.63, longitude: 77.22 },
   } = incomingRide;
+
+  // Matching engine sends { lat, lng }; normalise to { latitude, longitude }
+  const normaliseCoord = (coord) =
+    coord
+      ? {
+          latitude:  coord.latitude  ?? coord.lat  ?? 28.61,
+          longitude: coord.longitude ?? coord.lng  ?? 77.20,
+        }
+      : { latitude: 28.61, longitude: 77.20 };
+
+  const pickup_coords  = normaliseCoord(incomingRide.pickup_coords);
+  const dropoff_coords = normaliseCoord(incomingRide.dropoff_coords);
+  const displayDropAddress = dropoff_address || drop_address || 'Destination';
 
   const mapRegion = {
     latitude: (pickup_coords.latitude + dropoff_coords.latitude) / 2,

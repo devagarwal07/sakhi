@@ -55,5 +55,14 @@ router.patch('/profile',
   driverController.updateDriverProfile
 );
 
+// ── Subscription ─────────────────────────────────────────────────────────────────────────────
+router.get('/subscription',       authMiddleware, roleGuard('driver'), driverController.getSubscriptionStatus);
+
+// ── Commission status ──────────────────────────────────────────────────────────────────────
+router.get('/commission/status',  authMiddleware, roleGuard('driver'), driverController.getCommissionStatus);
+
+// ── Location update (REST fallback from background task) ──────────────────────────
+router.post('/location',          authMiddleware, roleGuard('driver'), driverController.updateLocation);
+
 module.exports = router;
 

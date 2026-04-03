@@ -8,6 +8,7 @@ import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
+import client from '../../api/client';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 
@@ -61,10 +62,12 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
   const handleStartTrip = async () => {
     try {
       setLoading(true);
+      // REST PATCH — backend records in_progress, broadcasts ride:status_update to rider
+      await client.patch(`/rides/${ride?.ride_id}/status`, { status: 'in_progress' });
       emit('ride:start', { ride_id: ride?.ride_id });
       navigation.replace('TripInProgress', { ride });
     } catch (err) {
-      Alert.alert('Error', 'Could not start trip.');
+      Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not start trip.');
     } finally {
       setLoading(false);
     }
