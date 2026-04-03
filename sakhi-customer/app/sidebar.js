@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useRef, useState } from 'react';
 import { 
     View, Text, StyleSheet, TouchableOpacity, Animated, 
@@ -15,6 +15,7 @@ const DRAWER_WIDTH = width * 0.75; // Drawer takes exactly 75% width per Figma C
 export default function SidebarScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
+    const { top: topInset } = useSafeAreaInsets();
     const [showLogoutSheet, setShowLogoutSheet] = useState(false);
     
     // Animation refs for dynamic slide-in and fade overlay
@@ -111,8 +112,8 @@ export default function SidebarScreen() {
                     { transform: [{ translateX: slideAnim }] }
                 ]}
             >
-                <SafeAreaView style={styles.header}>
-                    <View style={styles.headerContent}>
+                {/* Remove SafeAreaView from here — we handle insets manually */}
+                <View style={[styles.headerContent, { paddingTop: topInset + 16 }]}>
                         <View style={styles.avatarContainer}>
                             <View style={styles.avatarImg}>
                                 <Text style={styles.avatarInitial}>
@@ -134,7 +135,6 @@ export default function SidebarScreen() {
                             <Text style={styles.phoneText}>{user?.phone || '+91 98765 43210'}</Text>
                         </View>
                     </View>
-                </SafeAreaView>
 
                 <ScrollView contentContainerStyle={styles.menuContainer} showsVerticalScrollIndicator={false}>
                     <MenuItem 
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     },
 
     header: { backgroundColor: '#F5F3FF' },
-    headerContent: { paddingTop: Platform.OS === 'android' ? 48 : 24, paddingHorizontal: 24, paddingBottom: 24 },
+    headerContent: { paddingHorizontal: 24, paddingBottom: 24 },
     
     avatarContainer: { width: 64, height: 64, marginBottom: 16, position: 'relative' },
     avatarImg: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFFFFF' },

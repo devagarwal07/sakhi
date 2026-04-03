@@ -68,6 +68,7 @@ export const getWalletDetails = () => apiClient.get('/users/wallet');
 export const getSubscriptions = () => apiClient.get('/subscriptions');
 export const getSubscriptionDetails = (id) => apiClient.get(`/subscriptions/${id}`);
 export const cancelSubscription = (id) => apiClient.patch(`/subscriptions/${id}/cancel`);
+export const toggleSubscriptionPause = (id, isPaused) => apiClient.patch(`/subscriptions/${id}/pause`, { isPaused });
 export const createSubscriptionOrder = (data) => apiClient.post('/payments/order', data);
 export const verifyPayment = (data) => apiClient.post('/payments/verify', data);
 
