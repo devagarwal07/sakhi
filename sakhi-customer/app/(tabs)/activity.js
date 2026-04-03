@@ -5,9 +5,10 @@ import {
     TouchableOpacity, ActivityIndicator, Pressable,
     ScrollView, Platform
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getRideHistory } from '../../src/api/endpoints';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 const FILTERS = ['All', 'This Week', 'This Month', 'Last Month'];
 
@@ -32,18 +33,48 @@ export default function RideHistoryScreen() {
         try {
             const { data } = await getRideHistory(pageNum);
             const fetched = data.rides || [];
-            
-            // To ensure the beautiful UI always has something to show, 
-            // if fetched is empty for demo, we can inject mocked UI data later, but for now we trust the API.
             setRides((prev) => pageNum === 1 ? fetched : [...prev, ...fetched]);
-            
-            // Artificial delay to show smooth animations if needed
             setHasMore(fetched.length === 10);
             setPage(pageNum);
         } catch (_) { } finally {
             setLoading(false);
             setLoadingMore(false);
         }
+    };
+
+    // Filter rides client-side based on the selected chip
+    const applyFilter = (rideList, filter) => {
+        if (filter === 'All') return rideList;
+        
+        const now = new Date();
+        return rideList.filter((item) => {
+            if (!item.created_at) return false;
+            try {
+                const rideDate = parseISO(item.created_at);
+                if (filter === 'This Week') {
+                    return isWithinInterval(rideDate, {
+                        start: startOfWeek(now, { weekStartsOn: 1 }), // Monday
+                        end: now,
+                    });
+                }
+                if (filter === 'This Month') {
+                    return isWithinInterval(rideDate, {
+                        start: startOfMonth(now),
+                        end: now,
+                    });
+                }
+                if (filter === 'Last Month') {
+                    const lastMonth = subMonths(now, 1);
+                    return isWithinInterval(rideDate, {
+                        start: startOfMonth(lastMonth),
+                        end: endOfMonth(lastMonth),
+                    });
+                }
+                return true;
+            } catch {
+                return false;
+            }
+        });
     };
 
     const RideCard = ({ item }) => {
@@ -103,20 +134,35 @@ export default function RideHistoryScreen() {
         );
     };
 
-    // Rendered when data is empty - styling to match the aesthetic
+    // Show different empty message when filter returns no results vs truly no rides
     const renderEmpty = () => {
         if (loading) return null;
+        const isFiltered = activeFilter !== 'All';
         return (
             <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>🎫</Text>
-                <Text style={styles.emptyTitle}>No rides yet</Text>
-                <Text style={styles.emptySubtitle}>Your completed trips will appear here.</Text>
+                <View style={styles.emptyIconWrap}>
+                    <Svg width="54" height="48" viewBox="0 0 18 16" fill="none">
+                        <Path
+                            d="M3 14V15C3 15.2833 2.90417 15.5208 2.7125 15.7125C2.52083 15.9042 2.28333 16 2 16H1C0.716667 16 0.479167 15.9042 0.2875 15.7125C0.0958333 15.5208 0 15.2833 0 15V7L2.1 1C2.2 0.7 2.37917 0.458333 2.6375 0.275C2.89583 0.0916667 3.18333 0 3.5 0H14.5C14.8167 0 15.1042 0.0916667 15.3625 0.275C15.6208 0.458333 15.8 0.7 15.9 1L18 7V15C18 15.2833 17.9042 15.5208 17.7125 15.7125C17.5208 15.9042 17.2833 16 17 16H16C15.7167 16 15.4792 15.9042 15.2875 15.7125C15.0958 15.5208 15 15.2833 15 15V14H3ZM2.8 5H15.2L14.15 2H3.85L2.8 5ZM2 7V12V7ZM4.5 11C4.91667 11 5.27083 10.8542 5.5625 10.5625C5.85417 10.2708 6 9.91667 6 9.5C6 9.08333 5.85417 8.72917 5.5625 8.4375C5.27083 8.14583 4.91667 8 4.5 8C4.08333 8 3.72917 8.14583 3.4375 8.4375C3.14583 8.72917 3 9.08333 3 9.5C3 9.91667 3.14583 10.2708 3.4375 10.5625C3.72917 10.8542 4.08333 11 4.5 11ZM13.5 11C13.9167 11 14.2708 10.8542 14.5625 10.5625C14.8542 10.2708 15 9.91667 15 9.5C15 9.08333 14.8542 8.72917 14.5625 8.4375C14.2708 8.14583 13.9167 8 13.5 8C13.0833 8 12.7292 8.14583 12.4375 8.4375C12.1458 8.72917 12 9.08333 12 9.5C12 9.91667 12.1458 10.2708 12.4375 10.5625C12.7292 10.8542 13.0833 11 13.5 11ZM2 12H16V7H2V12Z"
+                            fill="#BEA3D8"
+                        />
+                    </Svg>
+                </View>
+                <Text style={styles.emptyTitle}>
+                    {isFiltered ? `No rides in ${activeFilter}` : 'No rides yet'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                    {isFiltered
+                        ? 'Try selecting a different time period'
+                        : 'Your completed trips will appear here.'}
+                </Text>
             </View>
         );
-    }
+    };
 
-    // Only render real API data — empty state handled by renderEmpty()
-    const dataToRender = rides;
+    // Apply active filter to ride list
+    const filteredRides = applyFilter(rides, activeFilter);
+    const dataToRender = filteredRides;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -325,7 +371,15 @@ const styles = StyleSheet.create({
     /* Empty State */
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
     emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 40 },
-    emptyEmoji: { fontSize: 48, marginBottom: 16 },
+    emptyIconWrap: { 
+        width: 88, 
+        height: 88, 
+        borderRadius: 44, 
+        backgroundColor: '#F0EAFF', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        marginBottom: 20 
+    },
     emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', marginBottom: 8 },
     emptySubtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center' },
 
