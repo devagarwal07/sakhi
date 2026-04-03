@@ -245,7 +245,31 @@ export default function RideHistoryScreen({ navigation }) {
         params.end_date   = (end ?? start).toISOString().split('T')[0];
       }
       const { data } = await client.get('/drivers/rides', { params });
-      const newRides = data.rides ?? [];
+
+      // ── Normalise backend fields to match card component props ──────────
+      const normalise = (r) => {
+        const dateObj = r.created_at ? new Date(r.created_at) : null;
+        const dateLabel = dateObj
+          ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+          : 'Unknown date';
+        const isSubscription = r.ride_type === 'subscription';
+        const fare = r.total_fare ?? r.fare ?? 0;
+        return {
+          id:          r.id    ?? r.ride_id,
+          type:        isSubscription ? 'subscription' : 'on_demand',
+          pickup:      r.pickup_address  ?? r.pickup   ?? '—',
+          dropoff:     r.drop_address    ?? r.dropoff  ?? '—',
+          dateLabel,
+          fare,
+          fareLabel:   isSubscription ? '₹0' : `₹${fare}`,
+          subLabel:    isSubscription ? 'Subscription' : 'On-Demand',
+          cancelled:   r.status === 'cancelled',
+          // preserve originals for detail screen
+          ...r,
+        };
+      };
+
+      const newRides = (data.rides ?? []).map(normalise);
       setRides((prev) => append ? [...prev, ...newRides] : newRides);
       setSummary(data.summary ?? SEED_SUMMARY);
       setHasMore(newRides.length === 20);

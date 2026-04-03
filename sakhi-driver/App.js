@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -73,6 +73,7 @@ import TermsPrivacyScreen             from './src/screens/Profile/TermsPrivacySc
 
 // ── Navigators ────────────────────────────────────────────────────────────────
 const Stack = createNativeStackNavigator();
+export const navigationRef = createNavigationContainerRef();
 
 function AuthStack() {
   return (
@@ -103,8 +104,8 @@ function MainStack() {
   return (
     <SocketProvider>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="DriverHome"              component={DriverHomeScreen}            />
         <Stack.Screen name="DriverOnlineDashboard"   component={DriverOnlineDashboardScreen} />
+        <Stack.Screen name="DriverHome"              component={DriverHomeScreen}            />
         <Stack.Screen name="PaymentPlans"            component={PaymentPlansScreen}          />
         <Stack.Screen name="ActiveTrip"      component={EnRouteToPickupScreen} />
         <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} />
@@ -143,7 +144,7 @@ function MainStack() {
         <Stack.Screen name="LogoutConfirmation"     component={SakhiLogoutConfirmationSheet} options={{ presentation: 'transparentModal', animation: 'fade' }} />
       </Stack.Navigator>
       {/* Incoming ride overlay — rendered on top of whatever screen is active */}
-      <IncomingRideRequestScreen />
+      <IncomingRideRequestScreen navigationRef={navigationRef} />
     </SocketProvider>
   );
 }
@@ -191,7 +192,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer onStateChange={handleNavStateChange}>
+        <NavigationContainer ref={navigationRef} onStateChange={handleNavStateChange}>
           <StatusBar style="dark" />
           {/* Splash screen sits outside the RootNavigator so it always
               shows first before checkAuth completes */}

@@ -393,6 +393,68 @@ async function updateLocation(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/rides  — paginated ride history with period filtering
+// ──────────────────────────────────────────────────────────────────────────────
+async function getDriverRides(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { period = 'all', page = '1', limit = '20', q, start_date, end_date } = req.query;
+
+    const pg  = Math.max(1, parseInt(page,  10));
+    const lim = Math.min(50, parseInt(limit, 10));
+    const offset = (pg - 1) * lim;
+
+    let query = supabase
+      .from('rides')
+      .select('id, status, ride_type, pickup_address, drop_address, total_fare, fare_breakdown, payment_method, payment_status, distance_km, duration_min, started_at, completed_at, created_at, rider_id')
+      .eq('driver_id', driverId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + lim - 1);
+
+    // ── Period filter ──────────────────────────────────────────────────────
+    const now = new Date();
+    if (period === 'today') {
+      const start = new Date(now); start.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'this_week') {
+      const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'this_month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'custom' && start_date) {
+      const end = end_date ? new Date(end_date) : new Date(start_date);
+      end.setHours(23, 59, 59, 999);
+      query = query
+        .gte('created_at', new Date(start_date).toISOString())
+        .lte('created_at', end.toISOString());
+    }
+
+    // ── Address search ─────────────────────────────────────────────────────
+    if (q) {
+      query = query.or(`pickup_address.ilike.%${q}%,drop_address.ilike.%${q}%`);
+    }
+
+    const { data: rides, error } = await query;
+    if (error) throw error;
+
+    // ── Build summary ──────────────────────────────────────────────────────
+    const completedRides = (rides ?? []).filter(r => r.status === 'completed');
+    const totalEarnings  = completedRides.reduce((s, r) => s + (r.total_fare ?? 0), 0);
+    const periodLabel = {
+      all: 'All Time', today: 'Today', this_week: 'This Week', this_month: 'This Month', custom: 'Custom Range',
+    }[period] ?? period;
+    const summary = {
+      label:    `${periodLabel}: ${completedRides.length} Rides · ₹${totalEarnings}`,
+      rides:    completedRides.length,
+      earnings: totalEarnings,
+    };
+
+    return res.status(200).json({ rides: rides ?? [], summary });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   updateDriverStatus,
   getEarningsToday,

@@ -498,6 +498,150 @@ async function verifyRidePayment(req, res, next) {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /rides/:id/fare-summary  — fare breakdown for PaymentDetailsScreen
+// ──────────────────────────────────────────────────────────────────────────────
+async function fareSummary(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const role   = req.user.role;
+
+    // Fetch the ride record + driver_earnings in parallel
+    const [{ data: rideRows }, { data: earningsRows }] = await Promise.all([
+      supabase
+        .from('rides')
+        .select('id, rider_id, driver_id, status, payment_method, payment_status, pickup_address, drop_address, fare_breakdown, total_fare, distance_km, duration_min, started_at, completed_at')
+        .eq('id', id)
+        .limit(1),
+      supabase
+        .from('driver_earnings')
+        .select('gross, commission, net, waiting_charge, ride_id')
+        .eq('ride_id', id)
+        .limit(1),
+    ]);
+
+    const ride     = rideRows?.[0];
+    const earnings = earningsRows?.[0];
+
+    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
+
+    // Access guard
+    if (role === 'driver' && ride.driver_id !== userId)
+      throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    if (role === 'rider' && ride.rider_id !== userId)
+      throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+
+    const fareBreakdown = ride.fare_breakdown ?? {};
+
+    return res.status(200).json({
+      ride_id:         id,
+      status:          ride.status,
+      payment_method:  ride.payment_method  ?? 'cash',
+      payment_status:  ride.payment_status  ?? 'pending',
+      pickup_address:  ride.pickup_address,
+      drop_address:    ride.drop_address,
+      distance_km:     ride.distance_km    ?? 0,
+      duration_min:    ride.duration_min   ?? 0,
+      // Fare fields — prefer driver_earnings row (calculated at trip end)
+      base_fare:       earnings?.gross     ?? fareBreakdown.base     ?? ride.total_fare ?? 0,
+      distance_fare:   fareBreakdown.distance_fare ?? fareBreakdown.distance ?? 0,
+      waiting_fare:    earnings?.waiting_charge     ?? fareBreakdown.waiting  ?? 0,
+      commission:      earnings?.commission         ?? 0,
+      take_home:       earnings?.net                ?? 0,
+      total_fare:      ride.total_fare              ?? earnings?.gross ?? 0,
+      started_at:      ride.started_at,
+      completed_at:    ride.completed_at,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /rides/:id/cash-collected  — driver confirms physical cash received
+// ──────────────────────────────────────────────────────────────────────────────
+async function cashCollected(req, res, next) {
+  try {
+    const { id } = req.params;
+    const driverId = req.user.userId;
+
+    // Validate access
+    const { data: rows } = await supabase
+      .from('rides')
+      .select('id, rider_id, driver_id, status, payment_method')
+      .eq('id', id)
+      .limit(1);
+
+    const ride = rows?.[0];
+    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
+    if (ride.driver_id !== driverId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    if (ride.payment_method !== 'cash')
+      throw new AppError('This ride uses online payment.', 400, 'WRONG_PAYMENT_METHOD');
+
+    await supabase
+      .from('rides')
+      .update({ payment_status: 'collected', collected_at: new Date().toISOString() })
+      .eq('id', id);
+
+    // Notify rider that cash was acknowledged
+    const io = req.app.get('io');
+    if (io && ride.rider_id) {
+      io.of('/rides').to(`rider:${ride.rider_id}`).emit('payment:success', {
+        ride_id:  id,
+        method:   'cash',
+      });
+    }
+
+    logger.info('rideController.cashCollected', { rideId: id, driverId });
+    return res.status(200).json({ ok: true });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /rides/:id/rate-rider  — driver rates the rider post-trip
+// ──────────────────────────────────────────────────────────────────────────────
+const rateRiderSchema = z.object({
+  rating:  z.number().int().min(1).max(5),
+  comment: z.string().max(500).optional(),
+});
+
+async function rateRider(req, res, next) {
+  try {
+    const { id } = req.params;
+    const driverId = req.user.userId;
+    const { rating, comment } = rateRiderSchema.parse(req.body);
+
+    // Validate ride access + get rider_id
+    const { data: rows } = await supabase
+      .from('rides')
+      .select('id, rider_id, driver_id, status')
+      .eq('id', id)
+      .limit(1);
+
+    const ride = rows?.[0];
+    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
+    if (ride.driver_id !== driverId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    if (ride.status !== 'completed') throw new AppError('Ride not yet completed.', 400, 'INVALID_STATUS');
+
+    // Upsert rider rating (idempotent)
+    await supabase
+      .from('rider_ratings')
+      .upsert(
+        {
+          ride_id:   id,
+          rider_id:  ride.rider_id,
+          driver_id: driverId,
+          rating,
+          comment:   comment ?? null,
+          rated_at:  new Date().toISOString(),
+        },
+        { onConflict: 'ride_id' }
+      );
+
+    logger.info('rideController.rateRider', { rideId: id, driverId, rating });
+    return res.status(200).json({ ok: true });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   estimateFare, createRide, updateStatus, cancelRide,
   acceptRide, rejectRide, getRide, rateRide, getChatHistory,

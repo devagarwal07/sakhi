@@ -55,8 +55,9 @@ const { width } = Dimensions.get('window');
 
 export default function RideEstimateScreen() {
     const router = useRouter();
-    const { ride } = useRide();
+    const { ride, setFare, setPaymentMethod } = useRide();
     const [breakdownExpanded, setBreakdownExpanded] = useState(true);
+    const [selectedPayment, setSelectedPayment] = useState('cash');
     const [modal, setModal] = useState(null);
     const [routePolyline, setRoutePolyline] = useState([]);
     const [routeDistance, setRouteDistance] = useState(null);
@@ -263,7 +264,19 @@ export default function RideEstimateScreen() {
             <View style={styles.footerSticky}>
                 <TouchableOpacity 
                     style={[styles.bookButton, (!pickup || !dropoff) && { opacity: 0.5 }]}
-                    onPress={() => (pickup && dropoff) ? router.push('/ride-finding') : null}
+                    onPress={() => {
+                        if (!pickup || !dropoff) return;
+                        if (fareData) {
+                            setFare({
+                                base:          fareData.base          ?? 0,
+                                distance_fare: fareData.distance_fare ?? fareData.distance ?? 0,
+                                waiting:       fareData.waiting       ?? 0,
+                                total:         fareData.total         ?? fareData.max      ?? 0,
+                            });
+                        }
+                        setPaymentMethod(selectedPayment);
+                        router.push('/ride-finding');
+                    }}
                     activeOpacity={0.88}
                 >
                     <Text style={styles.bookText}>
