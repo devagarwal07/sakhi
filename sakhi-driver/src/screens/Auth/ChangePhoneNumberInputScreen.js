@@ -17,7 +17,7 @@ export default function ChangePhoneNumberInputScreen({ navigation }) {
     if (!isValid) return;
     try {
       setLoading(true);
-      await client.post('/drivers/change-phone/send-otp', { phone: `+91${phone}` });
+      await client.post('/drivers/profile/phone/send-otp', { new_phone: `+91${phone}` });
       navigation.navigate('ChangePhoneOtp', { phone: `+91${phone}` });
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message ?? 'Could not send OTP. Try again.');
