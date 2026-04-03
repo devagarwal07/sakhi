@@ -41,8 +41,10 @@ export const estimateFare = (pickup, dropoff) =>
 export const bookRide = (data) => apiClient.post('/rides', data);
 export const cancelRide = (rideId) => apiClient.patch(`/rides/${rideId}/cancel`);
 export const getRideDetails = (rideId) => apiClient.get(`/rides/${rideId}`);
+export const getRideById = getRideDetails; // Alias expected by UI
 export const rateDriver = (rideId, rating, comment) =>
     apiClient.post(`/rides/${rideId}/rating`, { rating, comment });
+export const submitRating = rateDriver; // Alias expected by UI
 export const getChatHistory = (rideId) => apiClient.get(`/rides/${rideId}/chat`);
 
 // ── Safety ────────────────────────────────────────────────────────────────
