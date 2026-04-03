@@ -26,7 +26,7 @@ export async function clearTokens() {
 // Axios instance
 // ---------------------------------------------------------------------------
 const client = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000',
+  baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -65,7 +65,8 @@ client.interceptors.response.use(
     const originalRequest = error.config;
 
     const is401 = error.response?.status === 401;
-    const isExpired = error.response?.data?.code === 'TOKEN_EXPIRED';
+    const errBody = error.response?.data?.error ?? error.response?.data;
+    const isExpired = errBody?.code === 'TOKEN_EXPIRED';
 
     if (is401 && isExpired && !originalRequest._retry) {
       if (isRefreshing) {
@@ -84,7 +85,7 @@ client.interceptors.response.use(
       try {
         const refreshToken = await getRefreshToken();
         const { data } = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000'}/auth/refresh-token`,
+          `${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'}/auth/refresh-token`,
           { refreshToken },
         );
 
