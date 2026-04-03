@@ -642,9 +642,42 @@ async function rateRider(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /rides/subscription/:id/initiate  — driver starts a subscription ride leg
+// ──────────────────────────────────────────────────────────────────────────────
+async function initiateSubscriptionRide(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { id } = req.params;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('subscription_rides')
+      .select('id, assigned_driver_id, status, subscription_id')
+      .eq('id', id)
+      .limit(1);
+
+    const sr = row?.[0];
+    if (fetchErr || !sr) throw new AppError('Subscription ride not found.', 404, 'NOT_FOUND');
+    if (sr.assigned_driver_id && sr.assigned_driver_id !== driverId) {
+      throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    }
+
+    await supabase
+      .from('subscription_rides')
+      .update({
+        status: 'in_progress',
+        assigned_driver_id: driverId,
+      })
+      .eq('id', id);
+
+    return res.status(200).json({ ok: true, subscription_ride_id: id });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   estimateFare, createRide, updateStatus, cancelRide,
   acceptRide, rejectRide, getRide, rateRide, getChatHistory,
   fareSummary, cashCollected, rateRider,
   createRidePaymentOrder, verifyRidePayment,
+  initiateSubscriptionRide,
 };
