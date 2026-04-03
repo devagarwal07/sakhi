@@ -72,6 +72,7 @@ export function RideProvider({ children }) {
                 tickWaiting,
                 updateFare,
                 setPolyline,
+                updateSubscription,
                 clearRide,
             }}
         >

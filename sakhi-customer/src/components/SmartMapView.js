@@ -50,6 +50,8 @@ const SmartMapView = forwardRef(function SmartMapView(
         style,
         center,
         zoom = 15,
+        latDelta,
+        lngDelta,
         markers      = [],
         polylines    = [],
         scrollEnabled = true,
@@ -75,9 +77,10 @@ const SmartMapView = forwardRef(function SmartMapView(
         );
     }
 
-    const latDelta = zoomToLatDelta(zoom);
+    const computedLatDelta = latDelta || zoomToLatDelta(zoom);
+    const computedLngDelta = lngDelta || computedLatDelta;
     const region   = center
-        ? { latitude: center.latitude, longitude: center.longitude, latitudeDelta: latDelta, longitudeDelta: latDelta }
+        ? { latitude: center.latitude, longitude: center.longitude, latitudeDelta: computedLatDelta, longitudeDelta: computedLngDelta }
         : undefined;
 
     return (
