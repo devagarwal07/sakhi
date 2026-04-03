@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const { width } = Dimensions.get('window');
 
@@ -16,7 +17,6 @@ export default function SubscriptionPaymentScreen() {
     
     const [selectedMethod, setSelectedMethod] = useState('UPI'); 
     const [upiId, setUpiId] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
     const [modal, setModal] = useState(null);
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
@@ -37,11 +37,37 @@ export default function SubscriptionPaymentScreen() {
             });
             return;
         }
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
+
+        const priceInPaise = (sub.price || 364) * 100;
+        const options = {
+            description: 'Sakhi Ride Subscription',
+            image: 'https://cdn-icons-png.flaticon.com/512/3209/3209935.png', // Default icon for Razorpay checkout, can be changed later
+            currency: 'INR',
+            key: process.env.EXPO_PUBLIC_RAZORPAY_KEY,
+            amount: priceInPaise,
+            name: 'Sakhi',
+            prefill: {
+                // In production, dynamically grab these from the global user state
+                email: 'customer@example.com',
+                contact: '9191919191',
+                name: 'Sakhi User'
+            },
+            theme: { color: '#BEA3D8' }
+        };
+
+        RazorpayCheckout.open(options).then((data) => {
+            // Success
+            // Server verification using data.razorpay_payment_id can be done here implicitly or safely on the backend
             router.replace('/payment-success');
-        }, 3000); // Simulate API call and payment processing wait
+        }).catch((error) => {
+            // Failure
+            setModal({
+                icon: '❌',
+                title: 'Payment Failed',
+                message: error.description || 'The payment was cancelled or failed.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        });
     };
 
     return (
@@ -214,43 +240,7 @@ export default function SubscriptionPaymentScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Processing Payment Overlay */}
-            {isProcessing && (
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalCard}>
-                        {/* Modal Header */}
-                        <View style={styles.modalHeader}>
-                            <View style={styles.modalBrand}>
-                                <View style={styles.razorpayLogo}>
-                                    <Text style={styles.razorpayR}>R</Text>
-                                </View>
-                                <Text style={styles.modalBrandText}>Sakhi</Text>
-                            </View>
-                            <View style={styles.modalAmountCol}>
-                                <Text style={styles.modalAmountLabel}>AMOUNT DUE</Text>
-                                <Text style={styles.modalAmountValue}>₹{sub.price || 364}</Text>
-                            </View>
-                        </View>
-                        
-                        <View style={styles.modalDivider} />
 
-                        {/* Modal Body (Spinner) */}
-                        <View style={styles.modalBody}>
-                            <View style={styles.spinnerRing}>
-                                <ActivityIndicator size="large" color="#BEA3D8" />
-                            </View>
-                            <Text style={styles.modalStatus}>Processing Payment...</Text>
-                            <Text style={styles.modalSub}>Please do not close the app or press the back button.</Text>
-                        </View>
-
-                        {/* Modal Footer */}
-                        <View style={styles.modalFooter}>
-                            <Text style={styles.shieldIcon}>🛡️</Text>
-                            <Text style={styles.securedText}>SECURED BY RAZORPAY</Text>
-                        </View>
-                    </View>
-                </View>
-            )}
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
