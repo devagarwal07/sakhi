@@ -1,6 +1,9 @@
 'use strict';
 
-require('dotenv').config();
+// Load .env.local first (dev), fall back to .env (production)
+const dotenv = require('dotenv');
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');

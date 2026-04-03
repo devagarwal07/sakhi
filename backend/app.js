@@ -1,6 +1,9 @@
 'use strict';
 
-require('dotenv').config();
+// Load .env.local first (dev), fall back to .env (production)
+const dotenv = require('dotenv');
+dotenv.config({ path: '.env.local' });
+dotenv.config();  // also load .env so production deployments work
 
 const express    = require('express');
 const helmet     = require('helmet');
