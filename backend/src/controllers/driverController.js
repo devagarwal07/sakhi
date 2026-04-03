@@ -394,8 +394,189 @@ async function updateLocation(req, res, next) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// GET /drivers/rides  — paginated ride history with period filtering
+// GET /drivers/transactions  — grouped transaction history for the driver
 // ──────────────────────────────────────────────────────────────────────────────
+async function getDriverTransactions(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { start_date, end_date } = req.query;
+
+    // Build date range
+    const endDt   = end_date   ? new Date(end_date)   : new Date();
+    const startDt = start_date ? new Date(start_date) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    endDt.setHours(23, 59, 59, 999);
+
+    const [{ data: earnings }, { data: commissions }] = await Promise.all([
+      supabase
+        .from('driver_earnings')
+        .select('id, gross, net, commission, waiting_charge, ride_id, created_at')
+        .eq('driver_id', driverId)
+        .gte('created_at', startDt.toISOString())
+        .lte('created_at', endDt.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('commission_payments')
+        .select('id, amount, status, created_at')
+        .eq('driver_id', driverId)
+        .gte('created_at', startDt.toISOString())
+        .lte('created_at', endDt.toISOString())
+        .order('created_at', { ascending: false }),
+    ]);
+
+    // Build flat transaction list
+    const txns = [];
+
+    for (const e of (earnings ?? [])) {
+      const dt     = new Date(e.created_at);
+      const dateKey = dt.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+      const timeKey = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      txns.push({
+        id:          `earn_${e.id}`,
+        type:        'ride',
+        title:       'Ride Fare Collected',
+        amount:      e.net   ?? e.gross ?? 0,
+        date_label:  dateKey,
+        time_label:  timeKey,
+        created_at:  e.created_at,
+      });
+    }
+
+    for (const c of (commissions ?? [])) {
+      const dt     = new Date(c.created_at);
+      const dateKey = dt.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+      const timeKey = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      txns.push({
+        id:          `comm_${c.id}`,
+        type:        'commission',
+        title:       'Commission Paid',
+        amount:      -(c.amount ?? 0),  // negative = debit
+        date_label:  dateKey,
+        time_label:  timeKey,
+        created_at:  c.created_at,
+      });
+    }
+
+    // Sort by newest first
+    txns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return res.status(200).json({ transactions: txns });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/documents  — KYC document statuses for MyDocumentsScreen
+// ──────────────────────────────────────────────────────────────────────────────
+async function getDriverDocuments(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('kyc_status, driving_licence_status, driving_licence_expiry, vehicle_rc_status, vehicle_rc_expiry, insurance_status, insurance_expiry, aadhaar_status, profile_photo_url, kyc_submitted_at')
+      .eq('id', driverId)
+      .limit(1);
+
+    if (error) throw error;
+    const d = data?.[0] ?? {};
+
+    const mapStatus = (s) => {
+      if (!s || s === 'pending')   return 'UNDER REVIEW';
+      if (s === 'verified')        return 'VERIFIED';
+      if (s === 'rejected')        return 'REJECTED';
+      if (s === 'expiring_soon')   return 'EXPIRING SOON';
+      if (s === 'expired')         return 'EXPIRED';
+      return 'UNDER REVIEW';
+    };
+    const colorKey = (s) => {
+      if (s === 'verified')       return 'success';
+      if (s === 'expiring_soon')  return 'warning';
+      return 'primary';
+    };
+
+    const docs = [
+      {
+        id:       'driving_licence',
+        type:     'driving_licence',
+        title:    'Driving Licence',
+        status:   mapStatus(d.driving_licence_status),
+        colorKey: colorKey(d.driving_licence_status),
+        expires:  d.driving_licence_expiry ? new Date(d.driving_licence_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
+      },
+      {
+        id:       'vehicle_rc',
+        type:     'vehicle_rc',
+        title:    'Vehicle RC',
+        status:   mapStatus(d.vehicle_rc_status),
+        colorKey: colorKey(d.vehicle_rc_status),
+        expires:  d.vehicle_rc_expiry ? new Date(d.vehicle_rc_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
+      },
+      {
+        id:       'insurance',
+        type:     'insurance',
+        title:    'Insurance Certificate',
+        status:   mapStatus(d.insurance_status),
+        colorKey: colorKey(d.insurance_status),
+        expires:  d.insurance_expiry ? new Date(d.insurance_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
+      },
+      {
+        id:       'aadhaar',
+        type:     'aadhaar',
+        title:    'Aadhaar Card',
+        status:   mapStatus(d.aadhaar_status ?? d.kyc_status),
+        colorKey: colorKey(d.aadhaar_status ?? d.kyc_status),
+      },
+      {
+        id:       'profile_photo',
+        type:     'profile_photo',
+        title:    'Profile Photo',
+        isPhoto:  true,
+        photoUrl: d.profile_photo_url,
+        status:   d.profile_photo_url ? 'VERIFIED' : 'UNDER REVIEW',
+        colorKey: d.profile_photo_url ? 'success' : 'primary',
+      },
+    ];
+
+    const expiringSoonCount = docs.filter(doc => doc.status === 'EXPIRING SOON' || doc.status === 'EXPIRED').length;
+
+    return res.status(200).json({ docs, expiringSoonCount });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PATCH /drivers/subscription/opt-in  — toggle driver opt-in to subscription rides
+// ──────────────────────────────────────────────────────────────────────────────
+const optInSchema = z.object({ opted_in: z.boolean() });
+
+async function toggleSubscriptionOptIn(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { opted_in } = optInSchema.parse(req.body);
+
+    await supabase
+      .from('drivers')
+      .update({ subscription_opted_in: opted_in, updated_at: new Date().toISOString() })
+      .eq('id', driverId);
+
+    logger.info('driverController.toggleSubscriptionOptIn', { driverId, opted_in });
+    return res.status(200).json({ ok: true, opted_in });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+module.exports = {
+  updateDriverStatus,
+  getEarningsToday,
+  getEarningsWeekly,
+  getEarningsLedger,
+  getDriverRides,
+  getDriverTransactions,
+  getDriverDocuments,
+  toggleSubscriptionOptIn,
+  getDriverProfile,
+  updateDriverProfile,
+  getSubscriptionStatus,
+  getCommissionStatus,
+  updateLocation,
+};
+
 async function getDriverRides(req, res, next) {
   try {
     const driverId = req.user.userId;
@@ -454,16 +635,3 @@ async function getDriverRides(req, res, next) {
     return res.status(200).json({ rides: rides ?? [], summary });
   } catch (err) { return handleError(err, res, next); }
 }
-
-module.exports = {
-  updateDriverStatus,
-  getEarningsToday,
-  getEarningsWeekly,
-  getEarningsLedger,
-  getDriverRides,
-  getDriverProfile,
-  updateDriverProfile,
-  getSubscriptionStatus,
-  getCommissionStatus,
-  updateLocation,
-};

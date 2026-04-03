@@ -32,9 +32,14 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
   const isLocked = true; 
   const minutesUntilNext = 28;
 
-  const handleOptToggle = (val) => {
-    setOptedIn(val);
-    // In a real app we would call: client.patch('/drivers/subscriptions/opt-in', { opted_in: val })
+  const handleOptToggle = async (val) => {
+    const prev = optedIn;
+    setOptedIn(val); // optimistic update
+    try {
+      await client.patch('/drivers/subscription/opt-in', { opted_in: val });
+    } catch {
+      setOptedIn(prev); // rollback on failure
+    }
   };
 
   return (

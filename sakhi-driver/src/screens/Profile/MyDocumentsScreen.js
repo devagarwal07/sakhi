@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import client from '../../api/client';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -101,6 +103,27 @@ function HelpIcon() {
 export default function MyDocumentsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
+  const [docs,             setDocs]             = useState(MOCK_DOCS);
+  const [expiringSoon,     setExpiringSoon]      = useState(1);
+  const [loading,          setLoading]           = useState(true);
+
+  // ── Fetch real KYC document statuses from backend ─────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get('/drivers/documents');
+        if (data?.docs?.length) {
+          setDocs(data.docs);
+          setExpiringSoon(data.expiringSoonCount ?? 0);
+        }
+      } catch {
+        // keep mock data if API unavailable
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const renderBadge = (status, colorKey) => {
     const theme = COLORS[colorKey];
     return (
@@ -154,19 +177,26 @@ export default function MyDocumentsScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* Warning Banner */}
-        <View style={styles.warningBanner}>
-          <View style={styles.warningIconWrapper}>
-            <Feather name="alert-triangle" size={18} color="#EA580C" />
+        {/* Warning Banner - only if docs are expiring */}
+        {expiringSoon > 0 && (
+          <View style={styles.warningBanner}>
+            <View style={styles.warningIconWrapper}>
+              <Feather name="alert-triangle" size={18} color="#EA580C" />
+            </View>
+            <Text style={styles.warningText}>
+              {expiringSoon} document{expiringSoon > 1 ? 's' : ''} expiring soon. Please re-upload.
+            </Text>
           </View>
-          <Text style={styles.warningText}>
-            1 document expiring soon. Please re-upload.
-          </Text>
-        </View>
+        )}
 
         {/* Document List */}
-        <View style={styles.docList}>
-          {MOCK_DOCS.map((doc) => {
+        {loading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#BEA3D8" />
+          </View>
+        ) : (
+          <View style={styles.docList}>
+            {docs.map((doc) => {
             const hasDetails = !!doc.expires || !!doc.uploaded;
             return (
               <View 
@@ -199,7 +229,8 @@ export default function MyDocumentsScreen({ navigation }) {
               </View>
             );
           })}
-        </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Sticky Bottom Action Button */}

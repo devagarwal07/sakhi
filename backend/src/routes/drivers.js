@@ -64,5 +64,14 @@ router.get('/commission/status',  authMiddleware, roleGuard('driver'), driverCon
 // ── Location update (REST fallback from background task) ──────────────────────────
 router.post('/location',          authMiddleware, roleGuard('driver'), driverController.updateLocation);
 
+// ── Transaction history ────────────────────────────────────────────────────────────
+router.get('/transactions',       authMiddleware, roleGuard('driver'), driverController.getDriverTransactions);
+
+// ── Documents / KYC status ─────────────────────────────────────────────────────────
+router.get('/documents',          authMiddleware, roleGuard('driver'), driverController.getDriverDocuments);
+
+// ── Subscription opt-in toggle ─────────────────────────────────────────────────────
+router.patch('/subscription/opt-in', authMiddleware, roleGuard('driver'), driverController.toggleSubscriptionOptIn);
+
 module.exports = router;
 
