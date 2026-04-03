@@ -9,7 +9,23 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
-import { getAddresses } from '../../api/endpoints';
+import { getAddresses, getRideHistory } from '../../api/endpoints';
+
+const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+
+async function reverseGeocode(latitude, longitude) {
+    try {
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_KEY}`
+        );
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+            // Use the formatted_address of the first (most precise) result
+            return data.results[0].formatted_address;
+        }
+    } catch (_) {}
+    return 'Current Location';
+}
 
 const { width } = Dimensions.get('window');
 const LATITUDE_DELTA = 0.012;
@@ -65,6 +81,8 @@ export default function HomeScreen() {
         })
     ).current;
 
+    const [recentRides, setRecentRides] = useState([]);
+
     useEffect(() => {
         (async () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -75,7 +93,11 @@ export default function HomeScreen() {
             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
             const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
             setCurrentLocation(coords);
-            setPickup({ ...coords, address: 'Current Location' });
+
+            // Reverse geocode to get real address instead of 'Current Location'
+            const address = await reverseGeocode(coords.latitude, coords.longitude);
+            setPickup({ ...coords, address });
+
             mapRef.current?.animateToRegion({
                 ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
             });
@@ -83,7 +105,15 @@ export default function HomeScreen() {
 
         getAddresses()
             .then(({ data }) => setSavedPlaces(data.addresses || []))
-            .catch(() => { });
+            .catch(() => {});
+
+        // Load real recent rides from API
+        getRideHistory(1)
+            .then(({ data }) => {
+                const rides = data.rides || data.data || [];
+                setRecentRides(rides.slice(0, 3));
+            })
+            .catch(() => setRecentRides([]));
 
         // Pulse animation for location pin
         Animated.loop(
@@ -101,18 +131,6 @@ export default function HomeScreen() {
         if (hour < 17) return 'Good Afternoon';
         return 'Good Evening';
     };
-
-    // Mock recent rides
-    const recentRides = [
-        {
-            id: 1, to: 'Worli Sea Face', from: 'Home (Bandra West)',
-            date: 'Oct 24 • 09:15 AM', price: '₹450', rating: '5.0',
-        },
-        {
-            id: 2, to: 'Jio World Drive', from: 'Work (BKC)',
-            date: 'Oct 22 • 06:40 PM', price: '₹320', rating: '4.8',
-        },
-    ];
 
     return (
         <View style={styles.container}>
@@ -288,29 +306,42 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        {recentRides.map((ride) => (
-                            <TouchableOpacity key={ride.id} style={styles.rideCard} onPress={() => router.push('/ride-details')}>
+                        {recentRides.length === 0 ? (
+                            <Text style={styles.rideFrom}>No recent rides yet.</Text>
+                        ) : recentRides.map((ride) => {
+                            const dropAddress = ride.dropoff_address || ride.dropoff?.address || ride.to || '—';
+                            const pickAddress = ride.pickup_address || ride.pickup?.address || ride.from || '—';
+                            const rideDate = ride.created_at
+                                ? new Date(ride.created_at).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                : (ride.date || '');
+                            const fare = ride.fare?.total ? `₹${ride.fare.total}` : (ride.price || '');
+                            const rating = ride.rating?.toFixed(1) || ride.rating || '';
+                            return (
+                            <TouchableOpacity key={ride.id || ride._id} style={styles.rideCard} onPress={() => router.push({ pathname: '/ride-details', params: { rideId: ride.id || ride._id } })}>
                                 <View style={styles.rideIconBox}>
                                     <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                                         <Path d="M3 16V17C3 17.2833 2.90417 17.5208 2.7125 17.7125C2.52083 17.9042 2.28333 18 2 18H1C0.716667 18 0.479167 17.9042 0.2875 17.7125C0.0958333 17.5208 0 17.2833 0 17V9L2.1 3C2.2 2.7 2.37917 2.45833 2.6375 2.275C2.89583 2.09167 3.18333 2 3.5 2H6V0H12V2H14.5C14.8167 2 15.1042 2.09167 15.3625 2.275C15.6208 2.45833 15.8 2.7 15.9 3L18 9V17C18 17.2833 17.9042 17.5208 17.7125 17.7125C17.5208 17.9042 17.2833 18 17 18H16C15.7167 18 15.4792 17.9042 15.2875 17.7125C15.0958 17.5208 15 17.2833 15 17V16H3ZM2.8 7H15.2L14.15 4H3.85L2.8 7ZM2 9V14V9ZM4.5 13C4.91667 13 5.27083 12.8542 5.5625 12.5625C5.85417 12.2708 6 11.9167 6 11.5C6 11.0833 5.85417 10.7292 5.5625 10.4375C5.27083 10.1458 4.91667 10 4.5 10C4.08333 10 3.72917 10.1458 3.4375 10.4375C3.14583 10.7292 3 11.0833 3 11.5C3 11.9167 3.14583 12.2708 3.4375 12.5625C3.72917 12.8542 4.08333 13 4.5 13ZM13.5 13C13.9167 13 14.2708 12.8542 14.5625 12.5625C14.8542 12.2708 15 11.9167 15 11.5C15 11.0833 14.8542 10.7292 14.5625 10.4375C14.2708 10.1458 13.9167 10 13.5 10C13.0833 10 12.7292 10.1458 12.4375 10.4375C12.1458 10.7292 12 11.0833 12 11.5C12 11.9167 12.1458 12.2708 12.4375 12.5625C12.7292 12.8542 13.0833 13 13.5 13ZM2 14H16V9H2V14Z" fill="#BEA3D8"/>
                                     </Svg>
                                 </View>
                                 <View style={styles.rideInfo}>
-                                    <Text style={styles.rideTo}>To: {ride.to}</Text>
-                                    <Text style={styles.rideFrom}>From: {ride.from}</Text>
-                                    <Text style={styles.rideDate}>{ride.date}</Text>
+                                    <Text style={styles.rideTo} numberOfLines={1}>To: {dropAddress}</Text>
+                                    <Text style={styles.rideFrom} numberOfLines={1}>From: {pickAddress}</Text>
+                                    <Text style={styles.rideDate}>{rideDate}</Text>
                                 </View>
                                 <View style={styles.rideRight}>
-                                    <Text style={styles.ridePrice}>{ride.price}</Text>
-                                    <View style={styles.rideRatingRow}>
-                                        <Svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                            <Path d="M1.9125 9.5L2.725 5.9875L0 3.625L3.6 3.3125L5 0L6.4 3.3125L10 3.625L7.275 5.9875L8.0875 9.5L5 7.6375L1.9125 9.5Z" fill="#EAB308"/>
-                                        </Svg>
-                                        <Text style={styles.rideRating}>{ride.rating}</Text>
-                                    </View>
+                                    <Text style={styles.ridePrice}>{fare}</Text>
+                                    {!!rating && (
+                                        <View style={styles.rideRatingRow}>
+                                            <Svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                <Path d="M1.9125 9.5L2.725 5.9875L0 3.625L3.6 3.3125L5 0L6.4 3.3125L10 3.625L7.275 5.9875L8.0875 9.5L5 7.6375L1.9125 9.5Z" fill="#EAB308"/>
+                                            </Svg>
+                                            <Text style={styles.rideRating}>{rating}</Text>
+                                        </View>
+                                    )}
                                 </View>
                             </TouchableOpacity>
-                        ))}
+                            );
+                        })}
                     </View>
                 </ScrollView>
             </Animated.View>

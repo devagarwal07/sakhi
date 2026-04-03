@@ -12,10 +12,7 @@ export default function SavedPlacesScreen() {
     const router = useRouter();
     const [homeAddress, setHomeAddress] = useState('');
     const [workAddress, setWorkAddress] = useState('');
-    const [customPlaces, setCustomPlaces] = useState([
-        { id: '1', name: 'Cafe Coffee Day', address: '24, MG Road, Bangalore, Karnataka 560001' },
-        { id: '2', name: 'Central Library', address: 'Cubbon Park, Ambedkar Veedhi, Bengaluru' },
-    ]);
+    const [customPlaces, setCustomPlaces] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('custom'); // 'home' | 'work' | 'custom'
     const [inputAddress, setInputAddress] = useState('');

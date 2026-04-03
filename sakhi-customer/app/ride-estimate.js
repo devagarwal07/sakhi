@@ -1,12 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Platform
+    Dimensions, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
+import { estimateFare } from '../src/api/endpoints';
+
+const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+
+async function fetchDirectionsPolyline(origin, destination) {
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=${GOOGLE_MAPS_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.routes && data.routes.length > 0) {
+        const points = data.routes[0].legs[0].steps.flatMap((step) =>
+            decodePolyline(step.polyline.points)
+        );
+        const distance = data.routes[0].legs[0].distance.text;
+        const duration = data.routes[0].legs[0].duration.text;
+        return { points, distance, duration };
+    }
+    return { points: [], distance: null, duration: null };
+}
+
+// Decode Google encoded polyline
+function decodePolyline(encoded) {
+    const poly = [];
+    let index = 0, lat = 0, lng = 0;
+    while (index < encoded.length) {
+        let b, shift = 0, result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        lat += result & 1 ? ~(result >> 1) : result >> 1;
+        shift = 0; result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        lng += result & 1 ? ~(result >> 1) : result >> 1;
+        poly.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+    }
+    return poly;
+}
 
 const { width } = Dimensions.get('window');
 
@@ -15,12 +57,56 @@ export default function RideEstimateScreen() {
     const { ride } = useRide();
     const [breakdownExpanded, setBreakdownExpanded] = useState(true);
     const [modal, setModal] = useState(null);
+    const [routePolyline, setRoutePolyline] = useState([]);
+    const [routeDistance, setRouteDistance] = useState(null);
+    const [routeDuration, setRouteDuration] = useState(null);
+    const [fareData, setFareData] = useState(null);
+    const [loadingRoute, setLoadingRoute] = useState(true);
 
-    // Mock route coordinates
-    const routeCoordinates = [
-        { latitude: 28.5494, longitude: 77.2001 },
-        { latitude: 28.5286, longitude: 77.2189 },
-    ];
+    const pickup = ride?.pickup;
+    const dropoff = ride?.dropoff;
+
+    // Compute midpoint for initial map region
+    const midLat = pickup && dropoff
+        ? (pickup.latitude + dropoff.latitude) / 2
+        : (pickup?.latitude || 19.0760);
+    const midLng = pickup && dropoff
+        ? (pickup.longitude + dropoff.longitude) / 2
+        : (pickup?.longitude || 72.8777);
+    const latDelta = pickup && dropoff
+        ? Math.abs(pickup.latitude - dropoff.latitude) * 1.8 + 0.01
+        : 0.04;
+    const lngDelta = pickup && dropoff
+        ? Math.abs(pickup.longitude - dropoff.longitude) * 1.8 + 0.01
+        : 0.04;
+
+    useEffect(() => {
+        if (!pickup || !dropoff) {
+            setLoadingRoute(false);
+            return;
+        }
+        setLoadingRoute(true);
+        Promise.all([
+            fetchDirectionsPolyline(pickup, dropoff)
+                .then(({ points, distance, duration }) => {
+                    setRoutePolyline(points);
+                    setRouteDistance(distance);
+                    setRouteDuration(duration);
+                }),
+            estimateFare(pickup, dropoff)
+                .then(({ data }) => setFareData(data))
+                .catch(() => {}),
+        ]).finally(() => setLoadingRoute(false));
+    }, []);
+
+    const displayFare = fareData
+        ? `₹${fareData.min || fareData.total || '—'} - ₹${fareData.max || fareData.total || '—'}`
+        : '—';
+    const displayTime = routeDuration || '—';
+    const displayDistance = routeDistance || '—';
+    const baseFare = fareData?.base || '—';
+    const distanceFare = fareData?.distance_fare ?? (fareData?.distance ?? '—');
+    const waitingFare = fareData?.waiting || 0;
 
     return (
         <View style={styles.container}>
@@ -59,10 +145,10 @@ export default function RideEstimateScreen() {
                         </View>
                         <View style={styles.addressTexts}>
                             <Text style={styles.pickupText} numberOfLines={1}>
-                                {ride?.pickup?.address || '12, Green Park Avenue, New Delhi'}
+                                {ride?.pickup?.address || 'Detecting your location…'}
                             </Text>
                             <Text style={styles.dropoffText} numberOfLines={1}>
-                                {ride?.dropoff?.address || 'Hauz Khas Social, New Delhi'}
+                                {ride?.dropoff?.address || 'No destination selected'}
                             </Text>
                         </View>
                         <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/location-search')}>
@@ -73,29 +159,40 @@ export default function RideEstimateScreen() {
 
                 {/* Map Section */}
                 <View style={styles.mapArea}>
+                    {loadingRoute && (
+                        <View style={[StyleSheet.absoluteFill, styles.mapLoadingOverlay]}>
+                            <ActivityIndicator size="large" color="#BEA3D8" />
+                        </View>
+                    )}
                     <MapView
                         style={StyleSheet.absoluteFill}
                         provider={PROVIDER_GOOGLE}
                         showsUserLocation={false}
-                        initialRegion={{
-                            latitude: 28.5390,
-                            longitude: 77.2095,
-                            latitudeDelta: 0.04,
-                            longitudeDelta: 0.04,
+                        region={{
+                            latitude: midLat,
+                            longitude: midLng,
+                            latitudeDelta: latDelta,
+                            longitudeDelta: lngDelta,
                         }}
                         customMapStyle={mapStyle}
                     >
-                        <Marker coordinate={routeCoordinates[0]}>
-                            <View style={styles.mapStartMarker} />
-                        </Marker>
-                        <Marker coordinate={routeCoordinates[1]}>
-                            <View style={styles.mapEndMarker} />
-                        </Marker>
-                        <Polyline
-                            coordinates={routeCoordinates}
-                            strokeColor="#BEA3D8"
-                            strokeWidth={4}
-                        />
+                        {pickup && (
+                            <Marker coordinate={pickup}>
+                                <View style={styles.mapStartMarker} />
+                            </Marker>
+                        )}
+                        {dropoff && (
+                            <Marker coordinate={dropoff}>
+                                <View style={styles.mapEndMarker} />
+                            </Marker>
+                        )}
+                        {routePolyline.length > 1 && (
+                            <Polyline
+                                coordinates={routePolyline}
+                                strokeColor="#BEA3D8"
+                                strokeWidth={4}
+                            />
+                        )}
                     </MapView>
                     <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]} />
                 </View>
@@ -127,8 +224,8 @@ export default function RideEstimateScreen() {
                         </View>
                         
                         <View style={styles.ridePricing}>
-                            <Text style={styles.priceText}>₹85 - ₹110</Text>
-                            <Text style={styles.timeText}>12 mins away</Text>
+                            <Text style={styles.priceText}>{displayFare}</Text>
+                            <Text style={styles.timeText}>{displayTime}</Text>
                         </View>
                     </View>
 
@@ -145,18 +242,33 @@ export default function RideEstimateScreen() {
                     {/* Fare Breakdown Card */}
                     {breakdownExpanded && (
                         <View style={styles.breakdownCard}>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Base Fare</Text>
-                                <Text style={styles.breakdownValue}>₹30</Text>
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Distance (3.2 km)</Text>
-                                <Text style={styles.breakdownValue}>₹55</Text>
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Waiting (if any)</Text>
-                                <Text style={styles.breakdownValue}>₹0</Text>
-                            </View>
+                            {!fareData && !loadingRoute && (
+                                <Text style={styles.fareUnavailableNote}>
+                                    💸 Fare estimate unavailable — will be confirmed after booking
+                                </Text>
+                            )}
+                            {fareData && (
+                                <>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>Base Fare</Text>
+                                    <Text style={styles.breakdownValue}>{baseFare !== '—' ? `₹${baseFare}` : '—'}</Text>
+                                </View>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>Distance ({displayDistance})</Text>
+                                    <Text style={styles.breakdownValue}>{distanceFare !== '—' ? `₹${distanceFare}` : '—'}</Text>
+                                </View>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>Waiting (if any)</Text>
+                                    <Text style={styles.breakdownValue}>₹{waitingFare}</Text>
+                                </View>
+                                </>
+                            )}
+                            {loadingRoute && (
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>Calculating fare…</Text>
+                                    <ActivityIndicator size="small" color="#BEA3D8" />
+                                </View>
+                            )}
                         </View>
                     )}
 
@@ -167,11 +279,13 @@ export default function RideEstimateScreen() {
             {/* Footer Action Button Wrapper (Sticky) */}
             <View style={styles.footerSticky}>
                 <TouchableOpacity 
-                    style={styles.bookButton}
-                    onPress={() => router.push('/ride-finding')}
+                    style={[styles.bookButton, (!pickup || !dropoff) && { opacity: 0.5 }]}
+                    onPress={() => (pickup && dropoff) ? router.push('/ride-finding') : null}
                     activeOpacity={0.88}
                 >
-                    <Text style={styles.bookText}>Book Auto  ›</Text>
+                    <Text style={styles.bookText}>
+                        Book {ride?.vehicleType || ride?.vehicle_type || 'Auto'} ›
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -308,6 +422,13 @@ const styles = StyleSheet.create({
     mapArea: {
         height: 236,
         width: '100%',
+        overflow: 'hidden',
+    },
+    mapLoadingOverlay: {
+        zIndex: 10,
+        backgroundColor: 'rgba(245, 240, 255, 0.7)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     mapStartMarker: {
         width: 16,
@@ -483,7 +604,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1C1A25',
     },
-
+    fareUnavailableNote: {
+        fontSize: 13,
+        fontWeight: '400',
+        color: '#7B7487',
+        textAlign: 'center',
+        paddingVertical: 8,
+        lineHeight: 20,
+    },
     // Footer
     footerSticky: {
         position: 'absolute',

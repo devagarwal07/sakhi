@@ -12,3 +12,7 @@ web-build/
 .env
 .env.local
 .DS_Store
+
+# Expo Native Directories (CNG)
+/ios
+/android

@@ -59,8 +59,8 @@ export default function SubscriptionsDashboard() {
     };
     
     // Dynamic values mapped from context
-    const pickupName = ride?.pickup?.address?.split(',')[0] || 'Koramangala';
-    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'MG Road';
+    const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup location';
+    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
     
     const daysRange = sub.days?.length > 3 
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}` 

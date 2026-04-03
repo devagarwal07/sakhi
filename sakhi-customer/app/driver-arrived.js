@@ -6,15 +6,31 @@ import {
 import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import SakhiModal from '../src/components/SakhiModal';
+import { useRide } from '../src/context/RideContext';
 
 const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
+    const { ride } = useRide();
     const TOTAL_WAIT = 3 * 60;
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
     const intervalRef = useRef(null);
     const [modal, setModal] = useState(null);
+
+    // Use real pickup coords from RideContext; fall back to Mumbai center
+    const pickupLat = ride?.pickup?.latitude || 19.0760;
+    const pickupLng = ride?.pickup?.longitude || 72.8777;
+    const coords = { latitude: pickupLat, longitude: pickupLng };
+
+    // Real driver info from ride context
+    const driverName = ride?.driver?.name || 'Your Driver';
+    const driverVehicle = ride?.driver?.vehicle
+        ? `${ride.driver.vehicle.type || 'Auto'} · ${ride.driver.vehicle.plate || ''}`
+        : 'Auto';
+    const driverRating = ride?.driver?.rating ? `${ride.driver.rating} ★` : '—';
+    const driverPhone = ride?.driver?.phone || null;
+    const driverPhoto = ride?.driver?.photo || 'https://i.pravatar.cc/150?img=11';
 
     useEffect(() => {
         intervalRef.current = setInterval(() => {
@@ -33,8 +49,6 @@ export default function DriverArrivedScreen() {
     const secs = String(secondsLeft % 60).padStart(2, '0');
     const progress = secondsLeft / TOTAL_WAIT; // 1.0 → 0.0
 
-    const coords = { latitude: 12.9716, longitude: 77.5946 };
-
     return (
         <View style={styles.container}>
             {/* Map Area */}
@@ -42,12 +56,12 @@ export default function DriverArrivedScreen() {
                 <MapView
                     style={StyleSheet.absoluteFill}
                     provider={PROVIDER_GOOGLE}
-                    showsUserLocation={false}
-                    initialRegion={{
-                        latitude: 12.9716,
-                        longitude: 77.5946,
-                        latitudeDelta: 0.05,
-                        longitudeDelta: 0.05,
+                            showsUserLocation={false}
+                    region={{
+                        latitude: pickupLat,
+                        longitude: pickupLng,
+                        latitudeDelta: 0.02,
+                        longitudeDelta: 0.02,
                     }}
                     customMapStyle={mapStyle}
                 >
@@ -115,23 +129,22 @@ export default function DriverArrivedScreen() {
                         <View style={styles.driverProfileGrp}>
                             <View style={styles.avatarWrapper}>
                                 <Image 
-                                    // Placeholder image resembling a driver
-                                    source={{ uri: 'https://i.pravatar.cc/150?img=11' }} 
+                                    source={{ uri: driverPhoto }} 
                                     style={styles.avatarImage} 
                                 />
                                 <View style={styles.ratingBadge}>
-                                    <Text style={styles.ratingText}>4.9 ★</Text>
+                                    <Text style={styles.ratingText}>{driverRating}</Text>
                                 </View>
                             </View>
                             
                             <View style={styles.driverDetails}>
-                                <Text style={styles.driverName}>Meena R.</Text>
-                                <Text style={styles.driverVehicle}>Auto · KA 05 AB 1234</Text>
+                                <Text style={styles.driverName}>{driverName}</Text>
+                                <Text style={styles.driverVehicle}>{driverVehicle}</Text>
                             </View>
                         </View>
 
                         <View style={styles.actionBtns}>
-                            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('tel:+919876500001')}>
+                            <TouchableOpacity style={styles.callBtn} onPress={() => driverPhone ? Linking.openURL(`tel:${driverPhone}`) : null}>
                                 <Text style={styles.callIconText}>📞</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.msgBtn} onPress={() => setModal({ icon: '✉️', title: 'Message Driver', message: 'Chat with driver feature coming soon.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] })}>

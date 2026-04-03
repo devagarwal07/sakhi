@@ -118,16 +118,8 @@ export default function RideHistoryScreen() {
         );
     }
 
-    // Example Mock Data if the API returns [] just so you can see the gorgeous UI
-    const mockRides = [
-        { id: '1', dropoff_address: 'Metro Station, Gate 2', pickup_address: 'Indiranagar 100ft Rd, Bangalore', created_at: new Date().toISOString(), fare: { total: 0 }, vehicle_type: 'Auto' },
-        { id: '2', dropoff_address: 'Orion Mall entrance', pickup_address: 'Yeshwanthpur Industrial Area', created_at: new Date(Date.now() - 86400000).toISOString(), fare: { total: 87 }, vehicle_type: 'Auto' },
-        { id: '3', dropoff_address: 'Workplace Tower B', pickup_address: 'Outer Ring Road, Marathahalli', created_at: new Date(Date.now() - 86400000 * 2).toISOString(), fare: { total: 0 }, vehicle_type: 'Auto' },
-        { id: '4', dropoff_address: 'Lalbagh West Gate', pickup_address: 'Mavalli, Bangalore Central', created_at: new Date(Date.now() - 86400000 * 5).toISOString(), fare: { total: 142 }, vehicle_type: 'Prime Sedan' },
-    ];
-    
-    // Fallback to mock data to guarantee the UI is visible for review if API is blank
-    const dataToRender = rides.length > 0 ? rides : mockRides;
+    // Pass real rides array directly, empty state works fine if []
+    const dataToRender = rides;
 
     return (
         <SafeAreaView style={styles.safeArea}>

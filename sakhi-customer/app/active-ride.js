@@ -159,8 +159,8 @@ export default function ActiveRideScreen() {
                 style={StyleSheet.absoluteFill}
                 provider={PROVIDER_GOOGLE}
                 initialRegion={{
-                    latitude: ride.pickup?.latitude || 12.9716,
-                    longitude: ride.pickup?.longitude || 77.5946,
+                    latitude: ride.pickup?.latitude || 19.0760,
+                    longitude: ride.pickup?.longitude || 72.8777,
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                 }}

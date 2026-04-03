@@ -1,15 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Alert, Dimensions, Image, Platform
+  Animated, Alert, Dimensions, Image, Platform, ScrollView
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import SmartMapView from '../../components/SmartMapView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import { useSocket } from '../../context/SocketContext';
+import { navigationRef } from '../../../App';
+import MonogramAvatar from '../../components/MonogramAvatar';
+import * as Haptics from 'expo-haptics';
 
-const { height: SCREEN_H } = Dimensions.get('window');
+const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
@@ -17,7 +20,7 @@ const MAP_STYLE = [
   { featureType: 'water', stylers: [{ color: '#c8bef0' }] },
 ];
 
-export default function IncomingRideRequestScreen({ navigation }) {
+export default function IncomingRideRequestScreen() {
   const { incomingRide, acceptRide, rejectRide, clearIncomingRide } = useSocket();
   const insets = useSafeAreaInsets();
 
@@ -35,14 +38,15 @@ export default function IncomingRideRequestScreen({ navigation }) {
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(bellPulse, { toValue: 1.15, duration: 600, useNativeDriver: true }),
-        Animated.timing(bellPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(bellPulse, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+        Animated.timing(bellPulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ]),
     ).start();
 
     // Auto-decline timer fallback (e.g. 15s)
     const timeout = setTimeout(() => {
-      handleDecline();
+      rejectRide(incomingRide?.ride_id);
+      clearIncomingRide();
     }, 15000);
 
     return () => clearTimeout(timeout);
@@ -52,18 +56,16 @@ export default function IncomingRideRequestScreen({ navigation }) {
     if (accepting) return;
     try {
       setAccepting(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
       await acceptRide(incomingRide.ride_id);
       clearIncomingRide();
-      navigation.navigate('ActiveTrip', { ride: incomingRide });
+      if (navigationRef.isReady()) {
+        navigationRef.navigate('ActiveTrip', { ride: incomingRide });
+      }
     } catch (err) {
       Alert.alert('Oops', err.message ?? 'Could not accept ride.');
       setAccepting(false);
     }
-  };
-
-  const handleDecline = () => {
-    rejectRide(incomingRide?.ride_id);
-    clearIncomingRide();
   };
 
   if (!incomingRide) return null;
@@ -89,336 +91,371 @@ export default function IncomingRideRequestScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.root}>
-      {/* MAP BACKGROUND */}
-      <MapView
-        style={StyleSheet.absoluteFill}
-        provider={PROVIDER_GOOGLE}
-        customMapStyle={MAP_STYLE}
-        region={mapRegion}
-        scrollEnabled={false}
-        zoomEnabled={false}
-        pointerEvents="none"
-      >
-        <Marker coordinate={pickup_coords}>
-          <View style={styles.pickupDot} />
-        </Marker>
-        <Marker coordinate={dropoff_coords}>
-          <MaterialCommunityIcons name="map-marker" size={32} color="#9D58E0" />
-        </Marker>
-        <Polyline
-          coordinates={[pickup_coords, dropoff_coords]}
-          strokeColor="#9D58E0"
-          strokeWidth={4}
-          lineDashPattern={[10, 8]}
-        />
-      </MapView>
+    <View style={s.root}>
 
-      {/* TOP APP BAR */}
-      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 20) }]}>
-        <TouchableOpacity style={styles.iconBtn}>
+      {/* TOP 50%: Map Section */}
+      <View style={s.mapWrapper}>
+        <SmartMapView
+          style={StyleSheet.absoluteFill}
+          center={{ latitude: mapRegion.latitude, longitude: mapRegion.longitude }}
+          zoom={13}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          pointerEvents="none"
+          markers={[
+            { id: 'pickup',  latitude: pickup_coords.latitude,  longitude: pickup_coords.longitude,  color: '#10B981' },
+            { id: 'dropoff', latitude: dropoff_coords.latitude, longitude: dropoff_coords.longitude, color: '#9D58E0' },
+          ]}
+          polylines={[{
+            coords: [pickup_coords, dropoff_coords],
+            color: '#9D58E0',
+            width: 4,
+            dashed: true,
+          }]}
+        />
+      </View>
+
+      {/* HEADER: TopAppBar */}
+      <View style={[s.topAppBar, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity style={s.iconBtn}>
           <Feather name="menu" size={24} color="#BEA3D8" />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>New Request</Text>
-        <TouchableOpacity style={styles.iconBtn}>
-          <MaterialIcons name="history" size={24} color="#BEA3D8" />
+        <Text style={s.topAppTitle}>New Request</Text>
+        <TouchableOpacity style={s.iconBtn}>
+          <MaterialCommunityIcons name="history" size={24} color="#BEA3D8" />
         </TouchableOpacity>
       </View>
 
-      {/* BOTTOM SHEET */}
-      <Animated.View style={[
-        styles.bottomSheet, 
-        { transform: [{ translateY: slideUp }], paddingBottom: insets.bottom + 24 }
-      ]}>
+      {/* BOTTOM 50%: Bottom Sheet */}
+      <Animated.View style={[s.bottomSheet, { transform: [{ translateY: slideUp }] }]}>
         
+        {/* Handle */}
+        <View style={s.handle} />
+
+        <ScrollView contentContainerStyle={s.bottomSheetContent} showsVerticalScrollIndicator={false}>
         {/* Pulse Header */}
-        <View style={styles.pulseHeader}>
-          <Animated.View style={[styles.pulseIconBg, { transform: [{ scale: bellPulse }] }]}>
-            <MaterialCommunityIcons name="bell-ring" size={22} color="#BEA3D8" />
+        <View style={s.pulseHeaderWrap}>
+          <Animated.View style={[s.pulseIconWrap, { transform: [{ scale: bellPulse }] }]}>
+            <View style={s.pulseIconBg} />
+            <MaterialCommunityIcons name="bell-ring" size={20} color="#BEA3D8" style={s.pulseIcon} />
           </Animated.View>
-          <Text style={styles.pulseTitle}>New Ride Request 🔔</Text>
+          <Text style={s.pulseTitle}>New Ride Request</Text>
         </View>
 
-        {/* Ride Info Card */}
-        <View style={styles.rideCard}>
+        {/* Inner Ride Card */}
+        <View style={s.rideCard}>
           {/* Rider Profile Row */}
-          <View style={styles.riderRow}>
-            <View style={styles.riderProfileBox}>
-              {rider_photo ? (
-                <Image source={{ uri: rider_photo }} style={styles.riderAvatar} />
-              ) : (
-                <View style={[styles.riderAvatar, { backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' }]}>
-                  <Text style={{ fontSize: 24 }}>🙎‍♀️</Text>
-                </View>
-              )}
-              <View>
-                <Text style={styles.riderName}>{rider_name}</Text>
-                <View style={styles.ratingBox}>
+          <View style={s.riderRow}>
+            <View style={s.riderLeft}>
+              <View style={s.avatarBorder}>
+                <MonogramAvatar
+                  uri={rider_photo}
+                  name={rider_name}
+                  size={52}
+                  radius={14}
+                />
+              </View>
+              <View style={s.riderInfo}>
+                <Text style={s.riderName}>{rider_name}</Text>
+                <View style={s.ratingRow}>
                   <MaterialIcons name="star" size={14} color="#F59E0B" />
-                  <Text style={styles.ratingText}>{Number(rider_rating).toFixed(1)}</Text>
+                  <Text style={s.ratingText}>{Number(rider_rating).toFixed(1)}</Text>
                 </View>
               </View>
             </View>
-            <Text style={styles.fareText}>₹{fare}</Text>
+            <Text style={s.fareValue}>₹{fare}</Text>
           </View>
 
           {/* Route Info */}
-          <View style={styles.routeBox}>
-            <View style={styles.routeColNav}>
-              <View style={styles.routeDotGreen} />
-              <View style={styles.routeLineVertical} />
-              <MaterialCommunityIcons name="map-marker-outline" size={16} color="#BEA3D8" />
-            </View>
-            <View style={styles.routeContent}>
-              <View style={styles.routeRow}>
-                <Text style={styles.routeLabel}>PICKUP</Text>
-                <Text style={styles.routeAddress} numberOfLines={1}>{pickup_address}</Text>
+          <View style={s.routeInfoBox}>
+            <View style={s.routeNodes}>
+              <View style={s.pickupNode} />
+              <View style={s.routeLine} />
+              <View style={s.dropoffNodeInner}>
+                 <Feather name="map-pin" size={14} color="#BEA3D8" />
               </View>
-              <View style={styles.routeRow}>
-                <Text style={styles.routeLabel}>DROP-OFF</Text>
-                <Text style={styles.routeAddress} numberOfLines={1}>{dropoff_address}</Text>
+            </View>
+            <View style={s.routeTexts}>
+              <View style={s.routeStop}>
+                <Text style={s.routeLabel}>PICKUP</Text>
+                <Text style={s.routeAddress} numberOfLines={1}>{pickup_address}</Text>
+              </View>
+              <View style={s.routeStop}>
+                <Text style={s.routeLabel}>DROP-OFF</Text>
+                <Text style={s.routeAddress} numberOfLines={1}>{dropoff_address}</Text>
               </View>
             </View>
           </View>
 
           {/* Trip Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="map-marker-distance" size={16} color="#1C1A25" />
-              <Text style={styles.statText}>{distance_to_pickup_km} km to pickup</Text>
+          <View style={s.tripStatsRow}>
+            <View style={s.statBox}>
+              <Feather name="git-commit" size={16} color="#1C1A25" style={{ transform: [{ rotate: '90deg' }] }} />
+              <Text style={s.statText}>{distance_to_pickup_km} km to pickup</Text>
             </View>
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="clock-outline" size={16} color="#1C1A25" />
-              <Text style={styles.statText}>ETA ~{eta_to_pickup_min} min</Text>
+            <View style={s.statBox}>
+              <Feather name="clock" size={16} color="#1C1A25" />
+              <Text style={s.statText}>ETA ~{eta_to_pickup_min} min</Text>
             </View>
           </View>
         </View>
 
-        {/* Action Buttons Stacked */}
-        <View style={styles.actionsBox}>
-          <TouchableOpacity
-            style={[styles.acceptBtn, accepting && { opacity: 0.7 }]}
-            onPress={handleAccept}
-            disabled={accepting}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.acceptBtnText}>
-              {accepting ? 'Accepting...' : 'Accept Ride'}
-            </Text>
-          </TouchableOpacity>
+        {/* Accept Button */}
+        <TouchableOpacity
+          style={[s.acceptBtn, accepting && { opacity: 0.7 }]}
+          onPress={handleAccept}
+          disabled={accepting}
+          activeOpacity={0.8}
+        >
+          <Text style={s.acceptBtnText}>
+            {accepting ? 'Accepting...' : 'Accept Ride'}
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.declineBtn}
-            onPress={handleDecline}
-            disabled={accepting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.declineBtnText}>Decline</Text>
-          </TouchableOpacity>
-        </View>
-
+        </ScrollView>
       </Animated.View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   root: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FCF8FF',
+    zIndex: 9999,
   },
-  pickupDot: {
-    width: 20,
-    height: 20,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    backgroundColor: '#10B981',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  topBar: {
+
+  // Map Section (Top 50%)
+  mapWrapper: {
+    width: '100%',
+    height: '50%',
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+  },
+  pickupMarker: {
+    width: 24, height: 24,
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  pickupDot: {
+    width: 14, height: 14,
+    backgroundColor: '#10B981',
+    borderWidth: 2, borderColor: '#FFFFFF',
+    borderRadius: 7,
+  },
+  dropoffMarker: {
+    width: 16, height: 16,
+    backgroundColor: '#9D58E0',
+    borderWidth: 2, borderColor: '#FFFFFF',
+    borderRadius: 8,
+  },
+
+  // Top App Bar
+  topAppBar: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: 90,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
-    elevation: 5,
+    elevation: 4,
   },
-  iconBtn: {
-    padding: 8,
-    marginLeft: -8,
-    marginRight: -8,
-  },
-  topBarTitle: {
+  iconBtn: { padding: 8 },
+  topAppTitle: {
     fontFamily: 'Inter',
     fontWeight: '600',
     fontSize: 18,
     color: '#0F172A',
     letterSpacing: -0.45,
   },
+
+  // Bottom Sheet (Bottom 50%)
   bottomSheet: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
+    top: '50%', bottom: 0,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: -16 },
+    shadowOffset: { width: 0, height: -16 }, // adjust shadow upwards
     shadowOpacity: 0.08,
     shadowRadius: 32,
     elevation: 16,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 32,
   },
-  pulseHeader: {
-    flexDirection: 'row',
+  handle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: '#E5E0EF',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40, // plenty of space to scroll
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+
+  // Pulse Header
+  pulseHeaderWrap: {
+    flexDirection: 'column',
+    alignItems: 'center',
     marginBottom: 24,
+    gap: 8,
+  },
+  pulseIconWrap: {
+    position: 'relative',
+    width: 40, height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pulseIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F5F0FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    position: 'absolute',
+    width: 40, height: 40,
+    backgroundColor: 'rgba(190, 163, 216, 0.2)',
+    borderRadius: 20,
+  },
+  pulseIcon: {
+    // raw icon
   },
   pulseTitle: {
     fontFamily: 'Inter',
     fontWeight: '800',
-    fontSize: 22,
+    fontSize: 20,
     color: '#1C1A25',
     letterSpacing: -0.5,
+    marginTop: 4,
   },
+
+  // Inner Ride Card
   rideCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F0ECFA',
-    marginBottom: 24,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 6,
+    marginBottom: 20, // push accept btn below
   },
+
+  // Rider Row
   riderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  riderProfileBox: {
+  riderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  riderAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: '#F0ECFA',
+  avatarBorder: {
+    width: 48, height: 48,
+    borderRadius: 24,
+    borderWidth: 2, borderColor: '#F0ECFA',
+    justifyContent: 'center', alignItems: 'center',
+    overflow: 'hidden',
   },
+  avatar: { width: 44, height: 44, borderRadius: 22 },
+  avatarFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' },
+  riderInfo: { justifyContent: 'center' },
   riderName: {
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 16,
+    lineHeight: 24,
     color: '#1C1A25',
-    marginBottom: 4,
   },
-  ratingBox: {
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   ratingText: {
     fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 13,
+    fontWeight: '400',
+    fontSize: 12,
+    lineHeight: 16,
     color: '#1C1A25',
   },
-  fareText: {
+  fareValue: {
     fontFamily: 'Inter',
     fontWeight: '900',
-    fontSize: 28,
+    fontSize: 24,
     color: '#BEA3D8',
     letterSpacing: -1.2,
   },
-  routeBox: {
+
+  // Route Info
+  routeInfoBox: {
     flexDirection: 'row',
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    gap: 16,
+    marginBottom: 16,
   },
-  routeColNav: {
+  routeNodes: {
     alignItems: 'center',
-    width: 20,
-    marginRight: 12,
-    marginTop: 6,
+    width: 14,
+    marginTop: 4,
   },
-  routeDotGreen: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#10B981',
+  pickupNode: {
+    width: 10, height: 10,
     borderRadius: 5,
+    backgroundColor: '#10B981',
   },
-  routeLineVertical: {
-    width: 2,
-    height: 36,
+  routeLine: {
+    width: 2, height: 32,
     backgroundColor: '#E5E0EF',
     marginVertical: 4,
   },
-  routeContent: {
-    flex: 1,
-    justifyContent: 'space-between',
+  dropoffNodeInner: {
+    marginTop: -2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  routeRow: {
-    marginBottom: 16,
+  routeTexts: {
+    flex: 1,
+    gap: 12,
+  },
+  routeStop: {
+    gap: 2,
   },
   routeLabel: {
     fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
+    fontWeight: '500',
+    fontSize: 12,
+    color: '#1C1A25',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: '#6B7280',
-    marginBottom: 2,
   },
   routeAddress: {
     fontFamily: 'Inter',
     fontWeight: '600',
-    fontSize: 15,
+    fontSize: 14,
     color: '#1C1A25',
   },
-  statsRow: {
+
+  // Stats Row
+  tripStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F5F0FF',
+    paddingTop: 8,
   },
-  statItem: {
+  statBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -426,13 +463,11 @@ const styles = StyleSheet.create({
   statText: {
     fontFamily: 'Inter',
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 12,
     color: '#1C1A25',
   },
-  actionsBox: {
-    width: '100%',
-    gap: 12,
-  },
+
+  // Accept Button
   acceptBtn: {
     width: '100%',
     height: 56,
@@ -440,32 +475,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#BEA3D8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 4,
+    marginTop: 'auto',
+    marginBottom: 20
   },
   acceptBtnText: {
     fontFamily: 'Inter',
-    fontWeight: '800',
-    fontSize: 17,
-    color: '#FFFFFF',
-  },
-  declineBtn: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#F87171',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  declineBtnText: {
-    fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 17,
-    color: '#F87171',
+    fontSize: 16,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });

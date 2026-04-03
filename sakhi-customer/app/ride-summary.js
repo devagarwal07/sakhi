@@ -4,13 +4,42 @@ import {
     Dimensions, ScrollView, Platform, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useRide } from '../src/context/RideContext';
+import { useAuth } from '../src/context/AuthContext';
+import { submitRating } from '../src/api/endpoints';
 
 const { width } = Dimensions.get('window');
 
 export default function RideSummaryScreen() {
     const router = useRouter();
+    const { ride } = useRide();
+    const { user } = useAuth();
     const [rating, setRating] = useState(4); 
     const [comment, setComment] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    // Real data from ride context
+    const pickupAddress = ride?.pickup?.address || '—';
+    const dropoffAddress = ride?.dropoff?.address || '—';
+    const baseFare = ride?.fare?.base ?? '—';
+    const distFare = ride?.fare?.distance_fare ?? ride?.fare?.distance ?? '—';
+    const waitFare = ride?.fare?.waiting ?? 0;
+    const distText = ride?.routeDistance || '';
+    const total = ride?.fare?.total ?? (typeof baseFare === 'number' && typeof distFare === 'number' ? baseFare + distFare + waitFare : '—');
+    const paymentMethod = ride?.paymentMethod || 'Cash';
+    const driverFirstName = ride?.driver?.name ? ride.driver.name.split(' ')[0] : 'your driver';
+    const userName = user?.name ? user.name.split(' ')[0] : 'there';
+
+    const handleSubmit = async () => {
+        if (ride?.id) {
+            setSubmitting(true);
+            try {
+                await submitRating(ride.id, { rating, comment });
+            } catch (_) {}
+            setSubmitting(false);
+        }
+        router.replace('/');
+    };
 
     return (
         <View style={styles.container}>
@@ -40,7 +69,7 @@ export default function RideSummaryScreen() {
                     </View>
                     
                     <Text style={styles.headerTitle}>Ride Complete! <Text style={{ fontSize: 22 }}>🎉</Text></Text>
-                    <Text style={styles.headerSub}>Hope you had a safe journey, Priya</Text>
+                    <Text style={styles.headerSub}>Hope you had a safe journey, {userName}</Text>
                 </View>
 
                 {/* Fare Summary Card */}
@@ -57,11 +86,11 @@ export default function RideSummaryScreen() {
                         <View style={styles.routeTextCol}>
                             <View style={styles.addressBlock}>
                                 <Text style={styles.addressLabel}>PICKUP</Text>
-                                <Text style={styles.addressTitle}>Koramangala 5th Block</Text>
+                                <Text style={styles.addressTitle} numberOfLines={2}>{pickupAddress}</Text>
                             </View>
                             <View style={styles.addressBlock}>
                                 <Text style={styles.addressLabel}>DROP</Text>
-                                <Text style={styles.addressTitle}>MG Road Metro Station</Text>
+                                <Text style={styles.addressTitle} numberOfLines={2}>{dropoffAddress}</Text>
                             </View>
                         </View>
                     </View>
@@ -72,15 +101,15 @@ export default function RideSummaryScreen() {
                     <View style={styles.breakdownBox}>
                         <View style={styles.breakdownRow}>
                             <Text style={styles.breakdownLabel}>Base Fare</Text>
-                            <Text style={styles.breakdownValue}>₹30</Text>
+                            <Text style={styles.breakdownValue}>{baseFare !== '—' ? `₹${baseFare}` : '—'}</Text>
                         </View>
                         <View style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>Distance (3.2 km)</Text>
-                            <Text style={styles.breakdownValue}>₹55</Text>
+                            <Text style={styles.breakdownLabel}>Distance{distText ? ` (${distText})` : ''}</Text>
+                            <Text style={styles.breakdownValue}>{distFare !== '—' ? `₹${distFare}` : '—'}</Text>
                         </View>
                         <View style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>Waiting Charges (1 min)</Text>
-                            <Text style={styles.breakdownValue}>₹2</Text>
+                            <Text style={styles.breakdownLabel}>Waiting Charges</Text>
+                            <Text style={styles.breakdownValue}>₹{waitFare}</Text>
                         </View>
                     </View>
 
@@ -89,19 +118,19 @@ export default function RideSummaryScreen() {
                     {/* Total Row */}
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>₹87</Text>
+                        <Text style={styles.totalValue}>{total !== '—' ? `₹${total}` : '—'}</Text>
                     </View>
 
                     {/* Payment Mode */}
                     <View style={styles.paymentRow}>
                         <Text style={styles.paymentIcon}>💵</Text>
-                        <Text style={styles.paymentText}>Cash Payment</Text>
+                        <Text style={styles.paymentText}>{paymentMethod} Payment</Text>
                     </View>
                 </View>
 
                 {/* Rating Section */}
                 <View style={styles.ratingSection}>
-                    <Text style={styles.ratingTitle}>Rate your driver Meena</Text>
+                    <Text style={styles.ratingTitle}>Rate your driver {driverFirstName}</Text>
                     
                     <View style={styles.starsRow}>
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -125,8 +154,8 @@ export default function RideSummaryScreen() {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.submitBtn} onPress={() => router.push('/')}>
-                        <Text style={styles.submitText}>Submit & Done</Text>
+                    <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting} activeOpacity={0.88}>
+                        <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit & Done'}</Text>
                     </TouchableOpacity>
                 </View>
 
