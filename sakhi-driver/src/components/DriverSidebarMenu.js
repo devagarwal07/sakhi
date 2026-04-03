@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import MonogramAvatar from './MonogramAvatar';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SIDEBAR_W = 293;
@@ -80,9 +81,11 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
         {/* Header / Profile */}
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 24) }]}>
           <View style={styles.avatarMainBox}>
-            <Image 
-              source={{ uri: driver?.profile_photo || 'https://i.pravatar.cc/150?u=meena' }} 
-              style={styles.avatar} 
+            <MonogramAvatar
+              uri={driver?.profile_photo || driver?.photo_url}
+              name={driver?.name || driver?.first_name}
+              size={72}
+              radius={18}
             />
             <View style={styles.onlineBadge}>
               <Feather name="check" size={10} color="#fff" />
@@ -90,7 +93,9 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
           </View>
           
           <View style={styles.driverInfoBlock}>
-            <Text style={styles.driverName}>{driver?.name ?? 'Meena R.'}</Text>
+            <Text style={styles.driverName}>
+              {driver?.name ?? [driver?.first_name, driver?.last_name].filter(Boolean).join(' ') ?? 'Driver'}
+            </Text>
             
             <View style={styles.verifiedRow}>
               <Text style={styles.verifiedText}>Verified Driver</Text>

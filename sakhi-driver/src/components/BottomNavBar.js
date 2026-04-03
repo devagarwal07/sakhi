@@ -24,25 +24,25 @@ export default function BottomNavBar({ navigation, activeTab = 'home' }) {
   const tabs = [
     {
       key:    'home',
-      label:  'HOME',
+      label:  'Home',
       Icon:   Home,
-      onPress: () => navigation?.navigate('DriverHome'),
+      onPress: () => navigation?.navigate('DriverOnlineDashboard'),
     },
     {
       key:    'earnings',
-      label:  'EARNINGS',
+      label:  'Earnings',
       Icon:   TrendingUp,
       onPress: () => navigation?.navigate('MyEarnings'),
     },
     {
       key:    'wallet',
-      label:  'WALLET',
+      label:  'Wallet',
       Icon:   Wallet,
       onPress: () => navigation?.navigate('TransactionHistory'),
     },
     {
       key:    'account',
-      label:  'ACCOUNT',
+      label:  'Profile',
       Icon:   User,
       onPress: () => navigation?.navigate('MyProfile'),
     },
@@ -100,12 +100,11 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   label: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
     color: MUTED,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    lineHeight: 13,
+    letterSpacing: 0.3,
+    lineHeight: 14,
   },
   labelActive: {
     color: DEEP,

@@ -20,6 +20,7 @@ import {
 } from '../../services/locationTask';
 import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
+import SmartMapView from '../../components/SmartMapView';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -173,7 +174,7 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
       {/* ── Row 2: Heading + session timer ── */}
       <View style={oc.headingRow}>
         <View>
-          <Text style={oc.headingMain}>You're Online ✨</Text>
+          <Text style={oc.headingMain}>You're Online</Text>
           <Text style={oc.headingSub}>Actively searching for rides</Text>
         </View>
         <View style={oc.sessionPill}>
@@ -206,11 +207,11 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
       {/* ── Row 5: Info pills ── */}
       <View style={oc.pillsRow}>
         <View style={oc.pill}>
-          <Text style={oc.pillIcon}>📡</Text>
-          <Text style={oc.pillText}>GPS · Connected</Text>
+          <Feather name="wifi" size={12} color="#059669" />
+          <Text style={oc.pillText}>GPS Connected</Text>
         </View>
         <View style={oc.pill}>
-          <Text style={oc.pillIcon}>🔍</Text>
+          <Feather name="search" size={12} color="#BEA3D8" />
           <Text style={oc.pillText}>Searching rides</Text>
         </View>
       </View>
@@ -406,12 +407,8 @@ export default function DriverHomeScreen({ navigation }) {
     }
   }, [driver]));
 
-  // ── Toggle ────────────────────────────────────────────────────────────────
-  const handleToggle = async () => {
-    if (!isOnline) {
-      navigation.navigate('PaymentPlans');
-      return;
-    }
+  // ── Mark OFFLINE (stays on this screen, removes from ride pool) ──────────
+  const handleGoOffline = async () => {
     try {
       setStatusLoading(true);
       await client.post('/drivers/status', { is_online: false });
@@ -419,11 +416,38 @@ export default function DriverHomeScreen({ navigation }) {
       setIsOnline(false);
       await stopLocationTracking();
     } catch {
-      Alert.alert('Error', 'Could not update status. Try again.');
+      Alert.alert('Error', 'Could not go offline. Try again.');
     } finally {
       setStatusLoading(false);
     }
   };
+
+  // ── Mark ONLINE (stays on this screen, rejoins ride pool) ─────────────────
+  const handleGoOnline = async () => {
+    // If subscription has expired, send to payment
+    if (subscriptionExpiry && new Date() > subscriptionExpiry) {
+      navigation.navigate('PaymentPlans');
+      return;
+    }
+    try {
+      setStatusLoading(true);
+      await client.post('/drivers/status', { is_online: true });
+      updateDriver({ is_online: true });
+      setIsOnline(true);
+      await startLocationTracking();
+    } catch {
+      Alert.alert('Error', 'Could not go online. Try again.');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Days remaining on subscription
+  const daysLeft = subscriptionExpiry
+    ? Math.max(0, Math.ceil((subscriptionExpiry - new Date()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const subscriptionExpired = daysLeft !== null && daysLeft === 0;
+  const subscriptionExpiring = daysLeft !== null && daysLeft <= 2 && daysLeft > 0;
 
   const statusBarH = RNStatusBar.currentHeight ?? insets.top;
 
@@ -434,28 +458,16 @@ export default function DriverHomeScreen({ navigation }) {
       {/* ── FULL-SCREEN MAP (background) ── */}
       <View style={StyleSheet.absoluteFill}>
         {location ? (
-          <MapView
+          <SmartMapView
             ref={mapRef}
-            provider={PROVIDER_GOOGLE}
             style={StyleSheet.absoluteFill}
-            initialRegion={{ ...location, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-            showsUserLocation={false}
-            showsMyLocationButton={false}
-            showsCompass={false}
+            center={location}
+            zoom={15}
             showsTraffic={isOnline}
-            customMapStyle={CUSTOM_MAP_STYLE}
-          >
-            <Marker coordinate={location} anchor={{ x: 0.5, y: 0.5 }}>
-              <View style={s.driverMarker}>
-                <View style={[s.driverMarkerInner, isOnline && s.driverMarkerOnline]}>
-                  <Feather name="truck" size={18} color={isOnline ? '#FFFFFF' : '#5B21B6'} />
-                </View>
-                <View style={[s.markerLabel, isOnline && s.markerLabelOnline]}>
-                  <Text style={s.markerLabelText}>YOU</Text>
-                </View>
-              </View>
-            </Marker>
-          </MapView>
+            markers={[
+              { id: 'driver', latitude: location.latitude, longitude: location.longitude, color: isOnline ? '#059669' : '#5B21B6', label: 'YOU' },
+            ]}
+          />
         ) : (
           <View style={s.mapLoading}>
             <ActivityIndicator size="large" color="#5B21B6" />
@@ -468,10 +480,21 @@ export default function DriverHomeScreen({ navigation }) {
           <TouchableOpacity style={s.hamburgerBtn} onPress={() => setSidebarOpen(true)} activeOpacity={0.8}>
             <Feather name="menu" size={20} color="#5B21B6" />
           </TouchableOpacity>
-          <TouchableOpacity style={s.earningsPill} onPress={() => navigation.navigate('MyEarnings')} activeOpacity={0.85}>
-            <Text style={s.earningsPillLabel}>Today: </Text>
-            <Text style={s.earningsPillValue}>₹{earnings.today}</Text>
-          </TouchableOpacity>
+          {/* Commission expiry pill */}
+          {daysLeft !== null && (
+            <TouchableOpacity
+              style={[s.earningsPill, subscriptionExpired && s.earningsPillExpired, subscriptionExpiring && s.earningsPillWarning]}
+              onPress={() => subscriptionExpired ? navigation.navigate('PaymentPlans') : navigation.navigate('MyEarnings')}
+              activeOpacity={0.85}
+            >
+              <Text style={[s.earningsPillLabel, (subscriptionExpired || subscriptionExpiring) && { color: subscriptionExpired ? '#991B1B' : '#92400E' }]}>
+                {subscriptionExpired ? '⚠️ Expired — ' : subscriptionExpiring ? `⏰ ${daysLeft}d left · ` : `${daysLeft}d · `}
+              </Text>
+              <Text style={[s.earningsPillValue, subscriptionExpired && { color: '#DC2626' }, subscriptionExpiring && { color: '#B45309' }]}>
+                {subscriptionExpired ? 'Renew Now' : `₹${earnings.today}`}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -489,25 +512,35 @@ export default function DriverHomeScreen({ navigation }) {
           <View style={s.toggleWrap}>
             <TouchableOpacity
               style={[s.toggleBtn, !isOnline && s.toggleBtnActive]}
-              onPress={!isOnline ? undefined : handleToggle}
-              disabled={statusLoading}
+              onPress={isOnline ? handleGoOffline : undefined}
+              disabled={statusLoading || !isOnline}
               activeOpacity={0.9}
             >
               {statusLoading && !isOnline
                 ? <ActivityIndicator size="small" color="#5B21B6" />
-                : <Text style={!isOnline ? s.toggleTextActive : s.toggleText}>OFFLINE</Text>
+                : (
+                  <>
+                    <View style={[s.toggleDot, !isOnline && s.toggleDotOffline]} />
+                    <Text style={!isOnline ? s.toggleTextActive : s.toggleText}>Offline</Text>
+                  </>
+                )
               }
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[s.toggleBtn, isOnline && s.toggleBtnActive, isOnline && s.toggleBtnOnline]}
-              onPress={isOnline ? undefined : handleToggle}
-              disabled={statusLoading}
+              onPress={!isOnline ? handleGoOnline : undefined}
+              disabled={statusLoading || isOnline}
               activeOpacity={0.9}
             >
               {statusLoading && isOnline
                 ? <ActivityIndicator size="small" color="#FFFFFF" />
-                : <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>ONLINE</Text>
+                : (
+                  <>
+                    <View style={[s.toggleDot, isOnline && s.toggleDotOnline]} />
+                    <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>Online</Text>
+                  </>
+                )
               }
             </TouchableOpacity>
           </View>
@@ -516,7 +549,7 @@ export default function DriverHomeScreen({ navigation }) {
           {isOnline ? (
             <OnlineStatusCard
               earnings={earnings}
-              onGoOffline={handleToggle}
+              onGoOffline={handleGoOffline}
               statusLoading={statusLoading}
               sessionSecs={sessionSecs}
               subscriptionExpiry={subscriptionExpiry}
@@ -641,13 +674,16 @@ const s = StyleSheet.create({
   sheetContent:  { paddingHorizontal: 24, paddingBottom: 24 },
 
   // Toggle
-  toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 4, marginBottom: 24 },
-  toggleBtn:       { flex: 1, paddingVertical: 14, borderRadius: 9999, alignItems: 'center' },
+  toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 20 },
+  toggleBtn:       { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
   toggleBtnOnline: { backgroundColor: '#059669' },
-  toggleText:       { fontSize: 14, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
-  toggleTextActive: { fontSize: 14, fontWeight: '800', color: '#1C1A25', letterSpacing: 0.5 },
-  toggleTextOnline: { fontSize: 14, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+  toggleDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: '#9CA3AF' },
+  toggleDotOffline: { backgroundColor: '#94A3B8' },
+  toggleDotOnline:  { backgroundColor: '#FFFFFF' },
+  toggleText:       { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
+  toggleTextActive: { fontSize: 12, fontWeight: '800', color: '#1C1A25', letterSpacing: 0.5 },
+  toggleTextOnline: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
 
   // Status
   statusHeading: { fontSize: 26, fontWeight: '800', color: '#1C1A25', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
@@ -662,4 +698,8 @@ const s = StyleSheet.create({
   upcomingSubTextCol: { flex: 1, gap: 2 },
   upcomingSubTitle: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
   upcomingSubDesc: { fontSize: 12, color: '#6B7280' },
+
+  // Subscription expiry pill variants
+  earningsPillExpired: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
+  earningsPillWarning: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
 });
