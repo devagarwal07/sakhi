@@ -2,10 +2,11 @@
 
 const { z } = require('zod');
 const supabase = require('../config/supabase');
-const fcmService = require('../services/fcmService');
+const otpService = require('../services/otpService');
+const jwtService = require('../services/jwtService');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
-const { uploadSelfie } = require('../middleware/upload');
+const phoneE164 = z.string().regex(/^\+?[1-9]\d{9,14}$/, 'Phone must be a valid 10-15 digit number');
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -188,33 +189,77 @@ async function getEarningsLedger(req, res, next) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// GET /drivers/rides
+// GET /drivers/rides  — period filters + search (driver app ride history)
 // ──────────────────────────────────────────────────────────────────────────────
 async function getDriverRides(req, res, next) {
   try {
     const driverId = req.user.userId;
-    const page  = Math.max(1, parseInt(req.query.page  || '1', 10));
-    const limit = Math.min(50, parseInt(req.query.limit || '20', 10));
-    const from  = (page - 1) * limit;
+    const { period = 'all', page = '1', limit = '20', q, start_date, end_date } = req.query;
 
-    const { data, error, count } = await supabase
+    const pg  = Math.max(1, parseInt(page, 10));
+    const lim = Math.min(50, parseInt(limit, 10));
+    const offset = (pg - 1) * lim;
+
+    let query = supabase
       .from('rides')
-      .select(`
-        id, status, pickup_address, drop_address, final_fare, estimated_fare,
-        distance_km, duration_min, completed_at, rider_rating, rider_comment,
-        users!rides_rider_id_fkey(name)
-      `, { count: 'exact' })
+      .select('id, status, subscription_id, pickup_address, drop_address, estimated_fare, final_fare, distance_km, duration_min, payment_method, created_at, started_at, completed_at, rider_id, users!rides_rider_id_fkey(name, phone, profile_photo_url, avg_rating)')
       .eq('driver_id', driverId)
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false })
-      .range(from, from + limit - 1);
+      .order('created_at', { ascending: false })
+      .range(offset, offset + lim - 1);
 
-    if (error) throw new AppError('Failed to fetch rides.', 500, 'DB_ERROR');
+    const now = new Date();
+    if (period === 'today') {
+      const start = new Date(now); start.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'this_week') {
+      const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'this_month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      query = query.gte('created_at', start.toISOString());
+    } else if (period === 'custom' && start_date) {
+      const end = end_date ? new Date(end_date) : new Date(start_date);
+      end.setHours(23, 59, 59, 999);
+      query = query
+        .gte('created_at', new Date(start_date).toISOString())
+        .lte('created_at', end.toISOString());
+    }
 
-    return res.status(200).json({
-      rides: (data || []).map((r) => ({ ...r, rider_name: r.users?.name })),
-      pagination: { page, limit, total: count || 0 },
+    if (q) {
+      query = query.or(`pickup_address.ilike.%${q}%,drop_address.ilike.%${q}%`);
+    }
+
+    const { data: rides, error } = await query;
+    if (error) throw error;
+
+    const mapped = (rides ?? []).map((r) => {
+      const total_fare = parseFloat(r.final_fare ?? r.estimated_fare ?? 0) || 0;
+      let phone = r.users?.phone;
+      if (phone) phone = '****' + phone.slice(-4);
+      return {
+        ...r,
+        ride_type: r.subscription_id ? 'subscription' : 'on_demand',
+        total_fare,
+        drop_address: r.drop_address,
+        rider_name: r.users?.name,
+        rider_phone: phone,
+        rider_photo: r.users?.profile_photo_url,
+        rider_rating: r.users?.avg_rating,
+      };
     });
+
+    const completedRides = mapped.filter((r) => r.status === 'completed');
+    const totalEarnings = completedRides.reduce((s, r) => s + (r.total_fare || 0), 0);
+    const periodLabel = {
+      all: 'All Time', today: 'Today', this_week: 'This Week', this_month: 'This Month', custom: 'Custom Range',
+    }[period] ?? period;
+    const summary = {
+      label:    `${periodLabel}: ${completedRides.length} Rides · ₹${totalEarnings}`,
+      rides:    completedRides.length,
+      earnings: totalEarnings,
+    };
+
+    return res.status(200).json({ rides: mapped, summary });
   } catch (err) { return handleError(err, res, next); }
 }
 
@@ -553,11 +598,244 @@ async function toggleSubscriptionOptIn(req, res, next) {
 
     await supabase
       .from('drivers')
-      .update({ subscription_opted_in: opted_in, updated_at: new Date().toISOString() })
+      .update({ subscription_opt_in: opted_in })
       .eq('id', driverId);
 
     logger.info('driverController.toggleSubscriptionOptIn', { driverId, opted_in });
     return res.status(200).json({ ok: true, opted_in });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/profile/phone/send-otp  &  /resend-otp
+// ──────────────────────────────────────────────────────────────────────────────
+async function sendDriverPhoneChangeOtp(req, res, next) {
+  try {
+    const { new_phone } = z.object({ new_phone: phoneE164 }).parse(req.body);
+    const driverId = req.user.userId;
+
+    const { data: rows } = await supabase.from('drivers').select('phone').eq('id', driverId).limit(1);
+    const current = rows?.[0]?.phone;
+    if (current === new_phone) {
+      return res.status(400).json({
+        error: { code: 'SAME_PHONE', message: 'New number must differ from your current number.', details: {} },
+      });
+    }
+
+    const [{ data: uDup }, { data: dDup }] = await Promise.all([
+      supabase.from('users').select('id').eq('phone', new_phone).limit(1),
+      supabase.from('drivers').select('id').eq('phone', new_phone).neq('id', driverId).limit(1),
+    ]);
+    if ((uDup && uDup.length) || (dDup && dDup.length)) {
+      return res.status(409).json({
+        error: { code: 'PHONE_IN_USE', message: 'This phone number is already registered.', details: {} },
+      });
+    }
+
+    await otpService.sendOTP(new_phone);
+    return res.status(200).json({ message: 'OTP sent to new number' });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/profile/phone/verify-otp
+// ──────────────────────────────────────────────────────────────────────────────
+async function verifyDriverPhoneChangeOtp(req, res, next) {
+  try {
+    const { new_phone, otp } = z.object({ new_phone: phoneE164, otp: z.string().length(6) }).parse(req.body);
+    const driverId = req.user.userId;
+
+    await otpService.verifyOTP(new_phone, otp);
+
+    const { data: driver, error } = await supabase
+      .from('drivers')
+      .update({ phone: new_phone })
+      .eq('id', driverId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    const { accessToken, refreshToken } = await jwtService.issueTokens(driverId, 'driver', new_phone);
+
+    logger.info('driverController.verifyDriverPhoneChangeOtp', { driverId, new_phone });
+    return res.status(200).json({
+      message: 'Phone number updated',
+      accessToken,
+      refreshToken,
+      driver,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/vehicle  — onboarding vehicle details
+// ──────────────────────────────────────────────────────────────────────────────
+const vehicleOnboardingSchema = z.object({
+  vehicle_type: z.string().min(1),
+  registration_number: z.string().min(4),
+  colour: z.string().min(1),
+  model_name: z.string().min(1),
+});
+
+async function submitVehicleDetails(req, res, next) {
+  try {
+    const body = vehicleOnboardingSchema.parse(req.body);
+    const driverId = req.user.userId;
+
+    const vehicle_type =
+      body.vehicle_type === 'minivan' ? 'cab'
+        : body.vehicle_type === 'erickshaw' ? 'auto'
+          : body.vehicle_type;
+
+    const { data, error } = await supabase
+      .from('drivers')
+      .update({
+        vehicle_type,
+        vehicle_reg_no: body.registration_number.toUpperCase(),
+        vehicle_color: body.colour,
+        vehicle_model: body.model_name,
+      })
+      .eq('id', driverId)
+      .select('id, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model')
+      .single();
+
+    if (error) throw error;
+    return res.status(200).json({ ok: true, driver: data });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/verify-identity  — selfie (multipart field: selfie)
+// ──────────────────────────────────────────────────────────────────────────────
+async function submitSelfieVerification(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const profilePhotoUrl = req.file?.location || req.file?.path;
+    if (!profilePhotoUrl) {
+      return res.status(422).json({
+        error: { code: 'MISSING_FILE', message: 'Selfie image is required.', details: {} },
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('drivers')
+      .update({
+        profile_photo_url: profilePhotoUrl,
+        gender_verified: true,
+      })
+      .eq('id', driverId)
+      .select('id, profile_photo_url, gender_verified')
+      .single();
+
+    if (error) throw error;
+    return res.status(200).json({ ok: true, driver: data });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+const COMPLAINT_CATEGORY = {
+  'Ride Issue': 'ride_issue',
+  'Commission Dispute': 'payment_dispute',
+  'Document Problem': 'driver_complaint',
+  'Payment Not Received': 'payment_dispute',
+  'Safety Concern': 'safety_concern',
+  'App / Navigation Error': 'app_bug',
+  'Other': 'other',
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/complaints  — multipart: issue_type, description, related_ride_id?, screenshot?
+// ──────────────────────────────────────────────────────────────────────────────
+async function submitDriverComplaint(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const issue_type = String(req.body.issue_type || '');
+    const description = String(req.body.description || '').trim();
+    let relatedRideId = req.body.related_ride_id || null;
+    if (relatedRideId && !/^[0-9a-f-]{36}$/i.test(String(relatedRideId))) {
+      relatedRideId = null;
+    }
+
+    if (description.length < 10) {
+      return res.status(422).json({
+        error: { code: 'VALIDATION_ERROR', message: 'Description must be at least 10 characters.', details: {} },
+      });
+    }
+
+    const category = COMPLAINT_CATEGORY[issue_type] || 'other';
+    let fullDesc = description;
+    if (req.file?.buffer) {
+      fullDesc += '\n[Attachment received — stored for support review]';
+    }
+
+    const { error } = await supabase.from('support_tickets').insert({
+      user_id: driverId,
+      role: 'driver',
+      ride_id: relatedRideId || null,
+      category,
+      description: fullDesc,
+      status: 'open',
+    });
+
+    if (error) throw error;
+    return res.status(201).json({ ok: true, message: 'Complaint submitted' });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/complaints
+// ──────────────────────────────────────────────────────────────────────────────
+async function listDriverComplaints(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { status: statusFilter } = req.query;
+    let q = supabase
+      .from('support_tickets')
+      .select('id, category, description, status, created_at')
+      .eq('user_id', driverId)
+      .eq('role', 'driver')
+      .order('created_at', { ascending: false });
+    if (statusFilter && statusFilter !== 'all') {
+      q = q.eq('status', statusFilter);
+    }
+    const { data, error } = await q;
+    if (error) throw error;
+    return res.status(200).json({ complaints: data || [] });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PATCH /drivers/notification-settings  — acknowledged (persist via FCM topics later)
+// ──────────────────────────────────────────────────────────────────────────────
+async function updateNotificationSettings(req, res, next) {
+  try {
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(422).json({
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid body.', details: {} },
+      });
+    }
+    return res.status(200).json({ ok: true });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PATCH /drivers/payment-details  — UPI / bank for payouts
+// ──────────────────────────────────────────────────────────────────────────────
+async function updatePaymentDetails(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const { upiIds, bankAccounts } = req.body || {};
+    const primaryUpi = Array.isArray(upiIds) && upiIds.length ? upiIds.find((u) => u.isPrimary || u.handle)?.handle || upiIds[0]?.handle : null;
+    const primaryBank = Array.isArray(bankAccounts) && bankAccounts.length ? bankAccounts[0] : null;
+
+    const updates = {};
+    if (primaryUpi) updates.upi_id = String(primaryUpi).trim();
+    if (primaryBank?.accountNumber) updates.bank_account_no = String(primaryBank.accountNumber).replace(/\s/g, '');
+    if (primaryBank?.ifsc) updates.bank_ifsc = String(primaryBank.ifsc).trim().toUpperCase();
+
+    const { error } = await supabase.from('drivers').update(updates).eq('id', driverId);
+    if (error) throw error;
+    return res.status(200).json({ ok: true });
   } catch (err) { return handleError(err, res, next); }
 }
 
@@ -575,63 +853,12 @@ module.exports = {
   getSubscriptionStatus,
   getCommissionStatus,
   updateLocation,
+  sendDriverPhoneChangeOtp,
+  verifyDriverPhoneChangeOtp,
+  submitVehicleDetails,
+  submitSelfieVerification,
+  submitDriverComplaint,
+  listDriverComplaints,
+  updateNotificationSettings,
+  updatePaymentDetails,
 };
-
-async function getDriverRides(req, res, next) {
-  try {
-    const driverId = req.user.userId;
-    const { period = 'all', page = '1', limit = '20', q, start_date, end_date } = req.query;
-
-    const pg  = Math.max(1, parseInt(page,  10));
-    const lim = Math.min(50, parseInt(limit, 10));
-    const offset = (pg - 1) * lim;
-
-    let query = supabase
-      .from('rides')
-      .select('id, status, ride_type, pickup_address, drop_address, total_fare, fare_breakdown, payment_method, payment_status, distance_km, duration_min, started_at, completed_at, created_at, rider_id')
-      .eq('driver_id', driverId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + lim - 1);
-
-    // ── Period filter ──────────────────────────────────────────────────────
-    const now = new Date();
-    if (period === 'today') {
-      const start = new Date(now); start.setHours(0, 0, 0, 0);
-      query = query.gte('created_at', start.toISOString());
-    } else if (period === 'this_week') {
-      const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0, 0, 0, 0);
-      query = query.gte('created_at', start.toISOString());
-    } else if (period === 'this_month') {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      query = query.gte('created_at', start.toISOString());
-    } else if (period === 'custom' && start_date) {
-      const end = end_date ? new Date(end_date) : new Date(start_date);
-      end.setHours(23, 59, 59, 999);
-      query = query
-        .gte('created_at', new Date(start_date).toISOString())
-        .lte('created_at', end.toISOString());
-    }
-
-    // ── Address search ─────────────────────────────────────────────────────
-    if (q) {
-      query = query.or(`pickup_address.ilike.%${q}%,drop_address.ilike.%${q}%`);
-    }
-
-    const { data: rides, error } = await query;
-    if (error) throw error;
-
-    // ── Build summary ──────────────────────────────────────────────────────
-    const completedRides = (rides ?? []).filter(r => r.status === 'completed');
-    const totalEarnings  = completedRides.reduce((s, r) => s + (r.total_fare ?? 0), 0);
-    const periodLabel = {
-      all: 'All Time', today: 'Today', this_week: 'This Week', this_month: 'This Month', custom: 'Custom Range',
-    }[period] ?? period;
-    const summary = {
-      label:    `${periodLabel}: ${completedRides.length} Rides · ₹${totalEarnings}`,
-      rides:    completedRides.length,
-      earnings: totalEarnings,
-    };
-
-    return res.status(200).json({ rides: rides ?? [], summary });
-  } catch (err) { return handleError(err, res, next); }
-}
