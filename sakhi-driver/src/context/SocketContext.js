@@ -63,7 +63,7 @@ export function SocketProvider({ children }) {
     const token = await getAccessToken();
     if (!token) return;
 
-    const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+    const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
     const socket = io(`${BASE_URL}/rides`, {   // ← /rides namespace (where driver rooms live)
       transports: ['websocket'],

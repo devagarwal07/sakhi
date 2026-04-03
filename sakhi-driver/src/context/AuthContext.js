@@ -14,6 +14,18 @@ import client, {
 
 import { DEV_BYPASS_AUTH } from '../utils/constants';
 
+/** Map GET /drivers/profile (flat) and verify-otp `driver` to app driver shape */
+function normalizeDriver(raw) {
+  if (!raw) return null;
+  const d = raw.driver ?? raw;
+  if (!d || !d.id) return null;
+  const onboarding_status =
+    d.verification_status === 'approved' ? 'approved'
+      : d.verification_status === 'rejected' ? 'rejected'
+        : d.onboarding_status ?? 'pending';
+  return { ...d, onboarding_status };
+}
+
 // ---------------------------------------------------------------------------
 // Mock driver — used when DEV_BYPASS_AUTH = true
 // ---------------------------------------------------------------------------
@@ -79,7 +91,7 @@ export function AuthProvider({ children }) {
       }
 
       const { data } = await client.get('/drivers/profile');
-      setDriver(data.driver);
+      setDriver(normalizeDriver(data));
       setIsAuthenticated(true);
     } catch {
       // Token invalid / network error → force logout
@@ -117,12 +129,14 @@ export function AuthProvider({ children }) {
       const { accessToken, refreshToken, driver: driverData } = data;
       await saveTokens(accessToken, refreshToken);
 
-      setDriver(driverData);
+      setDriver(normalizeDriver(driverData));
       setIsAuthenticated(true);
       return { success: true, driver: driverData };
     } catch (error) {
       const message =
-        error.response?.data?.message ?? 'Invalid OTP. Please try again.';
+        error.response?.data?.error?.message
+        ?? error.response?.data?.message
+        ?? 'Invalid OTP. Please try again.';
       return { success: false, message };
     } finally {
       setIsLoading(false);
