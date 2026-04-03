@@ -1,15 +1,15 @@
 'use strict';
 
 const crypto = require('crypto');
-const axios = require('axios');
+const axios  = require('axios');
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
 
 /**
- * Generate a 6-digit OTP, store it in otp_codes, and send via MSG91.
+ * Generate a 6-digit OTP, store it in otp_codes, and send via Exotel SMS API.
  */
 async function sendOTP(phone) {
-  const otp = crypto.randomInt(100000, 999999).toString();
+  const otp       = crypto.randomInt(100000, 999999).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // +5 minutes
 
   // Persist OTP
@@ -22,26 +22,40 @@ async function sendOTP(phone) {
     throw Object.assign(new Error('Failed to store OTP'), { code: 'OTP_STORE_FAILED', status: 500 });
   }
 
-  // Send via MSG91
+  // Send via Exotel SMS API
   try {
-    await axios.post(
-      'https://api.msg91.com/api/v5/otp',
-      {
-        template_id: process.env.MSG91_TEMPLATE_ID,
-        mobile: phone,
-        otp,
-      },
-      {
-        headers: {
-          authkey: process.env.MSG91_AUTH_KEY,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    logger.info('otpService.sendOTP — OTP sent', { phone });
+    const sid   = process.env.EXOTEL_SID;
+    const key   = process.env.EXOTEL_API_KEY;
+    const token = process.env.EXOTEL_API_TOKEN;
+
+    if (!sid || !key || !token) {
+      logger.warn('otpService.sendOTP — Exotel credentials not configured');
+    } else {
+      // Normalise: Exotel expects E.164 (e.g. +919876543210)
+      const mobile = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
+
+      const messageBody = `Your Sakhi OTP is ${otp}. Valid for 5 minutes. Do not share it with anyone.`;
+
+      const params = new URLSearchParams({
+        From:           process.env.EXOTEL_SENDER_ID || 'SAKHI',
+        To:             mobile,
+        Body:           messageBody,
+        DltTemplateId:  process.env.EXOTEL_DLT_OTP_TEMPLATE_ID || process.env.EXOTEL_DLT_TEMPLATE_ID || '',
+        Priority:       'high', // treat OTP as high-priority transactional SMS
+      });
+
+      const url = `https://${key}:${token}@api.in.exotel.com/v1/Accounts/${sid}/Sms/send`;
+
+      await axios.post(url, params.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 8000,
+      });
+
+      logger.info('otpService.sendOTP — OTP sent via Exotel', { phone });
+    }
   } catch (smsErr) {
     // Log but do not fail — OTP is stored; client can retry verify
-    logger.error('otpService.sendOTP — MSG91 error', {
+    logger.error('otpService.sendOTP — Exotel error', {
       phone,
       error: smsErr?.response?.data || smsErr.message,
     });
@@ -76,7 +90,7 @@ async function verifyOTP(phone, candidateOtp) {
 
   // Constant-time comparison to prevent timing attacks
   const candidateBuf = Buffer.from(String(candidateOtp).padEnd(6, ' '));
-  const storedBuf = Buffer.from(String(record.code).padEnd(6, ' '));
+  const storedBuf    = Buffer.from(String(record.code).padEnd(6, ' '));
 
   if (candidateBuf.length !== storedBuf.length || !crypto.timingSafeEqual(candidateBuf, storedBuf)) {
     throw Object.assign(new Error('Invalid OTP'), { code: 'OTP_INVALID', status: 400 });
