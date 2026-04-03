@@ -35,7 +35,19 @@ router.post('/:id/accept',    authMiddleware, roleGuard('driver'),          ride
 /** POST /rides/:id/reject — driver rejects a ride request */
 router.post('/:id/reject',    authMiddleware, roleGuard('driver'),          rideController.rejectRide);
 
-/** POST /rides/:id/rating — rider rates the driver after completion */
-router.post('/:id/rating',    authMiddleware, roleGuard('rider'),           rideController.rateRide);
+/** POST /rides/:id/payment/order  — create Razorpay order for ride fare (rider only) */
+router.post('/:id/payment/order',  authMiddleware, roleGuard('rider'), rideController.createRidePaymentOrder);
+
+/** POST /rides/:id/payment/verify — verify Razorpay signature and mark ride paid */
+router.post('/:id/payment/verify', authMiddleware, roleGuard('rider'), rideController.verifyRidePayment);
+
+/** GET /rides/:id/fare-summary — driver fetches fare breakdown after completion */
+router.get('/:id/fare-summary',    authMiddleware, roleGuard('driver', 'rider'), rideController.fareSummary);
+
+/** POST /rides/:id/cash-collected — driver confirms cash payment received */
+router.post('/:id/cash-collected', authMiddleware, roleGuard('driver'), rideController.cashCollected);
+
+/** POST /rides/:id/rate-rider — driver rates the rider */
+router.post('/:id/rate-rider',     authMiddleware, roleGuard('driver'), rideController.rateRider);
 
 module.exports = router;
