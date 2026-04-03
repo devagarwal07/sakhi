@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Platform, ActivityIndicator,
+  View, Text, TouchableOpacity,
+  StyleSheet, ScrollView, ActivityIndicator,
+  SafeAreaView, Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -159,79 +162,135 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
   const screenTitle = isWeekly ? 'Weekly Commission' : 'Daily Commission';
   const driverName  = driver?.full_name?.split(' ')[0] ?? 'Driver';
 
-  const [method,       setMethod]       = useState('upi');
-  const [upiId,        setUpiId]        = useState('');
-  const [upiVerified,  setUpiVerified]  = useState(false);
-  const [processing,   setProcessing]   = useState(false);
-  const [loading,      setLoading]      = useState(false);
-  const [modal,        setModal]        = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [rzpHtml, setRzpHtml]               = useState(null);
+  const [showWebView, setShowWebView]       = useState(false);
+  const [modal, setModal]                   = useState(null);
 
-  // ── UPI-specific fields
-  const [cardNumber,   setCardNumber]   = useState('');
-  const [cardExpiry,   setCardExpiry]   = useState('');
-  const [cardCvv,      setCardCvv]      = useState('');
-  const [cardName,     setCardName]     = useState('');
-
-  const handleVerifyUpi = () => {
-    if (!upiId.includes('@')) {
-      setModal({
-        icon: '⚠️',
-        title: 'Invalid UPI ID',
-        message: 'UPI ID must contain @  (e.g. name@okaxis)',
-        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+  // ── Build Razorpay checkout HTML ────────────────────────────────────────
+  function buildRzpHtml({ key_id, order_id, amount, currency }) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#F5F0FF; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .loader { text-align:center; font-family:sans-serif; color:#6B7280; font-size:14px; }
+    .spinner { width:36px; height:36px; border:3px solid #EDE9FE; border-top:3px solid #BEA3D8;
+      border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="loader"><div class="spinner"></div>Opening payment…</div>
+  <script>
+    var options = {
+      key:         "${key_id}",
+      order_id:    "${order_id}",
+      amount:      "${amount}",
+      currency:    "${currency}",
+      name:        'Sakhi',
+      description: '${isWeekly ? 'Weekly' : 'Daily'} Platform Commission',
+      prefill: { name: '${driverName}' },
+      theme: { color: '#BEA3D8' },
+      modal: {
+        ondismiss: function() {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DISMISSED' }));
+        }
+      },
+      handler: function(response) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type:                'SUCCESS',
+          razorpay_order_id:   response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature:  response.razorpay_signature,
+        }));
+      }
+    };
+    try {
+      var rzp = new Razorpay(options);
+      rzp.on('payment.failed', function(resp) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type:'FAILED', error: resp.error.description }));
       });
-      return;
+      rzp.open();
+    } catch(e) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type:'ERROR', error: e.message }));
     }
-    setUpiVerified(true);
-    setModal({
-      icon: '✅',
-      title: 'UPI Verified',
-      message: `${upiId} is ready for payment.`,
-      buttons: [{ text: 'Great!', style: 'primary', onPress: () => setModal(null) }],
-    });
-  };
+  </script>
+</body>
+</html>`;
+  }
 
+  // ── Pay — create order then open WebView ────────────────────────────────
   const handlePay = async () => {
-    if (method === 'upi' && !upiId.trim()) {
-      setModal({
-        icon: '⚠️',
-        title: 'UPI ID Required',
-        message: 'Please enter your UPI ID to proceed.',
-        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-      });
-      return;
-    }
-    if (method === 'card' && (!cardNumber || !cardExpiry || !cardCvv || !cardName)) {
-      setModal({
-        icon: '⚠️',
-        title: 'Card Details Required',
-        message: 'Please fill in all card details.',
-        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-      });
-      return;
-    }
-
-    setProcessing(true);
-    setLoading(true);
-
-    // Fire API in background
-    client.post('/drivers/commission-pay', {
-      period, amount,
-      payment_method: method,
-      upi_id: method === 'upi' ? upiId : undefined,
-    }).catch(() => {});
-
-    // Simulate processing (2.5s) → navigate
-    setTimeout(() => {
-      setProcessing(false);
-      setLoading(false);
-      navigation.replace('CommissionPaidConfirmation', {
+    try {
+      setPaymentLoading(true);
+      const { data } = await client.post('/payments/commission/order', {
         amount,
         period,
-        method: method === 'upi' ? 'UPI' : method === 'card' ? 'Debit/Credit Card' : 'Net Banking',
-        txnId: `TXN${Date.now()}`,
+        driver_id: driver?.id,
       });
-    }, 2500);
+      setRzpHtml(buildRzpHtml({
+        key_id:   data.key_id,
+        order_id: data.order_id,
+        amount:   String(data.amount),
+        currency: data.currency || 'INR',
+      }));
+      setShowWebView(true);
+    } catch (err) {
+      setModal({
+        icon: '⚠️',
+        title: 'Payment Error',
+        message: err.response?.data?.message ?? 'Could not initiate payment. Please try again.',
+        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+      });
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // ── Handle WebView message from Razorpay ────────────────────────────────
+  const handleWebViewMessage = async (event) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg.type === 'SUCCESS') {
+        setShowWebView(false);
+        try {
+          // Verify signature on backend
+          await client.post('/payments/commission/verify', {
+            razorpay_order_id:   msg.razorpay_order_id,
+            razorpay_payment_id: msg.razorpay_payment_id,
+            razorpay_signature:  msg.razorpay_signature,
+            period,
+            amount,
+          });
+          navigation.replace('CommissionPaidConfirmation', {
+            amount, period,
+            method: 'Razorpay',
+            txnId:  msg.razorpay_payment_id,
+          });
+        } catch {
+          setModal({
+            icon: '⚠️',
+            title: 'Verification Failed',
+            message: 'Payment received but verification failed. Contact support with your payment ID.',
+            buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+          });
+        }
+      } else if (msg.type === 'DISMISSED') {
+        setShowWebView(false);
+      } else if (msg.type === 'FAILED' || msg.type === 'ERROR') {
+        setShowWebView(false);
+        setModal({
+          icon: '⚠️',
+          title: 'Payment Failed',
+          message: msg.error ?? 'Something went wrong. Please try again.',
+          buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+        });
+      }
+    } catch { /* JSON parse error — ignore */ }
   };
 
   // Breakdown rows
@@ -283,81 +342,13 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           <Text style={s.warningText}>Unpaid commission — you cannot go online until this is cleared.</Text>
         </View>
 
-        {/* ── PAY VIA label ── */}
-        <Text style={s.sectionLabel}>PAY VIA</Text>
-
-        {/* ── UPI ── */}
-        <PayMethodCard
-          id="upi" icon="📲"
-          label="UPI (PhonePe / GPay)"
-          badge="Instant · No extra charges"
-          active={method === 'upi'}
-          onPress={() => { setMethod('upi'); setUpiVerified(false); }}
-        >
-          <View style={s.upiInputRow}>
-            <TextInput
-              style={s.upiInput}
-              placeholder="Enter UPI ID  (e.g. name@okaxis)"
-              placeholderTextColor="#B0A8C0"
-              value={upiId}
-              onChangeText={(t) => { setUpiId(t); setUpiVerified(false); }}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TouchableOpacity
-              style={[s.verifyBtn, upiVerified && s.verifyBtnDone]}
-              onPress={handleVerifyUpi}
-            >
-              <Text style={s.verifyBtnText}>{upiVerified ? 'Done ✓' : 'Verify'}</Text>
-            </TouchableOpacity>
+        {/* ── PAY VIA info ── */}
+        <View style={s.rzpInfoCard}>
+          <Feather name="shield" size={18} color={PURPLE} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.rzpInfoTitle}>Pay via Razorpay</Text>
+            <Text style={s.rzpInfoSub}>UPI · Cards · Net Banking · Wallets — all supported</Text>
           </View>
-          {/* Saved UPI hint */}
-          <TouchableOpacity style={s.savedUpiHint} onPress={() => setUpiId('driver@okaxis')}>
-            <Text style={s.savedUpiHintText}>💾  Use saved: driver@okaxis</Text>
-          </TouchableOpacity>
-        </PayMethodCard>
-
-        {/* ── Card ── */}
-        <PayMethodCard
-          id="card" icon="💳"
-          label="Debit / Credit Card"
-          badge="Visa · Mastercard · Rupay"
-          active={method === 'card'}
-          onPress={() => setMethod('card')}
-        >
-          <View style={s.cardFormWrap}>
-            <TextInput style={s.cardInput} placeholder="Card Number" placeholderTextColor="#B0A8C0"
-              value={cardNumber} onChangeText={setCardNumber} keyboardType="numeric" maxLength={19} />
-            <View style={s.cardRow}>
-              <TextInput style={[s.cardInput, s.cardInputHalf]} placeholder="MM/YY" placeholderTextColor="#B0A8C0"
-                value={cardExpiry} onChangeText={setCardExpiry} keyboardType="numeric" maxLength={5} />
-              <TextInput style={[s.cardInput, s.cardInputHalf]} placeholder="CVV" placeholderTextColor="#B0A8C0"
-                value={cardCvv} onChangeText={setCardCvv} keyboardType="numeric" maxLength={4} secureTextEntry />
-            </View>
-            <TextInput style={s.cardInput} placeholder="Cardholder Name" placeholderTextColor="#B0A8C0"
-              value={cardName} onChangeText={setCardName} autoCapitalize="words" />
-          </View>
-        </PayMethodCard>
-
-        {/* ── Net Banking ── */}
-        <PayMethodCard
-          id="net" icon="🏦"
-          label="Net Banking"
-          badge="All major banks supported"
-          active={method === 'net'}
-          onPress={() => setMethod('net')}
-        >
-          <View style={s.netBankingNote}>
-            <Text style={s.netBankingNoteText}>You'll be redirected to your bank's portal to complete payment.</Text>
-          </View>
-        </PayMethodCard>
-
-        {/* ── Policy note ── */}
-        <View style={s.policyNote}>
-          <Text style={s.policyIcon}>ⓘ</Text>
-          <Text style={s.policyText}>
-            Commission is non-refundable. Your online status will be activated immediately after successful payment.
-          </Text>
         </View>
 
       </ScrollView>
@@ -372,13 +363,15 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
 
         {/* Pay CTA */}
         <TouchableOpacity
-          style={[s.payBtn, loading && s.payBtnDisabled]}
+          style={[s.payBtn, paymentLoading && s.payBtnDisabled]}
           onPress={handlePay}
-          disabled={loading}
+          disabled={paymentLoading}
           activeOpacity={0.85}
         >
-          <Text style={s.payBtnText}>{loading ? 'Processing…' : `Pay ₹${amount} & Go Online`}</Text>
-          {!loading && <Text style={s.payBtnIcon}> ⚡</Text>}
+          {paymentLoading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={s.payBtnText}>Pay ₹{amount} via Razorpay ⚡</Text>
+          }
         </TouchableOpacity>
 
         {/* Pay Later */}
@@ -391,8 +384,32 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* ── Processing Overlay ── */}
-      <ProcessingOverlay visible={processing} amount={amount} />
+      {/* ── Razorpay WebView modal ── */}
+      <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>
+        <View style={{ flex: 1, backgroundColor: '#F5F0FF' }}>
+          <View style={s.webViewHeader}>
+            <Text style={s.webViewTitle}>Secure Payment</Text>
+            <TouchableOpacity onPress={() => setShowWebView(false)}>
+              <Feather name="x" size={22} color="#1C1A25" />
+            </TouchableOpacity>
+          </View>
+          {rzpHtml && (
+            <WebView
+              source={{ html: rzpHtml }}
+              javaScriptEnabled
+              domStorageEnabled
+              originWhitelist={['*']}
+              onMessage={handleWebViewMessage}
+              startInLoadingState
+              renderLoading={() => (
+                <View style={s.wvLoader}>
+                  <ActivityIndicator size="large" color="#BEA3D8" />
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* ── SakhiModal ── */}
       <SakhiModal config={modal} onClose={() => setModal(null)} />
@@ -488,4 +505,26 @@ const s = StyleSheet.create({
   payBtnIcon: { fontSize: 16, color: WHITE },
   payLaterBtn:  { alignItems: 'center', paddingVertical: 2 },
   payLaterText: { fontSize: 11, fontWeight: '700', color: PURPLE, textTransform: 'uppercase', letterSpacing: 1 },
+
+  // Razorpay info card
+  rzpInfoCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#EDE9FE', borderRadius: 16, padding: 18,
+    borderWidth: 1, borderColor: 'rgba(190,163,216,0.3)',
+  },
+  rzpInfoTitle: { fontSize: 15, fontWeight: '700', color: DARK, marginBottom: 2 },
+  rzpInfoSub:   { fontSize: 12, color: MUTED, lineHeight: 16 },
+
+  // Razorpay WebView modal header
+  webViewHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 16,
+    backgroundColor: WHITE,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(190,163,216,0.2)',
+  },
+  webViewTitle: { fontSize: 16, fontWeight: '700', color: DARK },
+  wvLoader: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F0FF',
+  },
 });
