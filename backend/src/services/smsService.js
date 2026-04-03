@@ -3,35 +3,40 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-const MSG91_BASE = 'https://api.msg91.com/api/v5';
+// ──────────────────────────────────────────────────────────────────────────────
+// Exotel SMS helper — builds the authenticated endpoint URL
+// Endpoint: POST https://<api_key>:<api_token>@api.in.exotel.com/v1/Accounts/<sid>/Sms/send
+// ──────────────────────────────────────────────────────────────────────────────
+function getExotelSmsUrl() {
+  const sid   = process.env.EXOTEL_SID;
+  const key   = process.env.EXOTEL_API_KEY;
+  const token = process.env.EXOTEL_API_TOKEN;
+  return `https://${key}:${token}@api.in.exotel.com/v1/Accounts/${sid}/Sms/send`;
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // FUNCTION: sendSMS
-// Send a single SMS via MSG91 flow/template API
+// Send a single SMS via Exotel SMS API
 // ──────────────────────────────────────────────────────────────────────────────
 async function sendSMS(phone, message) {
   try {
-    if (!process.env.MSG91_AUTH_KEY || !process.env.MSG91_TEMPLATE_ID) {
-      logger.warn('smsService.sendSMS — MSG91 credentials not configured');
+    if (!process.env.EXOTEL_SID || !process.env.EXOTEL_API_KEY || !process.env.EXOTEL_API_TOKEN) {
+      logger.warn('smsService.sendSMS — Exotel credentials not configured');
       return { sent: false, reason: 'not_configured' };
     }
 
-    // Normalise: MSG91 expects plain 10-digit or E.164 without leading +
-    const mobile = phone.replace(/^\+/, '');
+    // Normalise: Exotel expects E.164 format (e.g. +919876543210)
+    const mobile = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
 
-    const payload = {
-      flow_id:  process.env.MSG91_TEMPLATE_ID,
-      sender:   'SAKHI',
-      mobiles:  mobile,
-      VAR1:     message,
-    };
+    const params = new URLSearchParams({
+      From:           process.env.EXOTEL_SENDER_ID || 'SAKHI',
+      To:             mobile,
+      Body:           message,
+      DltTemplateId:  process.env.EXOTEL_DLT_TEMPLATE_ID || '',
+    });
 
-    const { data } = await axios.post(`${MSG91_BASE}/flow/`, payload, {
-      headers: {
-        authkey:        process.env.MSG91_AUTH_KEY,
-        'Content-Type': 'application/json',
-        Accept:         'application/json',
-      },
+    const { data } = await axios.post(getExotelSmsUrl(), params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       timeout: 8000,
     });
 
@@ -46,38 +51,22 @@ async function sendSMS(phone, message) {
 // ──────────────────────────────────────────────────────────────────────────────
 // FUNCTION: sendBulkSMS
 // Send the same message to multiple phone numbers.
-// MSG91 accepts mobiles as comma-separated string or repeating fields.
+// Exotel does not have a native bulk endpoint — fire individual requests in parallel.
 // ──────────────────────────────────────────────────────────────────────────────
 async function sendBulkSMS(phones, message) {
   try {
-    if (!process.env.MSG91_AUTH_KEY || !process.env.MSG91_TEMPLATE_ID) {
-      logger.warn('smsService.sendBulkSMS — MSG91 credentials not configured');
+    if (!process.env.EXOTEL_SID || !process.env.EXOTEL_API_KEY || !process.env.EXOTEL_API_TOKEN) {
+      logger.warn('smsService.sendBulkSMS — Exotel credentials not configured');
       return { sent: false, reason: 'not_configured' };
     }
 
     if (!phones?.length) return { sent: false, reason: 'no_recipients' };
 
-    // Normalise all numbers
-    const mobiles = phones.map((p) => p.replace(/^\+/, '')).join(',');
+    const results = await Promise.allSettled(phones.map((p) => sendSMS(p, message)));
 
-    const payload = {
-      flow_id:  process.env.MSG91_TEMPLATE_ID,
-      sender:   'SAKHI',
-      mobiles,
-      VAR1:     message,
-    };
-
-    const { data } = await axios.post(`${MSG91_BASE}/flow/`, payload, {
-      headers: {
-        authkey:        process.env.MSG91_AUTH_KEY,
-        'Content-Type': 'application/json',
-        Accept:         'application/json',
-      },
-      timeout: 15000,
-    });
-
-    logger.info('smsService.sendBulkSMS — sent', { count: phones.length, response: data });
-    return { sent: true, count: phones.length, response: data };
+    const successCount = results.filter((r) => r.status === 'fulfilled' && r.value?.sent).length;
+    logger.info('smsService.sendBulkSMS — sent', { total: phones.length, success: successCount });
+    return { sent: true, count: successCount, total: phones.length };
   } catch (err) {
     logger.error('smsService.sendBulkSMS — error', { count: phones?.length, error: err.message });
     return { sent: false, reason: err.message };
