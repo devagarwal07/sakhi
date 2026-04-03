@@ -12,7 +12,7 @@ const logger         = require('../utils/logger');
 
 const router = Router();
 
-const phoneSchema = z.string().regex(/^\+[1-9]\d{1,14}$/, 'Phone must be in E.164 format');
+const phoneSchema = z.string().regex(/^\+?[1-9]\d{9,14}$/, 'Phone must be a valid 10-15 digit number');
 
 const changePhoneLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
