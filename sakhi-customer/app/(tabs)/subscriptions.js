@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from '
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 import SakhiModal from '../../src/components/SakhiModal';
+import { cancelSubscription, toggleSubscriptionPause } from '../../src/api/endpoints';
 
 export default function SubscriptionsDashboard() {
     const router = useRouter();
@@ -13,6 +14,7 @@ export default function SubscriptionsDashboard() {
     const [modal, setModal] = useState(null);
 
     const handlePause = () => {
+        if (!sub.id) return; // Prevent action if mock data
         setModal({
             icon: isPaused ? '▶️' : '⏸️',
             title: isPaused ? 'Resume Subscription' : 'Pause Subscription',
@@ -23,9 +25,21 @@ export default function SubscriptionsDashboard() {
                 { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
                 { 
                     text: isPaused ? 'Resume' : 'Pause', 
-                    onPress: () => {
-                        setIsPaused(!isPaused);
+                    onPress: async () => {
                         setModal(null);
+                        try {
+                            // Call API to toggle pause state
+                            await toggleSubscriptionPause(sub.id, !isPaused);
+                            setIsPaused(!isPaused);
+                        } catch (err) {
+                            console.error('Failed to toggle pause:', err);
+                            setTimeout(() => {
+                                setModal({
+                                    icon: '❌', title: 'Error', message: 'Could not update subscription.',
+                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                });
+                            }, 500);
+                        }
                     } 
                 },
             ]
@@ -33,6 +47,7 @@ export default function SubscriptionsDashboard() {
     };
 
     const handleCancel = () => {
+        if (!sub.id) return; // Prevent action if mock data
         setModal({
             icon: '⚠️',
             title: 'Cancel Subscription?',
@@ -42,16 +57,32 @@ export default function SubscriptionsDashboard() {
                 { 
                     text: 'Yes, Cancel', 
                     style: 'destructive', 
-                    onPress: () => {
+                    onPress: async () => {
                         setModal(null);
-                        setTimeout(() => {
-                            setModal({
-                                icon: '✅',
-                                title: 'Subscription Cancelled',
-                                message: 'Your plan has been cancelled.',
-                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                            });
-                        }, 500);
+                        try {
+                            // Call API to cancel subscription
+                            await cancelSubscription(sub.id);
+                            
+                            setTimeout(() => {
+                                setModal({
+                                    icon: '✅',
+                                    title: 'Subscription Cancelled',
+                                    message: 'Your plan has been cancelled successfully.',
+                                    buttons: [{ text: 'OK', onPress: () => {
+                                        setModal(null);
+                                        router.replace('/(tabs)/'); // Go back to Home
+                                    }}]
+                                });
+                            }, 500);
+                        } catch (err) {
+                            console.error('Failed to cancel subscription:', err);
+                            setTimeout(() => {
+                                setModal({
+                                    icon: '❌', title: 'Error', message: 'Could not cancel subscription.',
+                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                });
+                            }, 500);
+                        }
                     } 
                 },
             ]
@@ -67,7 +98,10 @@ export default function SubscriptionsDashboard() {
         : (sub.days?.join(', ') || 'Mon–Fri');
 
     const pickupTime = sub.morningTime || '8:30 AM';
-    const totalRides = sub.plan || 30;
+    const ridesTotal = sub.rides_total ?? sub.plan ?? sub.total_rides ?? 30;
+    const ridesUsed  = sub.rides_used  ?? sub.used  ?? 0;
+    const ridesRemaining = Math.max(0, ridesTotal - ridesUsed);
+    const progressPercent = ridesTotal > 0 ? (ridesRemaining / ridesTotal) * 100 : 0;
 
     // Generate upcoming dates sequentially from tomorrow
     const generateUpcoming = () => {
@@ -125,11 +159,16 @@ export default function SubscriptionsDashboard() {
                     {/* Progress */}
                     <View style={styles.progressSection}>
                         <View style={styles.progressRow}>
-                            <Text style={styles.progressNumbers}>18 / {totalRides}</Text>
+                            <View style={styles.progressLeft}>
+                                <Text style={styles.progressNumbers}>
+                                    {ridesRemaining}
+                                    <Text style={styles.progressTotal}> / {ridesTotal}</Text>
+                                </Text>
+                            </View>
                             <Text style={styles.progressLabel}>RIDES REMAINING</Text>
                         </View>
                         <View style={styles.progressTrack}>
-                            <View style={[styles.progressBar, { width: `${(18/totalRides)*100}%` }]} />
+                            <View style={[styles.progressBar, { width: `${progressPercent}%` }]} />
                         </View>
                     </View>
 
@@ -145,8 +184,8 @@ export default function SubscriptionsDashboard() {
                     <TouchableOpacity style={[styles.actionBtn, styles.pauseBtn]} activeOpacity={0.8} onPress={handlePause}>
                         <Text style={styles.pauseText}>{isPaused ? 'Resume' : 'Pause'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.resumeBtn]} activeOpacity={0.8} onPress={() => router.push('/subscription-ride')}>
-                        <Text style={styles.resumeText}>Modify</Text>
+                    <TouchableOpacity style={[styles.actionBtn, styles.modifyBtn]} activeOpacity={0.8} onPress={() => router.push('/subscription-ride')}>
+                        <Text style={styles.modifyText}>Modify</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} activeOpacity={0.8} onPress={handleCancel}>
                         <Text style={styles.cancelText}>Cancel</Text>
@@ -228,7 +267,9 @@ const styles = StyleSheet.create({
 
     progressSection: { marginBottom: 16 },
     progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 },
-    progressNumbers: { fontSize: 24, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.6 },
+    progressLeft: { flexDirection: 'column' },
+    progressNumbers: { fontSize: 32, fontWeight: '900', color: '#1E1B2E', letterSpacing: -0.8 },
+    progressTotal: { fontSize: 20, fontWeight: '500', color: '#9CA3AF', letterSpacing: -0.4 },
     progressLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
     progressTrack: { height: 10, backgroundColor: '#F5F0FF', borderRadius: 5, overflow: 'hidden' },
     progressBar: { height: '100%', backgroundColor: '#BEA3D8', borderRadius: 5 },
@@ -243,8 +284,8 @@ const styles = StyleSheet.create({
     pauseBtn: { borderColor: '#FB923C' },
     pauseText: { fontSize: 12, fontWeight: '700', color: '#F97316' },
     
-    resumeBtn: { borderColor: '#D1FAE5' },
-    resumeText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF' },
+    modifyBtn: { borderColor: '#10B981' },
+    modifyText: { fontSize: 12, fontWeight: '700', color: '#10B981' },
     
     cancelBtn: { borderColor: '#F87171' },
     cancelText: { fontSize: 12, fontWeight: '700', color: '#EF4444' },
