@@ -227,7 +227,7 @@ export default function OtpScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FCF8FF',
+        backgroundColor: '#F5F0FF',
     },
 
     // Decorative glows
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
         width: 256,
         height: 256,
         borderRadius: 9999,
-        backgroundColor: 'rgba(99, 14, 212, 0.05)',
+        backgroundColor: 'rgba(190,163,216,0.05)',
     },
     glowBottomLeft: {
         position: 'absolute',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: '700',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         letterSpacing: -0.8,
         lineHeight: 48,
         textAlign: 'center',
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 24,
         fontWeight: '700',
-        color: '#1C1A25',
+        color: '#1E1B2E',
     },
     otpBoxFocused: {
         borderWidth: 2,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
         width: 128,
         height: 128,
         borderRadius: 9999,
-        backgroundColor: 'rgba(99, 14, 212, 0.08)',
+        backgroundColor: 'rgba(190,163,216,0.08)',
         opacity: 0.6,
         alignItems: 'center',
         justifyContent: 'center',

@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
         width: width * 0.66,
         height: width * 0.66,
         borderRadius: 9999,
-        backgroundColor: 'rgba(99, 14, 212, 0.05)',
+        backgroundColor: 'rgba(190,163,216,0.05)',
     },
     // Decorative glow — bottom right
     glowBottomRight: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     empoweringText: {
         fontSize: 10,
         fontWeight: '400',
-        color: '#7B7487',
+        color: '#94A3B8',
         letterSpacing: 2,
         lineHeight: 15,
         textAlign: 'center',

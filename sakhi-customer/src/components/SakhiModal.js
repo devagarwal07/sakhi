@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         textAlign: 'center',
         letterSpacing: -0.4,
         marginBottom: 8,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     message: {
         fontSize: 14,
         fontWeight: '400',
-        color: '#4A4455',
+        color: '#64748B',
         textAlign: 'center',
         lineHeight: 22,
         marginBottom: 24,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     btnTextCancel: {
-        color: '#4A4455',
+        color: '#64748B',
     },
     btnTextDestructive: {
         color: '#DC2626',
