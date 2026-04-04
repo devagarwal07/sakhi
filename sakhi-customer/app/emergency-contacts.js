@@ -1,25 +1,57 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Switch, Platform, Modal, TextInput
+import React, { useState, useEffect } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    Switch, Platform, Modal, TextInput, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../src/api/endpoints';
+
+const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Friend', 'Spouse', 'Other'];
 
 export default function EmergencyContactsScreen() {
     const router = useRouter();
 
-    const [contacts, setContacts] = useState([
-        { id: '1', name: 'Anita Sharma', relation: 'MOTHER', phone: '+91 98765 00001', autoShare: true, color: '#BEA3D8', initial: 'A' },
-        { id: '2', name: 'Riya Sharma', relation: 'SISTER', phone: '+91 98765 00002', autoShare: false, color: '#AB8FFE', initial: 'R' },
-    ]);
+    const [contacts, setContacts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     const [isAddModalVisible, setAddModalVisible] = useState(false);
     const [newName, setNewName] = useState('');
     const [newPhone, setNewPhone] = useState('');
     const [newRelation, setNewRelation] = useState('Friend');
     const [alertModal, setAlertModal] = useState(null);
+
+    const AVATAR_COLORS = ['#BEA3D8', '#AB8FFE', '#68C4AF', '#F9A8D4', '#FCD34D'];
+
+    // ── Load contacts from backend ─────────────────────────────────────────
+    useEffect(() => {
+        loadContacts();
+    }, []);
+
+    const loadContacts = async () => {
+        setLoading(true);
+        try {
+            const { data } = await getEmergencyContacts();
+            const raw = data.contacts || data || [];
+            setContacts(raw.map((c, i) => ({
+                ...c,
+                autoShare: c.auto_share ?? false,
+                color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                initial: (c.name || 'U')[0].toUpperCase(),
+            })));
+        } catch (err) {
+            setAlertModal({
+                icon: '⚠️',
+                title: 'Error',
+                message: 'Could not load emergency contacts.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleAutoShare = (id) => {
         setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: !c.autoShare } : c));
@@ -32,91 +64,120 @@ export default function EmergencyContactsScreen() {
             message: `Remove ${name} from emergency contacts?`,
             buttons: [
                 { text: 'Cancel', style: 'cancel', onPress: () => setAlertModal(null) },
-                { 
-                    text: 'Remove', 
-                    style: 'destructive', 
-                    onPress: () => {
+                {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: async () => {
                         setAlertModal(null);
-                        setContacts(prev => prev.filter(c => c.id !== id));
-                    } 
+                        try {
+                            await deleteEmergencyContact(id);
+                            setContacts(prev => prev.filter(c => c.id !== id));
+                        } catch {
+                            setTimeout(() => setAlertModal({
+                                icon: '⚠️', title: 'Error', message: 'Could not remove contact.',
+                                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+                            }), 300);
+                        }
+                    }
                 },
             ]
         });
     };
 
-    const handleSaveContact = () => {
-        if (!newName.trim()) { 
+    const handleSaveContact = async () => {
+        if (!newName.trim()) {
             setAlertModal({
-                icon: '⚠️',
-                title: 'Missing Info',
-                message: 'Please enter a name.',
+                icon: '⚠️', title: 'Missing Info', message: 'Please enter a name.',
                 buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
             });
-            return; 
+            return;
         }
-        if (newPhone.replace(/\D/g, '').length < 10) { 
+        const cleaned = newPhone.replace(/\D/g, '');
+        if (cleaned.length < 10) {
             setAlertModal({
-                icon: '⚠️',
-                title: 'Invalid Number',
-                message: 'Please enter a 10-digit phone number.',
+                icon: '⚠️', title: 'Invalid Number', message: 'Please enter a 10-digit phone number.',
                 buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
             });
-            return; 
+            return;
         }
-        const colors = ['#BEA3D8', '#AB8FFE', '#68C4AF'];
-        setContacts(prev => [...prev, {
-            id: String(Date.now()), name: newName.trim(), relation: newRelation.toUpperCase(),
-            phone: `+91 ${newPhone.trim()}`, autoShare: false,
-            color: colors[prev.length % colors.length], initial: newName[0].toUpperCase(),
-        }]);
-        setNewName(''); setNewPhone(''); setNewRelation('Friend');
-        setAddModalVisible(false);
+        setSaving(true);
+        try {
+            const { data } = await addEmergencyContact({
+                name: newName.trim(),
+                phone: `+91${cleaned}`,
+                relation: newRelation.toLowerCase(),
+            });
+            const contact = data.contact || data;
+            const i = contacts.length;
+            setContacts(prev => [...prev, {
+                ...contact,
+                autoShare: contact.auto_share ?? false,
+                color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                initial: (contact.name || 'U')[0].toUpperCase(),
+            }]);
+            setNewName(''); setNewPhone(''); setNewRelation('Friend');
+            setAddModalVisible(false);
+        } catch (err) {
+            setAlertModal({
+                icon: '⚠️', title: 'Error',
+                message: err?.response?.data?.message || 'Could not add contact.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                
+
                 {/* Header App Bar */}
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                        <Text style={styles.headerIcon}>←</Text>
-                    </TouchableOpacity>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
                         <Text style={styles.headerTitle}>Emergency Contacts</Text>
                     </View>
                     <View style={styles.iconBtn} />
                 </View>
 
                 {/* Main Scroll Content */}
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    
-                    {/* Top subtext */}
-                    <Text style={styles.pageSubText}>Contacts notified during SOS alerts</Text>
-
-                    {/* Info Banner */}
-                    <View style={styles.infoBanner}>
-                        <View style={styles.infoIconWrapper}>
-                            <Text style={styles.infoIcon}>ⓘ</Text>
-                        </View>
-                        <Text style={styles.infoText}>
-                            You can add up to 3 trusted contacts. They will receive your live location and trip details during an SOS.
-                        </Text>
+                {loading ? (
+                    <View style={styles.loadingWrap}>
+                        <ActivityIndicator size="large" color="#BEA3D8" />
                     </View>
+                ) : (
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                    {/* List of Contacts */}
-                    <View style={styles.contactsList}>
-                        {contacts.map(contact => (
-                            <View key={contact.id} style={styles.contactCard}>
-                                <View style={styles.cardTop}>
-                                    <View style={[styles.avatar, { backgroundColor: contact.color }]}>
-                                        <Text style={styles.avatarText}>{contact.initial}</Text>
-                                    </View>
-                                    <View style={styles.contactInfo}>
-                                        <View style={styles.nameRow}>
-                                            <Text style={styles.contactName}>{contact.name}</Text>
-                                            <View style={styles.relationBadge}>
-                                                <Text style={styles.relationBadgeText}>{contact.relation}</Text>
+                        {/* Top subtext */}
+                        <Text style={styles.pageSubText}>Contacts notified during SOS alerts</Text>
+
+                        {/* Info Banner */}
+                        <View style={styles.infoBanner}>
+                            <View style={styles.infoIconWrapper}>
+                                <Text style={styles.infoIcon}>ⓘ</Text>
+                            </View>
+                            <Text style={styles.infoText}>
+                                You can add up to 3 trusted contacts. They will receive your live location and trip details during an SOS.
+                            </Text>
+                        </View>
+
+                        {/* List of Contacts */}
+                        <View style={styles.contactsList}>
+                            {contacts.map(contact => (
+                                <View key={contact.id} style={styles.contactCard}>
+                                    <View style={styles.cardTop}>
+                                        <View style={[styles.avatar, { backgroundColor: contact.color }]}>
+                                            <Text style={styles.avatarText}>{contact.initial}</Text>
+                                        </View>
+                                        <View style={styles.contactInfo}>
+                                            <View style={styles.nameRow}>
+                                                <Text style={styles.contactName}>{contact.name}</Text>
+                                                <View style={styles.relationBadge}>
+                                                    <Text style={styles.relationBadgeText}>{(contact.relation || 'contact').toUpperCase()}</Text>
+                                                </View>
                                             </View>
                                         </View>
                                         <Text style={styles.contactPhone}>{contact.phone}</Text>
@@ -134,23 +195,22 @@ export default function EmergencyContactsScreen() {
                                             <Text style={styles.deleteIcon}>🗑</Text>
                                         </TouchableOpacity>
                                     </View>
-                                </View>
-                                <View style={styles.cardBottom}>
-                                    <View style={styles.autoShareInfo}>
-                                        <Text style={styles.shareIcon}>⛑</Text>
-                                        <Text style={styles.shareText}>Auto-share trip on start</Text>
+                                    <View style={styles.cardBottom}>
+                                        <View style={styles.autoShareInfo}>
+                                            <Text style={styles.shareIcon}>⛑</Text>
+                                            <Text style={styles.shareText}>Auto-share trip on start</Text>
+                                        </View>
+                                        <Switch
+                                            trackColor={{ false: '#EBE6F5', true: '#BEA3D8' }}
+                                            thumbColor="#FFFFFF"
+                                            ios_backgroundColor="#EBE6F5"
+                                            onValueChange={() => toggleAutoShare(contact.id)}
+                                            value={contact.autoShare}
+                                            style={styles.switchControl}
+                                        />
                                     </View>
-                                    <Switch
-                                        trackColor={{ false: '#F1F5F9', true: '#BEA3D8' }}
-                                        thumbColor="#FFFFFF"
-                                        ios_backgroundColor="#F1F5F9"
-                                        onValueChange={() => toggleAutoShare(contact.id)}
-                                        value={contact.autoShare}
-                                        style={styles.switchControl}
-                                    />
                                 </View>
-                            </View>
-                        ))}
+                            ))}
 
                         {/* Add Contact Button - show only if < 3 */}
                         {contacts.length < 3 && (
@@ -166,130 +226,142 @@ export default function EmergencyContactsScreen() {
                         )}
                     </View>
 
-                </ScrollView>
+                    </ScrollView>
+                )}
 
-                {/* Fixed Bottom Action */}
-                <View style={styles.bottomFixedWrap}>
-                    <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.saveBtnText}>Save Contacts</Text>
-                    </TouchableOpacity>
-                </View>
+            {/* Fixed Bottom Action */}
+            <View style={styles.bottomFixedWrap}>
+                <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                    <Text style={styles.saveBtnText}>Done</Text>
+                </TouchableOpacity>
+            </View>
 
-                {/* Add New Contact Bottom Sheet Overlay */}
-                <Modal
-                    visible={isAddModalVisible}
-                    transparent={true}
-                    animationType="slide"
-                    onRequestClose={() => setAddModalVisible(false)}
-                >
-                    <View style={styles.modalOverlay}>
-                        <TouchableOpacity 
-                            style={styles.modalBackdropClose} 
-                            activeOpacity={1} 
-                            onPress={() => setAddModalVisible(false)} 
-                        />
-                        <View style={styles.bottomSheet}>
-                            <View style={styles.dragHandle} />
-                            <View style={styles.sheetHeader}>
-                                <Text style={styles.sheetTitle}>Add New Contact</Text>
-                                <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
-                            </View>
-                            <View style={styles.formContent}>
-                                <View style={styles.fieldGroup}>
-                                    <Text style={styles.fieldLabel}>FULL NAME</Text>
-                                    <View style={styles.inputWrap}>
-                                        <TextInput 
-                                            style={styles.input} 
-                                            placeholder="Enter name"
-                                            placeholderTextColor="#6B7280"
-                                            value={newName}
-                                            onChangeText={setNewName}
-                                        />
-                                        <Text style={styles.inputIcon}>👤</Text>
-                                    </View>
+            {/* Add New Contact Bottom Sheet Overlay */}
+            <Modal
+                visible={isAddModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setAddModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity
+                        style={styles.modalBackdropClose}
+                        activeOpacity={1}
+                        onPress={() => setAddModalVisible(false)}
+                    />
+                    <View style={styles.bottomSheet}>
+                        <View style={styles.dragHandle} />
+                        <View style={styles.sheetHeader}>
+                            <Text style={styles.sheetTitle}>Add New Contact</Text>
+                            <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
+                        </View>
+                        <View style={styles.formContent}>
+                            <View style={styles.fieldGroup}>
+                                <Text style={styles.fieldLabel}>FULL NAME</Text>
+                                <View style={styles.inputWrap}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Enter name"
+                                        placeholderTextColor="#6B7280"
+                                        value={newName}
+                                        onChangeText={setNewName}
+                                    />
+                                    <Text style={styles.inputIcon}>👤</Text>
                                 </View>
-                                <View style={styles.fieldGroup}>
-                                    <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
-                                    <View style={styles.inputWrap}>
-                                        <TextInput 
-                                            style={styles.input} 
-                                            placeholder="10-digit mobile number"
-                                            placeholderTextColor="#6B7280"
-                                            keyboardType="phone-pad"
-                                            maxLength={10}
-                                            value={newPhone}
-                                            onChangeText={setNewPhone}
-                                        />
-                                        <Text style={styles.inputIcon}>📞</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity 
-                                    style={styles.sheetActionBtn} 
-                                    activeOpacity={0.8}
-                                    onPress={handleSaveContact}
-                                >
-                                    <Text style={styles.sheetActionText}>Save Contact</Text>
-                                </TouchableOpacity>
                             </View>
+                            <View style={styles.fieldGroup}>
+                                <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
+                                <View style={styles.inputWrap}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="10-digit mobile number"
+                                        placeholderTextColor="#6B7280"
+                                        keyboardType="phone-pad"
+                                        maxLength={10}
+                                        value={newPhone}
+                                        onChangeText={setNewPhone}
+                                    />
+                                    <Text style={styles.inputIcon}>📞</Text>
+                                </View>
+                            </View>
+                            <View style={styles.fieldGroup}>
+                                <Text style={styles.fieldLabel}>RELATION</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+                                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                                        {RELATION_OPTIONS.map(rel => (
+                                            <TouchableOpacity
+                                                key={rel}
+                                                style={[styles.relChip, newRelation === rel && styles.relChipActive]}
+                                                onPress={() => setNewRelation(rel)}
+                                            >
+                                                <Text style={[styles.relChipText, newRelation === rel && styles.relChipTextActive]}>{rel}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </ScrollView>
+                            </View>
+                            <TouchableOpacity
+                                style={[styles.sheetActionBtn, saving && { opacity: 0.6 }]}
+                                activeOpacity={0.8}
+                                onPress={handleSaveContact}
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? <ActivityIndicator color="#fff" />
+                                    : <Text style={styles.sheetActionText}>Save Contact</Text>
+                                }
+                            </TouchableOpacity>
                         </View>
                     </View>
-                </Modal>
-                {alertModal && <SakhiModal config={alertModal} onClose={() => setAlertModal(null)} />}
-            </View>
-        </SafeAreaView>
+                </View>
+            </Modal>
+            {alertModal && <SakhiModal config={alertModal} onClose={() => setAlertModal(null)} />}
+        </View>
+        </SafeAreaView >
     );
 }
 
 const styles = StyleSheet.create({
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         height: 64,
-        backgroundColor: '#F5F0FF', 
+        backgroundColor: '#F5F0FF',
         zIndex: 10
     },
-    iconBtn: { 
-        width: 32, 
-        height: 32, 
-        justifyContent: 'center', 
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'transparent'
     },
-    headerIcon: { 
-        fontSize: 24, 
-        color: '#BEA3D8', 
-        fontWeight: 'bold' 
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: 'bold'
     },
-    headerTitle: { 
-        fontSize: 20, 
-        fontWeight: '700', 
-        color: '#1E1B2E', 
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
         letterSpacing: -0.5,
         marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
-    
-    /* Header */
-    
-    
-    
-    
-
-    /* Scroll Area */
+    loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     scrollContent: {
         paddingHorizontal: 24,
         paddingTop: 16,
-        paddingBottom: 140, // Space for fixed bottom btn
+        paddingBottom: 140,
         gap: 24,
     },
     pageSubText: {
         fontSize: 14, fontWeight: '500', color: '#6B7280', letterSpacing: 0.35,
         marginBottom: -8,
     },
-
-    /* Info Banner */
     infoBanner: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -306,10 +378,7 @@ const styles = StyleSheet.create({
     },
     infoIcon: { fontSize: 18, color: '#BEA3D8', fontWeight: '700' },
     infoText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#685F96', lineHeight: 22 },
-
     contactsList: { gap: 24 },
-
-    /* Contact Card */
     contactCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
@@ -337,10 +406,9 @@ const styles = StyleSheet.create({
     },
     relationBadgeText: { fontSize: 10, fontWeight: '700', color: '#BEA3D8', letterSpacing: 0.5 },
     contactPhone: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
-    
     actionBtnsRow: { flexDirection: 'row', gap: 8 },
     editBtn: {
-        width: 40, height: 40, borderRadius: 12, backgroundColor: '#F5F0FF',
+        width: 40, height: 40, borderRadius: 12, backgroundColor: '#F6F1FF',
         justifyContent: 'center', alignItems: 'center',
     },
     editIcon: { fontSize: 18, color: '#BEA3D8' },
@@ -349,7 +417,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center',
     },
     deleteIcon: { fontSize: 18, color: '#BA1A1A' },
-
     cardBottom: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingTop: 20, borderTopWidth: 1, borderTopColor: '#F5F0FF',
@@ -358,8 +425,6 @@ const styles = StyleSheet.create({
     shareIcon: { fontSize: 20, color: '#BEA3D8' },
     shareText: { fontSize: 14, fontWeight: '600', color: '#685F96' },
     switchControl: { transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] },
-
-    /* Add Contact Empty State Button */
     addContactBtn: {
         width: '100%', height: 140,
         justifyContent: 'center', alignItems: 'center',
@@ -374,8 +439,6 @@ const styles = StyleSheet.create({
     addContactContent: { alignItems: 'center', gap: 4 },
     addContactText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8', letterSpacing: -0.4 },
     slotText: { fontSize: 12, color: '#6B7280' },
-
-    /* Fixed Bottom Action */
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         padding: 24, paddingTop: 40, alignItems: 'center', backgroundColor: '#F5F0FF',
@@ -387,8 +450,6 @@ const styles = StyleSheet.create({
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 6,
     },
     saveBtnText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-
-    /* Bottom Sheet Modal Styles */
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
@@ -442,15 +503,20 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16, fontWeight: '500', color: '#1E1B2E',
     },
-    dropdownPlaceholder: {
-        flex: 1, fontSize: 16, fontWeight: '500', color: '#6B7280',
-    },
     inputIcon: {
         fontSize: 16, color: '#CCC3D8', marginLeft: 12,
     },
+    relChip: {
+        paddingHorizontal: 14, paddingVertical: 8,
+        borderRadius: 20, borderWidth: 1.5, borderColor: '#E0D9F0',
+        backgroundColor: '#F6F1FF',
+    },
+    relChipActive: { borderColor: '#BEA3D8', backgroundColor: '#EDE9FE' },
+    relChipText: { fontSize: 13, fontWeight: '600', color: '#7B7487' },
+    relChipTextActive: { color: '#BEA3D8' },
     sheetActionBtn: {
         width: '100%', height: 60,
-        backgroundColor: '#AB8FFE', // Simulating Gradient
+        backgroundColor: '#AB8FFE',
         borderRadius: 16,
         justifyContent: 'center', alignItems: 'center',
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 6,
