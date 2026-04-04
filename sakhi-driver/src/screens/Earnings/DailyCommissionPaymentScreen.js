@@ -158,7 +158,11 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
 
   const period      = route?.params?.period ?? 'daily';
   const isWeekly    = period === 'weekly';
-  const amount      = route?.params?.amount ?? (isWeekly ? 350 : 50);
+
+  // ── Official Sakhi commission rates ──────────────────────────────────────
+  const DAILY_RATE  = 35;   // ₹35/day
+  const WEEKLY_RATE = 210;  // ₹210 for 7 days (₹30/day, saves ₹35 vs paying daily)
+  const amount      = route?.params?.amount ?? (isWeekly ? WEEKLY_RATE : DAILY_RATE);
   const screenTitle = isWeekly ? 'Weekly Commission' : 'Daily Commission';
   const driverName  = driver?.full_name?.split(' ')[0] ?? 'Driver';
 
@@ -341,13 +345,39 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           <Text style={s.totalBig}>₹{amount}</Text>
           <Text style={s.totalDate}>Due by {today}</Text>
 
+          {/* Weekly savings badge */}
+          {isWeekly && (
+            <View style={s.savingsBadge}>
+              <Text style={s.savingsBadgeText}>💰 Save ₹35 vs paying daily (₹30/day × 7)</Text>
+            </View>
+          )}
+
           <View style={s.divider} />
 
           {/* Breakdown */}
-          <BreakdownRow label="Platform fee (base)" value={`₹${base}`} />
-          <BreakdownRow label="GST (18%)"           value={`₹${gst}`} />
+          {isWeekly ? (
+            <>
+              <BreakdownRow label="7-Day Plan (₹30/day)"     value="₹210" />
+              <BreakdownRow label="vs. Daily Plan (₹35/day)" value="₹245" />
+              <BreakdownRow label="Your Savings"             value="-₹35" />
+            </>
+          ) : (
+            <>
+              <BreakdownRow label="Daily platform fee"  value="₹35" />
+              <BreakdownRow label="7-Day plan available" value="₹210" />
+            </>
+          )}
           <View style={s.divider} />
           <BreakdownRow label="Total payable" value={`₹${amount}`} bold accent />
+        </View>
+
+        {/* ── Free Trial Note ── */}
+        <View style={s.trialNote}>
+          <Text style={s.trialIcon}>🎁</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.trialTitle}>7-Day Free Trial for New Drivers</Text>
+            <Text style={s.trialSub}>No commission charged for your first 7 days after account setup.</Text>
+          </View>
         </View>
 
         {/* ── Warning ── */}
@@ -457,6 +487,30 @@ const s = StyleSheet.create({
   totalBig:   { fontSize: 52, fontWeight: '900', color: DARK, letterSpacing: -2.5, lineHeight: 58, marginBottom: 2 },
   totalDate:  { fontSize: 12, fontWeight: '400', color: MUTED, marginBottom: 16 },
   divider:    { height: 1, backgroundColor: '#F0EBF8', marginVertical: 4 },
+
+  // Savings badge (weekly plan)
+  savingsBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.2)',
+  },
+  savingsBadgeText: { fontSize: 12, fontWeight: '700', color: '#059669' },
+
+  // Free trial note
+  trialNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: '#EDE9FE', borderRadius: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderWidth: 1, borderColor: 'rgba(124,58,237,0.15)',
+  },
+  trialIcon: { fontSize: 20, marginTop: 1 },
+  trialTitle: { fontSize: 13, fontWeight: '700', color: '#4C1D95', marginBottom: 3 },
+  trialSub:   { fontSize: 12, fontWeight: '400', color: '#6D28D9', lineHeight: 18 },
 
   // Warning
   warningRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFF2F0', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)' },

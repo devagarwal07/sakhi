@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator, Linking, Image, Platform,
@@ -6,6 +6,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import { callRider } from '../../api/endpoints';
+
 import {
   MoreVertical, Phone, Calendar, Sun, Moon, MapPin,
 } from 'lucide-react-native';
@@ -168,6 +170,7 @@ const rc = StyleSheet.create({
 export default function SubscriptionAssignmentDetailsScreen({ navigation, route }) {
   const sub = { ...FALLBACK, ...(route?.params?.subscription ?? {}) };
   const [initiating, setInitiating] = useState(false);
+  const [calling, setCalling]     = useState(false);
 
   const completedRides = sub.completed_rides ?? 18;
   const totalRides     = sub.total_rides     ?? 30;
@@ -175,9 +178,27 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
   const progressPct    = totalRides > 0 ? completedRides / totalRides : 0;
 
   // ── Contact / Initiate ────────────────────────────────────────────────────
-  const handleCall = () => {
-    if (sub.rider_phone) Linking.openURL(`tel:${sub.rider_phone}`);
-    else Alert.alert('Masked Call', 'Calls are routed securely through Sakhi.');
+  const handleCall = async () => {
+    const rideId = sub?.ride_id ?? sub?.id;
+    if (!rideId) {
+      Alert.alert('Call Not Available', 'No active ride found for this subscription trip.');
+      return;
+    }
+    setCalling(true);
+    try {
+      // Exotel masked call — neither party sees the real phone number
+      await callRider(rideId);
+      Alert.alert('📞 Calling Rider', 'Sakhi will connect you via a masked number. Your number stays private.');
+    } catch (err) {
+      const msg = err.response?.data?.error?.message;
+      if (msg === 'Calling service is not configured.' && sub.rider_phone) {
+        Linking.openURL(`tel:${sub.rider_phone}`);
+      } else {
+        Alert.alert('Call Failed', msg ?? 'Could not connect. Please try again.');
+      }
+    } finally {
+      setCalling(false);
+    }
   };
 
   const handleInitiatePickup = () => {
@@ -383,9 +404,12 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
       ════════════════════════════════════════ */}
       <View style={s.footer}>
         {/* Contact Rider */}
-        <TouchableOpacity style={s.callBtn} onPress={handleCall} activeOpacity={0.8}>
-          <Phone size={18} color={DEEP} strokeWidth={2.5} />
-          <Text style={s.callBtnText}>Contact Rider</Text>
+        <TouchableOpacity style={[s.callBtn, calling && { opacity: 0.6 }]} onPress={handleCall} disabled={calling} activeOpacity={0.8}>
+          {calling
+            ? <ActivityIndicator color={DEEP} />
+            : <Phone size={18} color={DEEP} strokeWidth={2.5} />
+          }
+          <Text style={s.callBtnText}>{calling ? 'Connecting…' : 'Contact Rider'}</Text>
         </TouchableOpacity>
         {/* Privacy note */}
         <Text style={s.callNote}>CALLS ARE MASKED FOR PRIVACY</Text>
