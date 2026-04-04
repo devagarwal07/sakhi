@@ -19,6 +19,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { VERIFICATION_STATUSES } from '../../utils/constants';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 
 const OTP_LENGTH = 6;
 const { width } = Dimensions.get('window');
@@ -119,7 +120,7 @@ export default function OtpScreen() {
 
             {/* Header — glassmorphic */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
+                <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.backButton}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>Sakhi</Text>
@@ -136,7 +137,7 @@ export default function OtpScreen() {
                         <View style={styles.phoneRow}>
                             <Text style={styles.phoneText}>{displayPhone}</Text>
                             <Text style={styles.phoneDot}> · </Text>
-                            <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                            <Pressable onPress={() => router.replace('/(auth)/login')}>
                                 <Text style={styles.editLink}>Edit</Text>
                             </Pressable>
                         </View>
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'ios' ? 56 : 16,
+        paddingTop: Platform.OS === 'ios' ? 56 : ANDROID_STATUS_BAR_HEIGHT + 12,
         paddingBottom: 12,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },

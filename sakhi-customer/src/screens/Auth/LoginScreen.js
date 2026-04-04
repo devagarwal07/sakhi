@@ -13,9 +13,11 @@ import {
     ScrollView,
     Animated,
     Dimensions,
+    StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -79,7 +81,7 @@ export default function LoginScreen() {
 
                 {/* Header — glassmorphic top bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
+                    <TouchableOpacity onPress={() => router.replace('/')} style={styles.backButton}>
                         <Text style={styles.backArrow}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Sakhi</Text>
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'ios' ? 56 : 16,
+        paddingTop: Platform.OS === 'ios' ? 56 : ANDROID_STATUS_BAR_HEIGHT + 12,
         paddingBottom: 12,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
