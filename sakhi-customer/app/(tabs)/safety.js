@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
         fontSize: 10, color: '#6B7280',
     },
     greenBadge: {
-        backgroundColor: '#D1FAE5',
+        backgroundColor: '#ECFDF5',
         paddingHorizontal: 8, paddingVertical: 4,
         borderRadius: 4,
     },

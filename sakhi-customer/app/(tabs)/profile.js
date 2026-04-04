@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#D1FAE5',
+        borderColor: '#ECFDF5',
         gap: 4,
     },
     verifiedCheck: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     },
     heroPhone: {
         fontSize: 14,
-        color: '#1C1A25',
+        color: '#1E1B2E',
         opacity: 0.8,
         marginBottom: 2,
     },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     sectionHeading: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         letterSpacing: 1.1,
         textTransform: 'uppercase',
         paddingHorizontal: 4,

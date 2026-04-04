@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
     },
 
     // Decorative gradient blur — top
