@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
     timelineCol: { alignItems: 'center', paddingTop: 4, width: 14 },
     dotGreen: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#10B981' },
-    verticalDivider: { width: 1, height: 32, backgroundColor: '#7B7487', opacity: 0.3, marginVertical: 4 }, // Simplified gradient line
+    verticalDivider: { width: 1, height: 32, backgroundColor: '#94A3B8', opacity: 0.3, marginVertical: 4 }, // Simplified gradient line
     pinPurple: { 
         width: 13.33, height: 16.67, backgroundColor: '#BEA3D8',
         borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 6, borderBottomRightRadius: 6,
@@ -493,15 +493,15 @@ const styles = StyleSheet.create({
     addressContentBorder: { flex: 1, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E5E0EF', marginBottom: 12 },
     addressContent: { flex: 1, paddingBottom: 0 },
     
-    addressLabel: { fontSize: 10, fontWeight: '700', color: '#7B7487', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
+    addressLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
     addressValue: { fontSize: 14, fontWeight: '500', color: '#1E1B2E' },
 
     // Config Rows
     configContainer: { gap: 32 },
     configRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     configTextCol: { gap: 0 },
-    configTitle: { fontSize: 14, fontWeight: '600', color: '#1C1A25', marginBottom: 2 },
-    configSub: { fontSize: 12, fontWeight: '400', color: '#1C1A25' },
+    configTitle: { fontSize: 14, fontWeight: '600', color: '#1E1B2E', marginBottom: 2 },
+    configSub: { fontSize: 12, fontWeight: '400', color: '#1E1B2E' },
     
     pillBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     dayInactive: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CCC3D8' },
     dayText: { fontSize: 12, fontWeight: '700' },
     dayTextActive: { color: '#FFFFFF' },
-    dayTextInactive: { color: '#7B7487' },
+    dayTextInactive: { color: '#94A3B8' },
 
     // Footer overlay
     footerOverlay: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     calNav: { fontSize: 18, color: '#BEA3D8', fontWeight: 'bold' },
     calMonth: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
     calWeekdays: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#F5F0FF', paddingBottom: 8, marginBottom: 8 },
-    calWeekday: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#7B7487' },
+    calWeekday: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#94A3B8' },
     calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
     calDayBox: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
     calDayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

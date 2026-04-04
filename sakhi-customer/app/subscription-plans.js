@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', paddingTop: 3
     },
     pinHole: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF' },
-    routeText: { fontSize: 14, fontWeight: '500', color: '#1C1A25', marginLeft: 4 },
+    routeText: { fontSize: 14, fontWeight: '500', color: '#1E1B2E', marginLeft: 4 },
 
     // Plans Stack
     plansStack: { gap: 16 },

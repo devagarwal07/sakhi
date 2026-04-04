@@ -269,10 +269,10 @@ const styles = StyleSheet.create({
     modalBrand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     razorpayLogo: { backgroundColor: '#2563EB', width: 24, height: 24, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
     razorpayR: { color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' },
-    modalBrandText: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
+    modalBrandText: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
     modalAmountCol: { alignItems: 'flex-end' },
     modalAmountLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase' },
-    modalAmountValue: { fontSize: 24, fontWeight: '800', color: '#1C1A25' },
+    modalAmountValue: { fontSize: 24, fontWeight: '800', color: '#1E1B2E' },
     
     modalDivider: { height: 1, backgroundColor: '#F5F0FF' },
     
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 24
     },
-    modalStatus: { fontSize: 18, fontWeight: '700', color: '#1C1A25', marginBottom: 12 },
+    modalStatus: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', marginBottom: 12 },
     modalSub: { fontSize: 14, fontWeight: '400', color: '#6B7280', textAlign: 'center', lineHeight: 22, paddingHorizontal: 16 },
     
     modalFooter: {
