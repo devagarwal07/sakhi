@@ -1,20 +1,16 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
-import { Colors } from '../src/utils/theme';
+import SplashScreenView from '../src/screens/SplashScreenView';
 
 // Root index — acts as the routing guard
 export default function Index() {
     const { isAuthenticated, isLoading, user } = useAuth();
 
-    // Show loading spinner while auth state is being determined
+    // Show branded JS splash while auth state is being determined
+    // (works in Expo Go — native splash is Expo Go branded)
     if (isLoading) {
-        return (
-            <View style={{ flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="large" color={Colors.primaryContainer} />
-            </View>
-        );
+        return <SplashScreenView />;
     }
 
     // Not logged in → login screen

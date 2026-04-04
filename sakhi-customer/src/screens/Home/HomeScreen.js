@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { StatusBar } from 'react-native';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
@@ -90,17 +92,27 @@ export default function HomeScreen() {
                 Alert.alert('Location Required', 'Sakhi needs your location to find nearby drivers.');
                 return;
             }
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-            setCurrentLocation(coords);
 
-            // Reverse geocode to get real address instead of 'Current Location'
-            const address = await reverseGeocode(coords.latitude, coords.longitude);
-            setPickup({ ...coords, address });
+            let coords = null;
+            try {
+                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+            } catch (_) {
+                // GPS off at device level — try last known position
+                try {
+                    const last = await Location.getLastKnownPositionAsync();
+                    if (last) coords = { latitude: last.coords.latitude, longitude: last.coords.longitude };
+                } catch (__) {}
+            }
 
-            mapRef.current?.animateToRegion({
-                ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
-            });
+            if (coords) {
+                setCurrentLocation(coords);
+                const address = await reverseGeocode(coords.latitude, coords.longitude);
+                setPickup({ ...coords, address });
+                mapRef.current?.animateToRegion({
+                    ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
+                });
+            }
         })();
 
         getAddresses()
@@ -409,7 +421,7 @@ const styles = StyleSheet.create({
     // Map overlay controls
     mapOverlay: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 52 : 16,
+        top: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 12,
         left: 16,
         right: 16,
         flexDirection: 'row',
@@ -527,6 +539,7 @@ const styles = StyleSheet.create({
         shadowRadius: 40,
         elevation: 8,
     },
+    // Note: shadows via shadowColor only show on iOS. Android uses elevation (set above).
     sheetContent: {
         paddingTop: 16,
         paddingBottom: 120,
