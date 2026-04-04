@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from '
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 export default function PaymentSuccessScreen() {
     const router = useRouter();
@@ -139,8 +140,8 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F0FF' },
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : 64,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 10,
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
 
     mainContent: {
-        flex: 1, paddingTop: Platform.OS === 'ios' ? 120 : 80,
+        flex: 1, paddingTop: Platform.OS === 'ios' ? 120 : ANDROID_STATUS_BAR_HEIGHT + 64,
         alignItems: 'center',
         paddingHorizontal: 24,
     },

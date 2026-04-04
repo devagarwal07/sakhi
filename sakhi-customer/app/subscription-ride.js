@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { format, addDays } from 'date-fns';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -455,8 +456,8 @@ const styles = StyleSheet.create({
     // Top Navigation
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 118 : 74,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 118 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -469,7 +470,7 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: 12, fontWeight: '500', color: '#6B7280' },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 140 : 96,
+        paddingTop: Platform.OS === 'ios' ? 140 : ANDROID_STATUS_BAR_HEIGHT + 72,
         paddingHorizontal: 24,
         paddingBottom: 40,
     },

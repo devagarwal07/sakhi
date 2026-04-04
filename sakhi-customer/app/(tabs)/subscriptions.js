@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 import SakhiModal from '../../src/components/SakhiModal';
 import { cancelSubscription, toggleSubscriptionPause } from '../../src/api/endpoints';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../../src/utils/androidUtils';
 
 export default function SubscriptionsDashboard() {
     const router = useRouter();
@@ -225,8 +226,8 @@ const styles = StyleSheet.create({
     
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : 84,
-        paddingTop: Platform.OS === 'ios' ? 44 : 20,
+        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
     menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 120 : 100,
+        paddingTop: Platform.OS === 'ios' ? 120 : ANDROID_STATUS_BAR_HEIGHT + 64,
         paddingHorizontal: 24,
     },
 

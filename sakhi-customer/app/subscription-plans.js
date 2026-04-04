@@ -6,6 +6,10 @@ import {
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import { PRICING } from '../src/utils/fareCalculator';
+
+const SUBSCRIPTION_DISCOUNTS = PRICING.SUBSCRIPTION_DISCOUNTS;
 
 const { width } = Dimensions.get('window');
 
@@ -14,6 +18,28 @@ export default function SubscriptionPlansScreen() {
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
     const [modal, setModal] = useState(null);
+
+    // ── Pricing calculation ─────────────────────────────────────────────────
+    // Base fare for the expected daily route (pickup → dropoff)
+    // For subscription we use the standard base fare as the per-ride price reference
+    // Actual per-ride price = base fare (₹50) + expected distance charge
+    // Without live distance, we use a reasonable default of ₹70/ride (avg 3km trip)
+    // The actual per-ride rate from the backend fare calculator is ₹50 base + (1 km × ₹20) = ₹70
+    const BASE_RIDE_PRICE = 70; // ₹70 per ride — based on avg 3 km trip
+
+    const plans = [
+        { days: 7,  rides: 7,  label: '7 Rides',  desc: '1 week · Mon–Fri' },
+        { days: 15, rides: 15, label: '15 Rides', desc: '2 weeks · Mon–Fri' },
+        { days: 30, rides: 30, label: '30 Rides', desc: '1 month · Mon–Fri' },
+    ].map(p => {
+        const fullPrice = p.rides * BASE_RIDE_PRICE;
+        const discount  = SUBSCRIPTION_DISCOUNTS[p.days];
+        const rawSaving = parseFloat(((fullPrice * discount.pct) / 100).toFixed(0));
+        const saving    = Math.min(rawSaving, discount.max_saving);
+        const finalPrice = Math.round(Math.max(0, fullPrice - saving));
+        const perRide   = Math.round(finalPrice / p.rides);
+        return { ...p, fullPrice, saving, finalPrice, perRide, pct: discount.pct };
+    });
 
     const handleSelectPlan = (plan, price) => {
         updateSubscription({ plan, price });
@@ -31,8 +57,8 @@ export default function SubscriptionPlansScreen() {
         router.push('/subscription-payment');
     };
 
-    const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
-    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop'; 
+    const pickupName  = ride?.pickup?.address?.split(',')[0]  || 'Pickup';
+    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
 
     return (
         <View style={styles.container}>
@@ -41,7 +67,6 @@ export default function SubscriptionPlansScreen() {
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
-
                 <View style={styles.headerTitles}>
                     <Text style={styles.title}>Choose Your Plan</Text>
                 </View>
@@ -51,7 +76,7 @@ export default function SubscriptionPlansScreen() {
             {/* Sakhi Validation Modal */}
             <SakhiModal config={modal} onClose={() => setModal(null)} />
 
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
@@ -60,78 +85,65 @@ export default function SubscriptionPlansScreen() {
                     <View style={styles.routePill}>
                         <View style={styles.dotGreen} />
                         <Text style={styles.arrowSmall}>→</Text>
-                        <View style={styles.pinPurple}>
-                            <View style={styles.pinHole} />
-                        </View>
+                        <View style={styles.pinPurple}><View style={styles.pinHole} /></View>
                         <Text style={styles.routeText} numberOfLines={1}>
                             {pickupName}  →  {dropoffName}
                         </Text>
                     </View>
                 </View>
 
+                {/* Pricing Note */}
+                <View style={styles.pricingNote}>
+                    <Text style={styles.pricingNoteText}>
+                        ✦ Based on ₹{BASE_RIDE_PRICE}/ride (avg 3 km) · Sakhi Premium included
+                    </Text>
+                </View>
+
                 {/* Plans Stack */}
                 <View style={styles.plansStack}>
-                    
-                    {/* Plan 1 */}
-                    <TouchableOpacity 
-                        style={sub.plan === 7 ? styles.planCardActive : styles.planCard}
-                        onPress={() => handleSelectPlan(7, 364)}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.planColLeft}>
-                            <Text style={styles.planTitle}>7 Rides</Text>
-                            <Text style={styles.planDesc}>1 week · Mon–Fri</Text>
-                        </View>
-                        <View style={styles.planColRight}>
-                            <Text style={styles.planSubPrice}>₹52/ride</Text>
-                            <Text style={styles.planTotalPrice}>₹364 total</Text>
-                        </View>
-                    </TouchableOpacity>
+                    {plans.map((plan, idx) => {
+                        const isSelected = sub.plan === plan.days;
+                        const isBest     = idx === plans.length - 1;
+                        return (
+                            <TouchableOpacity
+                                key={plan.days}
+                                style={isSelected ? styles.planCardActive : styles.planCard}
+                                onPress={() => handleSelectPlan(plan.days, plan.finalPrice)}
+                                activeOpacity={0.8}
+                            >
+                                {/* Best Value Badge */}
+                                {isBest && (
+                                    <View style={styles.bestValueBadge}>
+                                        <Text style={styles.bestValueText}>BEST VALUE 🏷</Text>
+                                    </View>
+                                )}
 
-                    {/* Plan 2 */}
-                    <TouchableOpacity 
-                        style={sub.plan === 15 ? styles.planCardActive : styles.planCard}
-                        onPress={() => handleSelectPlan(15, 720)}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.planColLeft}>
-                            <Text style={styles.planTitle}>15 Rides</Text>
-                            <Text style={styles.planDesc}>2 weeks · Mon–Fri</Text>
-                        </View>
-                        <View style={styles.planColRight}>
-                            <Text style={styles.planSubPrice}>₹48/ride</Text>
-                            <Text style={styles.planTotalPrice}>₹720 total</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Plan 3 (Best Value) */}
-                    <TouchableOpacity 
-                        style={sub.plan === 30 ? styles.planCardActive : styles.planCard}
-                        onPress={() => handleSelectPlan(30, 1350)}
-                        activeOpacity={0.8}
-                    >
-                        {/* Best Value Badge */}
-                        <View style={styles.bestValueBadge}>
-                            <Text style={styles.bestValueText}>BEST VALUE 🏷</Text>
-                        </View>
-
-                        <View style={styles.planColLeft}>
-                            <Text style={styles.planTitle}>30 Rides</Text>
-                            <Text style={styles.planDesc}>1 month · Mon–Fri</Text>
-                        </View>
-                        <View style={styles.planColRightActive}>
-                            <View style={styles.priceCol}>
-                                <Text style={styles.planSubPriceActive}>₹45/ride</Text>
-                                <Text style={styles.planTotalPrice}>₹1,350 total</Text>
-                            </View>
-                            {sub.plan === 30 && (
-                                <View style={styles.checkCircle}>
-                                    <Text style={styles.checkIcon}>✓</Text>
+                                <View style={styles.planColLeft}>
+                                    <Text style={styles.planTitle}>{plan.label}</Text>
+                                    <Text style={styles.planDesc}>{plan.desc}</Text>
+                                    {/* Savings badge */}
+                                    <View style={styles.savingsBadge}>
+                                        <Text style={styles.savingsBadgeText}>
+                                            Save ₹{plan.saving} ({plan.pct}% off)
+                                        </Text>
+                                    </View>
                                 </View>
-                            )}
-                        </View>
-                    </TouchableOpacity>
 
+                                <View style={isSelected ? styles.planColRightActive : styles.planColRight}>
+                                    <View style={styles.priceCol}>
+                                        <Text style={styles.planSubPrice}>₹{plan.perRide}/ride</Text>
+                                        <Text style={styles.planFullPrice}>₹{plan.fullPrice}</Text>
+                                        <Text style={styles.planTotalPrice}>₹{plan.finalPrice} total</Text>
+                                    </View>
+                                    {isSelected && (
+                                        <View style={styles.checkCircle}>
+                                            <Text style={styles.checkIcon}>✓</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
                 {/* Bottom Padding for Footer */}
@@ -182,8 +194,8 @@ const styles = StyleSheet.create({
     // Top Navigation
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 116 : 72,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 116 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -195,7 +207,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45 },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 130 : 90,
+        paddingTop: Platform.OS === 'ios' ? 130 : ANDROID_STATUS_BAR_HEIGHT + 64,
         paddingHorizontal: 24,
     },
 
@@ -244,19 +256,48 @@ const styles = StyleSheet.create({
     planTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', lineHeight: 22 },
     planDesc: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
 
-    planColRight: { alignItems: 'flex-end', gap: 4 },
-    planSubPrice: { fontSize: 14, fontWeight: '500', color: '#BEA3D8' },
-    planTotalPrice: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
+    // Savings badge under plan title
+    savingsBadge: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#ECFDF5',
+        borderRadius: 9999,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(16,185,129,0.2)',
+    },
+    savingsBadgeText: { fontSize: 11, fontWeight: '700', color: '#059669' },
+
+    planColRight: { alignItems: 'flex-end', gap: 2 },
+    planSubPrice: { fontSize: 14, fontWeight: '600', color: '#BEA3D8' },
+    planFullPrice: { fontSize: 11, fontWeight: '400', color: '#94A3B8', textDecorationLine: 'line-through' },
+    planTotalPrice: { fontSize: 15, fontWeight: '700', color: '#1E1B2E' },
 
     planColRightActive: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    priceCol: { alignItems: 'flex-end', gap: 4 },
-    planSubPriceActive: { fontSize: 14, fontWeight: '500', color: '#BEA3D8' },
-    
+    priceCol: { alignItems: 'flex-end', gap: 2 },
+    planSubPriceActive: { fontSize: 14, fontWeight: '600', color: '#BEA3D8' },
+
     checkCircle: {
         width: 20, height: 20, borderRadius: 10, backgroundColor: '#BEA3D8',
         alignItems: 'center', justifyContent: 'center'
     },
     checkIcon: { fontSize: 12, color: '#FFFFFF', fontWeight: 'bold' },
+
+    // Pricing note
+    pricingNote: {
+        backgroundColor: '#EDE9FE',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 8,
+    },
+    pricingNoteText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#7C3AED',
+        lineHeight: 16,
+    },
 
     // Footer overlay
     footerOverlay: {

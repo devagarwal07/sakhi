@@ -5,14 +5,18 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
+import { useAuth } from '../src/context/AuthContext';
 import SakhiModal from '../src/components/SakhiModal';
 import RazorpayCheckout from 'react-native-razorpay';
+import { createSubscription } from '../src/api/endpoints';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
 
 export default function SubscriptionPaymentScreen() {
     const router = useRouter();
     const { ride } = useRide();
+    const { user } = useAuth();
     const sub = ride.subscription || {};
     
     const [modal, setModal] = useState(null);
@@ -34,10 +38,9 @@ export default function SubscriptionPaymentScreen() {
             amount: priceInPaise,
             name: 'Sakhi',
             prefill: {
-                // In production, dynamically grab these from the global user state
-                email: 'customer@example.com',
-                contact: '9191919191',
-                name: 'Sakhi User'
+                email: user?.email || 'customer@sakhi.app',
+                contact: user?.phone?.replace('+91', '') || '',
+                name: user?.name || 'Sakhi User'
             },
             theme: { color: '#BEA3D8' }
         };
@@ -181,8 +184,8 @@ const styles = StyleSheet.create({
     // Top Navigation
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 108 : 64,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 108 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -194,7 +197,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 124 : 88,
+        paddingTop: Platform.OS === 'ios' ? 124 : ANDROID_STATUS_BAR_HEIGHT + 64,
         paddingHorizontal: 20,
     },
 
