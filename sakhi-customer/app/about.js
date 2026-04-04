@@ -192,13 +192,13 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         backgroundColor: '#D8B4E2', // Fallback for gradient
         justifyContent: 'center', alignItems: 'center',
-        shadowColor: 'rgba(99, 14, 212, 1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8,
+        shadowColor: 'rgba(190,163,216,1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8,
         marginBottom: 12,
     },
     logoGradientBox: { width: '100%', height: '100%', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
     shieldIcon: { fontSize: 40, color: '#FFFFFF' },
-    appName: { fontSize: 20, fontWeight: '800', color: '#1C1A25', letterSpacing: -0.5 },
-    appVersion: { fontSize: 12, fontWeight: '500', color: '#7B7487', marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
+    appName: { fontSize: 20, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.5 },
+    appVersion: { fontSize: 12, fontWeight: '500', color: '#94A3B8', marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
 
     /* Mission */
     missionCard: { width: '100%', backgroundColor: '#E8DDFF', borderRadius: 20, padding: 24, marginBottom: 24, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.04, shadowRadius: 32, elevation: 2 },
@@ -208,22 +208,22 @@ const styles = StyleSheet.create({
     /* Features */
     featuresCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, gap: 24, marginBottom: 32, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 },
     featureRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
-    featureIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' },
+    featureIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#EDE9FA', justifyContent: 'center', alignItems: 'center' },
     featureIcon: { fontSize: 16 },
     featureTextCol: { flex: 1, gap: 4 },
-    featureTitle: { fontSize: 14, fontWeight: '700', color: '#1C1A25', lineHeight: 20 },
-    featureSub: { fontSize: 12, fontWeight: '400', color: '#7B7487', lineHeight: 16 },
+    featureTitle: { fontSize: 14, fontWeight: '700', color: '#1E1B2E', lineHeight: 20 },
+    featureSub: { fontSize: 12, fontWeight: '400', color: '#94A3B8', lineHeight: 16 },
 
     /* Social Links */
     socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 32 },
-    socialBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EBE6F5', justifyContent: 'center', alignItems: 'center' },
+    socialBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
     socialIcon: { fontSize: 18 },
 
     /* Legal Links */
     legalSection: { width: '100%', gap: 4, marginBottom: 32 },
     legalLink: { width: '100%', height: 52, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(246, 241, 255, 0.5)', borderRadius: 12 },
-    legalLabel: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
-    legalChevron: { fontSize: 18, color: '#7B7487', fontWeight: '300' },
+    legalLabel: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
+    legalChevron: { fontSize: 18, color: '#94A3B8', fontWeight: '300' },
 
     /* Rate Button */
     rateBtn: { width: '100%', height: 60, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 16 },

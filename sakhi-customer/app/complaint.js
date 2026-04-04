@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
     dotRed: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#BA1A1A' },
-    locationText: { flex: 1, fontSize: 13, fontWeight: '500', color: '#1C1A25' },
+    locationText: { flex: 1, fontSize: 13, fontWeight: '500', color: '#1E1B2E' },
     getHelpBtn: { backgroundColor: '#F5F0FF', paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8 },
     getHelpText: { fontSize: 13, fontWeight: '700', color: '#BEA3D8' },
 
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     contactLabel: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
     contactSubText: { fontSize: 11, color: '#6B7280' },
     chevron: { fontSize: 22, color: '#CBD5E1', paddingBottom: 2 },
-    onlineBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+    onlineBadge: { backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
     onlineText: { fontSize: 10, fontWeight: '700', color: '#047857', letterSpacing: 0.5 },
 
     /* Visit Help Centre Btn */

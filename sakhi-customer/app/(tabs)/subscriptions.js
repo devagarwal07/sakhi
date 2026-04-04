@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     dateBold: { fontSize: 16, fontWeight: '700', color: '#1E1B2E', marginBottom: 2 },
     dayLight: { fontSize: 12, fontWeight: '400', color: '#6B7280' },
     
-    dividerVertical: { width: 1, height: 32, backgroundColor: '#F0ECFA', marginHorizontal: 16 },
+    dividerVertical: { width: 1, height: 32, backgroundColor: '#EDE9FA', marginHorizontal: 16 },
     
     timeText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#1E1B2E' },
     

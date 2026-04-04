@@ -173,7 +173,7 @@ export default function ActiveRideScreen() {
                 markers={[
                     ride.pickup          && { id: 'pickup',  latitude: ride.pickup.latitude,                    longitude: ride.pickup.longitude,                    color: '#BEA3D8', label: 'P' },
                     ride.dropoff         && { id: 'dropoff', latitude: ride.dropoff.latitude,                   longitude: ride.dropoff.longitude,                   color: '#1E1B2E', label: 'D' },
-                    ride.driver?.currentLocation && { id: 'driver',  latitude: ride.driver.currentLocation.latitude, longitude: ride.driver.currentLocation.longitude, color: '#7C3AED', pulse: true },
+                    ride.driver?.currentLocation && { id: 'driver',  latitude: ride.driver.currentLocation.latitude, longitude: ride.driver.currentLocation.longitude, color: '#BEA3D8', pulse: true },
                 ].filter(Boolean)}
                 polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#BEA3D8', width: 3 }] : []}
             />
