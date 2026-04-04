@@ -3,56 +3,59 @@
 // Mirrors the Tailwind config but as JS constants for use in StyleSheet.
 
 export const Colors = {
-    primary: '#630ed4',
-    primaryContainer: '#7c3aed',
-    primaryFixed: '#eaddff',
-    primaryFixedDim: '#d2bbff',
-    onPrimary: '#ffffff',
-    onPrimaryContainer: '#ede0ff',
-    inversePrimary: '#d2bbff',
+    // Primary Brand — matches standard sakhi palette
+    primary: '#BEA3D8',
+    primaryContainer: '#BEA3D8',    // lilac — standard accent
+    primaryFixed: '#F5F0FF',
+    primaryFixedDim: '#EDE9FA',
+    onPrimary: '#FFFFFF',
+    onPrimaryContainer: '#EDE9FA',
+    inversePrimary: '#D4C0E8',
 
-    secondary: '#674bb5',
-    secondaryContainer: '#ab8ffe',
-    secondaryFixed: '#e8ddff',
-    onSecondary: '#ffffff',
-    onSecondaryContainer: '#3f1e8c',
+    secondary: '#CCC3D8',
+    secondaryContainer: '#EDE9FA',
+    secondaryFixed: '#F5F0FF',
+    onSecondary: '#FFFFFF',
+    onSecondaryContainer: '#1E1B2E',
 
-    background: '#fcf8ff',
-    surface: '#fcf8ff',
-    surfaceDim: '#dcd8e6',
-    surfaceBright: '#fcf8ff',
-    surfaceVariant: '#e5e0ef',
-    surfaceContainer: '#f0ecfa',
-    surfaceContainerLow: '#f6f1ff',
-    surfaceContainerHigh: '#ebe6f5',
-    surfaceContainerHighest: '#e5e0ef',
-    surfaceContainerLowest: '#ffffff',
-    inverseSurface: '#312f3a',
-    inverseOnSurface: '#f3eefd',
+    // Surfaces — matches #F5F0FF standard background
+    background: '#F5F0FF',
+    surface: '#F5F0FF',
+    surfaceDim: '#E0DAF0',
+    surfaceBright: '#FDFBFF',
+    surfaceVariant: '#EDE9FA',
+    surfaceContainer: '#EDE9FA',
+    surfaceContainerLow: '#F5F0FF',
+    surfaceContainerHigh: '#E8E2F5',
+    surfaceContainerHighest: '#E0DAF0',
+    surfaceContainerLowest: '#FFFFFF',
+    inverseSurface: '#1E1B2E',
+    inverseOnSurface: '#F5F0FF',
 
-    onBackground: '#1c1a25',
-    onSurface: '#1c1a25',
-    onSurfaceVariant: '#4a4455',
+    // Text
+    onBackground: '#1E1B2E',
+    onSurface: '#1E1B2E',
+    onSurfaceVariant: '#64748B',
 
-    outline: '#7b7487',
-    outlineVariant: '#ccc3d8',
+    outline: '#94A3B8',
+    outlineVariant: '#CCC3D8',
 
-    error: '#ba1a1a',
-    errorContainer: '#ffdad6',
-    onError: '#ffffff',
-    onErrorContainer: '#93000a',
+    error: '#BA1A1A',
+    errorContainer: '#FFDAD6',
+    onError: '#FFFFFF',
+    onErrorContainer: '#93000A',
 
-    // Convenience
-    brandViolet: '#7c3aed',
+    // Convenience aliases
+    brandViolet: '#BEA3D8',        // updated to lilac
     brandLavender: '#F5F0FF',
     brandPurpleDark: '#1E1B2E',
-    brandGray: '#6B7280',
+    brandGray: '#64748B',
 
     // Status
-    success: '#16a34a',
-    successContainer: '#dcfce7',
-    warning: '#d97706',
-    warningContainer: '#fef3c7',
+    success: '#059669',
+    successContainer: '#ECFDF5',
+    warning: '#D97706',
+    warningContainer: '#FEF3C7',
 };
 
 export const Typography = {
@@ -93,17 +96,17 @@ export const BorderRadius = {
 
 export const Shadows = {
     editorial: {
-        shadowColor: '#7c3aed',
+        shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
         elevation: 8,
     },
     card: {
-        shadowColor: '#1c1a25',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 12,
         elevation: 4,
     },
     none: {},
@@ -111,7 +114,7 @@ export const Shadows = {
 
 // Gradient presets (for use with expo-linear-gradient)
 export const Gradients = {
-    primary: ['#7C3AED', '#630ED4'],
-    splash: ['#F5F0FF', '#EDE9FE'],
-    surfaceFade: ['rgba(252,248,255,0)', '#fcf8ff'],
+    primary: ['#D4C0E8', '#BEA3D8'],  // lilac gradient
+    splash: ['#F5F0FF', '#EDE9FA'],
+    surfaceFade: ['rgba(245,240,255,0)', '#F5F0FF'],
 };

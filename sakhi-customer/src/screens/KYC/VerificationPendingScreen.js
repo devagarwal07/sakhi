@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 30,
         fontWeight: '800',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         letterSpacing: -0.75,
         lineHeight: 38,
         textAlign: 'center',
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         fontWeight: '400',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 26,
         textAlign: 'center',
         paddingHorizontal: 8,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     secondaryText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 20,
         textAlign: 'center',
         opacity: 0.6,

@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
         height: 184,
         borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
         borderWidth: 1,
         borderColor: 'rgba(167, 139, 250, 0.2)',
     },
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     stepCompleteText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 20,
         textAlign: 'center',
         opacity: 0.6,

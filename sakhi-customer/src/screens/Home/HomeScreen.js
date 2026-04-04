@@ -232,7 +232,7 @@ export default function HomeScreen() {
                             onPress={() => router.push('/notifications')}
                         >
                             <Svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-                                <Path d="M0 17V15H2V8C2 6.61667 2.41667 5.3875 3.25 4.3125C4.08333 3.2375 5.16667 2.53333 6.5 2.2V1.5C6.5 1.08333 6.64583 0.729167 6.9375 0.4375C7.22917 0.145833 7.58333 0 8 0C8.41667 0 8.77083 0.145833 9.0625 0.4375C9.35417 0.729167 9.5 1.08333 9.5 1.5V2.2C10.8333 2.53333 11.9167 3.2375 12.75 4.3125C13.5833 5.3875 14 6.61667 14 8V15H16V17H0ZM8 20C7.45 20 6.97917 19.8042 6.5875 19.4125C6.19583 19.0208 6 18.55 6 18H10C10 18.55 9.80417 19.0208 9.4125 19.4125C9.02083 19.8042 8.55 20 8 20ZM4 15H12V8C12 6.9 11.6083 5.95833 10.825 5.175C10.0417 4.39167 9.1 4 8 4C6.9 4 5.95833 4.39167 5.175 5.175C4.39167 5.95833 4 6.9 4 8V15Z" fill="#4A4455"/>
+                                <Path d="M0 17V15H2V8C2 6.61667 2.41667 5.3875 3.25 4.3125C4.08333 3.2375 5.16667 2.53333 6.5 2.2V1.5C6.5 1.08333 6.64583 0.729167 6.9375 0.4375C7.22917 0.145833 7.58333 0 8 0C8.41667 0 8.77083 0.145833 9.0625 0.4375C9.35417 0.729167 9.5 1.08333 9.5 1.5V2.2C10.8333 2.53333 11.9167 3.2375 12.75 4.3125C13.5833 5.3875 14 6.61667 14 8V15H16V17H0ZM8 20C7.45 20 6.97917 19.8042 6.5875 19.4125C6.19583 19.0208 6 18.55 6 18H10C10 18.55 9.80417 19.0208 9.4125 19.4125C9.02083 19.8042 8.55 20 8 20ZM4 15H12V8C12 6.9 11.6083 5.95833 10.825 5.175C10.0417 4.39167 9.1 4 8 4C6.9 4 5.95833 4.39167 5.175 5.175C4.39167 5.95833 4 6.9 4 8V15Z" fill="#64748B"/>
                             </Svg>
                             <View style={styles.notifDot} />
                         </TouchableOpacity>
@@ -350,11 +350,11 @@ export default function HomeScreen() {
 }
 
 const mapStyle = [
-    { elementType: 'geometry', stylers: [{ color: '#f6f1ff' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#4a4455' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f6f1ff' }] },
+    { elementType: 'geometry', stylers: [{ color: '#F5F0FF' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#64748B' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#F5F0FF' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ebe6f5' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#F1F5F9' }] },
     { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#dcd8e6' }] },
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ccc3d8' }] },
     { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#e8ddff' }] },
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     // Map section — full background
     mapSection: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
     },
 
     // Location pin
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     searchPlaceholder: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#7B7487',
+        color: '#94A3B8',
         lineHeight: 20,
     },
     micIcon: {
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     greetingText: {
         fontSize: 24,
         fontWeight: '800',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         letterSpacing: -0.6,
         lineHeight: 32,
     },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 10,
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
         borderRadius: 9999,
         borderWidth: 1,
         borderColor: 'rgba(229, 224, 239, 0.3)',
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     chipLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 20,
     },
 
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     recentLabel: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#7B7487',
+        color: '#94A3B8',
         letterSpacing: 1.65,
         textTransform: 'uppercase',
         lineHeight: 16,
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
         borderRadius: 16,
         gap: 16,
     },
@@ -691,19 +691,19 @@ const styles = StyleSheet.create({
     rideTo: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         lineHeight: 20,
     },
     rideFrom: {
         fontSize: 12,
         fontWeight: '700',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 16,
     },
     rideDate: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#7B7487',
+        color: '#94A3B8',
         lineHeight: 15,
         marginTop: 4,
     },
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
     ridePrice: {
         fontSize: 14,
         fontWeight: '900',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         lineHeight: 20,
     },
     rideRatingRow: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     rideRating: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 15,
     },
 });
