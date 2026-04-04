@@ -3,7 +3,9 @@
 const axios = require('axios');
 const supabase = require('../config/supabase');
 const { registerChatEvents } = require('./chatSocket');
+const matchingEngine = require('../services/matchingEngine');
 const logger = require('../utils/logger');
+
 
 // ── Validate ride access ──────────────────────────────────────────────────────
 async function getRideForSocket(rideId, userId, role) {
@@ -92,6 +94,63 @@ function registerRideSocket(io) {
       logger.info('rideSocket — driver joined ride room', { userId, ride_id });
     });
 
+    // ── ride:accept — driver accepts a ride request ───────────────────────────
+    // This is the PRIMARY accept path used by the driver app via Socket.IO.
+    // The REST POST /rides/:id/accept is a fallback for HTTP-only flows.
+    socket.on('ride:accept', async ({ ride_id } = {}, ack) => {
+      if (role !== 'driver' || !ride_id) {
+        if (typeof ack === 'function') ack({ success: false, message: 'Invalid request.' });
+        return;
+      }
+      try {
+        await matchingEngine.handleDriverAccept(ride_id, userId);
+        if (typeof ack === 'function') ack({ success: true });
+        logger.info('rideSocket — ride:accept processed', { ride_id, driverId: userId });
+      } catch (err) {
+        logger.error('rideSocket — ride:accept error', { ride_id, driverId: userId, error: err.message });
+        if (typeof ack === 'function') ack({ success: false, message: err.message });
+      }
+    });
+
+    // ── ride:reject — driver rejects / skips a ride request ──────────────────
+    socket.on('ride:reject', async ({ ride_id } = {}) => {
+      if (role !== 'driver' || !ride_id) return;
+      try {
+        await matchingEngine.handleDriverReject(ride_id, userId);
+        logger.info('rideSocket — ride:reject processed', { ride_id, driverId: userId });
+      } catch (err) {
+        logger.error('rideSocket — ride:reject error', { ride_id, driverId: userId, error: err.message });
+      }
+    });
+
+    // ── ride:complete — driver signals trip completion (supplements REST PATCH) ─
+    // The driver app already calls patchRideStatus('completed') via REST which
+    // does the DB update. This socket event forwards a real-time signal to the
+    // rider room so the customer app gets instant feedback without polling.
+    socket.on('ride:complete', async ({ ride_id } = {}) => {
+      if (role !== 'driver' || !ride_id) return;
+      try {
+        // Verify driver owns this ride
+        const { data: rides } = await supabase
+          .from('rides')
+          .select('id, rider_id, status')
+          .eq('id', ride_id)
+          .eq('driver_id', userId)
+          .limit(1);
+        const ride = rides?.[0];
+        if (!ride) return;
+        // Forward completion signal to rider room
+        ridesNs.to(`rider:${ride.rider_id}`).emit('ride_completed', {
+          ride_id,
+          message: 'Your trip is complete!',
+        });
+        logger.info('rideSocket — ride:complete forwarded to rider', { ride_id, driverId: userId });
+      } catch (err) {
+        logger.error('rideSocket — ride:complete error', { ride_id, error: err.message });
+      }
+    });
+
+
     // ── driver:location_update ────────────────────────────────────────────────
     socket.on('driver:location_update', async ({ ride_id, lat, lng, heading, speed }) => {
       if (!lat || !lng || role !== 'driver') return;
@@ -102,7 +161,7 @@ function registerRideSocket(io) {
         { onConflict: 'driver_id' }
       );
 
-      // If on a ride, validate and broadcast
+      // If on a ride, validate and broadcast to rider
       if (ride_id) {
         const ride = await getRideForSocket(ride_id, userId, role);
         const activeStatuses = ['assigned', 'driver_en_route', 'arrived', 'in_progress'];
@@ -111,9 +170,52 @@ function registerRideSocket(io) {
             lat,
             lng,
             heading:     heading || 0,
-            eta_minutes: null, // TODO: calc from Maps Directions
+            eta_minutes: null,
             timestamp:   new Date().toISOString(),
           });
+
+          // ── SCENARIO 1: Pre-Dispatch Trigger ─────────────────────────────
+          // While driver is in_progress, measure distance to their dropoff.
+          // When within PRE_DISPATCH_THRESHOLD_KM (~1.7 km = ~5 min remaining),
+          // emit `pre_dispatch_eligible` to the driver app so it prepares the
+          // "Next Ride" UI. The matching engine independently decides whether
+          // to send an actual request based on availability.
+          if (ride.status === 'in_progress') {
+            try {
+              const { data: rideDetail } = await supabase
+                .from('rides')
+                .select('drop_lat, drop_lng')
+                .eq('id', ride_id)
+                .limit(1);
+
+              if (rideDetail?.[0]) {
+                const { drop_lat, drop_lng } = rideDetail[0];
+                const PRE_DISPATCH_THRESHOLD_KM = 1.7;
+                const R = 6371;
+                const toRad = (d) => (d * Math.PI) / 180;
+                const dLat = toRad(drop_lat - lat);
+                const dLng = toRad(drop_lng - lng);
+                const a =
+                  Math.sin(dLat / 2) ** 2 +
+                  Math.cos(toRad(lat)) * Math.cos(toRad(drop_lat)) *
+                  Math.sin(dLng / 2) ** 2;
+                const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                if (distKm <= PRE_DISPATCH_THRESHOLD_KM) {
+                  // Notify driver app that it's eligible to receive next request
+                  socket.emit('pre_dispatch_eligible', {
+                    ride_id,
+                    dist_to_dropoff_km: parseFloat(distKm.toFixed(2)),
+                    eta_min: Math.round((distKm / 20) * 60),
+                    message: 'Prepare for next ride — you are almost at the drop-off.',
+                  });
+                }
+              }
+            } catch (preDispatchErr) {
+              // Non-fatal — log only
+              logger.warn('rideSocket — pre-dispatch trigger error', { error: preDispatchErr.message });
+            }
+          }
         }
       }
     });
