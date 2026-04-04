@@ -53,4 +53,7 @@ router.post('/:id/cash-collected', authMiddleware, roleGuard('driver'), rideCont
 /** POST /rides/:id/rate-rider — driver rates the rider */
 router.post('/:id/rate-rider',     authMiddleware, roleGuard('driver'), rideController.rateRider);
 
+/** POST /rides/:id/rating — rider rates the driver */
+router.post('/:id/rating',         authMiddleware, roleGuard('rider'), rideController.rateRide);
+
 module.exports = router;
