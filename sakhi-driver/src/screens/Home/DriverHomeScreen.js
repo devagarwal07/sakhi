@@ -114,10 +114,10 @@ const sub = StyleSheet.create({
   labelRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   icon:        { fontSize: 16 },
   textStack:   { flex: 1, gap: 1 },
-  caption:     { fontSize: 8, fontWeight: '700', color: '#7B7487', letterSpacing: 1.2, textTransform: 'uppercase' },
+  caption:     { fontSize: 8, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.2, textTransform: 'uppercase' },
   label:       { fontSize: 13, fontWeight: '700', lineHeight: 18 },
   expDateWrap: { alignItems: 'flex-end', gap: 1 },
-  expDateLbl:  { fontSize: 8, fontWeight: '600', color: '#7B7487', textTransform: 'uppercase', letterSpacing: 0.8 },
+  expDateLbl:  { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 },
   expDateVal:  { fontSize: 13, fontWeight: '800', letterSpacing: -0.3 },
   barTrack:    { height: 5, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 9999, overflow: 'hidden' },
   barFill:     { height: 5, borderRadius: 9999 },
@@ -242,32 +242,32 @@ const oc = StyleSheet.create({
   liveDot:       { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#10B981' },
   liveBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669', letterSpacing: 1.5 },
   offlineBtn:    { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.4)', backgroundColor: '#F5F0FF' },
-  offlineBtnText:{ fontSize: 12, fontWeight: '700', color: '#7B7487' },
+  offlineBtnText:{ fontSize: 12, fontWeight: '700', color: '#94A3B8' },
   // Heading row
   headingRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headingMain: { fontSize: 18, fontWeight: '800', color: '#1C1A25', letterSpacing: -0.5, lineHeight: 25 },
-  headingSub:  { fontSize: 12, fontWeight: '400', color: '#7B7487', lineHeight: 18, marginTop: 2 },
+  headingMain: { fontSize: 18, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.5, lineHeight: 25 },
+  headingSub:  { fontSize: 12, fontWeight: '400', color: '#94A3B8', lineHeight: 18, marginTop: 2 },
   sessionPill: { backgroundColor: '#F5F0FF', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)' },
   sessionVal:  { fontSize: 15, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 20 },
-  sessionLbl:  { fontSize: 8, fontWeight: '600', color: '#7B7487', textTransform: 'uppercase', letterSpacing: 1 },
+  sessionLbl:  { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 },
   // Earnings card inner block
   earningsCard:     { backgroundColor: '#F5F0FF', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
-  earningsCaption:  { fontSize: 9, fontWeight: '700', color: '#7B7487', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
+  earningsCaption:  { fontSize: 9, fontWeight: '700', color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
   earningsRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 2 },
   earningsCurrency: { fontSize: 20, fontWeight: '600', color: '#BEA3D8', marginTop: 5, lineHeight: 34 },
-  earningsAmount:   { fontSize: 44, fontWeight: '900', color: '#7C3AED', letterSpacing: -2.5, lineHeight: 52 },
+  earningsAmount:   { fontSize: 44, fontWeight: '900', color: '#BEA3D8', letterSpacing: -2.5, lineHeight: 52 },
   // Stat chips
   statsRow:       { flexDirection: 'row', gap: 10 },
   statChip:       { flex: 1, backgroundColor: '#F5F0FF', borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
   statChipAccent: { backgroundColor: '#BEA3D8', borderColor: '#BEA3D8' },
   statVal:        { fontSize: 18, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 24 },
   statValAccent:  { color: '#FFFFFF' },
-  statLbl:        { fontSize: 8, fontWeight: '700', color: '#7B7487', textTransform: 'uppercase', letterSpacing: 1.2 },
+  statLbl:        { fontSize: 8, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.2 },
   // Info pills
   pillsRow: { flexDirection: 'row', gap: 8 },
   pill:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#F5F0FF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
   pillIcon: { fontSize: 12 },
-  pillText: { fontSize: 11, fontWeight: '600', color: '#4A4455', letterSpacing: 0.1 },
+  pillText: { fontSize: 11, fontWeight: '600', color: '#64748B', letterSpacing: 0.1 },
 });
 
 // ── Main Screen ────────────────────────────────────────────────────────────────
@@ -693,11 +693,11 @@ const s = StyleSheet.create({
   toggleDotOffline: { backgroundColor: '#94A3B8' },
   toggleDotOnline:  { backgroundColor: '#FFFFFF' },
   toggleText:       { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
-  toggleTextActive: { fontSize: 12, fontWeight: '800', color: '#1C1A25', letterSpacing: 0.5 },
+  toggleTextActive: { fontSize: 12, fontWeight: '800', color: '#1E1B2E', letterSpacing: 0.5 },
   toggleTextOnline: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
 
   // Status
-  statusHeading: { fontSize: 26, fontWeight: '800', color: '#1C1A25', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
+  statusHeading: { fontSize: 26, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
   statusSub:     { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginBottom: 24 },
 
   // Stats
@@ -707,7 +707,7 @@ const s = StyleSheet.create({
   upcomingSubCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 16, marginTop: 16, borderWidth: 1, borderColor: '#EDE9FE', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   upcomingSubIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   upcomingSubTextCol: { flex: 1, gap: 2 },
-  upcomingSubTitle: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
+  upcomingSubTitle: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
   upcomingSubDesc: { fontSize: 12, color: '#6B7280' },
 
   // Subscription expiry pill variants

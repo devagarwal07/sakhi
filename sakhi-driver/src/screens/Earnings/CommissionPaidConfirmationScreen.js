@@ -236,7 +236,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08, shadowRadius: 32,
     elevation: 5,
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
      row, justify space-between */
   horizontalBorder: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderTopWidth: 1, borderTopColor: '#F0ECFA',
+    borderTopWidth: 1, borderTopColor: '#EDE9FA',
     paddingTop: 16,
   },
   /* Transaction ID: 12px 500w #6B7280, line-height 16 */

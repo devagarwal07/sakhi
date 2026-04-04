@@ -69,7 +69,7 @@ const chartStyles = StyleSheet.create({
     width: '100%', borderRadius: 4,
     backgroundColor: Colors.primaryContainer, minHeight: 4,
   },
-  barHighlight: { backgroundColor: '#7C3AED', opacity: 1 },
+  barHighlight: { backgroundColor: Colors.primary, opacity: 1 },
   barEmpty: {
     backgroundColor: 'transparent', borderWidth: 1.5,
     borderColor: Colors.outlineVariant, borderStyle: 'dashed', minHeight: 16,

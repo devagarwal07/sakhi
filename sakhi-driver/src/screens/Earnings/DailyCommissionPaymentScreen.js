@@ -15,12 +15,12 @@ import SakhiModal from '../../components/SakhiModal';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const DARK    = '#1C1A25';
+const DEEP    = '#BEA3D8';
+const DARK    = '#1E1B2E';
 const MUTED   = '#6B7280';
 const WHITE   = '#FFFFFF';
 const BG      = '#F5F0FF';
-const CARD_SH = { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 20, elevation: 4 };
+const CARD_SH = { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 20, elevation: 4 };
 
 // ─── Breakdown row ────────────────────────────────────────────────────────────
 function BreakdownRow({ label, value, bold, accent }) {
@@ -82,7 +82,7 @@ const pm = StyleSheet.create({
   iconBoxActive: { backgroundColor: '#EADDFF' },
   iconEmoji:  { fontSize: 18 },
   textWrap:   { flex: 1 },
-  label:      { fontSize: 15, fontWeight: '500', color: '#4A4455' },
+  label:      { fontSize: 15, fontWeight: '500', color: '#64748B' },
   labelActive:{ fontWeight: '700', color: DARK },
   badge:      { fontSize: 11, color: MUTED, marginTop: 1 },
 });
@@ -404,7 +404,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           <View style={s.webViewHeader}>
             <Text style={s.webViewTitle}>Secure Payment</Text>
             <TouchableOpacity onPress={() => setShowWebView(false)}>
-              <Feather name="x" size={22} color="#1C1A25" />
+              <Feather name="x" size={22} color="#1E1B2E" />
             </TouchableOpacity>
           </View>
           {rzpHtml && (
