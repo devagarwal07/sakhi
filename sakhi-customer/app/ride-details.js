@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     /* Map Area Placeholder */
     mapSection: {
         width: '100%', height: 236,
-        backgroundColor: '#EBE6F5', // Soft map placeholder bg
+        backgroundColor: '#F1F5F9', // Soft map placeholder bg
         overflow: 'hidden',
     },
     mapPlaceholder: {
@@ -334,11 +334,11 @@ const styles = StyleSheet.create({
     dateText: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', lineHeight: 22 },
     metaRow: { flexDirection: 'row', alignItems: 'center' },
     metaBadge: {
-        backgroundColor: '#EBE6F5',
+        backgroundColor: '#F1F5F9',
         paddingHorizontal: 12, paddingVertical: 4,
         borderRadius: 9999,
     },
-    metaBadgeText: { fontSize: 12, fontWeight: '500', color: '#4A4455' },
+    metaBadgeText: { fontSize: 12, fontWeight: '500', color: '#64748B' },
     subBadge: {
         position: 'absolute', top: 0, right: 0,
         backgroundColor: '#EADDFF',
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     routeSection: { gap: 4 },
     routeRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     dotGreen: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981', marginLeft: 2 },
-    routeAddressText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 18 },
+    routeAddressText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#1E1B2E', lineHeight: 18 },
     routeVertLineWrap: { paddingLeft: 6, marginVertical: 2 },
     routeVertLine: { width: 2, height: 24, backgroundColor: '#BEA3D8', opacity: 0.3 },
     pinPurpleWrap: { width: 14, alignItems: 'center' },
@@ -359,21 +359,21 @@ const styles = StyleSheet.create({
 
     /* Fare Box */
     fareBox: {
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
         borderRadius: 8,
         padding: 16, paddingTop: 24,
         gap: 12,
     },
     fareRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    fareLabel: { fontSize: 14, color: '#4A4455' },
-    fareValue: { fontSize: 14, color: '#4A4455' },
+    fareLabel: { fontSize: 14, color: '#64748B' },
+    fareValue: { fontSize: 14, color: '#64748B' },
     fareDivider: { height: 1, backgroundColor: 'rgba(204, 195, 216, 0.3)', marginVertical: 4 },
     fareTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     fareTotalLabel: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
     fareTotalValue: { fontSize: 20, fontWeight: '700', color: '#BEA3D8' },
     paymentMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
     paymentMetaIcon: { fontSize: 12 },
-    paymentMetaText: { fontSize: 12, color: '#1C1A25' },
+    paymentMetaText: { fontSize: 12, color: '#1E1B2E' },
 
     /* Driver Profile */
     driverSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -385,8 +385,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF'
     },
     driverInfo: { gap: 2 },
-    driverName: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
-    driverVehicle: { fontSize: 12, color: '#1C1A25' },
+    driverName: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
+    driverVehicle: { fontSize: 12, color: '#1E1B2E' },
     driverRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     driverRatingText: { fontSize: 16, fontWeight: '700', color: '#F59E0B' },
     starIcon: { fontSize: 14, color: '#F59E0B' },
@@ -397,9 +397,9 @@ const styles = StyleSheet.create({
         paddingTop: 16, gap: 4 
     },
     reviewScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    reviewLabel: { fontSize: 12, fontWeight: '500', color: '#4A4455' },
+    reviewLabel: { fontSize: 12, fontWeight: '500', color: '#64748B' },
     starsWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    reviewComment: { fontSize: 12, color: '#1C1A25', fontStyle: 'italic', marginTop: 4 },
+    reviewComment: { fontSize: 12, color: '#1E1B2E', fontStyle: 'italic', marginTop: 4 },
 
     /* Fixed Bottom Action */
     bottomFixedWrap: {

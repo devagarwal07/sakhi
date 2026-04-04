@@ -229,11 +229,11 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     infoIcon: { fontSize: 16, color: '#BEA3D8' },
-    infoText: { fontSize: 14, color: '#4A4455', lineHeight: 20 },
+    infoText: { fontSize: 14, color: '#64748B', lineHeight: 20 },
 
     /* Global Section Settings */
     section: { gap: 16 },
-    sectionTitle: { fontSize: 12, fontWeight: '700', color: '#7B7487', letterSpacing: 1.2, textTransform: 'uppercase' },
+    sectionTitle: { fontSize: 12, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.2, textTransform: 'uppercase' },
 
     /* Saved UPI IDs */
     upiCard: {
@@ -244,16 +244,16 @@ const styles = StyleSheet.create({
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
     upiLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    upiIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F6F1FF', justifyContent: 'center', alignItems: 'center' },
+    upiIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF', justifyContent: 'center', alignItems: 'center' },
     upiIcon: { fontSize: 18, color: '#BEA3D8' },
     upiDetails: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     upiID: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
-    primaryBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999 },
+    primaryBadge: { backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999 },
     primaryBadgeText: { fontSize: 10, fontWeight: '700', color: '#065F46', letterSpacing: -0.5, textTransform: 'uppercase' },
     
     actionBtns: { flexDirection: 'row', gap: 8 },
     actionBtn: { padding: 4 },
-    actionIcon: { fontSize: 16, color: '#7B7487' },
+    actionIcon: { fontSize: 16, color: '#94A3B8' },
 
     addUpiBtn: {
         flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
@@ -272,13 +272,13 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
     },
-    cashCardSelected: { borderColor: '#BEA3D8', backgroundColor: '#F6F1FF' },
+    cashCardSelected: { borderColor: '#BEA3D8', backgroundColor: '#F5F0FF' },
     cashLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     cashIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
     cashIcon: { fontSize: 20 },
     cashDetails: { gap: 2 },
     cashTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
-    cashSubtitle: { fontSize: 12, color: '#7B7487' },
+    cashSubtitle: { fontSize: 12, color: '#94A3B8' },
     checkIconWrapper: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center' },
     checkIcon: { fontSize: 12, color: '#BEA3D8', fontWeight: 'bold' },
 
@@ -290,9 +290,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     historyLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    historyIcon: { fontSize: 18, color: '#7B7487' },
+    historyIcon: { fontSize: 18, color: '#94A3B8' },
     historyText: { fontSize: 16, fontWeight: '600', color: '#1E1B2E' },
-    chevron: { fontSize: 24, color: '#7B7487', paddingBottom: 2 },
+    chevron: { fontSize: 24, color: '#94A3B8', paddingBottom: 2 },
 
     /* Footer */
     footerWrap: {
@@ -307,9 +307,9 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         gap: 8,
     },
-    lockIcon: { fontSize: 10, color: '#7B7487', marginTop: 1 },
+    lockIcon: { fontSize: 10, color: '#94A3B8', marginTop: 1 },
     securityText: {
-        fontSize: 11, fontWeight: '500', color: '#7B7487',
+        fontSize: 11, fontWeight: '500', color: '#94A3B8',
         textAlign: 'center', letterSpacing: 0.55, textTransform: 'uppercase', lineHeight: 16,
     },
 
@@ -323,9 +323,9 @@ const styles = StyleSheet.create({
     modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },
     modalInput: {
-        backgroundColor: '#F6F1FF', borderRadius: 12,
+        backgroundColor: '#F5F0FF', borderRadius: 12,
         paddingHorizontal: 16, paddingVertical: 14,
-        fontSize: 16, fontWeight: '500', color: '#1C1A25',
+        fontSize: 16, fontWeight: '500', color: '#1E1B2E',
         marginBottom: 16,
     },
     modalBtn: {

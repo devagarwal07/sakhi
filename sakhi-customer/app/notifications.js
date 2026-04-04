@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     rowTitle: {
-        fontSize: 14, fontWeight: '700', color: '#1C1A25', lineHeight: 20,
+        fontSize: 14, fontWeight: '700', color: '#1E1B2E', lineHeight: 20,
     },
     rowSubtitle: {
         fontSize: 12, fontWeight: '400', color: '#6B7280', lineHeight: 16,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     padlockBadge: {
-        width: 28, height: 28, borderRadius: 14, backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center',
+        width: 28, height: 28, borderRadius: 14, backgroundColor: '#EDE9FA', justifyContent: 'center', alignItems: 'center',
     },
     padlockIcon: {
         fontSize: 12, color: '#6B7280',

@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     },
     successBlur: {
         position: 'absolute', width: '100%', height: '100%',
-        backgroundColor: '#D1FAE5',
+        backgroundColor: '#ECFDF5',
         opacity: 0.4, borderRadius: 48,
         shadowColor: '#10B981', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20,
     },
@@ -194,16 +194,16 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     txRow: { gap: 4, marginBottom: 20 },
-    txLabel: { fontSize: 10, fontWeight: '500', color: '#1C1A25', letterSpacing: 1, textTransform: 'uppercase' },
-    txValue: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+    txLabel: { fontSize: 10, fontWeight: '500', color: '#1E1B2E', letterSpacing: 1, textTransform: 'uppercase' },
+    txValue: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
 
     divider: { height: 1, backgroundColor: '#E5E0EF', marginBottom: 16 },
 
     methodRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     methodLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    payIconBox: { width: 40, height: 24, backgroundColor: '#F0ECFA', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(204, 195, 216, 0.2)', alignItems: 'center', justifyContent: 'center' },
+    payIconBox: { width: 40, height: 24, backgroundColor: '#EDE9FA', borderRadius: 6, borderWidth: 1, borderColor: 'rgba(204, 195, 216, 0.2)', alignItems: 'center', justifyContent: 'center' },
     payIcon: { fontSize: 12 },
-    methodText: { fontSize: 14, fontWeight: '500', color: '#1C1A25' },
+    methodText: { fontSize: 14, fontWeight: '500', color: '#1E1B2E' },
     verifiedIcon: { fontSize: 14, color: '#BEA3D8' },
 
     actionsBox: { width: '100%', alignItems: 'center', gap: 24 },
