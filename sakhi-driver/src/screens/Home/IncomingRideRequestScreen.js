@@ -224,6 +224,19 @@ export default function IncomingRideRequestScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* Decline Button */}
+        <TouchableOpacity
+          style={s.declineBtn}
+          onPress={() => {
+            rejectRide(incomingRide?.ride_id);
+            clearIncomingRide();
+          }}
+          disabled={accepting}
+          activeOpacity={0.7}
+        >
+          <Text style={s.declineBtnText}>Decline</Text>
+        </TouchableOpacity>
+
         </ScrollView>
       </Animated.View>
     </View>
@@ -493,7 +506,7 @@ const s = StyleSheet.create({
     shadowRadius: 15,
     elevation: 4,
     marginTop: 'auto',
-    marginBottom: 20
+    marginBottom: 12,
   },
   acceptBtnText: {
     fontFamily: 'Inter',
@@ -501,5 +514,25 @@ const s = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+
+  // Decline Button
+  declineBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    marginBottom: 20,
+  },
+  declineBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 15,
+    color: '#EF4444',
+    letterSpacing: 0.3,
   },
 });
