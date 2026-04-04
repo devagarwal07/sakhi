@@ -28,6 +28,8 @@ export const getRideHistory = (params = {}) => {
   return client.get('/drivers/rides', { params });
 };
 export const getRideDetails    = (rideId)  => client.get(`/rides/${rideId}`);
+/** Itemized Sakhi fare breakdown — use this on PaymentDetailsScreen */
+export const getFareSummary    = (rideId)  => client.get(`/rides/${rideId}/fare-summary`);
 /** Advance trip state — use PATCH /rides/:id/status with { status } */
 export const patchRideStatus   = (rideId, status, extra = {}) =>
   client.patch(`/rides/${rideId}/status`, { status, ...extra });
@@ -59,6 +61,11 @@ export const triggerSOS = (location = {}) => {
   });
 };
 export const cancelSOS = () => client.post('/safety/sos/cancel');
+
+/** Masked call via Exotel — direction is always driver_to_rider for driver app */
+export const callRider = (rideId) =>
+  client.post(`/safety/call/${rideId}`, { direction: 'driver_to_rider' });
+
 export const getEmergencyContacts  = () => client.get('/safety/emergency-contacts');
 export const addEmergencyContact   = (data) => client.post('/safety/emergency-contacts', data);
 export const deleteEmergencyContact = (id) => client.delete(`/safety/emergency-contacts/${id}`);
