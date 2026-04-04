@@ -1,10 +1,11 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
     Switch, Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { getEmergencyContacts } from '../src/api/endpoints';
 
 export default function SOSSettingsScreen({ isTab = false }) {
     const router = useRouter();
@@ -14,6 +15,16 @@ export default function SOSSettingsScreen({ isTab = false }) {
         vibrate: true,
         playSound: true,
     });
+    const [contactCount, setContactCount] = useState(null);
+
+    useEffect(() => {
+        getEmergencyContacts()
+            .then(({ data }) => {
+                const list = data.contacts || data || [];
+                setContactCount(list.length);
+            })
+            .catch(() => {});
+    }, []);
 
     const toggleSwitch = (key) => {
         setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
@@ -103,7 +114,9 @@ export default function SOSSettingsScreen({ isTab = false }) {
                                     <Text style={styles.rowTitle}>Emergency Contacts</Text>
                                     <View style={styles.badgeWrapper}>
                                         <View style={styles.purpleBadge}>
-                                            <Text style={styles.purpleBadgeText}>3 saved</Text>
+                                            <Text style={styles.purpleBadgeText}>
+                                                {contactCount !== null ? `${contactCount} saved` : '...'}
+                                            </Text>
                                         </View>
                                     </View>
                                 </View>

@@ -1,18 +1,32 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { getEmergencyContacts, cancelSOS } from '../src/api/endpoints';
+
+const AVATAR_COLORS = ['#FCD34D', '#38BDF8', '#F472B6', '#BEA3D8', '#68C4AF'];
 
 export default function SOSActiveScreen() {
     const router = useRouter();
     const [modal, setModal] = useState(null);
+    const [contacts, setContacts] = useState([]);
+    const [loadingContacts, setLoadingContacts] = useState(true);
+    const [cancelling, setCancelling] = useState(false);
 
-    const emergencyContacts = [
-        { id: 1, name: 'Aisha Sharma', initial: 'A', color: '#FCD34D' },
-        { id: 2, name: 'Rajesh Kumar', initial: 'R', color: '#38BDF8' },
-        { id: 3, name: 'Priya Singh', initial: 'P', color: '#F472B6' }
-    ];
+    useEffect(() => {
+        getEmergencyContacts()
+            .then(({ data }) => {
+                const raw = data.contacts || data || [];
+                setContacts(raw.map((c, i) => ({
+                    ...c,
+                    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                    initial: (c.name || 'U')[0].toUpperCase(),
+                })));
+            })
+            .catch(() => {})
+            .finally(() => setLoadingContacts(false));
+    }, []);
 
     const handleCancel = () => {
         setModal({
@@ -21,7 +35,22 @@ export default function SOSActiveScreen() {
             message: 'Are you sure you are safe? This will cancel the SOS alert for all contacts.',
             buttons: [
                 { text: 'No, Keep SOS', style: 'cancel', onPress: () => setModal(null) },
-                { text: "Yes, I'm Safe", style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
+                { 
+                    text: "Yes, I'm Safe", 
+                    style: 'destructive', 
+                    onPress: async () => {
+                        setModal(null);
+                        setCancelling(true);
+                        try {
+                            await cancelSOS();
+                        } catch (_) {
+                            // Proceed regardless
+                        } finally {
+                            setCancelling(false);
+                            router.replace('/(tabs)/');
+                        }
+                    } 
+                },
             ],
         });
     };
@@ -89,7 +118,11 @@ export default function SOSActiveScreen() {
                         <Text style={styles.contactsHeading}>YOUR EMERGENCY CONTACTS</Text>
                         
                         <View style={styles.contactsList}>
-                            {emergencyContacts.map(contact => (
+                            {loadingContacts ? (
+                                <ActivityIndicator color="#BEA3D8" />
+                            ) : contacts.length === 0 ? (
+                                <Text style={{ color: '#94A3B8', fontSize: 13 }}>No emergency contacts added.</Text>
+                            ) : contacts.map(contact => (
                                 <View key={contact.id} style={styles.contactRow}>
                                     <View style={styles.contactLeft}>
                                         <View style={[styles.avatar, { backgroundColor: contact.color }]}>
@@ -133,8 +166,11 @@ export default function SOSActiveScreen() {
 
             {/* Bottom Safe Footer */}
             <View style={styles.footerSection}>
-                <TouchableOpacity style={styles.safeBtn} onPress={handleCancel} activeOpacity={0.6}>
-                    <Text style={styles.safeBtnText}>CANCEL SOS — I'M SAFE</Text>
+                <TouchableOpacity style={styles.safeBtn} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
+                    {cancelling
+                        ? <ActivityIndicator color="rgba(255,255,255,0.6)" />
+                        : <Text style={styles.safeBtnText}>CANCEL SOS — I'M SAFE</Text>
+                    }
                 </TouchableOpacity>
             </View>
 

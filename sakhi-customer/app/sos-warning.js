@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
+import { triggerSOS } from '../src/api/endpoints';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
 
 export default function SOSWarningScreen() {
     const router = useRouter();
     const [timeLeft, setTimeLeft] = useState(5);
+    const [triggered, setTriggered] = useState(false);
     const progressAnim = React.useRef(new Animated.Value(280)).current;
 
     // Countdown and automatic trigger logic
@@ -32,19 +36,38 @@ export default function SOSWarningScreen() {
     }, []);
 
     useEffect(() => {
-        if (timeLeft === 0) {
-            triggerSOS();
+        if (timeLeft === 0 && !triggered) {
+            doTriggerSOS();
         }
     }, [timeLeft]);
 
-    const triggerSOS = () => {
+    const doTriggerSOS = async () => {
+        if (triggered) return;
+        setTriggered(true);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            let lat = 0, lng = 0;
+            if (status === 'granted') {
+                try {
+                    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+                    lat = pos.coords.latitude;
+                    lng = pos.coords.longitude;
+                } catch {
+                    const last = await Location.getLastKnownPositionAsync();
+                    if (last) { lat = last.coords.latitude; lng = last.coords.longitude; }
+                }
+            }
+            await triggerSOS({ lat, lng });
+        } catch (_) {
+            // Fire-and-forget — still navigate to SOS active even if API fails
+        }
         router.replace('/sos-active');
     };
 
     const handleCancel = () => {
         // Go back safely
         if (router.canGoBack()) {
-            if (router.canGoBack()) router.back(); else router.replace("/");
+            router.back();
         } else {
             router.replace('/(tabs)/');
         }
@@ -75,7 +98,7 @@ export default function SOSWarningScreen() {
 
                 {/* Action Stack */}
                 <View style={styles.actionStack}>
-                    <TouchableOpacity style={styles.yesBtn} onPress={triggerSOS} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.yesBtn} onPress={doTriggerSOS} activeOpacity={0.8}>
                         <Text style={styles.yesIcon}>🚨</Text>
                         <Text style={styles.yesText}>YES — Send SOS Alert</Text>
                     </TouchableOpacity>
@@ -112,7 +135,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.1)',
         borderRadius: 9999,
     },
-    mainContent: { flex: 1, alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 140 : 100 },
+    mainContent: { flex: 1, alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 140 : ANDROID_STATUS_BAR_HEIGHT + 80 },
     
     iconSection: { width: 96, height: 96, justifyContent: 'center', alignItems: 'center', marginBottom: 64, position: 'relative' },
     ringOuter: { position: 'absolute', width: 192, height: 192, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 96 },
