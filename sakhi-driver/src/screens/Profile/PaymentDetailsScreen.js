@@ -19,7 +19,7 @@ const DARK     = '#1E1B2E';
 const MUTED    = '#6B7280';
 const BG       = '#F5F0FF';
 const WHITE    = '#FFFFFF';
-const CARD_SHD = { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
+const CARD_SHD = { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED_UPI = [
@@ -498,7 +498,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
+      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
       android: { elevation: 4 },
     }),
   },

@@ -8,7 +8,7 @@ import SakhiModal from '../../components/SakhiModal';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
-const DARK   = '#1C1A25';
+const DARK   = '#1E1B2E';
 const MUTED  = '#6B7280';
 const WHITE  = '#FFFFFF';
 const BG     = '#F5F0FF';
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   legalCard: {
     backgroundColor: WHITE,
     borderRadius: 16,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,

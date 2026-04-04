@@ -8,13 +8,13 @@ import SakhiModal from '../../components/SakhiModal';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
-const DARK     = '#1C1A25';
+const DARK     = '#1E1B2E';
 const MUTED    = '#6B7280';
 const WHITE    = '#FFFFFF';
 const BG       = '#F5F0FF';
 const RED_TEXT = '#BA1A1A';
 const CARD_SH  = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 16 },
   shadowOpacity: 0.08,
   shadowRadius: 32,
@@ -232,7 +232,7 @@ const s = StyleSheet.create({
   // Emergency lock badge
   padlockBadge: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
     justifyContent: 'center', alignItems: 'center',
   },
   padlockIcon: { fontSize: 14 },

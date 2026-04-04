@@ -15,23 +15,23 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
-const VIOLET   = '#630ED4';
-const DEEP     = '#7C3AED';
+const VIOLET   = '#BEA3D8';
+const DEEP     = '#BEA3D8';
 const AB_FE    = '#AB8FFE';
 const DARK     = '#1E1B2E';
 const MUTED    = '#6B7280';
 const WHITE    = '#FFFFFF';
 const BG       = '#F5F0FF';
-const FIELD_BG = '#F6F1FF';
+const FIELD_BG = '#F5F0FF';
 const CARD_SH  = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 16 },
   shadowOpacity: 0.08,
   shadowRadius: 32,
   elevation: 4,
 };
 const SUBMIT_SH = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 16 },
   shadowOpacity: 0.15,
   shadowRadius: 32,
@@ -80,7 +80,7 @@ const dd = StyleSheet.create({
   wrap:       { backgroundColor: WHITE, borderRadius: 12, marginTop: 4, overflow: 'hidden', ...CARD_SH },
   row:        { paddingVertical: 14, paddingHorizontal: 16 },
   border:     { borderTopWidth: 1, borderTopColor: BG },
-  rowActive:  { backgroundColor: 'rgba(99,14,212,0.06)' },
+  rowActive:  { backgroundColor: 'rgba(190,163,216,0.06)' },
   text:       { fontSize: 15, color: DARK, fontWeight: '400' },
   textActive: { color: VIOLET, fontWeight: '700' },
 });
