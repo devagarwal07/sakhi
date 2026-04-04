@@ -231,14 +231,14 @@ export default function DriverArrivedScreen() {
 const mapStyle = [
     { elementType: 'geometry', stylers: [{ color: '#f5f0ff' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ebe6f5' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#F1F5F9' }] },
     // Only keeping large text labels visible with gray color
     { elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
     { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
 ];
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FCF8FF' },
+    container: { flex: 1, backgroundColor: '#F5F0FF' },
 
     // Top Nav
     topNav: {
@@ -330,11 +330,11 @@ const styles = StyleSheet.create({
     },
     ratingText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
     driverDetails: { gap: 2 },
-    driverName: { fontSize: 18, fontWeight: '700', color: '#1C1A25' },
-    driverVehicle: { fontSize: 14, fontWeight: '500', color: '#1C1A25' },
+    driverName: { fontSize: 18, fontWeight: '700', color: '#1E1B2E' },
+    driverVehicle: { fontSize: 14, fontWeight: '500', color: '#1E1B2E' },
     actionBtns: { flexDirection: 'row', gap: 12 },
     callBtn: {
-        width: 48, height: 48, borderRadius: 12, backgroundColor: '#F6F1FF',
+        width: 48, height: 48, borderRadius: 12, backgroundColor: '#F5F0FF',
         alignItems: 'center', justifyContent: 'center',
     },
     callIconText: { fontSize: 20 }, // placeholder for icon
@@ -351,10 +351,10 @@ const styles = StyleSheet.create({
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
     },
     timerHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    timerLabel: { fontSize: 10, fontWeight: '700', color: '#1C1A25', letterSpacing: 1 },
+    timerLabel: { fontSize: 10, fontWeight: '700', color: '#1E1B2E', letterSpacing: 1 },
     timerDisplay: { alignItems: 'center', marginVertical: 8 },
-    timerBigText: { fontSize: 56, fontWeight: '800', color: '#1C1A25', letterSpacing: -2.8, lineHeight: 56 },
-    progressBarBg: { height: 6, backgroundColor: '#F6F1FF', borderRadius: 3, marginVertical: 12 },
+    timerBigText: { fontSize: 56, fontWeight: '800', color: '#1E1B2E', letterSpacing: -2.8, lineHeight: 56 },
+    progressBarBg: { height: 6, backgroundColor: '#F5F0FF', borderRadius: 3, marginVertical: 12 },
     progressBarActive: { width: '80%', height: '100%', backgroundColor: '#BEA3D8', borderRadius: 3 }, // Fixed width to match 2:34 mockup state
     timerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 6 },
     infoIconWrapper: {

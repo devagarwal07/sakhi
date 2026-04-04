@@ -141,9 +141,9 @@ export default function EmergencyContactsScreen() {
                                         <Text style={styles.shareText}>Auto-share trip on start</Text>
                                     </View>
                                     <Switch
-                                        trackColor={{ false: '#EBE6F5', true: '#BEA3D8' }}
+                                        trackColor={{ false: '#F1F5F9', true: '#BEA3D8' }}
                                         thumbColor="#FFFFFF"
-                                        ios_backgroundColor="#EBE6F5"
+                                        ios_backgroundColor="#F1F5F9"
                                         onValueChange={() => toggleAutoShare(contact.id)}
                                         value={contact.autoShare}
                                         style={styles.switchControl}
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     
     actionBtnsRow: { flexDirection: 'row', gap: 8 },
     editBtn: {
-        width: 40, height: 40, borderRadius: 12, backgroundColor: '#F6F1FF',
+        width: 40, height: 40, borderRadius: 12, backgroundColor: '#F5F0FF',
         justifyContent: 'center', alignItems: 'center',
     },
     editIcon: { fontSize: 18, color: '#BEA3D8' },
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
         fontSize: 24, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.6,
     },
     sheetSub: {
-        fontSize: 14, color: '#4A4455',
+        fontSize: 14, color: '#64748B',
     },
     formContent: {
         width: '100%', gap: 24,
@@ -429,18 +429,18 @@ const styles = StyleSheet.create({
         width: '100%', gap: 8,
     },
     fieldLabel: {
-        fontSize: 12, fontWeight: '700', color: '#4A4455', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 4,
+        fontSize: 12, fontWeight: '700', color: '#64748B', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 4,
     },
     inputWrap: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: '#FCF8FF',
+        backgroundColor: '#F5F0FF',
         borderWidth: 1, borderColor: 'rgba(204, 195, 216, 0.3)',
         borderRadius: 16,
         paddingHorizontal: 20, paddingVertical: 18,
     },
     input: {
         flex: 1,
-        fontSize: 16, fontWeight: '500', color: '#1C1A25',
+        fontSize: 16, fontWeight: '500', color: '#1E1B2E',
     },
     dropdownPlaceholder: {
         flex: 1, fontSize: 16, fontWeight: '500', color: '#6B7280',

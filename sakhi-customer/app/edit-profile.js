@@ -166,7 +166,7 @@ export default function EditProfileScreen() {
                                     value={name}
                                     onChangeText={setName}
                                     placeholder="Enter full name"
-                                    placeholderTextColor="#7B7487"
+                                    placeholderTextColor="#94A3B8"
                                     returnKeyType="next"
                                 />
                             </View>
@@ -181,7 +181,7 @@ export default function EditProfileScreen() {
                                     value={email}
                                     onChangeText={setEmail}
                                     placeholder="Enter email address"
-                                    placeholderTextColor="#7B7487"
+                                    placeholderTextColor="#94A3B8"
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     returnKeyType="done"
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
     },
     avatarEditIcon: { fontSize: 14 },
-    avatarHint: { marginTop: 10, fontSize: 12, color: '#7B7487', fontWeight: '500' },
+    avatarHint: { marginTop: 10, fontSize: 12, color: '#94A3B8', fontWeight: '500' },
 
     // ── Form Card ──
     formCard: {
@@ -424,17 +424,17 @@ const styles = StyleSheet.create({
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
     },
     fieldGroup: { gap: 6 },
-    fieldLabel: { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 2 },
+    fieldLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 2 },
     inputWrap: {
-        backgroundColor: '#F6F1FF', borderRadius: 12,
+        backgroundColor: '#F5F0FF', borderRadius: 12,
         paddingHorizontal: 16, paddingVertical: 13,
         minHeight: 48, justifyContent: 'center',
     },
     inputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    input: { fontSize: 15, fontWeight: '500', color: '#1C1A25', flex: 1, padding: 0, margin: 0 },
-    inputText: { fontSize: 15, fontWeight: '500', color: '#1C1A25' },
+    input: { fontSize: 15, fontWeight: '500', color: '#1E1B2E', flex: 1, padding: 0, margin: 0 },
+    inputText: { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
     changeLinkText: { fontSize: 13, fontWeight: '700', color: '#BEA3D8' },
-    inputEndIcon: { fontSize: 18, color: '#7B7487' },
+    inputEndIcon: { fontSize: 18, color: '#94A3B8' },
 
     // ── Verification ──
     verificationBox: { backgroundColor: '#F0FDF4', borderRadius: 12, padding: 16, gap: 14, marginTop: 4, borderWidth: 1, borderColor: '#BBF7D0' },
@@ -472,19 +472,19 @@ const styles = StyleSheet.create({
     // DOB
     dobRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 28 },
     dobFieldWrap: { flex: 1, gap: 6 },
-    dobFieldLabel: { fontSize: 11, fontWeight: '600', color: '#7B7487', textTransform: 'uppercase', letterSpacing: 0.8 },
+    dobFieldLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 },
     dobInput: {
-        backgroundColor: '#F6F1FF', borderRadius: 12,
+        backgroundColor: '#F5F0FF', borderRadius: 12,
         paddingHorizontal: 12, paddingVertical: 14,
-        fontSize: 18, fontWeight: '600', color: '#1C1A25', textAlign: 'center',
+        fontSize: 18, fontWeight: '600', color: '#1E1B2E', textAlign: 'center',
     },
     dobSep: { fontSize: 22, fontWeight: '600', color: '#BEA3D8', paddingBottom: 10 },
     pickerActions: { flexDirection: 'row', gap: 12 },
     cancelBtn: {
         flex: 1, height: 50, borderRadius: 12,
-        backgroundColor: '#F6F1FF', justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#F5F0FF', justifyContent: 'center', alignItems: 'center',
     },
-    cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#7B7487' },
+    cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#94A3B8' },
     confirmBtn: {
         flex: 1, height: 50, borderRadius: 12,
         backgroundColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center',
@@ -495,10 +495,10 @@ const styles = StyleSheet.create({
     langItem: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingVertical: 14, paddingHorizontal: 8,
-        borderBottomWidth: 1, borderBottomColor: '#F6F1FF',
+        borderBottomWidth: 1, borderBottomColor: '#F5F0FF',
     },
-    langItemActive: { backgroundColor: '#F6F1FF', borderRadius: 10, marginHorizontal: -8, paddingHorizontal: 16 },
-    langItemText: { fontSize: 15, fontWeight: '500', color: '#1C1A25' },
+    langItemActive: { backgroundColor: '#F5F0FF', borderRadius: 10, marginHorizontal: -8, paddingHorizontal: 16 },
+    langItemText: { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
     langItemTextActive: { fontWeight: '700', color: '#BEA3D8' },
     langCheck: { fontSize: 16, color: '#BEA3D8', fontWeight: '700' },
 });
