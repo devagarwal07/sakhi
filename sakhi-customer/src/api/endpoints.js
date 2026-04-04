@@ -46,19 +46,37 @@ export const rateDriver = (rideId, rating, comment) =>
     apiClient.post(`/rides/${rideId}/rating`, { rating, comment });
 export const submitRating = rateDriver; // Alias expected by UI
 export const getChatHistory = (rideId) => apiClient.get(`/rides/${rideId}/chat`);
+export const shareTrip = (rideId) => apiClient.post(`/safety/share-trip/${rideId}`);
 
 // ── Ride Payments ──────────────────────────────────────────────────────────
 export const createRidePaymentOrder  = (rideId) => apiClient.post(`/rides/${rideId}/payment/order`);
 export const verifyRidePayment = (rideId, data) => apiClient.post(`/rides/${rideId}/payment/verify`, data);
 
-// ── Safety ────────────────────────────────────────────────────────────────
-export const triggerSOS = (location) => apiClient.post('/safety/sos', { location });
-export const callDriver = (rideId) => apiClient.post('/safety/call', { rideId });
+// ── Safety ─────────────────────────────────────────────────────────────────────────────
+// Backend sosSchema: { ride_id?, lat (number), lng (number) } — flat, NOT nested
+export const triggerSOS = ({ lat, lng, ride_id } = {}) => {
+    const body = { lat: lat ?? 0, lng: lng ?? 0 };
+    if (ride_id) body.ride_id = ride_id;
+    return apiClient.post('/safety/sos', body);
+};
+export const cancelSOS = () => apiClient.post('/safety/sos/cancel');
+
+// Masked call — direction is required by backend callSchema
+export const callDriver = (rideId) =>
+    apiClient.post('/safety/call', { rideId, direction: 'rider_to_driver' });
+
 export const getEmergencyContacts = () => apiClient.get('/safety/emergency-contacts');
 export const addEmergencyContact = (data) => apiClient.post('/safety/emergency-contacts', data);
 export const deleteEmergencyContact = (id) => apiClient.delete(`/safety/emergency-contacts/${id}`);
-export const sendBatteryAlert = (location, batteryLevel) =>
-    apiClient.post('/safety/battery-alert', { location, batteryLevel });
+
+// Backend batterySchema: { level (int 0-100), lat, lng } — NOT { location, batteryLevel }
+export const sendBatteryAlert = ({ lat, lng } = {}, batteryLevel = 0) =>
+    apiClient.post('/safety/battery-alert', {
+        level: Math.round(batteryLevel),
+        lat:   lat ?? 0,
+        lng:   lng ?? 0,
+    });
+
 
 // ── Wallet & Referrals ────────────────────────────────────────────────────
 export const getWalletDetails = () => apiClient.get('/users/wallet');
@@ -78,3 +96,16 @@ export const sendChangePhoneOtp = (newPhone) =>
 export const verifyChangePhoneOtp = (newPhone, otp) =>
     apiClient.post('/auth/change-phone/verify-otp', { new_phone: newPhone, otp });
 
+// ── Support Chat ───────────────────────────────────────────────────────────
+/** Send a message + get instant bot reply. Pass session_id to continue a conversation. */
+export const sendSupportMessage = (message, session_id) =>
+    apiClient.post('/support/chat', { message, ...(session_id && { session_id }) });
+/** Fetch full message history for a session. */
+export const getSupportHistory = (session_id) =>
+    apiClient.get(`/support/chat/${session_id}`);
+/** List all past support sessions for the user. */
+export const getSupportSessions = () =>
+    apiClient.get('/support/sessions');
+/** Close a resolved support session. */
+export const closeSupportSession = (session_id) =>
+    apiClient.post(`/support/sessions/${session_id}/close`);
