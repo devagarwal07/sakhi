@@ -5,7 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 
-const DEEP  = '#7C3AED';
+const DEEP  = '#BEA3D8';
 const DARK  = '#1E1B2E';
 const BG    = '#F5F0FF';
 
@@ -78,7 +78,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#7C3AED',
+        shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.06,
         shadowRadius: 12,

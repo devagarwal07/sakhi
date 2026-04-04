@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 130,
-    backgroundColor: 'rgba(99,14,212,0.08)',
+    backgroundColor: 'rgba(190,163,216,0.08)',
   },
 
 

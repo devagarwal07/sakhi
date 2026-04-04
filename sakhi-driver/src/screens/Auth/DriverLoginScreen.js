@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   illustrationCard: {
     width: '100%',
     height: 220,
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 16,
     marginBottom: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     backgroundColor: '#AD86E1',   // matches gradient midpoint
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 20,

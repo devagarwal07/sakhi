@@ -216,7 +216,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#FCF8FF',
+    backgroundColor: '#F5F0FF',
   },
 
   // ── Top bar ─────────────────────────────────────────────────────────────
@@ -251,20 +251,20 @@ const styles = StyleSheet.create({
   identity: { alignItems: 'center', marginBottom: 28 },
   heading: {
     fontSize: 24, fontWeight: '800',
-    color: '#1C1A25', letterSpacing: -0.6,
+    color: '#1E1B2E', letterSpacing: -0.6,
     textAlign: 'center', marginBottom: 12,
   },
   sublineWrap: { alignItems: 'center', marginBottom: 12 },
   subline: {
     fontSize: 14, fontWeight: '400',
-    color: '#4A4455', textAlign: 'center', lineHeight: 22,
+    color: '#64748B', textAlign: 'center', lineHeight: 22,
   },
-  phoneNum: { fontWeight: '700', color: '#1C1A25' },
+  phoneNum: { fontWeight: '700', color: '#1E1B2E' },
 
   // SMS badge
   smsBadge: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderWidth: 1, borderColor: 'rgba(204,195,216,0.2)',
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4,
     gap: 6,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   smsBadgeText: {
     fontSize: 10, fontWeight: '700',
     letterSpacing: 0.5, textTransform: 'uppercase',
-    color: '#7B7487',
+    color: '#94A3B8',
   },
 
   // ── OTP Boxes ─────────────────────────────────────────────────────────
@@ -289,14 +289,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1, borderColor: 'rgba(177,143,254,0.4)',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08, shadowRadius: 16,
     elevation: 3,
   },
   otpBoxActive: {
     borderWidth: 2, borderColor: '#BEA3D8',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOpacity: 0.1,
     // Focus ring approximated via shadow
   },
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(177,143,254,0.6)',
   },
   otpDigit: {
-    fontSize: 20, fontWeight: '700', color: '#1C1A25',
+    fontSize: 20, fontWeight: '700', color: '#1E1B2E',
   },
   cursor: {
     width: 2, height: 22,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
 
   // ── Resend ───────────────────────────────────────────────────────────
   resendRow: { marginBottom: 28, alignItems: 'center' },
-  resendTimer: { fontSize: 14, fontWeight: '500', color: '#7B7487' },
+  resendTimer: { fontSize: 14, fontWeight: '500', color: '#94A3B8' },
   resendCountdown: { fontWeight: '700', color: '#9C6FD7' },
   resendLink: { fontSize: 14, fontWeight: '700', color: '#9C6FD7' },
 
@@ -336,10 +336,10 @@ const styles = StyleSheet.create({
   },
   keyBtnEmpty: { opacity: 0 },
   keyText: {
-    fontSize: 20, fontWeight: '600', color: '#1C1A25',
+    fontSize: 20, fontWeight: '600', color: '#1E1B2E',
   },
   keyBackspace: {
-    fontSize: 18, color: '#4A4455',
+    fontSize: 18, color: '#64748B',
   },
 
   // ── Bottom ────────────────────────────────────────────────────────────
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#9C6FD7',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2, shadowRadius: 24,
     elevation: 8,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   disclaimer: {
-    fontSize: 11, color: '#7B7487',
+    fontSize: 11, color: '#94A3B8',
     textAlign: 'center', lineHeight: 18,
   },
 });
