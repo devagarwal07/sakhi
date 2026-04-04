@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Image, Platform, Linking, Alert,
@@ -167,8 +167,13 @@ export default function CompletedRideDetailsScreen({ navigation, route }) {
   const waitLabel  = ride.waiting_label  ?? '—';
 
   const handleCall = () => {
-    if (ride.rider_phone) Linking.openURL(`tel:${ride.rider_phone}`);
-    else Alert.alert('Masked Call', 'Calls are routed securely through Sakhi.');
+    // Masked calling is only available during active rides (backend enforces activeStatuses check)
+    // For completed rides, show a clear message instead of doing a direct dial
+    Alert.alert(
+      'Call Not Available',
+      'Masked calling is only available during an active ride. To contact support about this ride, use Help & Support.',
+      [{ text: 'OK' }]
+    );
   };
 
   const BOTTOM_H = 77 + Math.max(insets.bottom, 16);
