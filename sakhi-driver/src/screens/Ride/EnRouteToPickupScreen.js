@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Linking, Image, Dimensions, Platform, Modal,
+  Alert, Linking, Image, Dimensions, Platform, Modal, ActivityIndicator,
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -9,7 +9,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import { patchRideStatus } from '../../api/endpoints';
+import { patchRideStatus, callRider } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 
@@ -112,11 +112,36 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
       }
     : { ...pickup, latitudeDelta: 0.02, longitudeDelta: 0.02 };
 
-  const handleCall = () => {
-    if (ride?.rider_phone) {
-      Linking.openURL(`tel:${ride.rider_phone}`);
-    } else {
-      Alert.alert('No number', 'Rider phone number is unavailable.');
+  const [calling, setCalling] = useState(false);
+
+  const handleCall = async () => {
+    if (!rideId) {
+      Alert.alert('Call Failed', 'No active ride to make a call on.');
+      return;
+    }
+    setCalling(true);
+    try {
+      // Exotel masked call via driver endpoints
+      await callRider(rideId);
+      Alert.alert(
+        '📞 Calling Rider',
+        'Exotel will connect you to the rider via a masked number. Your number stays private.',
+        [{ text: 'OK' }],
+      );
+    } catch (err) {
+      const msg = err.response?.data?.error?.message;
+      if (msg === 'Calling service is not configured.') {
+        // Fallback to direct dial only if Exotel env vars are missing
+        if (ride?.rider_phone) {
+          Linking.openURL(`tel:${ride.rider_phone}`);
+        } else {
+          Alert.alert('Call Failed', 'Rider phone number is unavailable.');
+        }
+      } else {
+        Alert.alert('Call Failed', msg ?? 'Could not connect call. Use in-app chat instead.');
+      }
+    } finally {
+      setCalling(false);
     }
   };
 
@@ -257,8 +282,11 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
           </View>
 
           <View style={s.riderActions}>
-            <TouchableOpacity style={s.callBtn} onPress={handleCall} activeOpacity={0.8}>
-              <MaterialIcons name="call" size={20} color="#FFFFFF" />
+            <TouchableOpacity style={[s.callBtn, calling && { opacity: 0.6 }]} onPress={handleCall} activeOpacity={0.8} disabled={calling}>
+              {calling
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : <MaterialIcons name="call" size={20} color="#FFFFFF" />
+              }
             </TouchableOpacity>
             <TouchableOpacity style={s.chatBtn} onPress={() => setChatVisible(true)} activeOpacity={0.6}>
               <Feather name="message-circle" size={24} color="#AB8FFE" />

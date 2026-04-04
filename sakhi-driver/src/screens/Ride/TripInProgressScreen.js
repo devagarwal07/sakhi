@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, Vibration, Image, ActivityIndicator,
+  Animated, Dimensions,
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -19,19 +20,95 @@ const MAP_STYLE = [
   { featureType: 'water', stylers: [{ color: '#c8bef0' }] },
 ];
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function TripInProgressScreen({ navigation, route }) {
   const { ride } = route.params ?? {};
   const rideId = ride?.ride_id ?? ride?.id;
-  const { emit } = useSocket();
+  const { emit, on, off, incomingRide, acceptRide, rejectRide } = useSocket();
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
 
-  const [myLocation, setMyLocation] = useState(null);
-  const [completing, setCompleting] = useState(false);
-  const [chatVisible, setChatVisible] = useState(false);
+  const [myLocation, setMyLocation]       = useState(null);
+  const [completing, setCompleting]       = useState(false);
+  const [chatVisible, setChatVisible]     = useState(false);
+
+  // Pre-dispatch state — shown when driver is ~5 min from dropoff
+  const [preDispatch, setPreDispatch]     = useState(null);   // { eta_min, dist_to_dropoff_km }
+
+  // Incoming ride request countdown (30 s)
+  const [countdown, setCountdown]         = useState(30);
+  const countdownRef                      = useRef(null);
+  const slideAnim                         = useRef(new Animated.Value(300)).current;
 
   const dropoff = ride?.dropoff_coords ?? { latitude: 28.6280, longitude: 77.2300 };
 
+  // ── Incoming request card slide-in animation ──────────────────────────────
+  const showRequestCard = (show) => {
+    Animated.spring(slideAnim, {
+      toValue: show ? 0 : 300,
+      useNativeDriver: true,
+      tension: 80, friction: 12,
+    }).start();
+  };
+
+  // ── Pre-dispatch eligible listener ────────────────────────────────────────
+  useEffect(() => {
+    const handler = (data) => setPreDispatch(data);
+    on('pre_dispatch_eligible', handler);
+    return () => off('pre_dispatch_eligible', handler);
+  }, [on, off]);
+
+  // ── Incoming ride request during active trip ──────────────────────────────
+  useEffect(() => {
+    if (incomingRide) {
+      setCountdown(30);
+      showRequestCard(true);
+      Vibration.vibrate([0, 300, 100, 300]);
+      countdownRef.current = setInterval(() => {
+        setCountdown((c) => {
+          if (c <= 1) {
+            clearInterval(countdownRef.current);
+            showRequestCard(false);
+            // timeout — matching engine will move to next driver automatically
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(countdownRef.current);
+      showRequestCard(false);
+    }
+    return () => clearInterval(countdownRef.current);
+  }, [incomingRide]);
+
+  // ── Handle accept while in_progress ──────────────────────────────────────
+  const handleAcceptNextRide = async () => {
+    if (!incomingRide) return;
+    clearInterval(countdownRef.current);
+    showRequestCard(false);
+    try {
+      await acceptRide(incomingRide.ride_id);
+      // Show a brief confirmation chip — driver stays on current trip
+      Alert.alert(
+        'Next Ride Queued ✓',
+        `You will be navigated to ${incomingRide.pickup_address} after this trip ends.`,
+        [{ text: 'OK' }],
+      );
+    } catch (err) {
+      Alert.alert('Could not accept', err.message);
+    }
+  };
+
+  const handleDeclineNextRide = () => {
+    if (!incomingRide) return;
+    clearInterval(countdownRef.current);
+    rejectRide(incomingRide.ride_id);
+    showRequestCard(false);
+  };
+
+  // ── GPS location tracking ─────────────────────────────────────────────────
   useEffect(() => {
     let locSubscription;
     (async () => {
@@ -125,9 +202,8 @@ export default function TripInProgressScreen({ navigation, route }) {
         {/* ── OVERLAYS ── */}
         <View style={s.mapOverlays} pointerEvents="box-none">
 
-          {/* Top Navigation Banner — 104px tall, two lines */}
+          {/* Top Navigation Banner */}
           <View style={[s.topNavBanner, { marginTop: Math.max(insets.top, 16) }]}>
-            {/* Left: icon + two-line text */}
             <View style={s.topNavLeft}>
               <View style={s.topNavIconBg}>
                 <Feather name="navigation" size={16} color="#BEA3D8" style={{ transform: [{ rotate: '45deg' }] }} />
@@ -136,27 +212,31 @@ export default function TripInProgressScreen({ navigation, route }) {
                 <Text style={s.topNavTitle} numberOfLines={2}>
                   {ride?.dropoff_address || 'Navigating to Destination'}
                 </Text>
-                <Text style={s.topNavSub}>Heading to drop-off</Text>
+                {/* Pre-dispatch chip — shown when <1.7 km from dropoff */}
+                {preDispatch ? (
+                  <View style={s.preDispatchChip}>
+                    <Text style={s.preDispatchChipText}>
+                      🔔 Next ride incoming in ~{preDispatch.eta_min} min
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={s.topNavSub}>Heading to drop-off</Text>
+                )}
               </View>
             </View>
-            {/* Right: X close */}
             <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtnBox}>
               <Feather name="x" size={14} color="#64748B" />
             </TouchableOpacity>
           </View>
 
-          {/* SOS Floating Pill — bottom-left of map */}
+          {/* SOS Floating Pill */}
           <TouchableOpacity
             style={s.sosBtn}
             activeOpacity={0.8}
             onPress={() => {
               const loc = myLocation ?? dropoff;
               navigation.navigate('SOSWarning', {
-                location: {
-                  latitude: loc.latitude,
-                  longitude: loc.longitude,
-                  ride_id: rideId,
-                },
+                location: { latitude: loc.latitude, longitude: loc.longitude, ride_id: rideId },
               });
             }}
           >
@@ -170,30 +250,18 @@ export default function TripInProgressScreen({ navigation, route }) {
       {/* ── BOTTOM SHEET (Bottom 38%) ── */}
       <View style={s.bottomSheet}>
 
-        {/* Drag Handle */}
-        <View style={s.dragHandleWrap}>
-          <View style={s.dragHandle} />
-        </View>
+        <View style={s.dragHandleWrap}><View style={s.dragHandle} /></View>
 
         {/* Rider & Status Row */}
         <View style={s.riderRow}>
           <View style={s.riderLeft}>
-
-            {/* Avatar with rating badge */}
             <View style={s.avatarContainer}>
-              <MonogramAvatar
-                uri={ride?.rider_photo}
-                name={ride?.rider_name}
-                size={54}
-                radius={14}
-              />
+              <MonogramAvatar uri={ride?.rider_photo} name={ride?.rider_name} size={54} radius={14} />
               <View style={s.ratingBadge}>
                 <MaterialIcons name="star" size={9} color="#F59E0B" />
                 <Text style={s.ratingBadgeText}>{Number(ride?.rider_rating || 4.7).toFixed(1)}</Text>
               </View>
             </View>
-
-            {/* Name + status pill */}
             <View style={s.riderInfo}>
               <Text style={s.riderName} numberOfLines={1} ellipsizeMode="tail">
                 {ride?.rider_name || 'Priya S.'}
@@ -202,10 +270,7 @@ export default function TripInProgressScreen({ navigation, route }) {
                 <Text style={s.tripStatusText}>TRIP IN PROGRESS</Text>
               </View>
             </View>
-
           </View>
-
-          {/* Chat Button */}
           <TouchableOpacity style={s.chatBtn} activeOpacity={0.8} onPress={() => setChatVisible(true)}>
             <MaterialCommunityIcons name="chat-outline" size={20} color="#BEA3D8" />
           </TouchableOpacity>
@@ -226,22 +291,85 @@ export default function TripInProgressScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* Primary Action Button */}
+        {/* Complete Trip Button */}
         <TouchableOpacity
           style={[s.primaryBtn, completing && { opacity: 0.7 }]}
           onPress={handleComplete}
           disabled={completing}
           activeOpacity={0.85}
         >
-          {completing ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={s.primaryBtnText}>Complete Trip</Text>
-          )}
+          {completing
+            ? <ActivityIndicator color="#FFFFFF" />
+            : <Text style={s.primaryBtnText}>Complete Trip</Text>
+          }
         </TouchableOpacity>
 
       </View>
     </View>
+
+    {/* ── INCOMING NEXT RIDE REQUEST OVERLAY (pre-dispatch) ── */}
+    {incomingRide && (
+      <Animated.View style={[s.nextRideOverlay, { transform: [{ translateY: slideAnim }] }]}>
+        {/* Header */}
+        <View style={s.nextRideHeader}>
+          <View style={s.nextRidePill}>
+            {incomingRide.is_pre_dispatch
+              ? <Text style={s.nextRidePillText}>🕐 NEXT RIDE — IN {incomingRide.eta_to_finish_min ?? '~5'} MIN</Text>
+              : <Text style={s.nextRidePillText}>⚡ NEW RIDE REQUEST</Text>
+            }
+          </View>
+          {/* Countdown ring */}
+          <View style={s.countdownCircle}>
+            <Text style={s.countdownText}>{countdown}</Text>
+          </View>
+        </View>
+
+        {/* Route info */}
+        <View style={s.nextRideRoute}>
+          <View style={s.routeRow}>
+            <View style={s.routeDot} />
+            <Text style={s.routeAddress} numberOfLines={2}>{incomingRide.pickup_address}</Text>
+          </View>
+          <View style={s.routeConnector} />
+          <View style={s.routeRow}>
+            <View style={[s.routeDot, s.routeDotDrop]} />
+            <Text style={s.routeAddress} numberOfLines={2}>{incomingRide.drop_address}</Text>
+          </View>
+        </View>
+
+        {/* Stats strip */}
+        <View style={s.nextRideStats}>
+          <View style={s.statItem}>
+            <Text style={s.statValue}>₹{incomingRide.estimated_fare ?? '—'}</Text>
+            <Text style={s.statLabel}>Fare</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statItem}>
+            <Text style={s.statValue}>{incomingRide.distance_km ?? '—'} km</Text>
+            <Text style={s.statLabel}>Distance</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statItem}>
+            <Text style={s.statValue}>~{incomingRide.total_wait_min ?? '—'} min</Text>
+            <Text style={s.statLabel}>Your wait</Text>
+          </View>
+        </View>
+
+        {/* Actions */}
+        <View style={s.nextRideActions}>
+          <TouchableOpacity style={s.declineBtn} onPress={handleDeclineNextRide} activeOpacity={0.8}>
+            <Feather name="x" size={20} color="#BA1A1A" />
+            <Text style={s.declineBtnText}>Decline</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.acceptBtn} onPress={handleAcceptNextRide} activeOpacity={0.85}>
+            <Feather name="check" size={20} color="#FFFFFF" />
+            <Text style={s.acceptBtnText}>
+              {incomingRide.is_pre_dispatch ? 'Queue Ride' : 'Accept'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    )}
 
     {chatVisible && (
       <ChatModal
@@ -254,6 +382,7 @@ export default function TripInProgressScreen({ navigation, route }) {
     </>
   );
 }
+
 
 const s = StyleSheet.create({
   root: {
@@ -558,4 +687,117 @@ const s = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
+
+  // ── Pre-dispatch chip (shown in top nav when ~5 min from dropoff) ──────────
+  preDispatchChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 9999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+    marginTop: 2,
+  },
+  preDispatchChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+
+  // ── Next-ride incoming card (slides up from bottom) ───────────────────────
+  nextRideOverlay: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 32,
+    shadowColor: 'rgba(124,58,237,1)',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 24,
+    gap: 16,
+  },
+  nextRideHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  nextRidePill: {
+    backgroundColor: '#EDE9FE',
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  nextRidePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#4C1D95',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  countdownCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: '#BEA3D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countdownText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#4C1D95',
+  },
+
+  // Route rows
+  nextRideRoute: { gap: 6 },
+  routeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  routeDot: {
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: '#10B981', marginTop: 4, flexShrink: 0,
+  },
+  routeDotDrop: { backgroundColor: '#BEA3D8' },
+  routeConnector: {
+    width: 2, height: 12, backgroundColor: '#E5E0EF',
+    marginLeft: 4, marginVertical: -2,
+  },
+  routeAddress: {
+    flex: 1, fontSize: 13, fontWeight: '600', color: '#1E1B2E', lineHeight: 20,
+  },
+
+  // Stats strip
+  nextRideStats: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F0FF',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 16, fontWeight: '800', color: '#1E1B2E' },
+  statLabel: { fontSize: 10, fontWeight: '600', color: '#94A3B8', marginTop: 2, textTransform: 'uppercase' },
+  statDivider: { width: 1, height: 28, backgroundColor: '#E5E0EF' },
+
+  // Accept / Decline
+  nextRideActions: { flexDirection: 'row', gap: 12 },
+  declineBtn: {
+    flex: 1, height: 52, borderRadius: 14,
+    backgroundColor: '#FFF2F0', borderWidth: 1.5, borderColor: 'rgba(186,26,26,0.2)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  declineBtnText: { fontSize: 15, fontWeight: '700', color: '#BA1A1A' },
+  acceptBtn: {
+    flex: 2, height: 52, borderRadius: 14,
+    backgroundColor: '#BEA3D8',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  acceptBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });
