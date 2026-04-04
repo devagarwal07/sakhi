@@ -1,42 +1,52 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Image, KeyboardAvoidingView,
-    Platform, Modal, FlatList, Pressable,
+    Platform, Modal, FlatList, Pressable, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SakhiModal from '../src/components/SakhiModal';
+import { useAuth } from '../src/context/AuthContext';
+import { updateProfile } from '../src/api/endpoints';
 
 const LANGUAGES = [
     'English', 'Hindi', 'Marathi', 'Bengali', 'Tamil',
     'Telugu', 'Kannada', 'Malayalam', 'Punjabi', 'Gujarati',
 ];
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 export default function EditProfileScreen() {
     const router = useRouter();
+    const { user, updateUser } = useAuth();
     const [modal, setModal] = useState(null);
+    const [saving, setSaving] = useState(false);
 
-    // Form state
-    const [name, setName] = useState('Priya Sharma');
-    const [email, setEmail] = useState('priya.sharma@example.com');
-    const [avatarUri, setAvatarUri] = useState(null);
+    // Form state — seeded from auth context user
+    const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [avatarUri, setAvatarUri] = useState(user?.avatar_url || user?.avatar || null);
 
     // DOB state
-    const [dobDay, setDobDay] = useState('12');
-    const [dobMonth, setDobMonth] = useState('05');
-    const [dobYear, setDobYear] = useState('1995');
+    const parseDobPart = (field, fallback) => {
+        if (user?.dob) {
+            const parts = user.dob.split('-');
+            if (field === 'year') return parts[0] || fallback;
+            if (field === 'month') return parts[1] || fallback;
+            if (field === 'day') return parts[2] || fallback;
+        }
+        return fallback;
+    };
+    const [dobDay, setDobDay] = useState(parseDobPart('day', '01'));
+    const [dobMonth, setDobMonth] = useState(parseDobPart('month', '01'));
+    const [dobYear, setDobYear] = useState(parseDobPart('year', '1995'));
     const [showDobPicker, setShowDobPicker] = useState(false);
-    const [tempDay, setTempDay] = useState('12');
-    const [tempMonth, setTempMonth] = useState('05');
-    const [tempYear, setTempYear] = useState('1995');
+    const [tempDay, setTempDay] = useState(dobDay);
+    const [tempMonth, setTempMonth] = useState(dobMonth);
+    const [tempYear, setTempYear] = useState(dobYear);
 
     // Language state
-    const [language, setLanguage] = useState('English');
+    const [language, setLanguage] = useState(user?.preferred_language || 'English');
     const [showLangPicker, setShowLangPicker] = useState(false);
 
     // ── Avatar Picker ──────────────────────────────────────────
@@ -63,7 +73,7 @@ export default function EditProfileScreen() {
     };
 
     // ── DOB Helpers ────────────────────────────────────────────
-    const formattedDob = `${dobDay.padStart(2,'0')}/${dobMonth.padStart(2,'0')}/${dobYear}`;
+    const formattedDob = `${dobDay.padStart(2, '0')}/${dobMonth.padStart(2, '0')}/${dobYear}`;
 
     const openDobPicker = () => {
         setTempDay(dobDay); setTempMonth(dobMonth); setTempYear(dobYear);
@@ -74,16 +84,16 @@ export default function EditProfileScreen() {
         const d = parseInt(tempDay, 10);
         const m = parseInt(tempMonth, 10);
         const y = parseInt(tempYear, 10);
-        if (!d || d < 1 || d > 31) { 
-            setModal({ icon: '⚠️', title: 'Invalid Day', message: 'Please enter a valid day (1-31).', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
-            return; 
+        if (!d || d < 1 || d > 31) {
+            setModal({ icon: '⚠️', title: 'Invalid Day', message: 'Please enter a valid day (1-31).', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
         }
-        if (!m || m < 1 || m > 12) { 
-            setModal({ icon: '⚠️', title: 'Invalid Month', message: 'Please enter a valid month (1-12).', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
-            return; 
+        if (!m || m < 1 || m > 12) {
+            setModal({ icon: '⚠️', title: 'Invalid Month', message: 'Please enter a valid month (1-12).', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
         }
         if (!y || y < 1920 || y > new Date().getFullYear() - 5) {
-            setModal({ icon: '⚠️', title: 'Invalid Year', message: 'Please enter a valid birth year.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
+            setModal({ icon: '⚠️', title: 'Invalid Year', message: 'Please enter a valid birth year.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             return;
         }
         setDobDay(String(d).padStart(2, '0'));
@@ -93,28 +103,59 @@ export default function EditProfileScreen() {
     };
 
     // ── Save Profile ───────────────────────────────────────────
-    const handleSave = () => {
-        if (!name.trim()) { 
-            setModal({ icon: '⚠️', title: 'Missing Info', message: 'Full name cannot be empty.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
-            return; 
+    const handleSave = async () => {
+        if (!name.trim()) {
+            setModal({ icon: '⚠️', title: 'Missing Info', message: 'Full name cannot be empty.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
         }
-        if (!email.includes('@')) { 
-            setModal({ icon: '⚠️', title: 'Invalid Email', message: 'Please enter a valid email address.', buttons: [{text: 'OK', onPress: () => setModal(null)}]});
-            return; 
+        if (email && !email.includes('@')) {
+            setModal({ icon: '⚠️', title: 'Invalid Email', message: 'Please enter a valid email address.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
         }
-        setModal({
-            icon: '✅',
-            title: 'Profile Updated!',
-            message: 'Your profile changes have been saved successfully.',
-            buttons: [{ text: 'Done', onPress: () => { setModal(null); if (router.canGoBack()) router.back(); else router.replace("/"); } }]
-        });
+
+        setSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('name', name.trim());
+            if (email) formData.append('email', email.trim());
+            formData.append('preferred_language', language);
+            const dob = `${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`;
+            formData.append('dob', dob);
+
+            // Attach avatar only if it's a new local file (not an http/s URL already on server)
+            if (avatarUri && !avatarUri.startsWith('http')) {
+                const filename = avatarUri.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : 'image/jpeg';
+                formData.append('avatar', { uri: avatarUri, name: filename, type });
+            }
+
+            const { data } = await updateProfile(formData);
+            updateUser(data.user || data);
+
+            setModal({
+                icon: '✅',
+                title: 'Profile Updated!',
+                message: 'Your profile changes have been saved successfully.',
+                buttons: [{ text: 'Done', onPress: () => { setModal(null); if (router.canGoBack()) router.back(); else router.replace("/"); } }]
+            });
+        } catch (err) {
+            setModal({
+                icon: '❌',
+                title: 'Error',
+                message: err?.response?.data?.message || 'Could not save profile. Please try again.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : null}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
                 {/* ── Header ── */}
                 <View style={styles.header}>
@@ -125,8 +166,11 @@ export default function EditProfileScreen() {
                         <Text style={styles.headerTitle}>Edit Profile</Text>
                     </View>
                     <View style={styles.headerRightWrap}>
-                        <TouchableOpacity style={styles.saveTopBtn} onPress={handleSave}>
-                            <Text style={styles.saveTopText}>Save</Text>
+                        <TouchableOpacity style={styles.saveTopBtn} onPress={handleSave} disabled={saving}>
+                            {saving
+                                ? <ActivityIndicator size="small" color="#BEA3D8" />
+                                : <Text style={styles.saveTopText}>Save</Text>
+                            }
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -193,9 +237,9 @@ export default function EditProfileScreen() {
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>PHONE</Text>
                             <View style={[styles.inputWrap, styles.inputRow]}>
-                                <Text style={styles.inputText}>+91 98765 43210</Text>
+                                <Text style={styles.inputText}>{user?.phone || '—'}</Text>
                                 <TouchableOpacity onPress={() => router.push('/change-phone')}>
-                                    <Text style={styles.changeLinkText}>Change Number →</Text>
+                                    <Text style={styles.changeLinkText}>Change →</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -230,16 +274,22 @@ export default function EditProfileScreen() {
                         <View style={styles.verificationBox}>
                             <View style={styles.verifyRow}>
                                 <View style={styles.verifyIconWrap}>
-                                    <Text style={styles.verifyIcon}>✓</Text>
+                                    <Text style={styles.verifyIcon}>
+                                        {user?.verification_status === 'approved' ? '✓' : '…'}
+                                    </Text>
                                 </View>
-                                <Text style={styles.verifyLabel}>Aadhaar Verified</Text>
+                                <Text style={styles.verifyLabel}>
+                                    {user?.verification_status === 'approved' ? 'Identity Verified' : 'Verification Pending'}
+                                </Text>
                             </View>
-                            <View style={styles.verifyRow}>
-                                <View style={styles.verifyIconWrap}>
-                                    <Text style={styles.verifyIcon}>✓</Text>
+                            {user?.gender_verified && (
+                                <View style={styles.verifyRow}>
+                                    <View style={styles.verifyIconWrap}>
+                                        <Text style={styles.verifyIcon}>✓</Text>
+                                    </View>
+                                    <Text style={styles.verifyLabel}>Gender Verified</Text>
                                 </View>
-                                <Text style={styles.verifyLabel}>Gender Verified</Text>
-                            </View>
+                            )}
                         </View>
 
                     </View>
@@ -247,8 +297,11 @@ export default function EditProfileScreen() {
 
                 {/* ── Fixed Save Button ── */}
                 <View style={styles.bottomFixedWrap}>
-                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.85} onPress={handleSave}>
-                        <Text style={styles.actionBtnText}>Save Changes</Text>
+                    <TouchableOpacity style={[styles.actionBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85} onPress={handleSave} disabled={saving}>
+                        {saving
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.actionBtnText}>Save Changes</Text>
+                        }
                     </TouchableOpacity>
                 </View>
 
@@ -345,55 +398,45 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20, 
+        paddingHorizontal: 20,
         height: 64,
-        backgroundColor: '#F5F0FF', 
+        backgroundColor: '#F5F0FF',
         zIndex: 10
     },
-    iconBtn: { 
-        width: 32, 
-        height: 32, 
-        justifyContent: 'center', 
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'transparent'
     },
-    headerIcon: { 
-        fontSize: 24, 
-        color: '#BEA3D8', 
-        fontWeight: 'bold' 
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: 'bold'
     },
     headerTitleWrap: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    headerTitle: { 
-        fontSize: 20, 
-        fontWeight: '700', 
-        color: '#1E1B2E', 
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
         letterSpacing: -0.5,
         marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     keyboardView: { flex: 1 },
-
-    // ── Header ──
-    
     headerLeftWrap: { width: 60, alignItems: 'flex-start' },
     headerRightWrap: { width: 60, alignItems: 'flex-end' },
-    
-    
-    
-    saveTopBtn: { paddingVertical: 4 },
+    saveTopBtn: { paddingVertical: 4, paddingHorizontal: 4, minWidth: 40, alignItems: 'center' },
     saveTopText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8' },
-
-    // ── Scroll ──
     scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 140 },
-
-    // ── Avatar ──
     avatarSection: { alignItems: 'center', marginBottom: 28 },
     avatarWrap: {
         position: 'relative', width: 100, height: 100,
@@ -416,7 +459,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
     },
     avatarEditIcon: { fontSize: 14 },
-    avatarHint: { marginTop: 10, fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+    avatarHint: { marginTop: 10, fontSize: 12, color: '#7B7487', fontWeight: '500' },
 
     // ── Form Card ──
     formCard: {
@@ -434,7 +477,7 @@ const styles = StyleSheet.create({
     input: { fontSize: 15, fontWeight: '500', color: '#1E1B2E', flex: 1, padding: 0, margin: 0 },
     inputText: { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
     changeLinkText: { fontSize: 13, fontWeight: '700', color: '#BEA3D8' },
-    inputEndIcon: { fontSize: 18, color: '#94A3B8' },
+    inputEndIcon: { fontSize: 18, color: '#7B7487' },
 
     // ── Verification ──
     verificationBox: { backgroundColor: '#F0FDF4', borderRadius: 12, padding: 16, gap: 14, marginTop: 4, borderWidth: 1, borderColor: '#BBF7D0' },
@@ -442,8 +485,6 @@ const styles = StyleSheet.create({
     verifyIconWrap: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#059669', justifyContent: 'center', alignItems: 'center' },
     verifyIcon: { fontSize: 11, fontWeight: 'bold', color: '#FFF' },
     verifyLabel: { fontSize: 14, fontWeight: '600', color: '#059669' },
-
-    // ── Bottom Save ──
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         padding: 20, paddingBottom: Platform.OS === 'ios' ? 36 : 24,
@@ -456,8 +497,6 @@ const styles = StyleSheet.create({
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
     },
     actionBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
-
-    // ── Modals ──
     modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
     pickerSheet: {
         backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -468,8 +507,6 @@ const styles = StyleSheet.create({
         borderRadius: 2, alignSelf: 'center', marginBottom: 20,
     },
     pickerTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 20, textAlign: 'center' },
-
-    // DOB
     dobRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 28 },
     dobFieldWrap: { flex: 1, gap: 6 },
     dobFieldLabel: { fontSize: 11, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 },
@@ -490,8 +527,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center',
     },
     confirmBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-
-    // Language list
     langItem: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingVertical: 14, paddingHorizontal: 8,

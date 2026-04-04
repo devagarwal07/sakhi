@@ -1,17 +1,30 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    TextInput, Platform, Linking
+    TextInput, Platform, Linking, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { getRideHistory } from '../src/api/endpoints';
 
 export default function HelpSupportScreen() {
     const router = useRouter();
 
     const [search, setSearch] = useState('');
     const [modal, setModal] = useState(null);
+    const [recentRides, setRecentRides] = useState([]);
+    const [loadingRides, setLoadingRides] = useState(true);
+
+    useEffect(() => {
+        getRideHistory(1)
+            .then(({ data }) => {
+                const rides = data.rides || [];
+                setRecentRides(rides.slice(0, 2));
+            })
+            .catch(() => {})
+            .finally(() => setLoadingRides(false));
+    }, []);
 
     const helpCategories = {
         ride: 'For ride issues, please rate the trip and submit a report from your Ride History.',
@@ -104,14 +117,18 @@ export default function HelpSupportScreen() {
                         </View>
                         
                         <View style={styles.tripsList}>
-                            <RecentTripCard 
-                                pickup="Current Location" 
-                                dropoff="Destination" 
-                            />
-                            <RecentTripCard 
-                                pickup="Search Location" 
-                                dropoff="Current Location" 
-                            />
+                            {loadingRides ? (
+                                <ActivityIndicator color="#BEA3D8" />
+                            ) : recentRides.length === 0 ? (
+                                <Text style={{ color: '#94A3B8', fontSize: 13 }}>No recent trips yet.</Text>
+                            ) : recentRides.map((ride) => (
+                                <RecentTripCard 
+                                    key={ride.id}
+                                    pickup={ride.pickup_address || 'Pickup'}
+                                    dropoff={ride.dropoff_address || 'Destination'}
+                                    rideId={ride.id}
+                                />
+                            ))}
                         </View>
                     </View>
 
@@ -120,16 +137,14 @@ export default function HelpSupportScreen() {
                         <Text style={styles.sectionHeading}>CONTACT US</Text>
                         <View style={styles.contactCardContainer}>
                             
-                            {/* Chat Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => setModal({
-                                icon: '💬',
-                                title: 'Chat Support',
-                                message: 'Live chat will open. Average wait time: 2 minutes.',
-                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                            })}>
+                            {/* Chat Row → Navigates to in-app chatbot */}
+                            <TouchableOpacity style={[styles.contactRow, styles.contactRowChat]} activeOpacity={0.7} onPress={() => router.push('/support-chat')}>
                                 <View style={styles.contactRowLeft}>
                                     <Text style={styles.contactIcon}>💬</Text>
-                                    <Text style={styles.contactLabel}>Chat with Support</Text>
+                                    <View style={styles.contactTextCol}>
+                                        <Text style={[styles.contactLabel, { color: '#6B21A8' }]}>Chat with Sakhi Bot</Text>
+                                        <Text style={styles.contactSubText}>Instant answers, 24/7</Text>
+                                    </View>
                                 </View>
                                 <View style={styles.onlineBadge}>
                                     <Text style={styles.onlineText}>ONLINE</Text>
@@ -262,6 +277,7 @@ const styles = StyleSheet.create({
     /* Contact Us */
     contactCardContainer: { backgroundColor: '#FFFFFF', borderRadius: 12, shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4, overflow: 'hidden' },
     contactRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
+    contactRowChat: { backgroundColor: '#FAF5FF', borderBottomWidth: 1, borderBottomColor: '#F0E9FF' },
     contactRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     contactIcon: { fontSize: 20, color: '#A78BFA' },
     contactTextCol: { gap: 2 },
