@@ -168,9 +168,9 @@ const styles = StyleSheet.create({
     
     statusList: { gap: 16, marginBottom: 32 },
     statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    checkBg: { width: 24, height: 24, backgroundColor: '#D1FAE5', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    checkBg: { width: 24, height: 24, backgroundColor: '#ECFDF5', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
     checkMark: { color: '#059669', fontSize: 12, fontWeight: 'bold' },
-    statusText: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+    statusText: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
 
     contactsSection: { paddingTop: 8 },
     contactsHeading: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     contactLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     avatar: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#F8FAFC' },
     avatarInitial: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-    contactName: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
+    contactName: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
     notifiedPill: { backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
     notifiedText: { fontSize: 10, fontWeight: '700', color: '#059669', letterSpacing: 0.5 },
 

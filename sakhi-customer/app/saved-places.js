@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
     rowTextWrap: { flex: 1 },
     rowTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B2E', lineHeight: 24 },
     rowActionText: { fontSize: 14, fontWeight: '500', color: '#BEA3D8', marginTop: -2 },
-    rowSubtext: { fontSize: 14, color: '#1C1A25', marginTop: -2 },
-    divider: { height: 1, backgroundColor: '#F0ECFA', marginHorizontal: 20 },
+    rowSubtext: { fontSize: 14, color: '#1E1B2E', marginTop: -2 },
+    divider: { height: 1, backgroundColor: '#EDE9FA', marginHorizontal: 20 },
 
     /* Add Action Button */
     addPlaceBtn: {
@@ -320,13 +320,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1,
     },
     pinIconWrap: {
-        width: 40, height: 40, borderRadius: 20, backgroundColor: '#F6F1FF',
+        width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF',
         justifyContent: 'center', alignItems: 'center',
     },
     pinIcon: { fontSize: 18, color: '#BEA3D8' },
     customPlaceInfo: { flex: 1, paddingRight: 8 },
     customPlaceName: { fontSize: 16, fontWeight: '700', color: '#1E1B2E', lineHeight: 24 },
-    customPlaceAddress: { fontSize: 12, color: '#1C1A25', lineHeight: 20, paddingTop: 2 },
+    customPlaceAddress: { fontSize: 12, color: '#1E1B2E', lineHeight: 20, paddingTop: 2 },
     
     /* Action Icons row */
     actionIconsRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -362,9 +362,9 @@ const styles = StyleSheet.create({
     modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },
     modalInput: {
-        backgroundColor: '#F6F1FF', borderRadius: 12,
+        backgroundColor: '#F5F0FF', borderRadius: 12,
         paddingHorizontal: 16, paddingVertical: 14,
-        fontSize: 15, fontWeight: '500', color: '#1C1A25',
+        fontSize: 15, fontWeight: '500', color: '#1E1B2E',
         marginBottom: 12,
     },
     modalBtn: {
