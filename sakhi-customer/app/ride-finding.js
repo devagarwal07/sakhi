@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
-
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { bookRide, cancelRide } from '../src/api/endpoints';
@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        height: Platform.OS === 'ios' ? 108 : 64, // Accounts for notch implicitly using paddings later if needed, but going absolute
-        paddingTop: Platform.OS === 'ios' ? 52 : 16,
+        height: Platform.OS === 'ios' ? 108 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',

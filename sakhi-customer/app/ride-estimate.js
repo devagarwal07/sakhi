@@ -3,9 +3,10 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Dimensions, Platform, ActivityIndicator,
 } from 'react-native';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
-
+import { calculateFare, parseKmText, PRICING } from '../src/utils/fareCalculator';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
@@ -65,7 +66,7 @@ export default function RideEstimateScreen() {
     const [fareData, setFareData] = useState(null);
     const [loadingRoute, setLoadingRoute] = useState(true);
 
-    const pickup = ride?.pickup;
+    const pickup  = ride?.pickup;
     const dropoff = ride?.dropoff;
 
     // Compute midpoint for initial map region
@@ -82,33 +83,21 @@ export default function RideEstimateScreen() {
         ? Math.abs(pickup.longitude - dropoff.longitude) * 1.8 + 0.01
         : 0.04;
 
-    useEffect(() => {
-        if (!pickup || !dropoff) {
-            setLoadingRoute(false);
-            return;
-        }
-        setLoadingRoute(true);
-        Promise.all([
-            fetchDirectionsPolyline(pickup, dropoff)
-                .then(({ points, distance, duration }) => {
-                    setRoutePolyline(points);
-                    setRouteDistance(distance);
-                    setRouteDuration(duration);
-                }),
-            estimateFare(pickup, dropoff)
-                .then(({ data }) => setFareData(data))
-                .catch(() => {}),
-        ]).finally(() => setLoadingRoute(false));
-    }, []);
+    // Derived fare values — prefer API data, fall back to local calculator
+    const distKm        = parseKmText(routeDistance);
+    const localFare     = distKm > 0 ? calculateFare(distKm) : null;
+    const fareResult    = fareData || (localFare ? {
+        total:            localFare.estimated_fare,
+        base_fare:        localFare.base_fare,
+        billable_km:      localFare.billable_km,
+        distance_charge:  localFare.distance_charge,
+        pickup_surcharge: localFare.pickup_surcharge,
+        waiting_charge:   0,
+    } : null);
 
-    const displayFare = fareData
-        ? `₹${fareData.min || fareData.total || '—'} - ₹${fareData.max || fareData.total || '—'}`
-        : '—';
-    const displayTime = routeDuration || '—';
+    const displayFare     = fareResult ? `₹${fareResult.estimated_fare ?? fareResult.total ?? '—'}` : '—';
+    const displayTime     = routeDuration || '—';
     const displayDistance = routeDistance || '—';
-    const baseFare = fareData?.base || '—';
-    const distanceFare = fareData?.distance_fare ?? (fareData?.distance ?? '—');
-    const waitingFare = fareData?.waiting || 0;
 
     return (
         <View style={styles.container}>
@@ -227,32 +216,79 @@ export default function RideEstimateScreen() {
                     {/* Fare Breakdown Card */}
                     {breakdownExpanded && (
                         <View style={styles.breakdownCard}>
-                            {!fareData && !loadingRoute && (
+                            {/* Sakhi Premium badge */}
+                            <View style={styles.premiumBadge}>
+                                <Text style={styles.premiumBadgeText}>✦ Sakhi Premium Included — Female Driver Guaranteed</Text>
+                            </View>
+
+                            {!fareResult && !loadingRoute && (
                                 <Text style={styles.fareUnavailableNote}>
                                     💸 Fare estimate unavailable — will be confirmed after booking
                                 </Text>
                             )}
-                            {fareData && (
-                                <>
-                                <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>Base Fare</Text>
-                                    <Text style={styles.breakdownValue}>{baseFare !== '—' ? `₹${baseFare}` : '—'}</Text>
-                                </View>
-                                <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>Distance ({displayDistance})</Text>
-                                    <Text style={styles.breakdownValue}>{distanceFare !== '—' ? `₹${distanceFare}` : '—'}</Text>
-                                </View>
-                                <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>Waiting (if any)</Text>
-                                    <Text style={styles.breakdownValue}>₹{waitingFare}</Text>
-                                </View>
-                                </>
-                            )}
+
                             {loadingRoute && (
                                 <View style={styles.breakdownRow}>
                                     <Text style={styles.breakdownLabel}>Calculating fare…</Text>
                                     <ActivityIndicator size="small" color="#BEA3D8" />
                                 </View>
+                            )}
+
+                            {fareResult && (
+                                <>
+                                    {/* Row 1: Base Fare */}
+                                    <View style={styles.breakdownRow}>
+                                        <View style={styles.breakdownLabelWrap}>
+                                            <Text style={styles.breakdownLabel}>Base Fare (first {PRICING.BASE_KM} km)</Text>
+                                            <Text style={styles.breakdownSubLabel}>Govt ₹{PRICING.BASE_FARE_COMPONENTS.govt_minimum} + Pickup ₹{PRICING.BASE_FARE_COMPONENTS.pickup_charge} + Sakhi ₹{PRICING.BASE_FARE_COMPONENTS.sakhi_premium}</Text>
+                                        </View>
+                                        <Text style={styles.breakdownValue}>₹{PRICING.BASE_FARE}</Text>
+                                    </View>
+
+                                    {/* Row 2: Distance Charge */}
+                                    <View style={styles.breakdownRow}>
+                                        <View style={styles.breakdownLabelWrap}>
+                                            <Text style={styles.breakdownLabel}>Distance ({displayDistance})</Text>
+                                            {(fareResult.billable_km ?? 0) > 0 ? (
+                                                <Text style={styles.breakdownSubLabel}>{(fareResult.billable_km ?? 0).toFixed(1)} km × ₹{PRICING.PER_KM_RATE}/km</Text>
+                                            ) : (
+                                                <Text style={styles.breakdownSubLabel}>Within base 2 km — included</Text>
+                                            )}
+                                        </View>
+                                        <Text style={styles.breakdownValue}>₹{fareResult.distance_charge ?? 0}</Text>
+                                    </View>
+
+                                    {/* Row 3: Pickup Surcharge (only shown if applicable) */}
+                                    {(fareResult.pickup_surcharge ?? 0) > 0 && (
+                                        <View style={styles.breakdownRow}>
+                                            <View style={styles.breakdownLabelWrap}>
+                                                <Text style={styles.breakdownLabel}>Pickup Surcharge</Text>
+                                                <Text style={styles.breakdownSubLabel}>Driver {'>'} {PRICING.FREE_PICKUP_RADIUS_KM} km away · ₹{PRICING.PICKUP_SURCHARGE_PER_KM}/km, max ₹{PRICING.MAX_PICKUP_SURCHARGE}</Text>
+                                            </View>
+                                            <Text style={styles.breakdownValue}>₹{fareResult.pickup_surcharge}</Text>
+                                        </View>
+                                    )}
+
+                                    {/* Row 4: Waiting */}
+                                    <View style={styles.breakdownRow}>
+                                        <View style={styles.breakdownLabelWrap}>
+                                            <Text style={styles.breakdownLabel}>Waiting Charges</Text>
+                                            <Text style={styles.breakdownSubLabel}>First 3 min free · ₹{PRICING.WAIT_CHARGE_PER_MIN}/min after</Text>
+                                        </View>
+                                        <Text style={styles.breakdownValue}>₹0 est.</Text>
+                                    </View>
+
+                                    {/* Divider */}
+                                    <View style={styles.breakdownDivider} />
+
+                                    {/* Row 5: Total */}
+                                    <View style={styles.breakdownRow}>
+                                        <Text style={[styles.breakdownLabel, styles.breakdownTotalLabel]}>Estimated Total</Text>
+                                        <Text style={[styles.breakdownValue, styles.breakdownTotalValue]}>
+                                            ₹{fareResult.estimated_fare ?? fareResult.total ?? '—'}
+                                        </Text>
+                                    </View>
+                                </>
                             )}
                         </View>
                     )}
@@ -310,8 +346,8 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        paddingTop: Platform.OS === 'ios' ? 52 : 24,
-        height: Platform.OS === 'ios' ? 124 : 96,
+        paddingTop: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 12,
+        height: Platform.OS === 'ios' ? 124 : ANDROID_STATUS_BAR_HEIGHT + 56,
         paddingHorizontal: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -348,7 +384,7 @@ const styles = StyleSheet.create({
 
     // Main content scroll
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 116 : 96, // Under top nav
+        paddingTop: Platform.OS === 'ios' ? 116 : ANDROID_STATUS_BAR_HEIGHT + 64, // Under top nav
         paddingBottom: 140, // for sticky footer
     },
 
@@ -592,28 +628,69 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         padding: 20,
-        gap: 16,
+        gap: 12,
         shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 16 },
         shadowOpacity: 0.08,
         shadowRadius: 32,
         elevation: 6,
-        marginBottom: 24, // spacing before sticky footer
+        marginBottom: 24,
     },
     breakdownRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+    },
+    breakdownLabelWrap: {
+        flex: 1,
+        marginRight: 8,
+        gap: 2,
     },
     breakdownLabel: {
         fontSize: 14,
-        fontWeight: '500',
-        color: '#64748B',
+        fontWeight: '600',
+        color: '#1E1B2E',
+    },
+    breakdownSubLabel: {
+        fontSize: 11,
+        fontWeight: '400',
+        color: '#94A3B8',
+        lineHeight: 16,
     },
     breakdownValue: {
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#1E1B2E',
+        minWidth: 48,
+        textAlign: 'right',
+    },
+    breakdownDivider: {
+        height: 1,
+        backgroundColor: '#F0EBF8',
+        marginVertical: 4,
+    },
+    breakdownTotalLabel: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#1E1B2E',
+    },
+    breakdownTotalValue: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#BEA3D8',
+    },
+    premiumBadge: {
+        backgroundColor: '#EDE9FE',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 4,
+    },
+    premiumBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#7C3AED',
+        lineHeight: 16,
     },
     fareUnavailableNote: {
         fontSize: 13,
