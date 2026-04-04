@@ -28,9 +28,9 @@ const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE      = '#BEA3D8';
-const DEEP        = '#7C3AED';
-const VIOLET      = '#630ED4';
-const DARK        = '#1C1A25';
+const DEEP        = '#BEA3D8';
+const VIOLET      = '#BEA3D8';
+const DARK        = '#1E1B2E';
 const MUTED       = '#6B7280';
 const WHITE       = '#FFFFFF';
 const BG          = '#F5F0FF';
@@ -403,7 +403,7 @@ const sp = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === 'ios' ? 42 : 28,
     paddingTop: 12,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,

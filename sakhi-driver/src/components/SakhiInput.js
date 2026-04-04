@@ -5,8 +5,8 @@ import {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
-const DARK     = '#1C1A25';
-const MUTED    = '#7B7487';
+const DARK     = '#1E1B2E';
+const MUTED    = '#94A3B8';
 const BG       = '#F5F0FF';
 const WHITE    = '#FFFFFF';
 const ERROR    = '#BA1A1A';
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 13,
     borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.3)',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8,
     elevation: 2,
