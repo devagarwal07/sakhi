@@ -9,7 +9,8 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { cancelRide, callDriver, sendBatteryAlert } from '../src/api/endpoints';
+import { cancelRide, callDriver, sendBatteryAlert, shareTrip } from '../src/api/endpoints';
+
 import * as Battery from 'expo-battery';
 import * as Sharing from 'expo-sharing';
 import ChatModal from '../src/components/ChatModal';
@@ -90,8 +91,12 @@ export default function ActiveRideScreen() {
         const checkBattery = async () => {
             try {
                 const level = await Battery.getBatteryLevelAsync();
+                const levelPct = level * 100;
                 if (level > 0 && level <= 0.05 && ride?.id) {
-                    await sendBatteryAlert(ride.driver?.currentLocation || ride.pickup, level * 100);
+                    const loc = ride.driver?.currentLocation || ride.pickup;
+                    const lat = loc?.latitude ?? 0;
+                    const lng = loc?.longitude ?? 0;
+                    await sendBatteryAlert({ lat, lng }, levelPct);
                 }
             } catch { } // fail gracefully if plugin issues
         };
@@ -101,7 +106,11 @@ export default function ActiveRideScreen() {
                 checkBattery();
                 batterySubscription = Battery.addBatteryLevelListener(({ batteryLevel }) => {
                     if (batteryLevel <= 0.05 && ride?.id) {
-                        sendBatteryAlert(ride.driver?.currentLocation || ride.pickup, batteryLevel * 100).catch(() => { });
+                        const loc = ride.driver?.currentLocation || ride.pickup;
+                        sendBatteryAlert(
+                            { lat: loc?.latitude ?? 0, lng: loc?.longitude ?? 0 },
+                            batteryLevel * 100
+                        ).catch(() => { });
                     }
                 });
             }
@@ -111,20 +120,40 @@ export default function ActiveRideScreen() {
     }, [ride?.id, ride?.driver?.currentLocation]);
 
     const handleShareTrip = async () => {
-        const shareUrl = `https://sakhirides.in/track/${ride?.id || 'demo'}`;
+        if (!ride?.rideId) {
+            setModal({
+                icon: '🔗',
+                title: 'Not Available',
+                message: 'Trip sharing is only available during an active ride.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+            return;
+        }
         try {
+            // Call the backend to get a JWT-signed tracking URL
+            const { data } = await shareTrip(ride.rideId);
+            const shareUrl = data?.share_url;
+            if (!shareUrl) throw new Error('No share URL returned');
+
             const isAvailable = await Sharing.isAvailableAsync();
             if (isAvailable) {
                 await Sharing.shareAsync(shareUrl, { dialogTitle: 'Track my Sakhi ride' });
             } else {
                 setModal({
                     icon: '🔗',
-                    title: 'Live Trip Sharing',
-                    message: `Link: ${shareUrl}`,
+                    title: 'Live Trip Link',
+                    message: shareUrl,
                     buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                 });
             }
-        } catch (err) { }
+        } catch (err) {
+            setModal({
+                icon: '⚠️',
+                title: 'Share Failed',
+                message: err.response?.data?.error?.message ?? 'Could not generate share link.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        }
     };
 
     const handleCancel = () => {
