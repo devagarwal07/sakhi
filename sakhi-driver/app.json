@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Sakhi Driver needs your location to show your position on the map and match you with nearby riders.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location in the background to keep sharing your position with riders while you are online."
-      }
+      },
+      "bundleIdentifier": "com.sakhi.driver"
     },
     "android": {
       "package": "com.sakhi.driver",

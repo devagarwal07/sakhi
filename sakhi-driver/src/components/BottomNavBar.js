@@ -9,7 +9,7 @@ import { Home, TrendingUp, Wallet, User } from 'lucide-react-native';
 export const NAV_HEIGHT = 60;
 
 const PURPLE = '#BEA3D8';
-const DEEP   = '#7C3AED';
+const DEEP   = '#BEA3D8';
 const MUTED  = '#9CA3AF';
 const WHITE  = '#FFFFFF';
 
@@ -84,7 +84,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
     ...Platform.select({
       ios: {
-        shadowColor: '#7C3AED',
+        shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: -8 },
         shadowOpacity: 0.06,
         shadowRadius: 16,
