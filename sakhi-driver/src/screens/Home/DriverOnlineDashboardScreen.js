@@ -11,7 +11,6 @@ import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import { DEV_BYPASS_AUTH } from '../../utils/constants';
 import client from '../../api/client';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
@@ -37,7 +36,6 @@ function getTierColor(tier) {
 
 export default function DriverOnlineDashboardScreen({ navigation }) {
   const { driver } = useAuth();
-  const { simulateRide } = useSocket();
   const insets = useSafeAreaInsets();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -88,7 +86,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
           </View>
         </View>
         
-        <TouchableOpacity style={s.bellBtn} activeOpacity={0.8}>
+        <TouchableOpacity style={s.bellBtn} activeOpacity={0.8} onPress={() => navigation.navigate('Notifications')}>
           <Feather name="bell" size={20} color={PURPLE} />
         </TouchableOpacity>
       </View>
@@ -182,7 +180,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         {/* Demand Zones Card — replaces fake map hint placeholder */}
         <View style={s.demandCard}>
           <View style={s.demandHeader}>
-            <Feather name="zap" size={14} color="#7C3AED" />
+            <Feather name="zap" size={14} color="#BEA3D8" />
             <Text style={s.demandTitle}>Demand Zones Near You</Text>
           </View>
           <View style={s.demandZonesRow}>
@@ -208,7 +206,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
               <View style={[s.demandBarFill, { flex: 1, backgroundColor: '#F59E0B' }]} />
               <Text style={s.demandBarLabel}>City Centre</Text>
             </View>
-            <View style={[s.demandBar, { flex: 0.15, backgroundColor: '#D1FAE5' }]}>
+            <View style={[s.demandBar, { flex: 0.15, backgroundColor: '#ECFDF5' }]}>
               <View style={[s.demandBarFill, { flex: 1, backgroundColor: '#10B981' }]} />
               <Text style={s.demandBarLabel}>Suburbs</Text>
             </View>
@@ -216,12 +214,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
           <Text style={s.demandFooter}>Go online to see live surge zones on the map</Text>
         </View>
 
-        {/* DEV Simulate Ride */}
-        {DEV_BYPASS_AUTH && (
-          <TouchableOpacity style={s.devBtn} onPress={simulateRide} activeOpacity={0.8}>
-            <Text style={s.devText}>🚖 [DEV] Simulate Ride</Text>
-          </TouchableOpacity>
-        )}
+
 
       </ScrollView>
 
@@ -347,7 +340,7 @@ const s = StyleSheet.create({
     gap: 14,
   },
   demandHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  demandTitle: { fontSize: 13, fontWeight: '700', color: '#1C1A25' },
+  demandTitle: { fontSize: 13, fontWeight: '700', color: '#1E1B2E' },
   demandZonesRow: { flexDirection: 'row', gap: 16 },
   demandZone: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   demandDot: { width: 8, height: 8, borderRadius: 4 },
@@ -358,10 +351,5 @@ const s = StyleSheet.create({
   demandBarLabel: { fontSize: 9, fontWeight: '600', color: '#64748B', textAlign: 'center', marginTop: 4 },
   demandFooter: { fontSize: 11, color: '#94A3B8', textAlign: 'center', fontStyle: 'italic' },
 
-  // Dev button
-  devBtn: {
-    marginTop: 20, borderWidth: 1, borderColor: '#F59E0B', borderStyle: 'dashed',
-    padding: 14, borderRadius: 12, backgroundColor: '#FFFBEB', alignItems: 'center'
-  },
-  devText: { color: '#B45309', fontWeight: '600', fontSize: 13 }
+
 });

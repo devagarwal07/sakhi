@@ -147,10 +147,10 @@ const s = StyleSheet.create({
   // ── Editorial Header
   editorialHeader: { gap: 8 },
   heading: { fontSize: 40, fontWeight: '800', lineHeight: 44, letterSpacing: -1 },
-  headingBlack:  { color: '#1C1A25' },
+  headingBlack:  { color: '#1E1B2E' },
   headingPurple: { color: '#BEA3D8' },
   subtitle: {
-    fontSize: 18, fontWeight: '500', color: '#4A4455',
+    fontSize: 18, fontWeight: '500', color: '#64748B',
     lineHeight: 29, opacity: 0.8,
   },
 
@@ -164,7 +164,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08, shadowRadius: 16,
     elevation: 4,
@@ -197,7 +197,7 @@ const s = StyleSheet.create({
 
   planContent: { flex: 1, gap: 16 },
   planTitleGroup: { gap: 4 },
-  planTitle: { fontSize: 20, fontWeight: '700', color: '#1C1A25', lineHeight: 28 },
+  planTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', lineHeight: 28 },
   planPrice: { fontSize: 18, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.45, lineHeight: 28 },
 
   featureList: { gap: 11.5 },
@@ -208,16 +208,16 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   checkMark: { fontSize: 9, color: '#FFFFFF', fontWeight: '800' },
-  featureText: { fontSize: 14, fontWeight: '500', color: '#4A4455', lineHeight: 20, flex: 1 },
+  featureText: { fontSize: 14, fontWeight: '500', color: '#64748B', lineHeight: 20, flex: 1 },
 
   infoBox: {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 16, padding: 20, gap: 12,
   },
   infoIconWrap: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   infoIcon: { fontSize: 14, color: '#BEA3D8', fontWeight: '800' },
-  infoText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#4A4455', lineHeight: 23 },
+  infoText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#64748B', lineHeight: 23 },
 
   // ── CTA footer — in-flow, no absolute, snaps directly above BottomNavBar
   footer: {
@@ -231,7 +231,7 @@ const s = StyleSheet.create({
     height: 56, borderRadius: 12,
     backgroundColor: '#BEA3D8',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25, shadowRadius: 16,
     elevation: 6,

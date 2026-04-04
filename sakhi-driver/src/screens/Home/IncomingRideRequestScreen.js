@@ -202,11 +202,11 @@ export default function IncomingRideRequestScreen() {
           {/* Trip Stats */}
           <View style={s.tripStatsRow}>
             <View style={s.statBox}>
-              <Feather name="git-commit" size={16} color="#1C1A25" style={{ transform: [{ rotate: '90deg' }] }} />
+              <Feather name="git-commit" size={16} color="#1E1B2E" style={{ transform: [{ rotate: '90deg' }] }} />
               <Text style={s.statText}>{distance_to_pickup_km} km to pickup</Text>
             </View>
             <View style={s.statBox}>
-              <Feather name="clock" size={16} color="#1C1A25" />
+              <Feather name="clock" size={16} color="#1E1B2E" />
               <Text style={s.statText}>ETA ~{eta_to_pickup_min} min</Text>
             </View>
           </View>
@@ -233,7 +233,7 @@ export default function IncomingRideRequestScreen() {
 const s = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FCF8FF',
+    backgroundColor: '#F5F0FF',
     zIndex: 9999,
   },
 
@@ -275,7 +275,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -298,7 +298,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -16 }, // adjust shadow upwards
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -343,7 +343,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '800',
     fontSize: 20,
-    color: '#1C1A25',
+    color: '#1E1B2E',
     letterSpacing: -0.5,
     marginTop: 4,
   },
@@ -354,7 +354,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -377,19 +377,19 @@ const s = StyleSheet.create({
   avatarBorder: {
     width: 48, height: 48,
     borderRadius: 24,
-    borderWidth: 2, borderColor: '#F0ECFA',
+    borderWidth: 2, borderColor: '#EDE9FA',
     justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
   },
   avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F0ECFA', justifyContent: 'center', alignItems: 'center' },
+  avatarFallback: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FA', justifyContent: 'center', alignItems: 'center' },
   riderInfo: { justifyContent: 'center' },
   riderName: {
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 16,
     lineHeight: 24,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
   ratingRow: {
     flexDirection: 'row',
@@ -401,7 +401,7 @@ const s = StyleSheet.create({
     fontWeight: '400',
     fontSize: 12,
     lineHeight: 16,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
   fareValue: {
     fontFamily: 'Inter',
@@ -449,7 +449,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 12,
-    color: '#1C1A25',
+    color: '#1E1B2E',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -457,7 +457,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '600',
     fontSize: 14,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
 
   // Stats Row
@@ -476,7 +476,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 12,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
 
   // Accept Button

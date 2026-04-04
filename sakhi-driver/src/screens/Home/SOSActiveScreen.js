@@ -238,10 +238,10 @@ const s = StyleSheet.create({
   statusRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkBg:    {
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center',
   },
   checkMark:  { color: GREEN, fontSize: 12, fontWeight: '800' },
-  statusText: { fontSize: 14, fontWeight: '600', color: '#1C1A25' },
+  statusText: { fontSize: 14, fontWeight: '600', color: '#1E1B2E' },
   divider:    { height: 1, backgroundColor: '#F5F0FF' },
 
   contactsSection: { gap: 12 },
@@ -258,8 +258,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText:  { fontSize: 16, fontWeight: '700', color: WHITE },
-  contactName: { fontSize: 14, fontWeight: '700', color: '#1C1A25' },
-  contactRelation: { fontSize: 11, color: '#7B7487', marginTop: 1 },
+  contactName: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
+  contactRelation: { fontSize: 11, color: '#94A3B8', marginTop: 1 },
   notifiedPill: {
     backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
   },
