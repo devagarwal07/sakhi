@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
         shadowColor: 'rgba(0, 0, 0, 0.05)', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 1, shadowRadius: 2, elevation: 2,
     },
     filterText: {
-        fontSize: 14, fontWeight: '500', color: '#4A4455',
+        fontSize: 14, fontWeight: '500', color: '#64748B',
     },
     filterTextActive: {
         color: '#FFFFFF',
@@ -332,13 +332,13 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     mainTitle: {
-        fontSize: 14, fontWeight: '700', color: '#1C1A25', lineHeight: 20,
+        fontSize: 14, fontWeight: '700', color: '#1E1B2E', lineHeight: 20,
     },
     subTitle: {
-        fontSize: 12, fontWeight: '400', color: '#1C1A25', lineHeight: 16,
+        fontSize: 12, fontWeight: '400', color: '#1E1B2E', lineHeight: 16,
     },
     timeText: {
-        fontSize: 10, fontWeight: '400', color: '#1C1A25', lineHeight: 15,
+        fontSize: 10, fontWeight: '400', color: '#1E1B2E', lineHeight: 15,
         marginTop: 4, // slight push down as in spec
     },
     
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 4,
     },
     typeText: {
-        fontSize: 10, color: '#1C1A25', textTransform: 'capitalize',
+        fontSize: 10, color: '#1E1B2E', textTransform: 'capitalize',
     },
     chevron: {
         fontSize: 14, color: '#CCC3D8', marginTop: -2,

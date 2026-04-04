@@ -176,7 +176,7 @@ export default function RideEstimateScreen() {
                             pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#10B981', label: 'P' },
                             dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#BEA3D8', label: 'D' },
                         ].filter(Boolean)}
-                        polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#7C3AED', width: 5 }] : []}
+                        polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#BEA3D8', width: 5 }] : []}
                         scrollEnabled
                         zoomEnabled
                     />
@@ -294,7 +294,7 @@ export default function RideEstimateScreen() {
 const mapStyle = [
     { elementType: 'geometry', stylers: [{ color: '#f5f0ff' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ebe6f5' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#F1F5F9' }] },
     { elementType: 'labels', stylers: [{ visibility: 'off' }] }, // hide labels to mimic map in screenshot
 ];
 
@@ -405,13 +405,13 @@ const styles = StyleSheet.create({
     pickupText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#1C1A25',
+        color: '#1E1B2E',
         lineHeight: 20,
     },
     dropoffText: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#4A4455',
+        color: '#64748B',
         lineHeight: 20,
     },
     editBtn: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     sectionHeader: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#4A4455',
+        color: '#64748B',
         letterSpacing: 1.1,
         textTransform: 'uppercase',
         marginBottom: 12,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     rideSubtext: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#4A4455',
+        color: '#64748B',
         marginTop: 2,
     },
     ridePricing: {
@@ -578,12 +578,12 @@ const styles = StyleSheet.create({
     breakdownTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#4A4455',
+        color: '#64748B',
     },
     breakdownChevron: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#4A4455',
+        color: '#64748B',
         marginTop: -4, // visual alignment
     },
 
@@ -608,17 +608,17 @@ const styles = StyleSheet.create({
     breakdownLabel: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#4A4455',
+        color: '#64748B',
     },
     breakdownValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1C1A25',
+        color: '#1E1B2E',
     },
     fareUnavailableNote: {
         fontSize: 13,
         fontWeight: '400',
-        color: '#7B7487',
+        color: '#94A3B8',
         textAlign: 'center',
         paddingVertical: 8,
         lineHeight: 20,

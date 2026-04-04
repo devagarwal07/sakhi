@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     commentInput: {
         width: '100%', height: 96, backgroundColor: 'rgba(255, 255, 255, 0.5)',
         borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12,
-        padding: 16, fontSize: 14, color: '#1C1A25'
+        padding: 16, fontSize: 14, color: '#1E1B2E'
     },
 
     submitBtn: {

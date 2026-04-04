@@ -324,9 +324,9 @@ export default function RideFindingScreen() {
 }
 
 const mapStyle = [
-    { elementType: 'geometry', stylers: [{ color: '#fcf8ff' }] },
+    { elementType: 'geometry', stylers: [{ color: '#F5F0FF' }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#ebe6f5' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#F1F5F9' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
     { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
 ];
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: '#FCF8FF',
+        backgroundColor: '#F5F0FF',
     },
     mapArea: {
         height: '55%',
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     waitPill: {
-        backgroundColor: '#F6F1FF',
+        backgroundColor: '#F5F0FF',
         borderRadius: 9999,
         paddingVertical: 6,
         paddingHorizontal: 16,
