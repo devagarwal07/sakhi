@@ -22,43 +22,77 @@ export default function useLocation() {
         let mounted = true;
 
         (async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                if (mounted) setError('Location permission denied');
-                setLoading(false);
-                return;
-            }
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    if (mounted) setError('Location permission denied');
+                    setLoading(false);
+                    return;
+                }
 
-            // Get initial location quickly
-            const initial = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
-            if (mounted) {
-                setLocation({
-                    latitude: initial.coords.latitude,
-                    longitude: initial.coords.longitude,
-                    accuracy: initial.coords.accuracy,
-                });
-                setLoading(false);
-            }
-
-            // Start continuous watching
-            watcherRef.current = await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.High,
-                    distanceInterval: 10, // metres before update
-                    timeInterval: 3000,   // ms before update
-                },
-                (pos) => {
+                // Try to get a precise fix first
+                try {
+                    const initial = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                    });
                     if (mounted) {
                         setLocation({
-                            latitude: pos.coords.latitude,
-                            longitude: pos.coords.longitude,
-                            accuracy: pos.coords.accuracy,
+                            latitude: initial.coords.latitude,
+                            longitude: initial.coords.longitude,
+                            accuracy: initial.coords.accuracy,
                         });
+                        setLoading(false);
                     }
-                },
-            );
+                } catch (posErr) {
+                    // GPS/location services off at device level — try last known position
+                    try {
+                        const last = await Location.getLastKnownPositionAsync();
+                        if (last && mounted) {
+                            setLocation({
+                                latitude: last.coords.latitude,
+                                longitude: last.coords.longitude,
+                                accuracy: last.coords.accuracy,
+                            });
+                        } else if (mounted) {
+                            setError('Location unavailable. Please enable location services.');
+                        }
+                    } catch (_) {
+                        if (mounted) setError('Location unavailable. Please enable location services.');
+                    } finally {
+                        if (mounted) setLoading(false);
+                    }
+                    // Don't start watcher if initial GPS failed
+                    return;
+                }
+
+                // Start continuous watching
+                try {
+                    watcherRef.current = await Location.watchPositionAsync(
+                        {
+                            accuracy: Location.Accuracy.High,
+                            distanceInterval: 10,
+                            timeInterval: 3000,
+                        },
+                        (pos) => {
+                            if (mounted) {
+                                setLocation({
+                                    latitude: pos.coords.latitude,
+                                    longitude: pos.coords.longitude,
+                                    accuracy: pos.coords.accuracy,
+                                });
+                            }
+                        },
+                    );
+                } catch (watchErr) {
+                    // Watcher failed — location still available from initial fix, just no live updates
+                    console.warn('[useLocation] watchPositionAsync failed:', watchErr.message);
+                }
+            } catch (err) {
+                if (mounted) {
+                    setError('Location unavailable. Please enable location services.');
+                    setLoading(false);
+                }
+            }
         })();
 
         return () => {
