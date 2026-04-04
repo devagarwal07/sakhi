@@ -73,7 +73,7 @@ export default function DriverKycUploadScreen({ navigation }) {
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Feather name="arrow-left" size={24} color="#7C3AED" />
+              <Feather name="arrow-left" size={24} color="#BEA3D8" />
             </TouchableOpacity>
             <View style={styles.titleContainer}>
               <Text style={styles.headerTitle}>KYC Verification</Text>
@@ -113,7 +113,7 @@ export default function DriverKycUploadScreen({ navigation }) {
                     
                     <View style={styles.rowLeft}>
                       <View style={styles.iconBg}>
-                        <MaterialCommunityIcons name={doc.iconName} size={20} color="#7C3AED" />
+                        <MaterialCommunityIcons name={doc.iconName} size={20} color="#BEA3D8" />
                       </View>
                       <View style={styles.rowTextCol}>
                         <Text style={styles.rowLabel}>{doc.label}</Text>
@@ -149,7 +149,7 @@ export default function DriverKycUploadScreen({ navigation }) {
 
           {/* Section - Info Box */}
           <View style={styles.infoBox}>
-            <MaterialCommunityIcons name="clock-outline" size={16} color="#7C3AED" style={{ marginTop: 2 }} />
+            <MaterialCommunityIcons name="clock-outline" size={16} color="#BEA3D8" style={{ marginTop: 2 }} />
             <Text style={styles.infoText}>
               Clean documents are auto-approved. Flagged ones go to manual review.
             </Text>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'rgba(245, 240, 255, 0.95)',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 12,
-    color: '#7C3AED',
+    color: '#BEA3D8',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -265,12 +265,12 @@ const styles = StyleSheet.create({
   progressTrack: {
     width: '100%',
     height: 8,
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
     borderRadius: 9999,
   },
   progressFill: {
     height: 8,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#BEA3D8',
     borderRadius: 9999,
   },
   headerTitles: {
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   uploadBtn: {
-    backgroundColor: '#EBE6F5',
+    backgroundColor: '#F1F5F9',
     borderRadius: 9999,
     paddingVertical: 8,
     paddingHorizontal: 20,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
     lineHeight: 16,
-    color: '#7C3AED',
+    color: '#BEA3D8',
   },
   uploadedState: {
     alignItems: 'flex-end',
@@ -416,11 +416,11 @@ const styles = StyleSheet.create({
   submitBtn: {
     width: '100%',
     height: 56,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#BEA3D8',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 24,
