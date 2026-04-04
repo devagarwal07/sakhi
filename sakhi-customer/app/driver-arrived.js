@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Image, Platform, ScrollView, Linking
+    Dimensions, Image, Platform, ScrollView, Linking, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
-
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import SakhiModal from '../src/components/SakhiModal';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
+import { callDriver } from '../src/api/endpoints';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ export default function DriverArrivedScreen() {
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
     const intervalRef = useRef(null);
     const [modal, setModal] = useState(null);
+    const [calling, setCalling] = useState(false);
     const mountedRef = useRef(true);
 
     // Use real pickup coords from RideContext; fall back to Mumbai center
@@ -168,8 +170,42 @@ export default function DriverArrivedScreen() {
                         </View>
 
                         <View style={styles.actionBtns}>
-                            <TouchableOpacity style={styles.callBtn} onPress={() => driverPhone ? Linking.openURL(`tel:${driverPhone}`) : null}>
-                                <Text style={styles.callIconText}>📞</Text>
+                            <TouchableOpacity
+                                style={[styles.callBtn, calling && { opacity: 0.6 }]}
+                                disabled={calling}
+                                onPress={async () => {
+                                    if (!ride?.rideId) return;
+                                    setCalling(true);
+                                    try {
+                                        // Exotel masked call — hides real phone numbers
+                                        await callDriver(ride.rideId);
+                                        setModal({
+                                            icon: '📞',
+                                            title: 'Calling Driver',
+                                            message: 'Sakhi will connect you via a masked number. Neither party sees the real number.',
+                                            buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                                        });
+                                    } catch (err) {
+                                        const msg = err.response?.data?.error?.message;
+                                        if (msg === 'Calling service is not configured.' && driverPhone) {
+                                            Linking.openURL(`tel:${driverPhone}`);
+                                        } else {
+                                            setModal({
+                                                icon: '⚠️',
+                                                title: 'Call Failed',
+                                                message: msg ?? 'Could not connect call. Please try again.',
+                                                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                                            });
+                                        }
+                                    } finally {
+                                        setCalling(false);
+                                    }
+                                }}
+                            >
+                                {calling
+                                    ? <ActivityIndicator size="small" color="#FFFFFF" />
+                                    : <Text style={styles.callIconText}>📞</Text>
+                                }
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.msgBtn} onPress={() => setModal({ icon: '✉️', title: 'Message Driver', message: 'Chat with driver feature coming soon.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] })}>
                                 <Text style={styles.msgIconText}>✉️</Text>
@@ -243,8 +279,8 @@ const styles = StyleSheet.create({
     // Top Nav
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : 60,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
