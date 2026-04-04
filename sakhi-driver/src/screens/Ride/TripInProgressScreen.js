@@ -258,7 +258,7 @@ export default function TripInProgressScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FCF8FF',
+    backgroundColor: '#F5F0FF',
   },
 
   // ── MAP SECTION (62%) ──
@@ -388,7 +388,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -16 },
     shadowOpacity: 0.12,
     shadowRadius: 48,
@@ -425,7 +425,7 @@ const s = StyleSheet.create({
   avatarContainer: {
     width: 56, height: 56,
     borderRadius: 16,
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
     position: 'relative',
     overflow: 'visible',
   },
@@ -437,7 +437,7 @@ const s = StyleSheet.create({
     width: 56, height: 56,
     borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
   },
   // Gray rating badge overlapping avatar bottom-right
   ratingBadge: {
@@ -458,7 +458,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontSize: 10,
     lineHeight: 15,
-    color: '#4A4455',
+    color: '#64748B',
     textAlign: 'center',
   },
   riderInfo: {
@@ -470,7 +470,7 @@ const s = StyleSheet.create({
     fontWeight: '800',
     fontSize: 20,
     lineHeight: 28,
-    color: '#1C1A25',
+    color: '#1E1B2E',
     letterSpacing: -0.5,
   },
   tripStatusPill: {
@@ -485,13 +485,13 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontSize: 10,
     lineHeight: 15,
-    color: '#047857',
+    color: '#059669',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   chatBtn: {
     width: 48, height: 48,
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',
   },
@@ -504,7 +504,7 @@ const s = StyleSheet.create({
   destinationCard: {
     width: '100%',
     height: 72,
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -523,7 +523,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontSize: 10,
     lineHeight: 15,
-    color: '#7B7487',
+    color: '#94A3B8',
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 1,
@@ -533,7 +533,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
     lineHeight: 24,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
 
   // Primary Action Button — 56px height, 12px radius per spec
@@ -544,7 +544,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#630ED4',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 15,

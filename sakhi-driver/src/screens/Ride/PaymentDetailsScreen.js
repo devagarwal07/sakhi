@@ -286,7 +286,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
               <MaterialIcons
                 name={isCash ? 'payments' : 'credit-card'}
                 size={13}
-                color={isCash ? '#D97706' : '#7C3AED'}
+                color={isCash ? '#D97706' : '#BEA3D8'}
               />
               <Text style={[styles.methodBadgeText, isCash ? styles.cashText : styles.onlineText]}>
                 {isCash ? 'Cash' : 'Online'}
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     marginTop: 20, marginBottom: 16,
     shadowColor: '#10B981', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 4,
   },
-  headline: { fontSize: 24, fontWeight: '800', color: '#1C1A25', textAlign: 'center', letterSpacing: -0.5 },
+  headline: { fontSize: 24, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5 },
   subline:  { fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 4, marginBottom: 24 },
 
   fareCard: {
@@ -410,11 +410,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
   fareTitle:   { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.5, marginBottom: 4 },
-  fareAmount:  { fontSize: 44, fontWeight: '900', color: '#7C3AED', letterSpacing: -2, marginBottom: 16 },
+  fareAmount:  { fontSize: 44, fontWeight: '900', color: '#BEA3D8', letterSpacing: -2, marginBottom: 16 },
   divider:     { height: 1, backgroundColor: '#F1F5F9', marginVertical: 12 },
   breakRow:    { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   breakLabel:  { fontSize: 13, color: '#64748B' },
-  breakValue:  { fontSize: 13, fontWeight: '600', color: '#1C1A25' },
+  breakValue:  { fontSize: 13, fontWeight: '600', color: '#1E1B2E' },
   breakRed:    { color: '#EF4444' },
   methodRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   methodLabel: { fontSize: 12, color: '#64748B' },
@@ -423,11 +423,11 @@ const styles = StyleSheet.create({
   onlineBadge: { backgroundColor: '#EDE9FE' },
   methodBadgeText: { fontSize: 12, fontWeight: '700' },
   cashText:    { color: '#D97706' },
-  onlineText:  { color: '#7C3AED' },
+  onlineText:  { color: '#BEA3D8' },
 
   actionBtn:  { width: '100%', height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
   cashBtn:    { backgroundColor: '#10B981', shadowColor: '#10B981', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
-  onlineBtn:  { backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
+  onlineBtn:  { backgroundColor: '#BEA3D8', shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   btnDisabled: { opacity: 0.55 },
   btnText:    { color: '#FFF', fontSize: 15, fontWeight: '800' },
 
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
     backgroundColor: '#FFF',
   },
-  webViewTitle: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
+  webViewTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
   webViewClose: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
   webViewLoader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 12 },
 
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 12, alignItems: 'center', gap: 12 },
   modalHandle: { width: 36, height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, marginBottom: 8 },
-  modalHeadline: { fontSize: 22, fontWeight: '800', color: '#1C1A25', textAlign: 'center' },
+  modalHeadline: { fontSize: 22, fontWeight: '800', color: '#1E1B2E', textAlign: 'center' },
   modalSub: { fontSize: 14, color: '#64748B', marginBottom: 4 },
   rateSubmitBtn: {
     width: '100%', height: 56, borderRadius: 14, backgroundColor: '#BEA3D8',

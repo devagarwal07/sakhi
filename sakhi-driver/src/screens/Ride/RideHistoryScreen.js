@@ -13,7 +13,7 @@ import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
-const DEEP     = '#7C3AED';
+const DEEP     = '#BEA3D8';
 const DARK     = '#1E1B2E';
 const MUTED    = '#6B7280';
 const GREEN    = '#10B981';
@@ -21,7 +21,7 @@ const RED      = '#BA1A1A';
 const WHITE    = '#FFFFFF';
 const BG       = '#F5F0FF';
 const CARD_SHD = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.04,
   shadowRadius: 24,
@@ -165,8 +165,8 @@ function SubscriptionCard({ ride, onPress }) {
 
 // ─── Card 2: On-demand ride ───────────────────────────────────────────────────
 function OnDemandCard({ ride, onPress }) {
-  const dotColor = ride.cancelled ? '#7B7487' : GREEN;
-  const flagColor = ride.cancelled ? '#7B7487' : PURPLE;
+  const dotColor = ride.cancelled ? '#94A3B8' : GREEN;
+  const flagColor = ride.cancelled ? '#94A3B8' : PURPLE;
 
   return (
     <TouchableOpacity
@@ -534,7 +534,7 @@ const s = StyleSheet.create({
 
   cardFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F6F1FF',
+    paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F0FF',
     marginTop: -8,
   },
   footerDate:   { fontSize: 12, fontWeight: '400', color: MUTED, lineHeight: 18, marginBottom: 4 },
@@ -558,7 +558,7 @@ const s = StyleSheet.create({
 
   odFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F6F1FF',
+    paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F0FF',
     marginTop: -4,
   },
 

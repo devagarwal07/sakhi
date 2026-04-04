@@ -13,14 +13,14 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Brand tokens (shorthand) ─────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const DARK    = '#1C1A25';
+const DEEP    = '#BEA3D8';
+const DARK    = '#1E1B2E';
 const MUTED   = '#6B7280';
 const BG      = '#F5F0FF';
 const WHITE   = '#FFFFFF';
 const GREEN   = '#10B981';
 const AMBER   = '#F59E0B';
-const CARD_SH = { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
+const CARD_SH = { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
 
 // ─── Seed / fallback data ─────────────────────────────────────────────────────
 const FALLBACK = {
@@ -59,7 +59,7 @@ function InitialsAvatar({ name, size = 52 }) {
   );
 }
 const av = StyleSheet.create({
-  bg:   { backgroundColor: '#D4A373', alignItems: 'center', justifyContent: 'center' },
+  bg:   { backgroundColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center' },
   text: { color: WHITE, fontWeight: '700' },
 });
 
@@ -122,9 +122,9 @@ const inf = StyleSheet.create({
 
 // ─── Upcoming ride card ───────────────────────────────────────────────────────
 function RideCard({ item, isFirst }) {
-  const badgeBg   = isFirst ? BG        : '#EBE6F5';
+  const badgeBg   = isFirst ? BG        : '#F1F5F9';
   const badgeText = isFirst ? PURPLE    : DARK;
-  const boxBg     = isFirst ? 'rgba(190,163,216,0.1)' : '#EBE6F5';
+  const boxBg     = isFirst ? 'rgba(190,163,216,0.1)' : '#F1F5F9';
   const monthClr  = isFirst ? PURPLE    : DARK;
   const dayClr    = isFirst ? PURPLE    : DARK;
 
@@ -490,7 +490,7 @@ const s = StyleSheet.create({
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   progressTitle:  { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24 },
   progressCount:  { fontSize: 18, fontWeight: '800', color: PURPLE, lineHeight: 28 },
-  progressTrack:  { height: 12, backgroundColor: '#EBE6F5', borderRadius: 9999, overflow: 'hidden' },
+  progressTrack:  { height: 12, backgroundColor: '#F1F5F9', borderRadius: 9999, overflow: 'hidden' },
   progressFill: {
     height: '100%',
     borderRadius: 9999,
@@ -515,7 +515,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40,
     gap: 12,
     ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.06, shadowRadius: 24 },
+      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.06, shadowRadius: 24 },
       android: { elevation: 12 },
     }),
   },
