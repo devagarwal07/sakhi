@@ -21,7 +21,7 @@ const DEFAULT_WEEK = DAYS.map((d, i) => ({
 
 const STATUS_STYLE = {
   upcoming:  { bg: `${Colors.primaryContainer}18`, text: Colors.primaryContainer },
-  completed: { bg: '#D1FAE5',                       text: '#059669'               },
+  completed: { bg: '#ECFDF5',                       text: '#059669'               },
   scheduled: { bg: Colors.surfaceContainer,          text: Colors.onSurfaceVariant },
 };
 

@@ -1,60 +1,61 @@
 /**
  * Sakhi Driver App — Central Design Tokens
- * Brand: Violet-600 primary, Emerald-500 for online/success states
+ * Brand: Matches sakhi-customer standard palette
+ * Primary: #BEA3D8 (lilac), Background: #F5F0FF, Text: #1E1B2E
  */
 
 export const Colors = {
-  // Primary Brand
-  primary: '#630ed4',
-  primaryContainer: '#7c3aed',    // violet-600
-  primaryLight: '#a855f7',
-  primaryFixed: '#eaddff',
-  primaryFixedDim: '#d2bbff',
+  // Primary Brand — matches sakhi-customer
+  primary: '#BEA3D8',
+  primaryContainer: '#BEA3D8',    // lilac — same as customer accent
+  primaryLight: '#D4C0E8',
+  primaryFixed: '#F5F0FF',
+  primaryFixedDim: '#EDE9FA',
 
   // Secondary
-  secondary: '#674bb5',
-  secondaryContainer: '#ab8ffe',
+  secondary: '#CCC3D8',
+  secondaryContainer: '#EDE9FA',
 
-  // Surfaces
-  background: '#fcf8ff',
-  surface: '#fcf8ff',
-  surfaceLow: '#f6f1ff',
-  surfaceContainer: '#f0ecfa',
-  surfaceHigh: '#ebe6f5',
-  surfaceHighest: '#e5e0ef',
-  surfaceContainerLowest: '#ffffff',
+  // Surfaces — matches customer #F5F0FF base
+  background: '#F5F0FF',
+  surface: '#F5F0FF',
+  surfaceLow: '#F5F0FF',
+  surfaceContainer: '#EDE9FA',
+  surfaceHigh: '#E8E2F5',
+  surfaceHighest: '#E0DAF0',
+  surfaceContainerLowest: '#FFFFFF',
 
-  // Online / Success
-  online: '#10b981',        // emerald-500
-  onlineBg: '#d1fae5',      // emerald-100
-  onlineDark: '#059669',    // emerald-600
+  // Online / Success — kept as-is (green states)
+  online: '#059669',            // emerald-600 — matches customer verified green
+  onlineBg: '#ECFDF5',          // emerald-50  — matches customer verified bg
+  onlineDark: '#059669',        // emerald-600
 
   // Offline
-  offline: '#9ca3af',       // gray-400
-  offlineBg: '#f3f4f6',    // gray-100
+  offline: '#9ca3af',           // gray-400
+  offlineBg: '#f3f4f6',         // gray-100
 
-  // Text
-  onSurface: '#1c1a25',
-  onSurfaceVariant: '#4a4455',
-  onBackground: '#1c1a25',
-  onPrimary: '#ffffff',
-  outline: '#7b7487',
-  outlineVariant: '#ccc3d8',
+  // Text — matches customer text colors
+  onSurface: '#1E1B2E',         // customer primary text
+  onSurfaceVariant: '#64748B',  // customer secondary text
+  onBackground: '#1E1B2E',
+  onPrimary: '#FFFFFF',
+  outline: '#94A3B8',
+  outlineVariant: '#CCC3D8',    // customer muted/divider
 
-  // Surfaces (extended aliases for customer-pattern compatibility)
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow:    '#f6f1ff',
-  surfaceContainerHigh:   '#ebe6f5',
-  surfaceContainerHighest:'#e5e0ef',
+  // Surfaces (extended aliases)
+  surfaceContainerLowest: '#FFFFFF',
+  surfaceContainerLow:    '#F5F0FF',
+  surfaceContainerHigh:   '#E8E2F5',
+  surfaceContainerHighest:'#E0DAF0',
 
   // Semantic
-  error: '#ba1a1a',
-  errorContainer: '#ffdad6',
-  success: '#10b981',
+  error: '#BA1A1A',             // matches customer logout/error red
+  errorContainer: '#FFDAD6',
+  success: '#059669',
   warning: '#f59e0b',
 
   // Utility
-  white: '#ffffff',
+  white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
 };
@@ -85,16 +86,16 @@ export const BorderRadius = Radius;
 
 export const Shadows = {
   lavender: {
-    shadowColor: '#7c3aed',
+    shadowColor: 'rgba(124, 58, 237, 1)',  // matches customer shadow color
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
     elevation: 6,
   },
   card: {
-    shadowColor: '#7c3aed',
+    shadowColor: 'rgba(124, 58, 237, 1)',  // matches customer shadow color
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.04,
     shadowRadius: 12,
     elevation: 3,
   },
@@ -115,8 +116,8 @@ export const Typography = {
 
 // Gradient presets (for expo-linear-gradient)
 export const Gradients = {
-  primary:     ['#BEA3D8', '#7C3AED'],
-  splash:      ['#F5F0FF', '#EDE9FE'],
-  lavender:    ['#F0ECFA', '#E8E3F5'],
+  primary:     ['#D4C0E8', '#BEA3D8'],  // customer lilac gradient
+  splash:      ['#F5F0FF', '#EDE9FA'],
+  lavender:    ['#F5F0FF', '#EDE9FA'],
   surfaceFade: ['rgba(245,240,255,0)', '#F5F0FF'],
 };
