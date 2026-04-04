@@ -11,15 +11,15 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const VIOLET  = '#7C3AED';
-const DARK    = '#1C1A25';
+const VIOLET  = '#BEA3D8';
+const DARK    = '#1E1B2E';
 const HEADER  = '#1E1B2E';
-const MID     = '#4A4455';
+const MID     = '#64748B';
 const WHITE   = '#FFFFFF';
 const BG      = '#F5F0FF';
-const GREEN   = '#047857';
+const GREEN   = '#059669';
 const CARD_SH = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 16 },
   shadowOpacity: 0.08,
   shadowRadius: 32,
@@ -98,7 +98,7 @@ function OtpBox({ digit, isFocused, isLast }) {
 }
 const ob = StyleSheet.create({
   box:        { width: 42.33, height: 56, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(204,195,216,0.3)', backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', ...CARD_SH },
-  boxFocused: { borderColor: 'rgba(99,14,212,0.5)', shadowColor: '#630ED4', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 0 } },
+  boxFocused: { borderColor: 'rgba(190,163,216,0.5)', shadowColor: 'rgba(124, 58, 237, 1)', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 0 } },
   digit:      { fontSize: 20, fontWeight: '700', color: DARK, lineHeight: 28 },
   cursor:     { width: 2, height: 24, backgroundColor: PURPLE, borderRadius: 1 },
 });
@@ -347,7 +347,7 @@ const s = StyleSheet.create({
   phoneNumRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
   phoneNumMuted: { fontSize: 16, fontWeight: '500', color: 'rgba(74,68,85,0.5)', lineHeight: 24 },
   phoneNumBold:  { fontSize: 18, fontWeight: '700', color: DARK, lineHeight: 28 },
-  hairline:      { height: 1, backgroundColor: '#F6F1FF' },
+  hairline:      { height: 1, backgroundColor: '#F5F0FF' },
 
   // ── OTP section ───────────────────────────────────────────────────────────
   otpSection: { gap: 16, paddingTop: 8 },

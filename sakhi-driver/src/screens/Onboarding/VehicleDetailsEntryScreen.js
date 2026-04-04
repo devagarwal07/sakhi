@@ -59,7 +59,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Feather name="arrow-left" size={24} color="#7C3AED" />
+              <Feather name="arrow-left" size={24} color="#BEA3D8" />
             </TouchableOpacity>
             <View style={styles.titleContainer}>
               <Text style={styles.headerTitle}>Vehicle Details</Text>
@@ -91,7 +91,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
                   activeOpacity={0.8}
                 >
                   <Text style={styles.dropdownText}>{currentVehicleTypeLabel}</Text>
-                  <Feather name={dropdownOpen ? "chevron-up" : "chevron-down"} size={20} color="#7C3AED" />
+                  <Feather name={dropdownOpen ? "chevron-up" : "chevron-down"} size={20} color="#BEA3D8" />
                 </TouchableOpacity>
                 {dropdownOpen && (
                   <View style={styles.dropdownListContainer}>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.05,
     shadowRadius: 24,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: 8,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 16,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   dropdownListTextActive: {
-    color: '#7C3AED',
+    color: '#BEA3D8',
     fontWeight: '600',
   },
   textInputWrapper: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   colorOuterRingActive: {
-    borderColor: '#7C3AED',
+    borderColor: '#BEA3D8',
   },
   colorInnerCircle: {
     width: 28,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.05,
     shadowRadius: 24,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 24,

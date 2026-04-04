@@ -11,15 +11,15 @@ import ScreenHeader from '../../components/ScreenHeader';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const DARK    = '#1C1A25';
-const MUTED   = '#7B7487';
+const DEEP    = '#BEA3D8';
+const DARK    = '#1E1B2E';
+const MUTED   = '#94A3B8';
 const WHITE   = '#FFFFFF';
 const BG      = '#F5F0FF';
 const ERROR   = '#BA1A1A';
 
 const CARD_SH = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.08,
   shadowRadius: 20,
