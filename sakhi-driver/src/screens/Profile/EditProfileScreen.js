@@ -13,12 +13,12 @@ import SakhiModal from '../../components/SakhiModal';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
-const VIOLET = '#630ED4';
-const DARK   = '#1C1A25';
-const MUTED  = '#7B7487';
+const VIOLET = '#BEA3D8';
+const DARK   = '#1E1B2E';
+const MUTED  = '#94A3B8';
 const WHITE  = '#FFFFFF';
 const BG     = '#F5F0FF';
-const GREEN  = '#047857';
+const GREEN  = '#059669';
 
 const LANGUAGES = [
   'English', 'Hindi', 'Marathi', 'Bengali', 'Tamil',

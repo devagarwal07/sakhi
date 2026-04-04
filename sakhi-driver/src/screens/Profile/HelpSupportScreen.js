@@ -14,16 +14,16 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const DARK    = '#1C1A25';
+const DEEP    = '#BEA3D8';
+const DARK    = '#1E1B2E';
 const HEADER  = '#1E1B2E';
 const MUTED   = '#6B7280';
-const MID     = '#4A4455';
+const MID     = '#64748B';
 const WHITE   = '#FFFFFF';
 const BG      = '#F5F0FF';
 const GREEN   = '#059669';
 const CARD_SH = {
-  shadowColor: '#7C3AED',
+  shadowColor: 'rgba(124, 58, 237, 1)',
   shadowOffset: { width: 0, height: 16 },
   shadowOpacity: 0.08,
   shadowRadius: 32,

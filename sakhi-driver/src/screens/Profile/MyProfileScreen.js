@@ -11,22 +11,20 @@ import { Pencil } from 'lucide-react-native';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const VIOLET  = '#630ED4';
-const DARK    = '#1C1A25';
-const MID     = '#4A4455';
-const MUTED   = '#7B7487';
+// ─── Design tokens — matches sakhi-customer standard palette ─────────────────
+const PURPLE  = '#BEA3D8';   // primary accent (lilac)
+const DARK    = '#1E1B2E';   // customer primary text
+const MID     = '#64748B';   // customer secondary text
+const MUTED   = '#94A3B8';   // customer muted text
 const WHITE   = '#FFFFFF';
-const BG      = '#F5F0FF';
-const GREEN   = '#047857';
+const BG      = '#F5F0FF';   // customer background
+const GREEN   = '#059669';   // customer verified green (emerald-600)
 const AMBER   = '#F59E0B';
 const CARD_SH = {
-  shadowColor: '#7C3AED',
-  shadowOffset: { width: 0, height: 16 },
-  shadowOpacity: 0.08,
-  shadowRadius: 32,
+  shadowColor: 'rgba(124, 58, 237, 1)',  // customer shadow
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.06,
+  shadowRadius: 20,
   elevation: 4,
 };
 
@@ -34,7 +32,7 @@ const CARD_SH = {
 function EditIcon() {
   return (
     <View style={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}>
-      <Pencil size={14} color="rgba(99,14,212,0.4)" strokeWidth={2} />
+      <Pencil size={14} color="rgba(190,163,216,0.7)" strokeWidth={2} />
     </View>
   );
 }
@@ -60,7 +58,7 @@ function DetailRow({ label, value, onEdit, isFirst }) {
 }
 const dr = StyleSheet.create({
   wrap:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
-  border:  { borderTopWidth: 1, borderTopColor: '#EBE6F5' },
+  border:  { borderTopWidth: 1, borderTopColor: '#F1F5F9' },
   textCol: { flex: 1, gap: 2 },
   label:   { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 0.5, textTransform: 'uppercase', lineHeight: 15 },
   value:   { fontSize: 14, fontWeight: '500', color: DARK, lineHeight: 20 },
@@ -68,7 +66,7 @@ const dr = StyleSheet.create({
 
 // ─── Document row ─────────────────────────────────────────────────────────────
 const BADGE_MAP = {
-  verified: { bg: '#D1FAE5', text: GREEN,    label: 'VERIFIED'      },
+  verified: { bg: '#ECFDF5', text: GREEN,    label: 'VERIFIED'      },
   expiring: { bg: '#FFEDD5', text: '#C2410C', label: 'EXPIRING SOON' },
   expired:  { bg: '#FFE4E6', text: '#BE123C', label: 'EXPIRED'       },
 };
@@ -92,14 +90,14 @@ function DocRow({ title, expiry, badgeState = 'verified', onReUpload, isFirst })
 }
 const doc = StyleSheet.create({
   wrap:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
-  border:    { borderTopWidth: 1, borderTopColor: '#EBE6F5' },
+  border:    { borderTopWidth: 1, borderTopColor: '#F1F5F9' },
   left:      { flex: 1, gap: 2 },
   title:     { fontSize: 14, fontWeight: '700', color: DARK, lineHeight: 20 },
   expiry:    { fontSize: 10, fontWeight: '400', color: MUTED, lineHeight: 15 },
   badge:     { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 9999 },
   badgeText: { fontSize: 9, fontWeight: '700', letterSpacing: -0.45, textTransform: 'uppercase', lineHeight: 14 },
-  btn:       { backgroundColor: 'rgba(99,14,212,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  btnText:   { fontSize: 12, fontWeight: '700', color: VIOLET, lineHeight: 16 },
+  btn:       { backgroundColor: 'rgba(190,163,216,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  btnText:   { fontSize: 12, fontWeight: '700', color: PURPLE, lineHeight: 16 },
 });
 
 // ─── Inline field edit card ───────────────────────────────────────────────────
@@ -135,9 +133,9 @@ const ec = StyleSheet.create({
   label:     { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: MUTED },
   input:     { height: 48, backgroundColor: BG, borderRadius: 8, paddingHorizontal: 16, fontSize: 16, fontWeight: '500', color: DARK },
   actions:   { flexDirection: 'row', gap: 12 },
-  cancelBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center' },
-  cancelText:{ fontSize: 14, fontWeight: '600', color: '#64748B' },
-  saveBtn:   { flex: 1, height: 48, borderRadius: 12, backgroundColor: VIOLET, alignItems: 'center', justifyContent: 'center' },
+  cancelBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: '#CCC3D8', alignItems: 'center', justifyContent: 'center' },
+  cancelText:{ fontSize: 14, fontWeight: '600', color: MID },
+  saveBtn:   { flex: 1, height: 48, borderRadius: 12, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
   saveText:  { fontSize: 14, fontWeight: '700', color: WHITE },
 });
 
@@ -151,7 +149,7 @@ function InitialsAvatar({ name, size = 68 }) {
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#D4A373', alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: WHITE, fontWeight: '700', fontSize: size * 0.36 }}>{initials}</Text>
     </View>
   );
@@ -227,21 +225,24 @@ export default function MyProfileScreen({ navigation }) {
             Profile Header Card
         ═══════════════════════════════ */}
         <View style={s.profileCard}>
-          {/* Avatar + name */}
+          {/* Avatar + name row */}
           <View style={s.profileLeft}>
-            <TouchableOpacity style={s.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
-              {driver?.profile_photo
-                ? <Image source={{ uri: driver.profile_photo }} style={s.avatarImg} />
-                : <InitialsAvatar name={driver?.name ?? 'Meena Ramesh'} size={68} />
-              }
-              {/* Edit pencil badge */}
-              <View style={s.avatarEditBtn}>
+            {/* Avatar outer wrapper — edit badge lives here, not inside the clipped circle */}
+            <View style={s.avatarOuter}>
+              <TouchableOpacity style={s.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
+                {driver?.profile_photo
+                  ? <Image source={{ uri: driver.profile_photo }} style={s.avatarImg} />
+                  : <InitialsAvatar name={driver?.name ?? 'Meena Ramesh'} size={68} />
+                }
+              </TouchableOpacity>
+              {/* Edit pencil badge — outside avatar circle so iOS borderRadius doesn't clip it */}
+              <TouchableOpacity style={s.avatarEditBtn} onPress={pickAvatar} activeOpacity={0.8}>
                 {uploading
                   ? <ActivityIndicator size={10} color={WHITE} />
                   : <Pencil size={8} color={WHITE} strokeWidth={3} />
                 }
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
 
             {/* Info */}
             <View style={s.profileInfo}>
@@ -352,17 +353,21 @@ const s = StyleSheet.create({
   },
   profileLeft:  { flexDirection: 'row', alignItems: 'center', flex: 1 },
 
+  avatarOuter: {
+    width: 76, height: 76, position: 'relative',
+  },
   avatarWrap: {
     width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: WHITE,
-    backgroundColor: '#EBE6F5', overflow: 'visible', position: 'relative',
+    backgroundColor: '#F5F0FF',
   },
   avatarImg:    { width: 68, height: 68, borderRadius: 34 },
   avatarEditBtn:{
-    position: 'absolute', right: -2, bottom: -2,
-    width: 22.5, height: 22.5, borderRadius: 11.25,
-    backgroundColor: VIOLET, alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', right: 0, bottom: 0,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: WHITE,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
       android: { elevation: 3 },
     }),
   },
@@ -373,12 +378,12 @@ const s = StyleSheet.create({
   metaRow:     { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3.5 },
   ratingVal:   { fontSize: 14, fontWeight: '600', color: DARK, lineHeight: 20 },
   starIcon:    { width: 11.67, height: 11, borderRadius: 5.5, backgroundColor: AMBER },
-  verifiedPill:{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, marginLeft: 4 },
+  verifiedPill:{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, marginLeft: 4 },
   verifiedText:{ fontSize: 10, fontWeight: '700', color: GREEN },
   verifiedDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: GREEN },
 
-  editBtn:     { borderWidth: 2, borderColor: 'rgba(99,14,212,0.2)', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', width: 88 },
-  editBtnText: { fontSize: 12, fontWeight: '700', color: VIOLET, lineHeight: 16, textAlign: 'center' },
+  editBtn:     { borderWidth: 2, borderColor: 'rgba(190,163,216,0.5)', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', width: 88 },
+  editBtnText: { fontSize: 12, fontWeight: '700', color: PURPLE, lineHeight: 16, textAlign: 'center' },
 
   // ── Section ───────────────────────────────────────────────────────────────
   sectionTitle: {
