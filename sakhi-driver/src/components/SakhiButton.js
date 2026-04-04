@@ -5,7 +5,7 @@ import {
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
-const DEEP   = '#7C3AED';
+const DEEP   = '#BEA3D8';
 const WHITE  = '#FFFFFF';
 const BG     = '#F5F0FF';
 const DANGER = '#DC2626';

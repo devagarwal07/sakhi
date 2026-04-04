@@ -30,7 +30,7 @@ export default function MonogramAvatar({ uri, name, size = 52, radius, style }) 
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: size * 0.38,
-    color: '#7C3AED',
+    color: '#BEA3D8',
     lineHeight: size * 0.45,
   };
 

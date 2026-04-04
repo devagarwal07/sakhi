@@ -10,9 +10,9 @@ import client from '../api/client';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
-const DEEP    = '#7C3AED';
-const DARK    = '#1C1A25';
-const MUTED   = '#7B7487';
+const DEEP    = '#BEA3D8';
+const DARK    = '#1E1B2E';
+const MUTED   = '#94A3B8';
 const WHITE   = '#FFFFFF';
 const BG      = '#F5F0FF';
 
