@@ -14,7 +14,7 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
-const DEEP   = '#7C3AED';
+const DEEP   = '#BEA3D8';
 const DARK   = '#1E1B2E';
 const MUTED  = '#64748B';
 const SLATE  = '#475569';
@@ -118,7 +118,7 @@ function InitialsAvatar({ name, size = 48 }) {
   );
 }
 const av = StyleSheet.create({
-  bg:   { backgroundColor: '#D4A373', alignItems: 'center', justifyContent: 'center' },
+  bg:   { backgroundColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center' },
   text: { color: WHITE, fontWeight: '700' },
 });
 
@@ -309,7 +309,7 @@ const s = StyleSheet.create({
     paddingBottom: 14, gap: 16,
     backgroundColor: 'rgba(245, 240, 255, 0.88)',
     ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
+      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
       android: { elevation: 6 },
     }),
   },
@@ -330,7 +330,7 @@ const s = StyleSheet.create({
 
   // Date row
   dateRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dateIcon: { width: 34, height: 36, backgroundColor: '#F6F1FF', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  dateIcon: { width: 34, height: 36, backgroundColor: '#F5F0FF', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dateText: { fontSize: 16, fontWeight: '700', color: DARK, lineHeight: 24 },
 
   // Route section
@@ -384,11 +384,11 @@ const s = StyleSheet.create({
   riderRating: { fontSize: 14, fontWeight: '500', color: MUTED, lineHeight: 20 },
   starIcon:  { width: 11.67, height: 11, borderRadius: 5.5, backgroundColor: AMBER, marginRight: 4 },
   rideTypeText: { fontSize: 10, fontWeight: '400', color: FAINT, letterSpacing: -0.5, textTransform: 'uppercase', lineHeight: 15 },
-  callBtn:   { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F6F1FF', alignItems: 'center', justifyContent: 'center' },
+  callBtn:   { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF', alignItems: 'center', justifyContent: 'center' },
 
   // Fare box
   fareBox: {
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 16,
     padding: 20,
     gap: 12,
@@ -406,10 +406,10 @@ const s = StyleSheet.create({
     paddingVertical: 16, gap: 12, borderRadius: 16, borderWidth: 1,
     marginTop: -16,
   },
-  paymentStripCash:   { backgroundColor: '#ECFDF5', borderColor: '#D1FAE5' },
+  paymentStripCash:   { backgroundColor: '#ECFDF5', borderColor: '#ECFDF5' },
   paymentStripOnline: { backgroundColor: '#EDE9FE', borderColor: '#DDD6FE' },
   paymentText:        { fontSize: 16, fontWeight: '700', lineHeight: 24 },
-  paymentTextCash:    { color: '#047857' },
+  paymentTextCash:    { color: '#059669' },
   paymentTextOnline:  { color: DEEP },
 
   // Bottom Nav

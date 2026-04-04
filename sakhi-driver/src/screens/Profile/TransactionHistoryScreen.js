@@ -64,7 +64,7 @@ const ico = StyleSheet.create({
   calDots:    { flexDirection: 'row', flexWrap: 'wrap', padding: 1, gap: 1 },
   calDot:     { width: 2, height: 2, borderRadius: 1, backgroundColor: '#BEA3D8' },
   chevWrap:   { width: 7, height: 5, alignItems: 'center', justifyContent: 'center' },
-  chevLine:   { width: 7, height: 7, borderRightWidth: 1.5, borderBottomWidth: 1.5, borderColor: '#4A4455', transform: [{ rotate: '45deg' }], marginTop: -4 },
+  chevLine:   { width: 7, height: 7, borderRightWidth: 1.5, borderBottomWidth: 1.5, borderColor: '#64748B', transform: [{ rotate: '45deg' }], marginTop: -4 },
   expWrap:    { width: 12, height: 10, alignItems: 'center', justifyContent: 'center' },
   expArrow:   { width: 0, height: 0, borderLeftWidth: 4, borderRightWidth: 4, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomWidth: 5, borderBottomColor: '#fff', marginBottom: 1 },
   expBase:    { width: 8, height: 4, borderWidth: 1.5, borderColor: '#fff', borderTopWidth: 0 },
@@ -73,7 +73,7 @@ const ico = StyleSheet.create({
 // ─── Category icon bubble ─────────────────────────────────────────────────────
 const TYPE_THEME = {
   ride:         { bg: '#ECFDF5', color: '#059669' },
-  subscription: { bg: '#F6F1FF', color: '#BEA3D8' },
+  subscription: { bg: '#F5F0FF', color: '#BEA3D8' },
   commission:   { bg: '#FEF2F2', color: '#EF4444' },
 };
 
@@ -209,8 +209,8 @@ const row = StyleSheet.create({
   card:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#FFFFFF', borderRadius: 12, ...Shadows.card },
   left:   { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1, marginRight: 8 },
   info:   { flex: 1 },
-  title:  { fontSize: 16, fontWeight: '700', color: '#1C1A25', lineHeight: 24 },
-  time:   { fontSize: 12, fontWeight: '500', color: '#7B7487', lineHeight: 16, marginTop: 2 },
+  title:  { fontSize: 16, fontWeight: '700', color: '#1E1B2E', lineHeight: 24 },
+  time:   { fontSize: 12, fontWeight: '500', color: '#94A3B8', lineHeight: 16, marginTop: 2 },
   amount: { fontSize: 16, fontWeight: '700', lineHeight: 24, textAlign: 'right' },
 });
 
@@ -231,8 +231,8 @@ function DaySection({ section }) {
 const ds = StyleSheet.create({
   wrap:   { gap: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  date:   { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.1, textTransform: 'uppercase' },
-  total:  { fontSize: 11, fontWeight: '700', color: '#7B7487' },
+  date:   { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.1, textTransform: 'uppercase' },
+  total:  { fontSize: 11, fontWeight: '700', color: '#94A3B8' },
   rows:   { gap: 16 },
 });
 
@@ -264,11 +264,11 @@ const pm = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.28)', justifyContent: 'flex-end' },
   sheet:    { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 },
   pill:     { width: 36, height: 4, backgroundColor: '#DDD', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  title:    { fontSize: 11, fontWeight: '700', color: '#7B7487', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 16 },
+  title:    { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 16 },
   option:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F5F0FF' },
-  optText:  { fontSize: 15, fontWeight: '500', color: '#1C1A25' },
-  optActive:{ fontWeight: '700', color: '#7C3AED' },
-  tick:     { fontSize: 16, color: '#7C3AED', fontWeight: '700' },
+  optText:  { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
+  optActive:{ fontWeight: '700', color: '#BEA3D8' },
+  tick:     { fontSize: 16, color: '#BEA3D8', fontWeight: '700' },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -337,14 +337,14 @@ export default function TransactionHistoryScreen({ navigation }) {
 
       {loading ? (
         <View style={[s.loader, {}]}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color="#BEA3D8" />
         </View>
       ) : (
         <ScrollView
           contentContainerStyle={[s.scroll, { }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#BEA3D8" />
           }
         >
 
@@ -444,7 +444,7 @@ const s = StyleSheet.create({
     ...Shadows.card,
   },
   pillActive:     { backgroundColor: '#BEA3D8' },
-  pillText:       { fontSize: 14, fontWeight: '500', color: '#1C1A25', lineHeight: 20 },
+  pillText:       { fontSize: 14, fontWeight: '500', color: '#1E1B2E', lineHeight: 20 },
   pillTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
   exportBtn: {
@@ -457,7 +457,7 @@ const s = StyleSheet.create({
     borderRadius: 9999,
     marginLeft: 'auto',
     ...Platform.select({
-      ios: { shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
+      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
       android: { elevation: 5 },
     }),
   },
@@ -469,6 +469,6 @@ const s = StyleSheet.create({
   // Empty    ——————————————————————————————————————————————————————————————————
   emptyWrap:  { alignItems: 'center', paddingVertical: 72 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1C1A25' },
-  emptySub:   { fontSize: 13, fontWeight: '400', color: '#7B7487', marginTop: 4 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
+  emptySub:   { fontSize: 13, fontWeight: '400', color: '#94A3B8', marginTop: 4 },
 });

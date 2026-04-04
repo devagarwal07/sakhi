@@ -289,7 +289,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FCF8FF',
+    backgroundColor: '#F5F0FF',
   },
   
   // MAP SECTION (62%)
@@ -359,7 +359,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     gap: 16,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -381,13 +381,13 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontSize: 18,
     lineHeight: 22,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
   turnDistance: {
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 14,
-    color: '#1C1A25',
+    color: '#1E1B2E',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
@@ -438,12 +438,12 @@ const s = StyleSheet.create({
   // BOTTOM SHEET (38%)
   bottomSheet: {
     flex: 1,
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
     paddingHorizontal: 32,
     paddingTop: 8,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -16 },
     shadowOpacity: 0.12,
     shadowRadius: 48,
@@ -500,7 +500,7 @@ const s = StyleSheet.create({
   avatarContainer: {
     width: 52, height: 52, // slightly smaller avatar
     borderRadius: 16,
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -539,14 +539,14 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '800',
     fontSize: 18, // slightly smaller font
-    color: '#1C1A25',
+    color: '#1E1B2E',
     marginBottom: 4,
   },
   riderSubtext: {
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 13, // slightly smaller font
-    color: '#4A4455',
+    color: '#64748B',
   },
   riderActions: {
     flexDirection: 'row',
@@ -571,7 +571,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
     shadowRadius: 24,

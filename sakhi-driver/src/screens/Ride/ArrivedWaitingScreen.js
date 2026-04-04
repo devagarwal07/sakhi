@@ -238,7 +238,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FCF8FF',
+    backgroundColor: '#F5F0FF',
   },
   
   // ── MAP SECTION (62%) ──
@@ -322,7 +322,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 16,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -351,7 +351,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '800',
     fontSize: 20,
-    color: '#1C1A25',
+    color: '#1E1B2E',
   },
 
   // Bottom Map Controls
@@ -405,7 +405,7 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -16 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -441,7 +441,7 @@ const s = StyleSheet.create({
   avatarContainer: {
     width: 56, height: 56,
     borderRadius: 16,
-    backgroundColor: '#F0ECFA',
+    backgroundColor: '#EDE9FA',
     position: 'relative',
   },
   avatar: {
@@ -471,7 +471,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 18,
-    color: '#1C1A25',
+    color: '#1E1B2E',
     marginBottom: 2,
   },
   ratingRow: {
@@ -483,7 +483,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 14,
-    color: '#4A4455',
+    color: '#64748B',
   },
 
   // ARRIVED Tag
@@ -515,7 +515,7 @@ const s = StyleSheet.create({
   waitingTimerCard: {
     width: '100%',
     height: 76,
-    backgroundColor: '#F6F1FF',
+    backgroundColor: '#F5F0FF',
     borderRadius: 16,
     padding: 16,
     justifyContent: 'space-between',
@@ -530,7 +530,7 @@ const s = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 12,
-    color: '#4A4455',
+    color: '#64748B',
     letterSpacing: -0.3,
     textTransform: 'uppercase',
   },
