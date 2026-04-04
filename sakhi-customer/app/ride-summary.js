@@ -6,13 +6,15 @@ import {
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
+
 import { submitRating } from '../src/api/endpoints';
+import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
 
 export default function RideSummaryScreen() {
     const router = useRouter();
-    const { ride } = useRide();
+    const { ride, clearRide } = useRide();
     const { user } = useAuth();
     const [rating, setRating] = useState(4); 
     const [comment, setComment] = useState('');
@@ -31,13 +33,15 @@ export default function RideSummaryScreen() {
     const userName = user?.name ? user.name.split(' ')[0] : 'there';
 
     const handleSubmit = async () => {
-        if (ride?.id) {
-            setSubmitting(true);
+        setSubmitting(true);
+        if (ride?.rideId) {
             try {
-                await submitRating(ride.id, { rating, comment });
+                // submitRating signature: (rideId, rating, comment)
+                await submitRating(ride.rideId, rating, comment);
             } catch (_) {}
-            setSubmitting(false);
         }
+        clearRide(); // Reset ride context so next booking starts clean
+        setSubmitting(false);
         router.replace('/');
     };
 
@@ -219,8 +223,8 @@ const styles = StyleSheet.create({
     // Top Nav
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 108 : 64,
-        paddingTop: Platform.OS === 'ios' ? 44 : 0,
+        height: Platform.OS === 'ios' ? 108 : ANDROID_STATUS_BAR_HEIGHT + 56,
+        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
 
     // Main Content
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 120 : 96,
+        paddingTop: Platform.OS === 'ios' ? 120 : ANDROID_STATUS_BAR_HEIGHT + 72,
         paddingHorizontal: 24,
         alignItems: 'center',
     },
