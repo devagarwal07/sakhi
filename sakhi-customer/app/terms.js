@@ -8,151 +8,88 @@ import { useRouter } from 'expo-router';
 // ─── Policy Content ───────────────────────────────────────────────────────────
 
 const POLICIES = {
-    terms: {
-        label: 'Terms of Service',
-        lastUpdated: 'April 1, 2025',
-        sections: [
-            {
-                title: '1. Acceptance of Terms',
-                body: `By downloading, installing, or using the Sakhi application ("App"), you agree to be legally bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the App.\n\nThese Terms constitute a legally binding agreement between you ("User") and Sakhi Technologies Private Limited ("Sakhi", "we", "our", or "us"), a company incorporated under the laws of India.`
-            },
-            {
-                title: '2. Eligibility',
-                body: `The App is intended exclusively for women aged 18 years and above. By using the App, you represent and warrant that:\n\n• You are at least 18 years of age.\n• You have the legal capacity to enter into a binding agreement.\n• You are not barred from using the App under any applicable laws.\n\nSakhi reserves the right to request proof of identity or age at any time and to terminate access if eligibility criteria are not met.`
-            },
-            {
-                title: '3. Services Provided',
-                body: `Sakhi provides a women-first ride-hailing and safety platform that includes:\n\n• Booking rides with verified women drivers.\n• Real-time GPS tracking and live-share with emergency contacts.\n• SOS alerts and emergency response features.\n• Wallet and payment management.\n• In-trip safety monitoring tools.\n\nWe reserve the right to modify, suspend, or discontinue any service feature at any time with reasonable notice.`
-            },
-            {
-                title: '4. User Responsibilities',
-                body: `You agree to:\n\n• Provide accurate, current, and complete registration information.\n• Keep your account credentials confidential and not share them with others.\n• Use the App only for lawful purposes and in compliance with these Terms.\n• Treat all drivers on the platform with respect and dignity.\n• Not use the SOS feature for false emergencies or malicious purposes.\n• Not attempt to reverse-engineer, hack, or disrupt the App or its services.\n\nYou are solely responsible for all activities that occur under your account.`
-            },
-            {
-                title: '5. Payments & Refunds',
-                body: `Fare Calculation: Ride fares are dynamically calculated based on distance, time, surge pricing, and applicable taxes.\n\nPayments: You may pay via the in-app Sakhi Wallet, UPI, credit/debit cards, or other supported methods. All transactions are secured through PCI-DSS compliant payment partners.\n\nRefunds: Refund requests will be considered on a case-by-case basis. Approved refunds are processed within 5–7 business days. Fraudulent refund requests may result in account suspension.\n\nCancellation: Cancellations after driver acceptance may attract a cancellation fee as displayed in the App.`
-            },
-            {
-                title: '6. Safety Features & Limitations',
-                body: `Sakhi provides safety tools including live-tracking, SOS alerts, and emergency contact notifications. These features are intended to assist users and are not a substitute for contacting emergency services.\n\nSakhi does not guarantee that SOS features will function in areas with poor network connectivity or in cases of device malfunction. In any emergency, always contact local emergency services (100/112) as your primary recourse.`
-            },
-            {
-                title: '7. Intellectual Property',
-                body: `All content, logos, trademarks, software, and materials in the App are the exclusive property of Sakhi Technologies Private Limited. You may not copy, reproduce, distribute, or create derivative works without our express written consent.\n\nUser-generated content (such as ratings and reviews) grants Sakhi a non-exclusive, royalty-free, worldwide license to use, reproduce, and display such content for operational and promotional purposes.`
-            },
-            {
-                title: '8. Limitation of Liability',
-                body: `To the maximum extent permitted by applicable law, Sakhi shall not be liable for:\n\n• Any indirect, incidental, special, consequential, or punitive damages.\n• Loss of data, revenue, or profits arising from your use of the App.\n• Actions or omissions of drivers or third-party service providers.\n• Service interruptions, technical failures, or force majeure events.\n\nOur aggregate liability for any claim shall not exceed the amount paid by you to Sakhi in the 3 months preceding the claim.`
-            },
-            {
-                title: '9. Termination',
-                body: `We may suspend or terminate your account immediately, without prior notice, if you:\n\n• Violate these Terms or any applicable law.\n• Engage in abusive, fraudulent, or harmful conduct.\n• Provide false information during registration.\n\nYou may delete your account at any time through the App settings. Upon termination, your right to use the App ceases immediately, but these Terms survive termination to the extent applicable.`
-            },
-            {
-                title: '10. Governing Law & Disputes',
-                body: `These Terms are governed by the laws of India. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of courts in Bengaluru, Karnataka, India.\n\nFor informal resolution, please contact us at legal@sakhi.app before initiating any legal proceedings.`
-            },
-            {
-                title: '11. Changes to Terms',
-                body: `We may update these Terms from time to time. We will notify you of significant changes via the App or registered email. Continued use of the App after changes constitutes your acceptance of the revised Terms.`
-            },
-            {
-                title: '12. Contact Us',
-                body: `For questions about these Terms, contact:\n\nSakhi Technologies Private Limited\nEmail: legal@sakhi.app\nAddress: Bengaluru, Karnataka, India – 560001\nSupport: support@sakhi.app`
-            },
-        ]
-    },
     privacy: {
         label: 'Privacy Policy',
-        lastUpdated: 'April 1, 2025',
+        lastUpdated: 'April 5, 2026',
         sections: [
             {
-                title: '1. Introduction',
-                body: `Sakhi Technologies Private Limited ("Sakhi", "we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use the Sakhi application.\n\nBy using the App, you consent to the practices described in this Policy.`
+                title: 'Introduction',
+                body: `Welcome to Sakhi — a platform built exclusively for women. Every auto driver on Sakhi is a woman, and every passenger is a woman. These policies explain how we protect your data and what you can expect from us. We've kept it brief and in plain language.\n\nGoverned by Indian law: IT Act 2000, DPDP Act 2023, Consumer Protection Act 2019, and Motor Vehicles Act 1988.`
             },
             {
-                title: '2. Information We Collect',
-                body: `We collect the following categories of information:\n\nIdentity Information: Full name, phone number, email address, gender, date of birth, and profile photo.\n\nLocation Data: Precise real-time GPS location during rides; approximate location when the App is in use.\n\nDevice Information: Device type, OS version, app version, unique device identifiers, and push notification tokens.\n\nPayment Information: Transaction history, payment method (processed securely by our payment partners — we do not store card numbers).\n\nEmergency Contacts: Names and phone numbers of contacts you designate for SOS alerts.\n\nUsage Data: App activity, ride history, ratings given/received, and in-app navigation patterns.`
+                title: '1. What We Collect',
+                body: `• Name, phone number, address and profile photo\n• Your real-time location while the app is in use (pick-up, drop, and live trip tracking)\n• Payment information — UPI ID or card details (processed securely; we never store your full card number)\n• Ride history and ratings`
             },
             {
-                title: '3. How We Use Your Information',
-                body: `We use your information to:\n\n• Provide, operate, and improve the App and its services.\n• Match you with available drivers and process bookings.\n• Send real-time location to your emergency contacts during SOS events.\n• Process payments and manage your Sakhi Wallet.\n• Send transactional notifications (booking confirmations, OTPs, receipts).\n• Detect, prevent, and investigate fraud or safety incidents.\n• Comply with legal obligations and respond to law enforcement requests.\n• Improve our AI and safety algorithms using anonymized data.\n• Send promotional communications (with your consent; opt-out anytime).`
+                title: '2. Why We Use It',
+                body: `• To match you with a nearby Sakhi auto driver\n• To share your pick-up location and first name with your assigned driver — only during the active ride\n• To process your payment and send receipts\n• To send ride status updates via push notification or SMS\n• To resolve disputes and improve service quality\n• To comply with legal and regulatory requirements`
             },
             {
-                title: '4. Location Data',
-                body: `Location data is the core of our service and safety features:\n\nDuring Rides: Your precise location is continuously collected and shared with your assigned driver and, upon SOS activation, with your emergency contacts.\n\nBackground Location: If you grant background location permission, we collect location data while the App is in the background to enable proactive safety monitoring. You may revoke this permission in your device settings, but this will limit certain safety features.\n\nWe do not sell your location history to advertisers or third parties.`
+                title: '3. Who Sees Your Data',
+                body: `• Your assigned driver: your first name, pick-up & drop address — visible only during the active ride, masked after it ends\n• Our support team: only when you raise a concern or dispute\n• Payment gateway partners: transaction details only, for processing payment\n• Government / law enforcement: only when legally required\n• We do NOT sell your personal data — ever`
             },
             {
-                title: '5. Information Sharing',
-                body: `We share your information only in limited circumstances:\n\nWith Drivers: Your first name, rating, and pickup location are shared with your matched driver.\n\nWith Emergency Contacts: Your live location is shared during an SOS event.\n\nWith Service Providers: Payment processors, cloud vendors, analytics providers, and customer support tools — all bound by data processing agreements.\n\nWith Authorities: When required by law, court order, or to protect the safety of our users or the public.\n\nWe never sell your personal data to third parties for advertising purposes.`
+                title: '4. How Long We Keep It',
+                body: `• Account and ride history: as long as your account is active\n• Financial records: up to 3 years (required for tax and audit)`
             },
             {
-                title: '6. Data Retention',
-                body: `We retain your personal data for as long as your account is active or as needed to provide services.\n\nRide history and transaction records are retained for 7 years as required by Indian financial regulations.\n\nUpon account deletion, personal identifiers are anonymized or deleted within 30 days, except where retention is required by law.`
-            },
-            {
-                title: '7. Data Security',
-                body: `We implement industry-standard security measures:\n\n• AES-256 encryption for data at rest.\n• TLS 1.2+ encryption for data in transit.\n• Access controls limiting who can view your data.\n• Regular security audits and penetration testing.\n• PCI-DSS compliant payment processing.\n\nWhile we strive to protect your data, no system is 100% secure. Please report any suspicious activity to support@sakhi.app.`
-            },
-            {
-                title: '8. Your Rights',
-                body: `Under applicable Indian data protection laws, you have the right to:\n\n• Access: Request a copy of the personal data we hold about you.\n• Correction: Request correction of inaccurate data.\n• Deletion: Request deletion of your data (subject to legal retention requirements).\n• Portability: Receive your data in a structured, machine-readable format.\n• Withdraw Consent: Opt out of marketing communications at any time.\n\nTo exercise these rights, contact: privacy@sakhi.app`
-            },
-            {
-                title: '9. Children\'s Privacy',
-                body: `The App is not intended for individuals under 18 years of age. We do not knowingly collect personal data from minors. If you believe a minor has provided us with personal data, please contact us immediately at privacy@sakhi.app and we will delete such data promptly.`
-            },
-            {
-                title: '10. Grievance Officer',
-                body: `In accordance with the Information Technology Act, 2000, and applicable rules:\n\nName: Sakhi Grievance Team\nEmail: grievance@sakhi.app\nResponse Time: Within 30 days of receiving your complaint.`
-            },
-            {
-                title: '11. Changes to This Policy',
-                body: `We may update this Privacy Policy periodically. We will notify you of material changes via the App or registered email at least 14 days before changes take effect.\n\nContinued use of the App after changes constitutes acceptance of the revised Policy.`
-            },
+                title: '5. Your Rights',
+                body: `• Correction — update your name or phone number in Settings > Profile`
+            }
         ]
     },
-    cookie: {
-        label: 'Cookie Policy',
-        lastUpdated: 'April 1, 2025',
+    terms: {
+        label: 'Terms of Service',
+        lastUpdated: 'April 5, 2026',
         sections: [
             {
-                title: '1. What Are Cookies?',
-                body: `Cookies are small text files stored on your device by websites and applications. In the context of mobile apps, we use similar technologies including:\n\n• Local Storage: Persistent data stored on your device.\n• Session Tokens: Temporary tokens that keep you logged in during a session.\n• Analytics SDKs: Third-party libraries that collect usage statistics.\n• Device Identifiers: Unique IDs used to recognize your device across sessions.`
+                title: '1. Who Can Use Sakhi',
+                body: `• Sakhi is exclusively for women passengers and women drivers\n• You must provide your real name and a valid phone number\n• One account per person`
             },
             {
-                title: '2. Types We Use',
-                body: `Essential / Functional:\nRequired for the App to function. Includes authentication tokens, session management, and user preferences. These cannot be disabled.\n\nAnalytics:\nTools to understand how users interact with the App — which screens are visited most, crash reports, and performance metrics. Data is aggregated and anonymized.\n\nSecurity:\nTechnologies that help detect fraud, suspicious login attempts, and unusual activity.\n\nPersonalization:\nData used to remember your preferences such as saved locations, preferred payment method, and notification settings.`
+                title: '2. Booking a Ride',
+                body: `• Enter your pick-up and drop location — you will see the estimated fare before confirming\n• Fares are based on distance and time; no surge pricing`
             },
             {
-                title: '3. Third-Party Technologies',
-                body: `Some features rely on third-party SDKs that may collect data:\n\n• Google Maps SDK — for route mapping and navigation.\n• Razorpay SDK — for payment processing.\n• Firebase (Google) — for push notifications, analytics, and crash reporting.\n• Supabase — for secure backend data storage.\n\nThese third parties operate under their own privacy and cookie policies.`
+                title: '3. Payments',
+                body: `• Accepted: UPI / Cash directly to the driver\n• Only subscription is paid upfront`
             },
             {
-                title: '4. Your Choices',
-                body: `App Permissions: Revoke location, camera, or notification permissions at any time via your device settings.\n\nAnalytics Opt-Out: You may opt out of analytics data collection in App Settings → Privacy → Analytics.\n\nMarketing Opt-Out: Manage marketing notification preferences in App Settings → Notifications.\n\nAccount Deletion: Deleting your account will remove all associated stored data within 30 days.`
+                title: '4. Refunds & Disputes',
+                body: `• Raise a dispute within 24 hours of a ride`
             },
             {
-                title: '5. Data Retention',
-                body: `Essential session tokens expire when you log out or after 30 days of inactivity.\n\nAnalytics data is retained in aggregated, anonymized form for up to 24 months.\n\nPersonalization data (saved locations, preferences) is retained until you manually clear it or delete your account.`
+                title: '5. Your Responsibilities as a Passenger',
+                body: `• Provide the correct pick-up address and be ready on time\n• Do not book rides for male passengers — Sakhi is a women-only platform\n• Treat your driver with respect; abusive or threatening behaviour will result in account suspension\n• Do not request the driver to deviate significantly from the agreed route without mutual consent\n• Rate your ride honestly — your feedback helps the whole community`
             },
             {
-                title: '6. Changes & Contact',
-                body: `We may update this Cookie Policy to reflect changes in our technologies or applicable law.\n\nFor questions:\nEmail: privacy@sakhi.app\nGrievance: grievance@sakhi.app\nAddress: Sakhi Technologies Private Limited, Bengaluru, Karnataka – 560001`
+                title: '6. Your Safety Features',
+                body: `• Live ride sharing: share your real-time trip with trusted contacts directly from the app\n• In-app SOS button: immediately alerts our safety team and shares your location with emergency contacts\n• Driver details — name, photo, auto registration number — visible before you board\n• All Sakhi drivers are verified women with background and police checks completed`
             },
+            {
+                title: '7. Account Suspension',
+                body: `• We may suspend accounts for fraudulent activity, abuse towards drivers, or repeated policy violations\n• You will be notified and given 7 days to appeal`
+            },
+            {
+                title: '8. Our Liability',
+                body: `• Sakhi is a technology platform connecting passengers with independent auto drivers\n• We are not liable for delays due to traffic or weather, or for road accidents caused by third parties\n• Our liability for any service issue is limited to the fare paid for that specific ride`
+            },
+            {
+                title: 'Contact',
+                body: `You are safe with us. Questions? We're always here.\n\nsupport@sakhiwomen.in`
+            }
         ]
     }
 };
 
 const TABS = [
-    { key: 'terms', label: 'Terms' },
     { key: 'privacy', label: 'Privacy' },
-    { key: 'cookie', label: 'Cookies' },
+    { key: 'terms', label: 'Terms' },
 ];
 
 export default function TermsScreen() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('terms');
+    const [activeTab, setActiveTab] = useState('privacy');
     const scrollRef = useRef(null);
 
     const policy = POLICIES[activeTab];
