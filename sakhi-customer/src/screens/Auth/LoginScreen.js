@@ -164,12 +164,6 @@ export default function LoginScreen() {
                     </Text>
                 </View>
 
-                {/* OR LOGIN WITH divider */}
-                <View style={styles.dividerRow}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>OR LOGIN WITH</Text>
-                    <View style={styles.dividerLine} />
-                </View>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -367,26 +361,5 @@ const styles = StyleSheet.create({
     termsLink: {
         color: '#BDA3D4',
         fontWeight: '500',
-    },
-
-    // OR LOGIN WITH divider
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 40,
-        paddingTop: 24,
-        gap: 12,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#E2E8F0',
-    },
-    dividerText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#94A3B8',
-        letterSpacing: 1.2,
-        textTransform: 'uppercase',
     },
 });
