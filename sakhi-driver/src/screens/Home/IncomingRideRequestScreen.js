@@ -8,7 +8,6 @@ import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import { navigationRef } from '../../../App';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import * as Haptics from 'expo-haptics';
 
@@ -20,7 +19,7 @@ const MAP_STYLE = [
   { featureType: 'water', stylers: [{ color: '#c8bef0' }] },
 ];
 
-export default function IncomingRideRequestScreen() {
+export default function IncomingRideRequestScreen({ navigationRef }) {
   const { incomingRide, acceptRide, rejectRide, clearIncomingRide } = useSocket();
   const insets = useSafeAreaInsets();
 
@@ -29,6 +28,12 @@ export default function IncomingRideRequestScreen() {
   const [accepting, setAccepting] = useState(false);
 
   useEffect(() => {
+    if (!incomingRide) {
+      // Reset position when not showing
+      slideUp.setValue(SCREEN_H);
+      return;
+    }
+
     Animated.spring(slideUp, { 
       toValue: 0, 
       tension: 60, 
@@ -45,12 +50,14 @@ export default function IncomingRideRequestScreen() {
 
     // Auto-decline timer fallback (e.g. 15s)
     const timeout = setTimeout(() => {
-      rejectRide(incomingRide?.ride_id);
+      if (incomingRide?.ride_id) {
+        rejectRide(incomingRide.ride_id);
+      }
       clearIncomingRide();
     }, 15000);
 
     return () => clearTimeout(timeout);
-  }, []);
+  }, [incomingRide]);
 
   const handleAccept = async () => {
     if (accepting) return;

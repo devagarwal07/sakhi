@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
 
         if (
             error.response?.status === 401 &&
-            error.response?.data?.code === 'TOKEN_EXPIRED' &&
+            (error.response?.data?.code === 'TOKEN_EXPIRED' || error.response?.data?.error?.code === 'TOKEN_EXPIRED') &&
             !originalRequest._retry
         ) {
             if (isRefreshing) {

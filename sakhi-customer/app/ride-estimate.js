@@ -69,6 +69,41 @@ export default function RideEstimateScreen() {
     const pickup  = ride?.pickup;
     const dropoff = ride?.dropoff;
 
+    useEffect(() => {
+        let active = true;
+        (async () => {
+            if (!pickup || !dropoff) {
+                if (active) setLoadingRoute(false);
+                return;
+            }
+            try {
+                setLoadingRoute(true);
+                const [dir, estReq] = await Promise.all([
+                    fetchDirectionsPolyline(pickup, dropoff).catch(err => {
+                        console.error('Polyline error:', err);
+                        return { points: [], distance: null, duration: null };
+                    }),
+                    estimateFare(pickup, dropoff).catch(err => {
+                        console.error('Estimate fare error:', err);
+                        return null;
+                    })
+                ]);
+                
+                if (!active) return;
+                
+                setRoutePolyline(dir.points || []);
+                if (dir.distance) setRouteDistance(dir.distance);
+                if (dir.duration) setRouteDuration(dir.duration);
+                if (estReq?.data) setFareData(estReq.data);
+            } catch (err) {
+                console.error('Estimate route/fare error:', err);
+            } finally {
+                if (active) setLoadingRoute(false);
+            }
+        })();
+        return () => { active = false; };
+    }, [pickup, dropoff]);
+
     // Compute midpoint for initial map region
     const midLat = pickup && dropoff
         ? (pickup.latitude + dropoff.latitude) / 2
