@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
@@ -11,6 +12,13 @@ export default function PaymentSuccessScreen() {
     const sub = ride.subscription || {};
     const [modal, setModal] = useState(null);
 
+    const insets = useSafeAreaInsets();
+
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 60 : 56);
+    const mainContentPaddingTop = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
+
     const price = sub.price || 364;
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -19,7 +27,7 @@ export default function PaymentSuccessScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.replace('/(tabs)/subscriptions')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
@@ -44,7 +52,7 @@ export default function PaymentSuccessScreen() {
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.mainContent}>
+            <View style={[styles.mainContent, { paddingTop: mainContentPaddingTop }]}>
                 {/* Success Indicator */}
                 <View style={styles.successIndicatorWrapper}>
                     <View style={styles.successBlur} />
@@ -140,8 +148,6 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F0FF' },
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 10,
@@ -152,7 +158,7 @@ const styles = StyleSheet.create({
     menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
 
     mainContent: {
-        flex: 1, paddingTop: Platform.OS === 'ios' ? 120 : ANDROID_STATUS_BAR_HEIGHT + 64,
+        flex: 1,
         alignItems: 'center',
         paddingHorizontal: 24,
     },

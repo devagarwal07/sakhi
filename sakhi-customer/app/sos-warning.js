@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { triggerSOS } from '../src/api/endpoints';
@@ -12,6 +13,14 @@ export default function SOSWarningScreen() {
     const [timeLeft, setTimeLeft] = useState(5);
     const [triggered, setTriggered] = useState(false);
     const progressAnim = React.useRef(new Animated.Value(280)).current;
+
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const mainContentPaddingTop = topInset + (Platform.OS === 'ios' ? 96 : 80);
+    const footerPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 6 : 16),
+        40
+    );
 
     // Countdown and automatic trigger logic
     useEffect(() => {
@@ -78,7 +87,7 @@ export default function SOSWarningScreen() {
             {/* Ambient Background Glow */}
             <View style={styles.ambientGlow} />
 
-            <View style={styles.mainContent}>
+            <View style={[styles.mainContent, { paddingTop: mainContentPaddingTop }]}>
                 {/* Urgent Warning Icon Section */}
                 <View style={styles.iconSection}>
                     <View style={styles.ringOuter} />
@@ -119,7 +128,7 @@ export default function SOSWarningScreen() {
                 </View>
 
                 {/* Urgent Footer */}
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                     <Text style={styles.footerText}>SOS WILL AUTO-SEND IF NO RESPONSE.</Text>
                 </View>
             </View>
@@ -135,7 +144,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.1)',
         borderRadius: 9999,
     },
-    mainContent: { flex: 1, alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 140 : ANDROID_STATUS_BAR_HEIGHT + 80 },
+    mainContent: { flex: 1, alignItems: 'center', paddingTop: 0 },
     
     iconSection: { width: 96, height: 96, justifyContent: 'center', alignItems: 'center', marginBottom: 64, position: 'relative' },
     ringOuter: { position: 'absolute', width: 192, height: 192, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 96 },
@@ -172,6 +181,6 @@ const styles = StyleSheet.create({
     progressContainer: { width: 280, height: 6, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 3, overflow: 'hidden' },
     progressBar: { height: '100%', backgroundColor: '#FFFFFF', borderRadius: 3 },
 
-    footer: { position: 'absolute', bottom: 40, width: '100%', alignItems: 'center' },
+    footer: { position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' },
     footerText: { fontSize: 12, fontWeight: '500', color: 'rgba(255, 255, 255, 0.6)', letterSpacing: 1.2, textTransform: 'uppercase' },
 });

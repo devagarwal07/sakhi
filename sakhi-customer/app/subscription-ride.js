@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, ScrollView, Platform, Modal
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
@@ -17,6 +18,20 @@ export default function SubscriptionRideScreen() {
     const sub = { days: [], ...ride.subscription };
     const [modal, setModal] = useState(null);
     const [activePicker, setActivePicker] = useState(null); // 'date', 'morningTime', 'returnTime'
+
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 74 : 56);
+    const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 22 : 16);
+
+    const footerPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 6 : 8),
+        24
+    );
+    const footerSpacerHeight = 24 + footerPaddingBottom + 56;
+
+    const pickerPaddingBottom = Math.max(insets.bottom + 10, 24);
 
     const toggleDay = (day) => {
         const currentDays = sub.days || [];
@@ -97,7 +112,7 @@ export default function SubscriptionRideScreen() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
@@ -111,7 +126,7 @@ export default function SubscriptionRideScreen() {
             </View>
 
             <ScrollView 
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Address Selection Card */}
@@ -222,11 +237,11 @@ export default function SubscriptionRideScreen() {
                 </View>
 
                 {/* Bottom Padding for Footer */}
-                <View style={{ height: 120 }} />
+                <View style={{ height: footerSpacerHeight }} />
             </ScrollView>
 
             {/* Footer Action Button */}
-            <View style={styles.footerOverlay}>
+            <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity style={styles.submitBtn} onPress={handleContinue} activeOpacity={0.8}>
                     <Text style={styles.submitText}>Continue to Plan Selection</Text>
                 </TouchableOpacity>
@@ -236,7 +251,7 @@ export default function SubscriptionRideScreen() {
             <Modal visible={!!activePicker} transparent animationType="slide">
                 <View style={styles.pickerOverlay}>
                     <TouchableOpacity style={styles.pickerBackdrop} onPress={() => setActivePicker(null)} />
-                    <View style={styles.pickerContent}>
+                    <View style={[styles.pickerContent, { paddingBottom: pickerPaddingBottom }]}>
                         <ScrollView style={styles.pickerScroll} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
                             <Text style={styles.pickerTitle}>
                                 {activePicker === 'date' ? 'Select Start Date' : 'Select Time'}
@@ -456,8 +471,6 @@ const styles = StyleSheet.create({
     // Top Navigation
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 118 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -470,7 +483,7 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: 12, fontWeight: '500', color: '#6B7280' },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 140 : ANDROID_STATUS_BAR_HEIGHT + 72,
+        paddingTop: 0,
         paddingHorizontal: 24,
         paddingBottom: 40,
     },
@@ -535,7 +548,8 @@ const styles = StyleSheet.create({
     // Footer overlay
     footerOverlay: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: 104, padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 24,
+        padding: 24,
+        paddingBottom: 24,
         backgroundColor: 'rgba(245, 240, 255, 0.95)', // approximation for gradient
         borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.4)',
     },
@@ -549,7 +563,7 @@ const styles = StyleSheet.create({
     // Custom Picker Modal
     pickerOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
     pickerBackdrop: { ...StyleSheet.absoluteFillObject },
-    pickerContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 24, maxHeight: '85%' },
+    pickerContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24, maxHeight: '85%' },
     pickerTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', marginBottom: 12, textAlign: 'center' },
     pickerScroll: { flexGrow: 0 },
     pickerItemRow: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F5F0FF', alignItems: 'center' },

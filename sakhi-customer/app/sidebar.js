@@ -15,8 +15,10 @@ const DRAWER_WIDTH = width * 0.75; // Drawer takes exactly 75% width per Figma C
 export default function SidebarScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
-    const { top: topInset } = useSafeAreaInsets();
+    const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
     const [showLogoutSheet, setShowLogoutSheet] = useState(false);
+
+    const bottomSectionPaddingBottom = Math.max(bottomInset, 24);
     
     // Animation refs for dynamic slide-in and fade overlay
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -204,7 +206,7 @@ export default function SidebarScreen() {
                 </ScrollView>
 
                 {/* Footer Section */}
-                <View style={styles.bottomSection}>
+                <View style={[styles.bottomSection, { paddingBottom: bottomSectionPaddingBottom }]}>
                     <TouchableOpacity 
                         style={styles.logoutBtn} 
                         onPress={() => setShowLogoutSheet(true)} 
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
     chevron: { fontSize: 20, color: '#CBD5E1', paddingBottom: 2 },
     divider: { height: 1, backgroundColor: '#F8FAFC', marginHorizontal: 24, marginLeft: 80 },
 
-    bottomSection: { borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFFFFF', paddingVertical: 16, paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24 },
+    bottomSection: { borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFFFFF', paddingVertical: 16, paddingHorizontal: 24, paddingBottom: 24 },
     logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: '#FFFFFF', borderRadius: 8, padding: 8 },
     logoutIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
     logoutIcon: { fontSize: 18 },

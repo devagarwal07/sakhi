@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     View,
     Text,
@@ -23,11 +24,17 @@ const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { requestOtp } = useAuth();
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const shakeAnim = useRef(new Animated.Value(0)).current;
     const buttonScale = useRef(new Animated.Value(1)).current;
+
+    const headerPaddingTop = Platform.OS === 'ios'
+        ? Math.max(insets.top + 12, 56)
+        : Math.max(insets.top + 12, ANDROID_STATUS_BAR_HEIGHT + 12);
+    const scrollPaddingBottom = Math.max(40, insets.bottom + 16);
 
     const shake = () => {
         Animated.sequence([
@@ -72,7 +79,7 @@ export default function LoginScreen() {
             style={styles.flex}
         >
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
@@ -80,7 +87,7 @@ export default function LoginScreen() {
                 <View style={styles.glowTopRight} />
 
                 {/* Header — glassmorphic top bar */}
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                     <View style={{ width: 18 }} />
                     <Text style={styles.headerTitle}>Sakhi</Text>
                     <View style={{ width: 18 }} />
@@ -174,7 +181,6 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         backgroundColor: '#F5F0FF',
-        paddingBottom: 40,
     },
 
     // Decorative glow — top right
@@ -194,7 +200,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'ios' ? 56 : ANDROID_STATUS_BAR_HEIGHT + 12,
         paddingBottom: 12,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },

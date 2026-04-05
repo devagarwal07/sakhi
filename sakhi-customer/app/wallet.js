@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     ActivityIndicator, Pressable, Share
@@ -39,14 +40,14 @@ export default function WalletScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centered]}>
+            <SafeAreaView style={[styles.container, styles.centered]}>
                 <ActivityIndicator size="large" color={Colors.primaryContainer} />
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.backArrow}>←</Text>
@@ -112,7 +113,7 @@ export default function WalletScreen() {
             </ScrollView>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
-        </View>
+        </SafeAreaView>
     );
 }
 

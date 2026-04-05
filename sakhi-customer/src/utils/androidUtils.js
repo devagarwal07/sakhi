@@ -25,7 +25,7 @@ export const HEADER_TOP_PADDING = Platform.select({
 
 /**
  * KeyboardAvoidingView behavior that works on Android.
- * Use 'padding' on Android too — 'height' shrinks the whole view
- * which looks wrong on most layouts.
+ * We keep 'height' on Android and 'padding' on iOS for predictable
+ * layout shifts in this app's current screen stack.
  */
 export const KEYBOARD_BEHAVIOR = Platform.OS === 'ios' ? 'padding' : 'height';

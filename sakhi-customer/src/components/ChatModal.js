@@ -4,10 +4,12 @@ import {
     TouchableOpacity, KeyboardAvoidingView, Platform,
     ActivityIndicator, Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, BorderRadius, Shadows } from '../utils/theme';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { getChatHistory } from '../api/endpoints';
+import { KEYBOARD_BEHAVIOR } from '../utils/androidUtils';
 
 /**
  * In-ride chat modal.
@@ -18,10 +20,12 @@ import { getChatHistory } from '../api/endpoints';
 export default function ChatModal({ rideId, onClose }) {
     const { user } = useAuth();
     const { on, off, emit } = useSocket();
+    const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
     const listRef = useRef(null);
+    const keyboardVerticalOffset = Math.max(insets.top + 56, 56);
 
     // Load chat history on mount
     useEffect(() => {
@@ -97,8 +101,8 @@ export default function ChatModal({ rideId, onClose }) {
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            behavior={KEYBOARD_BEHAVIOR}
+            keyboardVerticalOffset={keyboardVerticalOffset}
         >
             {/* Header */}
             <View style={styles.header}>

@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity, Alert, Image,
     ScrollView, ActivityIndicator, Pressable, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -12,9 +13,16 @@ import { useAuth } from '../../context/AuthContext';
 export default function AadhaarUploadScreen() {
     const router = useRouter();
     const { updateUser } = useAuth();
+    const insets = useSafeAreaInsets();
     const [frontImage, setFrontImage] = useState(null);
     const [backImage, setBackImage] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const headerPaddingTop = Platform.OS === 'ios'
+        ? insets.top + 8
+        : Math.max(insets.top, 24);
+    const footerPaddingBottom = Math.max(insets.bottom, 24);
+    const scrollPaddingBottom = 24 + 60 + footerPaddingBottom + 24;
 
     const pickImage = async (side) => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -137,7 +145,7 @@ export default function AadhaarUploadScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                 <View style={styles.headerRow}>
                     <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                         <Text style={styles.backIcon}>←</Text>
@@ -147,7 +155,7 @@ export default function AadhaarUploadScreen() {
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Step indicator */}
@@ -188,7 +196,7 @@ export default function AadhaarUploadScreen() {
             </ScrollView>
 
             {/* Bottom CTA */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={[
                         styles.ctaButton,
@@ -217,7 +225,6 @@ const styles = StyleSheet.create({
 
     // Header — glassmorphic, 60px
     header: {
-        paddingTop: Platform.OS === 'ios' ? 52 : 16,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
     headerRow: {
@@ -248,7 +255,6 @@ const styles = StyleSheet.create({
 
     // Scroll
     scrollContent: {
-        paddingBottom: 140,
     },
 
     // Step text — bold
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
         padding: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        height: 236,
+        minHeight: 236,
         shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 16 },
         shadowOpacity: 0.08,

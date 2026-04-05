@@ -1,11 +1,16 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 export default function VerificationPendingScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    const mainContentPaddingTop = Math.max(insets.top + 36, 60);
+    const footerPaddingBottom = Math.max(insets.bottom + 6, 24);
 
     useEffect(() => {
         // Pulse glow
@@ -26,7 +31,11 @@ export default function VerificationPendingScreen() {
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
+            <Animated.ScrollView
+                style={{ flex: 1, opacity: fadeAnim }}
+                contentContainerStyle={[styles.mainContent, { paddingTop: mainContentPaddingTop }]}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Animated Icon Group */}
                 <View style={styles.iconSection}>
                     {/* Glow effect */}
@@ -71,10 +80,10 @@ export default function VerificationPendingScreen() {
                         <Text style={styles.accentHeart}>♥</Text>
                     </View>
                 </View>
-            </Animated.View>
+            </Animated.ScrollView>
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={styles.ctaButton}
                     onPress={() => router.replace('/(tabs)')}
@@ -97,9 +106,9 @@ const styles = StyleSheet.create({
     },
 
     mainContent: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 80 : 60,
+        paddingBottom: 24,
     },
 
     // Animated icon group — 96×96
@@ -166,8 +175,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     illustrationCard: {
-        width: 280,
-        height: 280,
+        width: '100%',
+        maxWidth: 280,
+        aspectRatio: 1,
         borderRadius: 24,
         backgroundColor: '#EDE9FE',
         alignItems: 'center',
@@ -240,7 +250,6 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: 24,
         paddingTop: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         gap: 16,
         alignItems: 'center',
     },

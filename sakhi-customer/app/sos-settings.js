@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
@@ -9,6 +9,13 @@ import { getEmergencyContacts } from '../src/api/endpoints';
 
 export default function SOSSettingsScreen({ isTab = false }) {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
+    const tabBarPaddingBottom = Math.max(insets.bottom, 20);
+    const tabBarHeight = 95 - 20 + tabBarPaddingBottom;
+    const scrollPaddingBottom = isTab
+        ? (tabBarHeight - insets.bottom) + 24
+        : 32;
 
     const [preferences, setPreferences] = useState({
         autoSend: true,
@@ -47,7 +54,10 @@ export default function SOSSettingsScreen({ isTab = false }) {
                 </View>
 
                 {/* Main Scroll Content */}
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                    showsVerticalScrollIndicator={false}
+                >
                     
                     {/* Top subtext */}
                     <Text style={styles.pageSubText}>Customise your SOS alert behaviour</Text>
@@ -204,7 +214,6 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 24,
         paddingTop: 24,
-        paddingBottom: 120, // ensure room for the absolute tab bar
     },
     pageSubText: {
         fontSize: 14,

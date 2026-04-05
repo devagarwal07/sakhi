@@ -2,10 +2,17 @@ import React from 'react';
 import {
     View, Text, Image, StyleSheet, TouchableOpacity, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 export default function KYCIntroScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
+    const headerPaddingTop = Platform.OS === 'ios'
+        ? insets.top + 12
+        : Math.max(insets.top, 24);
+    const footerPaddingBottom = Math.max(insets.bottom, 32);
 
     return (
         <View style={styles.container}>
@@ -13,7 +20,7 @@ export default function KYCIntroScreen() {
             <View style={styles.gradientBlur} />
 
             {/* Header — Top Navigation */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
@@ -68,7 +75,7 @@ export default function KYCIntroScreen() {
             </View>
 
             {/* Footer — Bottom Action */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={styles.ctaButton}
                     onPress={() => router.push('/(kyc)/aadhaar')}
@@ -86,7 +93,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', 
         alignItems: 'center', 
         paddingHorizontal: 20, 
-        height: 64,
+        paddingBottom: 12,
         backgroundColor: '#F5F0FF', 
         zIndex: 10
     },
@@ -117,9 +124,9 @@ const styles = StyleSheet.create({
     // Decorative gradient blur — top
     gradientBlur: {
         position: 'absolute',
-        width: 390,
         height: 120,
         left: 0,
+        right: 0,
         top: 0,
         backgroundColor: 'rgba(167, 139, 250, 0.06)',
         borderRadius: 9999,
@@ -245,7 +252,6 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: 24,
         paddingTop: 16,
-        paddingBottom: 32,
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         alignItems: 'center',
     },

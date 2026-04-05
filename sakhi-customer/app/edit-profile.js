@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import SakhiModal from '../src/components/SakhiModal';
 import { useAuth } from '../src/context/AuthContext';
 import { updateProfile } from '../src/api/endpoints';
+import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 const LANGUAGES = [
     'English', 'Hindi', 'Marathi', 'Bengali', 'Tamil',
@@ -19,8 +20,14 @@ const LANGUAGES = [
 export default function EditProfileScreen() {
     const router = useRouter();
     const { user, updateUser } = useAuth();
+    const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [saving, setSaving] = useState(false);
+
+    const pickerSheetPaddingBottom = Math.max(insets.bottom + 10, 28);
+    const footerPaddingBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? 36 : 24);
+    const scrollPaddingBottom = 20 + 56 + footerPaddingBottom + 24;
+    const keyboardVerticalOffset = 64;
 
     // Form state — seeded from auth context user
     const [name, setName] = useState(user?.name || '');
@@ -152,10 +159,11 @@ export default function EditProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={KEYBOARD_BEHAVIOR}
+                keyboardVerticalOffset={keyboardVerticalOffset}
             >
                 {/* ── Header ── */}
                 <View style={styles.header}>
@@ -177,7 +185,7 @@ export default function EditProfileScreen() {
 
                 {/* ── Scrollable Form ── */}
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
@@ -296,7 +304,7 @@ export default function EditProfileScreen() {
                 </ScrollView>
 
                 {/* ── Fixed Save Button ── */}
-                <View style={styles.bottomFixedWrap}>
+                <View style={[styles.bottomFixedWrap, { paddingBottom: footerPaddingBottom }]}>
                     <TouchableOpacity style={[styles.actionBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85} onPress={handleSave} disabled={saving}>
                         {saving
                             ? <ActivityIndicator color="#fff" />
@@ -310,7 +318,7 @@ export default function EditProfileScreen() {
             {/* ════ DOB Picker Modal ════ */}
             <Modal visible={showDobPicker} transparent animationType="slide">
                 <Pressable style={styles.modalBackdrop} onPress={() => setShowDobPicker(false)} />
-                <View style={styles.pickerSheet}>
+                <View style={[styles.pickerSheet, { paddingBottom: pickerSheetPaddingBottom }]}>
                     <View style={styles.pickerHandle} />
                     <Text style={styles.pickerTitle}>Select Date of Birth</Text>
 
@@ -369,7 +377,7 @@ export default function EditProfileScreen() {
             {/* ════ Language Picker Modal ════ */}
             <Modal visible={showLangPicker} transparent animationType="slide">
                 <Pressable style={styles.modalBackdrop} onPress={() => setShowLangPicker(false)} />
-                <View style={styles.pickerSheet}>
+                <View style={[styles.pickerSheet, { paddingBottom: pickerSheetPaddingBottom }]}>
                     <View style={styles.pickerHandle} />
                     <Text style={styles.pickerTitle}>Preferred Language</Text>
                     <FlatList
@@ -436,7 +444,7 @@ const styles = StyleSheet.create({
     headerRightWrap: { width: 60, alignItems: 'flex-end' },
     saveTopBtn: { paddingVertical: 4, paddingHorizontal: 4, minWidth: 40, alignItems: 'center' },
     saveTopText: { fontSize: 16, fontWeight: '700', color: '#BEA3D8' },
-    scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 140 },
+    scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 0 },
     avatarSection: { alignItems: 'center', marginBottom: 28 },
     avatarWrap: {
         position: 'relative', width: 100, height: 100,
@@ -487,7 +495,8 @@ const styles = StyleSheet.create({
     verifyLabel: { fontSize: 14, fontWeight: '600', color: '#059669' },
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: 20, paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+        padding: 20,
+        paddingBottom: 24,
         backgroundColor: '#F5F0FF',
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
     },
@@ -500,7 +509,7 @@ const styles = StyleSheet.create({
     modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
     pickerSheet: {
         backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+        padding: 24, paddingBottom: 28,
     },
     pickerHandle: {
         width: 40, height: 4, backgroundColor: '#E2D9F3',

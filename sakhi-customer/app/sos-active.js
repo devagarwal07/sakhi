@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -9,10 +9,18 @@ const AVATAR_COLORS = ['#FCD34D', '#38BDF8', '#F472B6', '#BEA3D8', '#68C4AF'];
 
 export default function SOSActiveScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [contacts, setContacts] = useState([]);
     const [loadingContacts, setLoadingContacts] = useState(true);
     const [cancelling, setCancelling] = useState(false);
+
+    const footerPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 6 : 16),
+        40
+    );
+
+    const scrollPaddingBottom = footerPaddingBottom + 60;
 
     useEffect(() => {
         getEmergencyContacts()
@@ -70,7 +78,10 @@ export default function SOSActiveScreen() {
                 </View>
             </SafeAreaView>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                showsVerticalScrollIndicator={false}
+            >
                 
                 {/* Siren Animation Section */}
                 <View style={styles.sirenSection}>
@@ -165,7 +176,7 @@ export default function SOSActiveScreen() {
             </ScrollView>
 
             {/* Bottom Safe Footer */}
-            <View style={styles.footerSection}>
+            <View style={[styles.footerSection, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity style={styles.safeBtn} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
                     {cancelling
                         ? <ActivityIndicator color="rgba(255,255,255,0.6)" />
@@ -188,7 +199,7 @@ const styles = StyleSheet.create({
     navIcon: { fontSize: 20, color: '#FFFFFF', fontWeight: 'bold' },
     navTitle: { fontSize: 18, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.9 },
 
-    scrollContent: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 100 },
+    scrollContent: { paddingHorizontal: 24, paddingTop: 40 },
 
     sirenSection: { width: '100%', height: 192, justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' },
     ringOuter: { position: 'absolute', width: 176, height: 176, borderRadius: 88, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', opacity: 0.4 },
@@ -232,7 +243,7 @@ const styles = StyleSheet.create({
     shieldIcon: { fontSize: 14 },
     authoritiesText: { fontSize: 14, fontWeight: '500', color: 'rgba(255, 255, 255, 0.9)', textDecorationLine: 'underline' },
 
-    footerSection: { position: 'absolute', bottom: 40, width: '100%', alignItems: 'center' },
+    footerSection: { position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' },
     safeBtn: { paddingVertical: 16, paddingHorizontal: 32 },
     safeBtnText: { fontSize: 10, fontWeight: '700', color: 'rgba(255, 255, 255, 0.6)', letterSpacing: 2, textTransform: 'uppercase' },
 

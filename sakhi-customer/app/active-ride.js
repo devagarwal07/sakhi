@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, Image, Animated, Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmartMapView from '../src/components/SmartMapView';
 
 import { useRouter } from 'expo-router';
@@ -32,6 +33,7 @@ const STATUS_COLORS = {
 
 export default function ActiveRideScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { ride, updateStatus, updateDriverLocation, tickWaiting, clearRide } = useRide();
     const { on, off } = useSocket();
     const [chatOpen, setChatOpen] = useState(false);
@@ -191,6 +193,9 @@ export default function ActiveRideScreen() {
     const statusLabel = STATUS_LABELS[ride.status] || 'Finding Driver…';
     const statusColor = STATUS_COLORS[ride.status] || Colors.primaryContainer;
 
+    const topOverlayTop = Math.max(insets.top + 12, 56);
+    const bottomSheetPaddingBottom = Math.max(insets.bottom + 12, 32);
+
     return (
         <View style={styles.container}>
             {/* Map */}
@@ -208,7 +213,7 @@ export default function ActiveRideScreen() {
             />
 
             {/* SOS Pills and Share Pill */}
-            <View style={styles.topRightPills}>
+            <View style={[styles.topRightPills, { top: topOverlayTop }]}>
                 <TouchableOpacity
                     style={styles.sosPill}
                     onPress={() => router.push('/sos-warning')}
@@ -227,13 +232,17 @@ export default function ActiveRideScreen() {
             </View>
 
             {/* Status Chip */}
-            <View style={[styles.statusChip, { backgroundColor: statusColor }]}>
+            <View style={[styles.statusChip, { top: topOverlayTop, backgroundColor: statusColor }]}>
                 <Text style={styles.statusChipText}>{statusLabel}</Text>
             </View>
 
             {/* Bottom Sheet */}
             <Animated.View
-                style={[styles.bottomSheet, { transform: [{ translateY: sheetSlide }] }]}
+                style={[
+                    styles.bottomSheet,
+                    { paddingBottom: bottomSheetPaddingBottom },
+                    { transform: [{ translateY: sheetSlide }] },
+                ]}
             >
                 {/* Driver Info */}
                 {ride.driver && (
@@ -331,7 +340,7 @@ export default function ActiveRideScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     topRightPills: {
-        position: 'absolute', top: 56, right: 16, zIndex: 10,
+        position: 'absolute', right: 16, zIndex: 10,
         gap: 12, alignItems: 'flex-end',
     },
     sosPill: {
@@ -348,7 +357,7 @@ const styles = StyleSheet.create({
     },
     sharePillText: { fontSize: 13, fontWeight: '700', color: Colors.primaryContainer, letterSpacing: 0.5 },
     statusChip: {
-        position: 'absolute', top: 56, left: 16,
+        position: 'absolute', left: 16,
         borderRadius: BorderRadius.full,
         paddingHorizontal: 14, paddingVertical: 8,
         ...Shadows.card,
@@ -358,7 +367,7 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: 0, left: 0, right: 0,
         backgroundColor: Colors.surfaceContainerLowest,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        paddingHorizontal: 20, paddingTop: 20, paddingBottom: 32,
+        paddingHorizontal: 20, paddingTop: 20,
         ...Shadows.editorial,
     },
     driverRow: {

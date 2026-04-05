@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     View, Text, StyleSheet, ScrollView, Pressable,
     ActivityIndicator, TouchableOpacity,
@@ -73,20 +74,20 @@ export default function SubscriptionDetailsScreen() {
 
     if (loading) {
         return (
-            <View style={styles.centered}>
+            <SafeAreaView style={[styles.container, styles.centered]}>
                 <ActivityIndicator size="large" color={Colors.primaryContainer} />
-            </View>
+            </SafeAreaView>
         );
     }
 
     if (!sub) {
         return (
-            <View style={styles.centered}>
+            <SafeAreaView style={[styles.container, styles.centered]}>
                 <Text style={styles.emptyText}>Subscription not found.</Text>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.smallBack}>
                     <Text style={styles.smallBackText}>← Go Back</Text>
                 </TouchableOpacity>
-            </View>
+            </SafeAreaView>
         );
     }
 
@@ -103,7 +104,7 @@ export default function SubscriptionDetailsScreen() {
     const scheduledDays = sub.days || [];
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
@@ -276,7 +277,7 @@ export default function SubscriptionDetailsScreen() {
             </ScrollView>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
-        </View>
+        </SafeAreaView>
     );
 }
 

@@ -1,19 +1,25 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Platform, Modal, TextInput
+    Modal, TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [selectedMethod, setSelectedMethod] = useState('cash');
     const [upiIds, setUpiIds] = useState([]);
     const [showAddUpi, setShowAddUpi] = useState(false);
     const [newUpi, setNewUpi] = useState('');
     const [modal, setModal] = useState(null);
+
+    const modalSheetPaddingBottom = Math.max(insets.bottom + 10, 28);
+    const footerPaddingBottom = Math.max(insets.bottom, 24);
+    const footerHeight = 97 + footerPaddingBottom;
+    const scrollPaddingBottom = footerHeight + 16;
 
     const handleDeleteUpi = (id) => {
         setModal({
@@ -58,7 +64,10 @@ export default function PaymentMethodsScreen() {
                 </View>
 
                 {/* Content Canvas */}
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                    showsVerticalScrollIndicator={false}
+                >
                     
                     {/* Banner: Info */}
                     <View style={styles.infoBanner}>
@@ -142,7 +151,7 @@ export default function PaymentMethodsScreen() {
                 </ScrollView>
 
                 {/* Footer: Security */}
-                <View style={styles.footerWrap}>
+                <View style={[styles.footerWrap, { height: footerHeight, paddingBottom: footerPaddingBottom }]}>
                     <View style={styles.securityFooter}>
                         <Text style={styles.lockIcon}>🔒</Text>
                         <Text style={styles.securityText}>
@@ -156,7 +165,7 @@ export default function PaymentMethodsScreen() {
             {/* Add UPI Modal */}
             <Modal visible={showAddUpi} transparent animationType="slide">
                 <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowAddUpi(false)} activeOpacity={1} />
-                <View style={styles.modalSheet}>
+                <View style={[styles.modalSheet, { paddingBottom: modalSheetPaddingBottom }]}>
                     <View style={styles.modalHandle} />
                     <Text style={styles.modalTitle}>Add UPI ID</Text>
                     <TextInput
@@ -215,7 +224,6 @@ const styles = StyleSheet.create({
 
     scrollContent: {
         padding: 24,
-        paddingBottom: 120, // Leave room for footer
         gap: 32,
     },
 
@@ -298,9 +306,7 @@ const styles = StyleSheet.create({
     footerWrap: {
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        height: 121,
         justifyContent: 'center', alignItems: 'center',
-        paddingBottom: 24,
     },
     securityFooter: {
         flexDirection: 'row',
@@ -318,7 +324,7 @@ const styles = StyleSheet.create({
     modalSheet: {
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+        padding: 24,
     },
     modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },

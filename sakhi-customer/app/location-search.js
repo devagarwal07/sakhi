@@ -4,6 +4,7 @@ import {
     ActivityIndicator, Pressable, Keyboard, Platform,
     ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
@@ -14,6 +15,7 @@ export default function LocationSearchScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { setDropoff, setPickup, ride } = useRide();
+    const insets = useSafeAreaInsets();
     const [pickupQuery, setPickupQuery] = useState(ride?.pickup?.address || '');
     const [dropoffQuery, setDropoffQuery] = useState('');
     const [activeInput, setActiveInput] = useState('dropoff');
@@ -25,6 +27,13 @@ export default function LocationSearchScreen() {
 
     const returnRoute = params?.returnRoute || '/ride-estimate';
     const isSearching = (activeInput === 'pickup' ? pickupQuery : dropoffQuery).trim().length >= 3;
+
+    const headerPaddingTop = Platform.OS === 'ios'
+        ? insets.top
+        : Math.max(insets.top, 24);
+    const headerHeight = 64 + headerPaddingTop;
+    const footerPaddingBottom = Math.max(insets.bottom, 24);
+    const scrollPaddingBottom = 24 + 56 + footerPaddingBottom + 24;
 
     // Load real recent destinations from ride history
     useEffect(() => {
@@ -156,7 +165,7 @@ export default function LocationSearchScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: headerPaddingTop, height: headerHeight }]}>
                 <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </Pressable>
@@ -164,7 +173,7 @@ export default function LocationSearchScreen() {
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Search Card */}
@@ -333,7 +342,7 @@ export default function LocationSearchScreen() {
             </ScrollView>
 
             {/* Bottom CTA */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={styles.ctaButton}
                     onPress={handleConfirm}
@@ -395,7 +404,7 @@ const styles = StyleSheet.create({
     
 
     scrollContent: {
-        paddingBottom: 140,
+        paddingBottom: 0,
     },
 
     // Search card

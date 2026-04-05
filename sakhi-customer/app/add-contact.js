@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, ActivityIndicator, Pressable,
@@ -49,7 +50,7 @@ export default function AddContactScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.backArrow}>←</Text>
@@ -130,7 +131,7 @@ export default function AddContactScreen() {
                 </TouchableOpacity>
             </ScrollView>
             {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
-        </View>
+        </SafeAreaView>
     );
 }
 

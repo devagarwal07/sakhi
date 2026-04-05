@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -8,9 +8,11 @@ import { Svg, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
 import { getAddresses, saveAddress, deleteAddress } from '../src/api/endpoints';
+import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 export default function SavedPlacesScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -25,6 +27,9 @@ export default function SavedPlacesScreen() {
     const [inputAddress, setInputAddress] = useState('');
     const [inputName, setInputName] = useState('');
     const [alertModal, setAlertModal] = useState(null);
+
+    const modalSheetPaddingBottom = Math.max(insets.bottom + 10, 28);
+    const modalKeyboardOffset = Math.max(insets.bottom + 12, 24);
 
     // ── Load addresses from backend ──────────────────────────────────────────
     useEffect(() => {
@@ -251,9 +256,13 @@ export default function SavedPlacesScreen() {
 
             {/* Add/Edit Place Modal */}
             <Modal visible={showModal} transparent animationType="slide">
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                <KeyboardAvoidingView
+                    behavior={KEYBOARD_BEHAVIOR}
+                    keyboardVerticalOffset={modalKeyboardOffset}
+                    style={{ flex: 1 }}
+                >
                     <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowModal(false)} activeOpacity={1} />
-                    <View style={styles.modalSheet}>
+                    <View style={[styles.modalSheet, { paddingBottom: modalSheetPaddingBottom }]}>
                         <View style={styles.modalHandle} />
                         <Text style={styles.modalTitle}>
                             {modalType === 'home' ? 'Set Home Address' : modalType === 'work' ? 'Set Work Address' : 'Add New Place'}
@@ -404,7 +413,7 @@ const styles = StyleSheet.create({
     modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
     modalSheet: {
         backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+        padding: 24, paddingBottom: 28,
     },
     modalHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 17, fontWeight: '700', color: '#1E1B2E', marginBottom: 16, textAlign: 'center' },

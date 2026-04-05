@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, Animated, Platform, ScrollView, Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
@@ -19,6 +20,16 @@ export default function RideFindingScreen() {
     const { on, off, joinRideRoom } = useSocket();
     const [modal, setModal] = useState(null);
     const [bookingError, setBookingError] = useState(null);
+
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 60 : 56);
+
+    const cancelPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 6 : 8),
+        24
+    );
     const rideIdRef  = useRef(null);    // persists across re-renders without re-triggering effects
     const mountedRef = useRef(true);     // guard against setState after unmount
 
@@ -234,7 +245,7 @@ export default function RideFindingScreen() {
             </View>
 
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                     <TouchableOpacity onPress={handleCancel} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
@@ -311,7 +322,7 @@ export default function RideFindingScreen() {
                 </ScrollView>
                 
                 {/* Cancel Button */}
-                <View style={styles.cancelBtnWrap}>
+                <View style={[styles.cancelBtnWrap, { paddingBottom: cancelPaddingBottom }]}>
                     <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={handleCancel}>
                         <Text style={styles.cancelBtnText}>Cancel Ride</Text>
                     </TouchableOpacity>
@@ -398,8 +409,6 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        height: Platform.OS === 'ios' ? 108 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -579,7 +588,7 @@ const styles = StyleSheet.create({
     },
     cancelBtnWrap: {
         paddingHorizontal: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        paddingBottom: 24,
         paddingTop: 8,
     },
     cancelBtn: {

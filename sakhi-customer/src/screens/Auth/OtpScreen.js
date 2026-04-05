@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     View,
     Text,
@@ -26,6 +27,7 @@ const { width } = Dimensions.get('window');
 
 export default function OtpScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { phone } = useLocalSearchParams();
     const { login, requestOtp } = useAuth();
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
@@ -35,6 +37,11 @@ export default function OtpScreen() {
     const [focusedIndex, setFocusedIndex] = useState(0);
     const inputRefs = useRef([]);
     const shakeAnim = useRef(new Animated.Value(0)).current;
+
+    const headerPaddingTop = Platform.OS === 'ios'
+        ? Math.max(insets.top + 12, 56)
+        : Math.max(insets.top + 12, ANDROID_STATUS_BAR_HEIGHT + 12);
+    const footerPaddingBottom = Math.max(40, insets.bottom + 16);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -134,7 +141,7 @@ export default function OtpScreen() {
             <View style={styles.glowBottomLeft} />
 
             {/* Header — glassmorphic */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                 <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.backButton}>
                     <Text style={styles.backArrow}>←</Text>
                 </Pressable>
@@ -219,7 +226,7 @@ export default function OtpScreen() {
             </View>
 
             {/* Footer — sticky CTA */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={[styles.ctaButton, loading && { opacity: 0.7 }]}
                     onPress={handleVerify}
@@ -275,7 +282,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'ios' ? 56 : ANDROID_STATUS_BAR_HEIGHT + 12,
         paddingBottom: 12,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
     },
@@ -428,7 +434,6 @@ const styles = StyleSheet.create({
     // Footer — sticky CTA
     footer: {
         paddingHorizontal: 32,
-        paddingBottom: 40,
         paddingTop: 32,
         gap: 24,
         alignItems: 'center',

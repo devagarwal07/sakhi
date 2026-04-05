@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Dimensions, Platform, ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
@@ -57,6 +58,7 @@ const { width } = Dimensions.get('window');
 export default function RideEstimateScreen() {
     const router = useRouter();
     const { ride, setFare, setPaymentMethod } = useRide();
+    const insets = useSafeAreaInsets();
     const [breakdownExpanded, setBreakdownExpanded] = useState(true);
     const [selectedPayment, setSelectedPayment] = useState('cash');
     const [modal, setModal] = useState(null);
@@ -68,6 +70,18 @@ export default function RideEstimateScreen() {
 
     const pickup  = ride?.pickup;
     const dropoff = ride?.dropoff;
+
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 8 : 12);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 80 : 56);
+    const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? -8 : 8);
+
+    const footerPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 6 : 8),
+        24
+    );
+    const footerHeightEstimate = 24 + footerPaddingBottom + 64;
+    const scrollBottomPadding = footerHeightEstimate + 12;
 
     useEffect(() => {
         let active = true;
@@ -137,7 +151,7 @@ export default function RideEstimateScreen() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                     <Text style={styles.navIconText}>←</Text>
                 </TouchableOpacity>
@@ -158,7 +172,10 @@ export default function RideEstimateScreen() {
             </View>
 
             <ScrollView 
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: scrollTopPadding, paddingBottom: scrollBottomPadding },
+                ]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Address Pill Card (placed in scrollview so it flows) */}
@@ -333,7 +350,7 @@ export default function RideEstimateScreen() {
             </ScrollView>
 
             {/* Footer Action Button Wrapper (Sticky) */}
-            <View style={styles.footerSticky}>
+            <View style={[styles.footerSticky, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity 
                     style={[styles.bookButton, (!pickup || !dropoff) && { opacity: 0.5 }]}
                     onPress={() => {
@@ -381,8 +398,6 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        paddingTop: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 12,
-        height: Platform.OS === 'ios' ? 124 : ANDROID_STATUS_BAR_HEIGHT + 56,
         paddingHorizontal: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -419,8 +434,7 @@ const styles = StyleSheet.create({
 
     // Main content scroll
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 116 : ANDROID_STATUS_BAR_HEIGHT + 64, // Under top nav
-        paddingBottom: 140, // for sticky footer
+        // Under top nav / above sticky footer
     },
 
     // Address Pill
@@ -742,7 +756,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        paddingBottom: 24,
         backgroundColor: 'rgba(245, 240, 255, 0.95)',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -10 },

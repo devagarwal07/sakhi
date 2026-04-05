@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, ScrollView, Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
@@ -18,6 +19,16 @@ export default function SubscriptionPlansScreen() {
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
     const [modal, setModal] = useState(null);
+
+    const insets = useSafeAreaInsets();
+
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 72 : 56);
+    const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 14 : 8);
+
+    const footerPaddingBottom = Math.max(insets.bottom, 24) + (Platform.OS === 'ios' ? 10 : 0);
+    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 24;
 
     // ── Pricing calculation ─────────────────────────────────────────────────
     // Base fare for the expected daily route (pickup → dropoff)
@@ -63,7 +74,7 @@ export default function SubscriptionPlansScreen() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
@@ -77,7 +88,7 @@ export default function SubscriptionPlansScreen() {
             <SakhiModal config={modal} onClose={() => setModal(null)} />
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Route Pill */}
@@ -147,11 +158,11 @@ export default function SubscriptionPlansScreen() {
                 </View>
 
                 {/* Bottom Padding for Footer */}
-                <View style={{ height: 140 }} />
+                <View style={{ height: footerSpacerHeight }} />
             </ScrollView>
 
             {/* Footer Action Button */}
-            <View style={styles.footerOverlay}>
+            <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity style={styles.submitBtn} onPress={handleProceed} activeOpacity={0.8}>
                     <Text style={styles.submitText}>Proceed to Payment</Text>
                 </TouchableOpacity>
@@ -194,8 +205,6 @@ const styles = StyleSheet.create({
     // Top Navigation
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 116 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -207,7 +216,6 @@ const styles = StyleSheet.create({
     title: { fontSize: 18, fontWeight: '600', color: '#1E1B2E', letterSpacing: -0.45 },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 130 : ANDROID_STATUS_BAR_HEIGHT + 64,
         paddingHorizontal: 24,
     },
 
@@ -302,8 +310,8 @@ const styles = StyleSheet.create({
     // Footer overlay
     footerOverlay: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: 120, padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 24,
-        paddingTop: 48,
+        paddingHorizontal: 24,
+        paddingTop: 16,
         backgroundColor: 'rgba(245, 240, 255, 0.95)',
         justifyContent: 'flex-end',
     },

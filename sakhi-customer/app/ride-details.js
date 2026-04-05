@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
@@ -11,9 +11,13 @@ import { getRideById } from '../src/api/endpoints';
 export default function RideDetailsScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [rideData, setRideData] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const footerPaddingBottom = Math.max(insets.bottom, 24);
+    const scrollPaddingBottom = 24 + 60 + footerPaddingBottom + 24;
 
     useEffect(() => {
         const rideId = params?.rideId || params?.id;
@@ -55,7 +59,7 @@ export default function RideDetailsScreen() {
     } : null;
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <View style={styles.container}>
                 
                 {/* Header App Bar */}
@@ -103,7 +107,10 @@ export default function RideDetailsScreen() {
                 )}
                 {/* Main Content Area - only show if ride data loaded */}
                 {!loading && ride && (
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                    showsVerticalScrollIndicator={false}
+                >
                     
                     {/* Simulated Map Background Area */}
                     <View style={styles.mapSection}>
@@ -223,7 +230,7 @@ export default function RideDetailsScreen() {
                 )}
 
                 {/* Fixed Bottom Action */}
-                <View style={styles.bottomFixedWrap}>
+                <View style={[styles.bottomFixedWrap, { paddingBottom: footerPaddingBottom }]}>
                     <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={() => router.push('/location-search')}>
                         <Text style={styles.actionBtnText}>Book Same Route</Text>
                     </TouchableOpacity>
@@ -287,7 +294,7 @@ const styles = StyleSheet.create({
     
 
     scrollContent: {
-        paddingBottom: 140, // Avoid bottom button overlap
+        paddingBottom: 0, // computed at runtime to avoid bottom button overlap
     },
 
     /* Map Area Placeholder */
@@ -404,7 +411,9 @@ const styles = StyleSheet.create({
     /* Fixed Bottom Action */
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: 108, padding: 24,
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 24,
         justifyContent: 'center', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.9)',
     },

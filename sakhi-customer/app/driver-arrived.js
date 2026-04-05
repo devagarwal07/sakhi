@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, Image, Platform, ScrollView, Linking, ActivityIndicator
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
@@ -23,6 +24,18 @@ export default function DriverArrivedScreen() {
     const [modal, setModal] = useState(null);
     const [calling, setCalling] = useState(false);
     const mountedRef = useRef(true);
+
+    const insets = useSafeAreaInsets();
+
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 60 : 56);
+
+    const tabBarPaddingBottom = Platform.OS === 'ios'
+        ? Math.max(insets.bottom, 24)
+        : insets.bottom;
+    const tabBarHeight = (Platform.OS === 'ios' ? 76 : 87) + tabBarPaddingBottom;
+    const bottomSpacerHeight = tabBarHeight + 20;
 
     // Use real pickup coords from RideContext; fall back to Mumbai center
     const pickupLat = ride?.pickup?.latitude || 19.0760;
@@ -114,7 +127,7 @@ export default function DriverArrivedScreen() {
             </View>
 
             {/* Top Navigation AppBar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                     <Text style={styles.navIconArrow}>←</Text>
                 </TouchableOpacity>
@@ -235,12 +248,12 @@ export default function DriverArrivedScreen() {
                     </View>
 
                     {/* Padding for tab bar */}
-                    <View style={{ height: 120 }} />
+                    <View style={{ height: bottomSpacerHeight }} />
                 </ScrollView>
             </View>
 
             {/* Dummy Tab Bar Overlay */}
-            <View style={styles.dummyTabBar}>
+            <View style={[styles.dummyTabBar, { height: tabBarHeight, paddingBottom: tabBarPaddingBottom }]}>
                 <View style={styles.tabItemActive}>
                     <Text style={styles.tabIconActive}>🏠</Text>
                     <Text style={styles.tabLabelActive}>HOME</Text>
@@ -279,8 +292,6 @@ const styles = StyleSheet.create({
     // Top Nav
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -402,8 +413,7 @@ const styles = StyleSheet.create({
 
     // Dummy Tab Bar
     dummyTabBar: {
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: Platform.OS === 'ios' ? 100 : 87,
-        paddingBottom: Platform.OS === 'ios' ? 24 : 0,
+        position: 'absolute', bottom: 0, left: 0, right: 0,
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
         borderTopLeftRadius: 32, borderTopRightRadius: 32,

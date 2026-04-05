@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -12,6 +12,7 @@ const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Friend', 'Sp
 
 export default function EmergencyContactsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const [contacts, setContacts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,6 +25,10 @@ export default function EmergencyContactsScreen() {
     const [alertModal, setAlertModal] = useState(null);
 
     const AVATAR_COLORS = ['#BEA3D8', '#AB8FFE', '#68C4AF', '#F9A8D4', '#FCD34D'];
+
+    const addSheetPaddingBottom = Math.max(insets.bottom, 24) + 32;
+    const doneFooterPaddingBottom = Math.max(insets.bottom, 24);
+    const scrollPaddingBottom = 40 + 60 + doneFooterPaddingBottom + 16;
 
     // ── Load contacts from backend ─────────────────────────────────────────
     useEffect(() => {
@@ -129,7 +134,7 @@ export default function EmergencyContactsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <View style={styles.container}>
 
                 {/* Header App Bar */}
@@ -149,7 +154,10 @@ export default function EmergencyContactsScreen() {
                         <ActivityIndicator size="large" color="#BEA3D8" />
                     </View>
                 ) : (
-                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                        showsVerticalScrollIndicator={false}
+                    >
 
                         {/* Top subtext */}
                         <Text style={styles.pageSubText}>Contacts notified during SOS alerts</Text>
@@ -230,7 +238,7 @@ export default function EmergencyContactsScreen() {
                 )}
 
             {/* Fixed Bottom Action */}
-            <View style={styles.bottomFixedWrap}>
+            <View style={[styles.bottomFixedWrap, { paddingBottom: doneFooterPaddingBottom }]}>
                 <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.saveBtnText}>Done</Text>
                 </TouchableOpacity>
@@ -249,7 +257,7 @@ export default function EmergencyContactsScreen() {
                         activeOpacity={1}
                         onPress={() => setAddModalVisible(false)}
                     />
-                    <View style={styles.bottomSheet}>
+                    <View style={[styles.bottomSheet, { paddingBottom: addSheetPaddingBottom }]}>
                         <View style={styles.dragHandle} />
                         <View style={styles.sheetHeader}>
                             <Text style={styles.sheetTitle}>Add New Contact</Text>
@@ -355,7 +363,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 24,
         paddingTop: 16,
-        paddingBottom: 140,
+        paddingBottom: 0,
         gap: 24,
     },
     pageSubText: {
@@ -441,7 +449,10 @@ const styles = StyleSheet.create({
     slotText: { fontSize: 12, color: '#6B7280' },
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: 24, paddingTop: 40, alignItems: 'center', backgroundColor: '#F5F0FF',
+        paddingHorizontal: 24,
+        paddingTop: 40,
+        alignItems: 'center',
+        backgroundColor: '#F5F0FF',
         shadowColor: '#F5F0FF', shadowOffset: { width: 0, height: -20 }, shadowOpacity: 1, shadowRadius: 20, elevation: 10,
     },
     saveBtn: {
@@ -464,7 +475,6 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         padding: 32,
-        paddingBottom: 56,
         alignItems: 'center',
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: -16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 10,
     },

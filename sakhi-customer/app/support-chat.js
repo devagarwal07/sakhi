@@ -4,10 +4,11 @@ import {
     FlatList, KeyboardAvoidingView, Platform, Animated,
     ActivityIndicator, Dimensions, StatusBar, Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { sendSupportMessage, getSupportHistory, getSupportSessions } from '../src/api/endpoints';
-import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import { ANDROID_STATUS_BAR_HEIGHT, KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -147,6 +148,12 @@ export default function SupportChatScreen() {
     const { user } = useAuth();
     const listRef = useRef(null);
 
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const headerPaddingTop = topInset + 12;
+    const keyboardVerticalOffset = headerPaddingTop + 60;
+    const inputBarPaddingBottom = Math.max(insets.bottom, 0) + 10;
+
     const [messages, setMessages]       = useState(INTRO_MESSAGES);
     const [input, setInput]             = useState('');
     const [sending, setSending]         = useState(false);
@@ -234,7 +241,7 @@ export default function SupportChatScreen() {
             <StatusBar barStyle="light-content" backgroundColor="#6B21A8" />
 
             {/* ── Header ── */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                 <TouchableOpacity
                     style={styles.backBtn}
                     onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/')}
@@ -263,8 +270,8 @@ export default function SupportChatScreen() {
 
             <KeyboardAvoidingView
                 style={styles.flex}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                behavior={KEYBOARD_BEHAVIOR}
+                keyboardVerticalOffset={keyboardVerticalOffset}
             >
                 {/* ── Message List ── */}
                 <FlatList
@@ -301,7 +308,7 @@ export default function SupportChatScreen() {
                 )}
 
                 {/* ── Input Bar ── */}
-                <View style={styles.inputBar}>
+                <View style={[styles.inputBar, { paddingBottom: inputBarPaddingBottom }]}>
                     <View style={styles.inputWrapper}>
                         <TextInput
                             ref={inputRef}
@@ -329,9 +336,6 @@ export default function SupportChatScreen() {
                         }
                     </TouchableOpacity>
                 </View>
-
-                {/* Bottom safe area padding */}
-                <View style={{ height: Platform.OS === 'android' ? 8 : 0 }} />
             </KeyboardAvoidingView>
         </View>
     );
@@ -349,7 +353,7 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: '#F8F5FF',
-        paddingTop: Platform.OS === 'android' ? ANDROID_STATUS_BAR_HEIGHT : 0,
+        paddingTop: 0,
     },
     flex: { flex: 1 },
 

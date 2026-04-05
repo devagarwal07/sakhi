@@ -7,12 +7,14 @@ import {
     Animated,
     Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const progressAnim = useRef(new Animated.Value(0)).current;
     const logoScale = useRef(new Animated.Value(0.7)).current;
     const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -64,8 +66,16 @@ export default function SplashScreen() {
         outputRange: ['0%', '100%'],
     });
 
+    const containerPaddingTop = Math.max(insets.top + 56, 72);
+    const containerPaddingBottom = Math.max(insets.bottom + 36, 72);
+
     return (
-        <View style={styles.container}>
+        <View
+            style={[
+                styles.container,
+                { paddingTop: containerPaddingTop, paddingBottom: containerPaddingBottom },
+            ]}
+        >
             {/* Gradient simulation — bottom half is slightly darker */}
             <View style={styles.gradientBottom} />
 
@@ -125,7 +135,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 96,
         paddingHorizontal: 32,
         overflow: 'hidden',
     },

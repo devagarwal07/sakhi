@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, ActivityIndicator, Pressable,
@@ -123,7 +124,7 @@ export default function ChangePhoneScreen() {
     // ── STEP: SUCCESS ─────────────────────────────────────────────────────────
     if (step === STEPS.SUCCESS) {
         return (
-            <View style={styles.successContainer}>
+            <SafeAreaView style={styles.successContainer}>
                 <Animated.View style={[styles.successCircle, { transform: [{ scale: checkScale }] }]}>
                     <Text style={{ fontSize: 48 }}>✅</Text>
                 </Animated.View>
@@ -134,12 +135,12 @@ export default function ChangePhoneScreen() {
                 <TouchableOpacity style={styles.doneBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.doneBtnText}>Done</Text>
                 </TouchableOpacity>
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
                     <Text style={styles.backArrow}>←</Text>
@@ -250,7 +251,7 @@ export default function ChangePhoneScreen() {
             </ScrollView>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
-        </View>
+        </SafeAreaView>
     );
 }
 

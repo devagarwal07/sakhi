@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ActivityIndicator, Pressable, Platform, Animated,
+    ActivityIndicator, Pressable, Platform, Animated, useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { uploadFaceSelfie } from '../../src/api/endpoints';
@@ -20,6 +21,9 @@ export default function FaceVerificationScreen() {
     const cameraRef = useRef(null);
     const scanLineAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
+
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
     // Animate scanning line
     useEffect(() => {
@@ -53,9 +57,43 @@ export default function FaceVerificationScreen() {
         return () => clearInterval(interval);
     }, []);
 
+    const topNavPaddingTop = Platform.OS === 'ios'
+        ? insets.top + 12
+        : Math.max(insets.top, 24);
+    const topNavHeightEstimate = topNavPaddingTop + 32 + 16;
+
+    const bottomControlsPaddingBottom = Math.max(
+        insets.bottom + (Platform.OS === 'ios' ? 14 : 12),
+        24
+    );
+    const bottomControlsHeightEstimate = 24 + bottomControlsPaddingBottom + 64 + 165;
+
+    const scanAreaTop = topNavHeightEstimate + 16;
+    const scanAreaBottom = Math.max(bottomControlsHeightEstimate - 40, 0);
+    const scanAreaHeight = Math.max(windowHeight - scanAreaTop - scanAreaBottom, 0);
+
+    const frameAspect = 420 / 300;
+    const instructionBlockHeightEstimate = 108;
+    const maxFrameHeight = Math.max(scanAreaHeight - instructionBlockHeightEstimate, 0);
+    const maxFrameWidth = Math.min(windowWidth - 48, 320);
+
+    let frameWidth = maxFrameWidth;
+    let frameHeight = frameWidth * frameAspect;
+    if (maxFrameHeight > 0 && frameHeight > maxFrameHeight) {
+        frameHeight = maxFrameHeight;
+        frameWidth = frameHeight / frameAspect;
+    }
+
+    if (frameWidth <= 0 || frameHeight <= 0) {
+        frameWidth = Math.max(Math.min(windowWidth - 48, 240), 160);
+        frameHeight = frameWidth * frameAspect;
+    }
+
+    const ovalBorderRadius = frameWidth * 0.6;
+    const scanTravel = frameHeight * (150 / 420);
     const scanTranslateY = scanLineAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [-150, 150],
+        outputRange: [-scanTravel, scanTravel],
     });
 
     if (!permission) return <View style={{ flex: 1, backgroundColor: '#121121' }} />;
@@ -119,7 +157,7 @@ export default function FaceVerificationScreen() {
             <View style={styles.darkOverlay} />
 
             {/* Top Navigation */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { paddingTop: topNavPaddingTop }]}>
                 <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </Pressable>
@@ -128,11 +166,11 @@ export default function FaceVerificationScreen() {
             </View>
 
             {/* Main Scanning Area */}
-            <View style={styles.scanArea}>
+            <View style={[styles.scanArea, { top: scanAreaTop, bottom: scanAreaBottom }]}>
                 {/* Face guide frame */}
-                <View style={styles.faceFrame}>
+                <View style={[styles.faceFrame, { width: frameWidth, height: frameHeight }]}>
                     {/* Oval dashed frame */}
-                    <View style={styles.ovalDashed} />
+                    <View style={[styles.ovalDashed, { width: frameWidth, height: frameHeight, borderRadius: ovalBorderRadius }]} />
 
                     {/* Scanning line */}
                     <Animated.View
@@ -159,7 +197,7 @@ export default function FaceVerificationScreen() {
             </View>
 
             {/* Bottom Controls */}
-            <View style={styles.bottomControls}>
+            <View style={[styles.bottomControls, { paddingBottom: bottomControlsPaddingBottom }]}>
                 {/* Progress Indicator */}
                 <View style={styles.progressSection}>
                     <View style={styles.progressLabelRow}>
@@ -275,7 +313,6 @@ const styles = StyleSheet.create({
         right: 0,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 56 : 24,
         paddingHorizontal: 24,
         paddingBottom: 16,
         zIndex: 10,
@@ -314,8 +351,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         right: 0,
-        top: 120,
-        bottom: 236,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 24,
@@ -323,16 +358,12 @@ const styles = StyleSheet.create({
 
     // Face guide frame — 300×420
     faceFrame: {
-        width: 300,
-        height: 420,
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     // Oval dashed — 4px dashed rgba border, radius 180
     ovalDashed: {
-        width: 300,
-        height: 420,
         borderRadius: 180,
         borderWidth: 4,
         borderStyle: 'dashed',
@@ -431,13 +462,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 32,
         paddingTop: 24,
-        paddingBottom: Platform.OS === 'ios' ? 48 : 24,
         gap: 32,
     },
 
     // Progress section
     progressSection: {
-        width: 320,
+        width: '100%',
         maxWidth: 320,
         gap: 12,
     },

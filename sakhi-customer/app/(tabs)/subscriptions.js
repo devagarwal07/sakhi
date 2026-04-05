@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 import SakhiModal from '../../src/components/SakhiModal';
@@ -13,6 +14,12 @@ export default function SubscriptionsDashboard() {
     const sub = ride?.subscription || {};
     const [isPaused, setIsPaused] = useState(false);
     const [modal, setModal] = useState(null);
+
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + 60;
+    const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
 
     const handlePause = () => {
         if (!sub.id) return; // Prevent action if mock data
@@ -126,7 +133,7 @@ export default function SubscriptionsDashboard() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <View style={styles.headerLeft}>
                     {(router.canGoBack() || showBack) && (
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
@@ -141,7 +148,7 @@ export default function SubscriptionsDashboard() {
             </View>
 
             <ScrollView 
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Active Subscription Card */}
@@ -226,8 +233,6 @@ const styles = StyleSheet.create({
     
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 104 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
     menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 120 : ANDROID_STATUS_BAR_HEIGHT + 64,
+        paddingTop: 0,
         paddingHorizontal: 24,
     },
 

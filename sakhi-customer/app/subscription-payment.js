@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, ScrollView, Platform, ActivityIndicator, Linking
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -21,6 +22,16 @@ export default function SubscriptionPaymentScreen() {
 
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(null);
+
+    const insets = useSafeAreaInsets();
+
+    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
+    const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 0 : 8);
+    const topNavHeight = topInset + (Platform.OS === 'ios' ? 64 : 56);
+    const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
+
+    const footerPaddingBottom = Math.max(insets.bottom, 24) + (Platform.OS === 'ios' ? 10 : 0);
+    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 24;
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
     const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
@@ -87,7 +98,7 @@ export default function SubscriptionPaymentScreen() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <View style={styles.topNav}>
+            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
@@ -99,7 +110,7 @@ export default function SubscriptionPaymentScreen() {
             </View>
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Order Summary Card */}
@@ -157,11 +168,11 @@ export default function SubscriptionPaymentScreen() {
                     </Text>
                 </View>
 
-                <View style={{ height: 120 }} />
+                <View style={{ height: footerSpacerHeight }} />
             </ScrollView>
 
             {/* Footer Action Button */}
-            <View style={styles.footerOverlay}>
+            <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={[styles.submitBtn, loading && { opacity: 0.7 }]}
                     onPress={handlePay}
@@ -185,8 +196,6 @@ const styles = StyleSheet.create({
 
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 108 : ANDROID_STATUS_BAR_HEIGHT + 56,
-        paddingTop: Platform.OS === 'ios' ? 44 : ANDROID_STATUS_BAR_HEIGHT + 8,
         paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
@@ -198,7 +207,6 @@ const styles = StyleSheet.create({
     title: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
 
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 124 : ANDROID_STATUS_BAR_HEIGHT + 64,
         paddingHorizontal: 20,
     },
 
@@ -235,8 +243,7 @@ const styles = StyleSheet.create({
 
     footerOverlay: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: Platform.OS === 'ios' ? 120 : 104,
-        paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 24,
+        paddingHorizontal: 24,
         paddingTop: 16,
         backgroundColor: 'rgba(245, 240, 255, 0.8)',
         justifyContent: 'flex-end',

@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Dimensions, Alert, Animated, PanResponder, Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { StatusBar } from 'react-native';
@@ -35,6 +36,7 @@ const LONGITUDE_DELTA = LATITUDE_DELTA * (width / 884);
 
 export default function HomeScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { setPickup, setDropoff } = useRide();
     const [currentLocation, setCurrentLocation] = useState(null);
@@ -144,6 +146,16 @@ export default function HomeScreen() {
         return 'Good Evening';
     };
 
+    const mapOverlayTop = Platform.OS === 'ios'
+        ? Math.max(insets.top + 12, 52)
+        : Math.max(insets.top + 12, ANDROID_STATUS_BAR_HEIGHT + 12);
+
+    // Keep bottom-sheet content clear of the (custom) tab bar + gesture area.
+    // Matches `app/(tabs)/_layout.js` tab bar height math.
+    const tabBarPaddingBottom = Math.max(insets.bottom, 20);
+    const tabBarHeight = 75 + tabBarPaddingBottom;
+    const sheetPaddingBottom = Math.max(120, tabBarHeight + 24);
+
     return (
         <View style={styles.container}>
             {/* Top Map Section — 58% */}
@@ -177,7 +189,7 @@ export default function HomeScreen() {
                 </MapView>
 
                 {/* Map overlay controls */}
-                <View style={styles.mapOverlay}>
+                <View style={[styles.mapOverlay, { top: mapOverlayTop }]}>
                     {/* Hamburger */}
                     <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/sidebar')}>
                         <Text style={styles.menuIcon}>☰</Text>
@@ -229,7 +241,7 @@ export default function HomeScreen() {
                 </View>
 
                 <ScrollView
-                    contentContainerStyle={styles.sheetContent}
+                    contentContainerStyle={[styles.sheetContent, { paddingBottom: sheetPaddingBottom }]}
                     showsVerticalScrollIndicator={false}
                     bounces={false}
                     scrollEnabled={isExpanded}
@@ -421,7 +433,7 @@ const styles = StyleSheet.create({
     // Map overlay controls
     mapOverlay: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 52 : ANDROID_STATUS_BAR_HEIGHT + 12,
+        top: 0,
         left: 16,
         right: 16,
         flexDirection: 'row',
@@ -542,7 +554,7 @@ const styles = StyleSheet.create({
     // Note: shadows via shadowColor only show on iOS. Android uses elevation (set above).
     sheetContent: {
         paddingTop: 16,
-        paddingBottom: 120,
+        paddingBottom: 0,
     },
 
     // Greeting row
