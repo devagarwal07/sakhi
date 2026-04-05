@@ -44,9 +44,7 @@ export default function DriverLoginScreen({ navigation }) {
 
       {/* ── Top Bar ── */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.canGoBack() && navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        <View style={{ width: 36 }} />
         <Text style={styles.topBarTitle}>Sakhi Driver</Text>
         <View style={{ width: 36 }} />
       </View>

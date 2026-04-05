@@ -81,9 +81,7 @@ export default function LoginScreen() {
 
                 {/* Header — glassmorphic top bar */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.replace('/')} style={styles.backButton}>
-                        <Text style={styles.backArrow}>←</Text>
-                    </TouchableOpacity>
+                    <View style={{ width: 18 }} />
                     <Text style={styles.headerTitle}>Sakhi</Text>
                     <View style={{ width: 18 }} />
                 </View>
