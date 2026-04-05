@@ -27,10 +27,11 @@ const { width } = Dimensions.get('window');
 export default function OtpScreen() {
     const router = useRouter();
     const { phone } = useLocalSearchParams();
-    const { login } = useAuth();
+    const { login, requestOtp } = useAuth();
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
     const [loading, setLoading] = useState(false);
     const [resendTimer, setResendTimer] = useState(30);
+    const [resendLoading, setResendLoading] = useState(false);
     const [focusedIndex, setFocusedIndex] = useState(0);
     const inputRefs = useRef([]);
     const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -104,8 +105,22 @@ export default function OtpScreen() {
             setLoading(false);
         }
     };
+    const handleResend = async () => {
+        if (resendTimer > 0 || resendLoading) return;
+        setResendLoading(true);
+        try {
+            await requestOtp(phone);
+            setResendTimer(30);
+            setOtp(Array(OTP_LENGTH).fill(''));
+            inputRefs.current[0]?.focus();
+        } catch (err) {
+            Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+        } finally {
+            setResendLoading(false);
+        }
+    };
 
-    // Format phone: "+91 98765 43210"
+
     const displayPhone = phone
         ? `${phone.slice(0, 3)} ${phone.slice(3, 8)} ${phone.slice(8)}`
         : '+91 XXXXX XXXXX';
@@ -182,8 +197,11 @@ export default function OtpScreen() {
                             : ''}
                     </Text>
                     {resendTimer === 0 && (
-                        <Pressable onPress={() => setResendTimer(30)}>
-                            <Text style={styles.resendLink}>Resend OTP</Text>
+                        <Pressable onPress={handleResend} disabled={resendLoading}>
+                            {resendLoading
+                                ? <ActivityIndicator size="small" color="#C0A6D6" />
+                                : <Text style={styles.resendLink}>Resend OTP</Text>
+                            }
                         </Pressable>
                     )}
                 </View>

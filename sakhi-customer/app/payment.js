@@ -10,7 +10,7 @@ import SakhiModal from '../src/components/SakhiModal';
 export default function PaymentMethodsScreen() {
     const router = useRouter();
     const [selectedMethod, setSelectedMethod] = useState('cash');
-    const [upiIds, setUpiIds] = useState(['priya@okaxis']);
+    const [upiIds, setUpiIds] = useState([]);
     const [showAddUpi, setShowAddUpi] = useState(false);
     const [newUpi, setNewUpi] = useState('');
     const [modal, setModal] = useState(null);

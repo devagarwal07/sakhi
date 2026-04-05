@@ -1,8 +1,3 @@
-// ─── DEV MODE ──────────────────────────────────────────────────────────────
-// Set to `true` to bypass all auth/network and go straight to the main UI.
-// Flip back to `false` when connecting to the real backend.
-export const DEV_BYPASS_AUTH = true;
-
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 export const STORAGE_KEYS = {

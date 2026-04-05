@@ -136,7 +136,7 @@ export default function HomeScreen() {
         ).start();
     }, []);
 
-    const greetingName = user?.name ? user.name.split(' ')[0] : 'Priya';
+    const greetingName = user?.name ? user.name.split(' ')[0] : 'there';
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good Morning';
@@ -313,7 +313,7 @@ export default function HomeScreen() {
                     <View style={styles.recentSection}>
                         <View style={styles.recentHeader}>
                             <Text style={styles.recentLabel}>RECENT RIDES</Text>
-                            <TouchableOpacity onPress={() => router.push('/(tabs)/ride-history')}>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/activity')}>
                                 <Text style={styles.viewAllText}>View All</Text>
                             </TouchableOpacity>
                         </View>

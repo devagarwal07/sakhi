@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, STORAGE_KEYS, DEV_BYPASS_AUTH } from '../utils/constants';
+import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
@@ -12,11 +12,6 @@ export function SocketProvider({ children }) {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        if (DEV_BYPASS_AUTH) {
-            console.log('[DEV] SocketProvider — skipping connection in bypass mode');
-            return;
-        }
-
         if (!isAuthenticated) {
             if (socketRef.current) {
                 socketRef.current.disconnect();
@@ -67,10 +62,6 @@ export function SocketProvider({ children }) {
     }, [isAuthenticated]);
 
     const emit = (event, data) => {
-        if (DEV_BYPASS_AUTH) {
-            console.log('[DEV Socket] emit:', event, data);
-            return;
-        }
         if (socketRef.current?.connected) {
             socketRef.current.emit(event, data);
         } else {
@@ -80,15 +71,10 @@ export function SocketProvider({ children }) {
 
     // Join a specific ride room so we receive ride_assigned, driver_location, etc.
     const joinRideRoom = (rideId) => new Promise((resolve, reject) => {
-        if (DEV_BYPASS_AUTH) {
-            console.log('[DEV Socket] joinRideRoom:', rideId);
-            return resolve();
-        }
         if (!socketRef.current?.connected) {
             console.warn('[Socket] Cannot join room — not connected');
             return reject(new Error('Socket not connected'));
         }
-        // Optimistic: emit + listen for 'joined' ack or error
         const onJoined = ({ ride_id }) => {
             if (ride_id === rideId) {
                 socketRef.current?.off('joined', onJoined);
@@ -114,11 +100,11 @@ export function SocketProvider({ children }) {
     });
 
     const on = (event, callback) => {
-        if (!DEV_BYPASS_AUTH) socketRef.current?.on(event, callback);
+        socketRef.current?.on(event, callback);
     };
 
     const off = (event, callback) => {
-        if (!DEV_BYPASS_AUTH) socketRef.current?.off(event, callback);
+        socketRef.current?.off(event, callback);
     };
 
     return (

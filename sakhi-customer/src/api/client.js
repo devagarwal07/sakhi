@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { DeviceEventEmitter } from 'react-native';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 
 const apiClient = axios.create({
@@ -83,6 +84,8 @@ apiClient.interceptors.response.use(
                 // Clear tokens — AuthContext listener will handle logout navigation
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+                // Notify the app to log the user out and redirect to login
+                DeviceEventEmitter.emit('SESSION_EXPIRED');
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
