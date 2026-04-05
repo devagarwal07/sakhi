@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { DeviceEventEmitter } from 'react-native';
 
 // ---------------------------------------------------------------------------
 // Token helpers
@@ -100,7 +101,8 @@ client.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         await clearTokens();
-        // AuthContext will detect missing token and logout
+        // Notify AuthContext to clear state and send user to login
+        DeviceEventEmitter.emit('SESSION_EXPIRED');
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

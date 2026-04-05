@@ -6,10 +6,10 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import { io } from 'socket.io-client';
 import { getAccessToken } from '../api/client';
 import { useAuth } from './AuthContext';
-import { DEV_BYPASS_AUTH } from '../utils/constants';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -52,12 +52,6 @@ export function SocketProvider({ children }) {
 
   // ── Connect ────────────────────────────────────────────────────────────
   const connect = useCallback(async () => {
-    // Skip real socket connection in dev bypass mode
-    if (DEV_BYPASS_AUTH) {
-      console.log('[DEV] SocketProvider — skipping connection in bypass mode');
-      return;
-    }
-
     if (socketRef.current?.connected) return;
 
     const token = await getAccessToken();
@@ -73,14 +67,12 @@ export function SocketProvider({ children }) {
     });
 
     socket.on('connect', () => {
-      console.log('[Socket] connected to /rides namespace:', socket.id);
       setConnected(true);
       // Announce presence — joins driver:<id> room server-side automatically
       socket.emit('driver:online', { driver_id: driver?.id });
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('[Socket] disconnected:', reason);
       setConnected(false);
     });
 
@@ -90,7 +82,6 @@ export function SocketProvider({ children }) {
 
     // ── Incoming ride request (matchingEngine emits 'ride_request') ──────────
     socket.on('ride_request', (rideData) => {
-      console.log('[Socket] ride_request received', rideData.ride_id);
       setIncomingRide(rideData);
     });
 
@@ -109,12 +100,16 @@ export function SocketProvider({ children }) {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
     });
 
+    // ── Re-register any listeners that were added before connect ──────────────
+    Object.entries(listenersRef.current).forEach(([event, handlers]) => {
+      handlers.forEach((handler) => socket.on(event, handler));
+    });
+
     socketRef.current = socket;
   }, [driver?.id]);
 
   // ── Disconnect ─────────────────────────────────────────────────────────
   const disconnect = useCallback(() => {
-    if (DEV_BYPASS_AUTH) return; // no-op in dev mode
     if (!socketRef.current) return;
     socketRef.current.disconnect();
     socketRef.current = null;
@@ -124,18 +119,10 @@ export function SocketProvider({ children }) {
 
   // ── Emit helpers ────────────────────────────────────────────────────────
   const emit = useCallback((event, payload) => {
-    if (DEV_BYPASS_AUTH) {
-      console.log('[DEV Socket] emit:', event, payload);
-      return;
-    }
     socketRef.current?.emit(event, payload);
   }, []);
 
   const acceptRide = useCallback((ride_id) => {
-    if (DEV_BYPASS_AUTH) {
-      console.log('[DEV Socket] acceptRide:', ride_id);
-      return Promise.resolve({ success: true });
-    }
     return new Promise((resolve, reject) => {
       if (!socketRef.current) return reject(new Error('Not connected'));
       socketRef.current.emit('ride:accept', { ride_id }, (ack) => {
@@ -146,45 +133,26 @@ export function SocketProvider({ children }) {
   }, []);
 
   const rejectRide = useCallback((ride_id) => {
-    if (DEV_BYPASS_AUTH) {
-      console.log('[DEV Socket] rejectRide:', ride_id);
-      setIncomingRide(null);
-      return;
-    }
     socketRef.current?.emit('ride:reject', { ride_id });
     setIncomingRide(null);
   }, []);
 
-  // ── DEV: simulate an incoming ride request (useful for UI testing) ────────
-  const simulateRide = useCallback(() => {
-    setIncomingRide({
-      ride_id: `DEV_${Date.now()}`,
-      rider_name: 'Priya Sharma',
-      rider_photo: null,
-      rider_rating: 4.8,
-      fare: 124,
-      pickup_address: 'Versova Metro Station, Mumbai',
-      dropoff_address: 'Andheri West, JVLR Corner',
-      distance_to_pickup_km: 2.1,
-      eta_to_pickup_min: 4,
-      pickup_coords:  { latitude: 19.1136, longitude: 72.8270 },
-      dropoff_coords: { latitude: 19.1197, longitude: 72.8468 },
-    });
-  }, []);
-
-  // ── Auto-connect while authenticated, disconnect on logout ────────────
+  // ── Auto-connect while authenticated + online, disconnect on logout ────
   useEffect(() => {
-    if (DEV_BYPASS_AUTH) return; // skip in dev mode
-
     if (isAuthenticated && driver?.is_online) {
       connect();
     } else {
       disconnect();
     }
-    return () => {
-      // Don't disconnect on re-render — only on explicit offline/logout
-    };
   }, [isAuthenticated, driver?.is_online]);
+
+  // ── Auto-logout on expired session ────────────────────────────────────
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('SESSION_EXPIRED', () => {
+      disconnect();
+    });
+    return () => sub.remove();
+  }, [disconnect]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────
   useEffect(() => () => disconnect(), []);
@@ -199,7 +167,6 @@ export function SocketProvider({ children }) {
     off,
     acceptRide,
     rejectRide,
-    simulateRide,
     incomingRide,
     clearIncomingRide: () => setIncomingRide(null),
   };
