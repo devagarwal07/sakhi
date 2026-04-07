@@ -285,6 +285,15 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
     // 11. Driver referral programme — non-blocking check
     setImmediate(() => referralService.checkDriverReferral(driverId));
 
+    // 12. Reset consecutive fail counter — successful ride resets the streak
+    setImmediate(async () => {
+      try {
+        await supabase.from('users').update({ consecutive_fail_count: 0 }).eq('id', riderId);
+      } catch (e) {
+        logger.warn('rideService — failed to reset consecutive_fail_count', { riderId, error: e.message });
+      }
+    });
+
     logger.info('rideService.updateRideStatus — completed', { rideId, driverId, finalFare, commission });
 
     return {
@@ -372,6 +381,34 @@ async function cancelRide(rideId, userId, role, reason, io) {
     cancelled_by: cancelledBy,
     cancellation_reason: reason || null,
   }).eq('id', rideId);
+
+  // ── Consecutive-fail tracking (rider-cancelled only) ──────────────────────
+  if (role === 'rider') {
+    setImmediate(async () => {
+      try {
+        const { data: riderRows } = await supabase
+          .from('users')
+          .select('consecutive_fail_count')
+          .eq('id', ride.rider_id)
+          .limit(1);
+
+        const prev   = riderRows?.[0]?.consecutive_fail_count ?? 0;
+        const newCnt = prev + 1;
+
+        if (newCnt >= 3) {
+          await supabase.from('users').update({
+            consecutive_fail_count: 0,
+            free_ride_eligible: true,
+          }).eq('id', ride.rider_id);
+          logger.info('rideService — free ride granted after 3 consecutive rider cancels', { riderId: ride.rider_id });
+        } else {
+          await supabase.from('users').update({ consecutive_fail_count: newCnt }).eq('id', ride.rider_id);
+        }
+      } catch (trackErr) {
+        logger.warn('rideService — consecutive cancel tracking error', { riderId: ride.rider_id, error: trackErr.message });
+      }
+    });
+  }
 
   // 7. Emit status update
   emitter.emitToRide(io, rideId, 'ride:status_update', {

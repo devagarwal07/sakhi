@@ -732,8 +732,34 @@ class MatchingEngine extends EventEmitter {
       data: { type: 'NO_DRIVERS_AVAILABLE', ride_id: rideId },
     }).catch(() => {});
 
+    // ── Consecutive-fail tracking ───────────────────────────────────────────────
+    try {
+      const { data: riderRows } = await supabase
+        .from('users')
+        .select('consecutive_fail_count')
+        .eq('id', riderId)
+        .limit(1);
+
+      const prev   = riderRows?.[0]?.consecutive_fail_count ?? 0;
+      const newCnt = prev + 1;
+
+      if (newCnt >= 3) {
+        // Grant free ride and reset counter
+        await supabase.from('users').update({
+          consecutive_fail_count: 0,
+          free_ride_eligible: true,
+        }).eq('id', riderId);
+        logger.info('MatchingEngine — free ride granted after 3 consecutive fails', { riderId });
+      } else {
+        await supabase.from('users').update({ consecutive_fail_count: newCnt }).eq('id', riderId);
+      }
+    } catch (trackErr) {
+      logger.warn('MatchingEngine — consecutive fail tracking error', { riderId, error: trackErr.message });
+    }
+
     logger.info('MatchingEngine — no drivers available', { rideId });
   }
+
 
   // ──────────────────────────────────────────────────────────────────────────────
   // _cleanup

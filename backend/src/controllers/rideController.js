@@ -76,17 +76,36 @@ async function estimateFare(req, res, next) {
       promo_applied = r.promo_applied;
     }
 
+    // ── Free ride eligibility check ───────────────────────────────────────────
+    let free_ride = false;
+    const riderId = req.user?.userId;
+    if (riderId) {
+      const { data: riderRows } = await supabase
+        .from('users')
+        .select('free_ride_eligible')
+        .eq('id', riderId)
+        .limit(1);
+
+      if (riderRows?.[0]?.free_ride_eligible) {
+        free_ride = true;
+        finalFare = 0;
+        promo_discount = estimated_fare; // show the full saving
+      }
+    }
+
     return res.status(200).json({
       estimated_fare: finalFare,
       distance_km,
       duration_min,
       breakdown: { ...breakdown, promo_discount },
       promo_applied,
+      free_ride,
     });
   } catch (err) {
     return handleError(err, res, next);
   }
 }
+
 
 // ──────────────────────────────────────────────────────────────────────────────
 // POST /rides
@@ -130,7 +149,19 @@ async function createRide(req, res, next) {
       finalFare = r.discounted_fare;
     }
 
+    // ── Free ride — consume the flag at booking time ────────────────────────
+    const { data: riderFreeCheck } = await supabase
+      .from('users').select('free_ride_eligible').eq('id', riderId).limit(1);
+    const isFreeRide = riderFreeCheck?.[0]?.free_ride_eligible === true;
+    if (isFreeRide) {
+      finalFare = 0;
+      // Consume the flag atomically before inserting the ride
+      await supabase.from('users').update({ free_ride_eligible: false }).eq('id', riderId);
+      logger.info('rideController.createRide — free ride applied', { riderId });
+    }
+
     const { data: rideRows, error: insertErr } = await supabase.from('rides').insert({
+
       rider_id: riderId, pickup_lat: body.pickup_lat, pickup_lng: body.pickup_lng, pickup_address,
       drop_lat: body.drop_lat, drop_lng: body.drop_lng, drop_address,
       estimated_fare: finalFare, distance_km, duration_min, route_polyline,
