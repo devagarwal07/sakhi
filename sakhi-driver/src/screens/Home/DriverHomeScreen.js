@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import client from '../../api/client';
 import {
   startLocationTracking,
@@ -21,14 +22,15 @@ import {
 import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
+import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 // ── Snap positions (Y from top of screen where sheet starts) ─────────────────
-const SNAP_PEEK      = SCREEN_H * 0.72;   // Most of map visible
-const SNAP_DEFAULT   = SCREEN_H * 0.50;   // 50/50 split
-const SNAP_EXPANDED  = SCREEN_H * 0.18;   // Sheet nearly full screen
-const SNAP_POINTS    = [SNAP_PEEK, SNAP_DEFAULT, SNAP_EXPANDED];
+const SNAP_PEEK = SCREEN_H * 0.72;   // Most of map visible
+const SNAP_DEFAULT = SCREEN_H * 0.50;   // 50/50 split
+const SNAP_EXPANDED = SCREEN_H * 0.18;   // Sheet nearly full screen
+const SNAP_POINTS = [SNAP_PEEK, SNAP_DEFAULT, SNAP_EXPANDED];
 
 function snapToNearest(y) {
   return SNAP_POINTS.reduce((prev, curr) =>
@@ -46,7 +48,7 @@ function StatCard({ value, label }) {
   );
 }
 const sc = StyleSheet.create({
-  card:  { flex: 1, backgroundColor: '#EDE9FE', borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
+  card: { flex: 1, backgroundColor: '#EDE9FE', borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
   value: { fontSize: 22, fontWeight: '800', color: '#5B21B6', letterSpacing: -0.5 },
   label: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase' },
 });
@@ -55,29 +57,29 @@ const sc = StyleSheet.create({
 function SubscriptionCountdown({ expiry }) {
   if (!expiry) return null;
 
-  const now        = new Date();
-  const msLeft     = expiry - now;
-  const totalMs    = 7 * 24 * 60 * 60 * 1000; // 7 days
-  const progress   = Math.max(0, Math.min(1, msLeft / totalMs));
+  const now = new Date();
+  const msLeft = expiry - now;
+  const totalMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const progress = Math.max(0, Math.min(1, msLeft / totalMs));
 
-  const daysLeft   = Math.floor(msLeft / (1000 * 60 * 60 * 24));
-  const hoursLeft  = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minsLeft   = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
+  const hoursLeft = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minsLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
 
   // Urgency scale
   let accent, bgColor, label, icon;
   if (msLeft <= 0) {
-    accent  = '#EF4444'; bgColor = '#FFF2F0'; icon = '🔴';
-    label   = 'Subscription expired';
+    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '🔴';
+    label = 'Subscription expired';
   } else if (daysLeft < 1) {
-    accent  = '#EF4444'; bgColor = '#FFF2F0'; icon = '⚠️';
-    label   = `Expires in ${hoursLeft}h ${minsLeft}m`;
+    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '⚠️';
+    label = `Expires in ${hoursLeft}h ${minsLeft}m`;
   } else if (daysLeft <= 2) {
-    accent  = '#F59E0B'; bgColor = '#FFFBEB'; icon = '⚠️';
-    label   = `${daysLeft}d ${hoursLeft}h remaining`;
+    accent = '#F59E0B'; bgColor = '#FFFBEB'; icon = '⚠️';
+    label = `${daysLeft}d ${hoursLeft}h remaining`;
   } else {
-    accent  = '#10B981'; bgColor = '#F0FDF4'; icon = '📅';
-    label   = `${daysLeft} days remaining`;
+    accent = '#10B981'; bgColor = '#F0FDF4'; icon = '📅';
+    label = `${daysLeft} days remaining`;
   }
 
   const barFill = `${Math.round(progress * 100)}%`;
@@ -111,34 +113,34 @@ const sub = StyleSheet.create({
     borderRadius: 14, padding: 12, gap: 10,
     borderWidth: 1,
   },
-  labelRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  icon:        { fontSize: 16 },
-  textStack:   { flex: 1, gap: 1 },
-  caption:     { fontSize: 8, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.2, textTransform: 'uppercase' },
-  label:       { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  icon: { fontSize: 16 },
+  textStack: { flex: 1, gap: 1 },
+  caption: { fontSize: 8, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.2, textTransform: 'uppercase' },
+  label: { fontSize: 13, fontWeight: '700', lineHeight: 18 },
   expDateWrap: { alignItems: 'flex-end', gap: 1 },
-  expDateLbl:  { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 },
-  expDateVal:  { fontSize: 13, fontWeight: '800', letterSpacing: -0.3 },
-  barTrack:    { height: 5, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 9999, overflow: 'hidden' },
-  barFill:     { height: 5, borderRadius: 9999 },
+  expDateLbl: { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 },
+  expDateVal: { fontSize: 13, fontWeight: '800', letterSpacing: -0.3 },
+  barTrack: { height: 5, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 9999, overflow: 'hidden' },
+  barFill: { height: 5, borderRadius: 9999 },
 });
 
 // ── Online Status Card ── Sakhi-themed card (purple/lavender) ─────────────────
 function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, subscriptionExpiry }) {
-  const glowAnim  = useRef(new Animated.Value(0.5)).current;
+  const glowAnim = useRef(new Animated.Value(0.5)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1,   duration: 1800, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
         Animated.timing(glowAnim, { toValue: 0.4, duration: 1800, useNativeDriver: true }),
       ])
     ).start();
     Animated.parallel([
       Animated.spring(slideAnim, { toValue: 0, damping: 16, stiffness: 160, useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -237,35 +239,35 @@ const oc = StyleSheet.create({
   blobTL: { position: 'absolute', top: -28, left: -28, width: 110, height: 110, borderRadius: 55, backgroundColor: 'rgba(190,163,216,0.13)' },
   blobBR: { position: 'absolute', bottom: -32, right: -20, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,240,255,0.85)' },
   // Top row
-  topRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  liveBadge:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F0FDF4', borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
-  liveDot:       { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#10B981' },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F0FDF4', borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
+  liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#10B981' },
   liveBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669', letterSpacing: 1.5 },
-  offlineBtn:    { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.4)', backgroundColor: '#F5F0FF' },
-  offlineBtnText:{ fontSize: 12, fontWeight: '700', color: '#94A3B8' },
+  offlineBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.4)', backgroundColor: '#F5F0FF' },
+  offlineBtnText: { fontSize: 12, fontWeight: '700', color: '#94A3B8' },
   // Heading row
-  headingRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headingMain: { fontSize: 18, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.5, lineHeight: 25 },
-  headingSub:  { fontSize: 12, fontWeight: '400', color: '#94A3B8', lineHeight: 18, marginTop: 2 },
+  headingSub: { fontSize: 12, fontWeight: '400', color: '#94A3B8', lineHeight: 18, marginTop: 2 },
   sessionPill: { backgroundColor: '#F5F0FF', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)' },
-  sessionVal:  { fontSize: 15, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 20 },
-  sessionLbl:  { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 },
+  sessionVal: { fontSize: 15, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 20 },
+  sessionLbl: { fontSize: 8, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 },
   // Earnings card inner block
-  earningsCard:     { backgroundColor: '#F5F0FF', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
-  earningsCaption:  { fontSize: 9, fontWeight: '700', color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
-  earningsRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 2 },
+  earningsCard: { backgroundColor: '#F5F0FF', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
+  earningsCaption: { fontSize: 9, fontWeight: '700', color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
+  earningsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 2 },
   earningsCurrency: { fontSize: 20, fontWeight: '600', color: '#BEA3D8', marginTop: 5, lineHeight: 34 },
-  earningsAmount:   { fontSize: 44, fontWeight: '900', color: '#BEA3D8', letterSpacing: -2.5, lineHeight: 52 },
+  earningsAmount: { fontSize: 44, fontWeight: '900', color: '#BEA3D8', letterSpacing: -2.5, lineHeight: 52 },
   // Stat chips
-  statsRow:       { flexDirection: 'row', gap: 10 },
-  statChip:       { flex: 1, backgroundColor: '#F5F0FF', borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
+  statsRow: { flexDirection: 'row', gap: 10 },
+  statChip: { flex: 1, backgroundColor: '#F5F0FF', borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
   statChipAccent: { backgroundColor: '#BEA3D8', borderColor: '#BEA3D8' },
-  statVal:        { fontSize: 18, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 24 },
-  statValAccent:  { color: '#FFFFFF' },
-  statLbl:        { fontSize: 8, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.2 },
+  statVal: { fontSize: 18, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5, lineHeight: 24 },
+  statValAccent: { color: '#FFFFFF' },
+  statLbl: { fontSize: 8, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.2 },
   // Info pills
   pillsRow: { flexDirection: 'row', gap: 8 },
-  pill:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#F5F0FF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
+  pill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#F5F0FF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
   pillIcon: { fontSize: 12 },
   pillText: { fontSize: 11, fontWeight: '600', color: '#64748B', letterSpacing: 0.1 },
 });
@@ -273,28 +275,31 @@ const oc = StyleSheet.create({
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
   const { driver, updateDriver } = useAuth();
+  const { pendingSubRequests } = useSocket();
   const insets = useSafeAreaInsets();
 
-  const [isOnline,          setIsOnline]          = useState(driver?.is_online ?? false);
-  const [earnings,          setEarnings]          = useState({ today: 340, rides: 5, rating: 4.9 });
-  const [sidebarOpen,       setSidebarOpen]       = useState(false);
-  const [statusLoading,     setStatusLoading]     = useState(false);
-  const [location,          setLocation]          = useState(null);
-  const [locGranted,        setLocGranted]        = useState(false);
-  const [sessionSecs,       setSessionSecs]       = useState(0);
+  const [isOnline, setIsOnline] = useState(driver?.is_online ?? false);
+  const [earnings, setEarnings] = useState({ today: 340, rides: 5, rating: 4.9 });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPendingSubModal, setShowPendingSubModal] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [locGranted, setLocGranted] = useState(false);
+  const [sessionSecs, setSessionSecs] = useState(0);
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(null); // Date | null
 
-  const mapRef  = useRef(null);
+  const mapRef = useRef(null);
 
   // ── Bottom sheet drag state ───────────────────────────────────────────────
-  const sheetY     = useRef(new Animated.Value(SNAP_DEFAULT)).current;
-  const lastY      = useRef(SNAP_DEFAULT);
+  const sheetY = useRef(new Animated.Value(SNAP_DEFAULT)).current;
+  const lastY = useRef(SNAP_DEFAULT);
   const isDragging = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder:        () => true,
-      onMoveShouldSetPanResponder:         (_, { dy }) => Math.abs(dy) > 5,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, { dy }) => Math.abs(dy) > 8,
+      onMoveShouldSetPanResponderCapture: (_, { dy, dx }) => Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx),
       onPanResponderGrant: () => {
         isDragging.current = true;
         sheetY.stopAnimation(val => { lastY.current = val; });
@@ -377,13 +382,13 @@ export default function DriverHomeScreen({ navigation }) {
       .then((r) => {
         if (r.data) {
           setEarnings({
-            today:  r.data.net_earnings      ?? 0,
-            rides:  r.data.rides_completed   ?? 0,
-            rating: driver?.avg_rating       ?? 4.9,
+            today: r.data.net_earnings ?? 0,
+            rides: r.data.rides_completed ?? 0,
+            rating: driver?.avg_rating ?? 4.9,
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Subscription expiry — driver.subscription_expiry from profile or separate endpoint
     const expiryFromContext = driver?.subscription_expiry;
@@ -411,8 +416,17 @@ export default function DriverHomeScreen({ navigation }) {
     }
   }, [driver]));
 
-  // ── Mark OFFLINE (stays on this screen, removes from ride pool) ──────────
+  // ── Mark OFFLINE — check pending subscription requests first ─────────────
   const handleGoOffline = async () => {
+    // If there are snoozed subscription requests, show reminder screen first
+    if (pendingSubRequests?.length > 0) {
+      setShowPendingSubModal(true);
+      return;
+    }
+    await _doGoOffline();
+  };
+
+  const _doGoOffline = async () => {
     try {
       setStatusLoading(true);
       await client.patch('/drivers/status', { is_online: false });
@@ -425,6 +439,7 @@ export default function DriverHomeScreen({ navigation }) {
       setStatusLoading(false);
     }
   };
+
 
   // ── Mark ONLINE (stays on this screen, rejoins ride pool) ─────────────────
   const handleGoOnline = async () => {
@@ -510,10 +525,10 @@ export default function DriverHomeScreen({ navigation }) {
       </View>
 
       {/* ── DRAGGABLE BOTTOM SHEET ── */}
-      <Animated.View style={[s.sheet, { top: sheetY }]}>
+      <Animated.View style={[s.sheet, { top: sheetY }]} {...panResponder.panHandlers}>
 
-        {/* ── Drag handle (pan area) ── */}
-        <View style={s.handleArea} {...panResponder.panHandlers}>
+        {/* ── Visual drag handle (decorative — gesture now works on whole sheet) ── */}
+        <View style={s.handleArea}>
           <View style={s.handle} />
         </View>
 
@@ -572,7 +587,7 @@ export default function DriverHomeScreen({ navigation }) {
               {/* Stats (offline summary) */}
               <View style={s.statsRow}>
                 <StatCard value={`₹${earnings.today}`} label="Today" />
-                <StatCard value={earnings.rides}        label="Trips" />
+                <StatCard value={earnings.rides} label="Trips" />
                 <StatCard value={`${earnings.rating}★`} label="Rating" />
               </View>
             </>
@@ -580,7 +595,7 @@ export default function DriverHomeScreen({ navigation }) {
 
           {/* Upcoming Subscriptions Preview (Offline Only) */}
           {!isOnline && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={s.upcomingSubCard}
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SubscriptionRides')}
@@ -610,21 +625,32 @@ export default function DriverHomeScreen({ navigation }) {
           activeRoute="DriverHome"
         />
       )}
+
+      {/* ── PENDING SUBSCRIPTION REQUESTS REMINDER (shown before driver goes offline) ── */}
+      {showPendingSubModal && (
+        <PendingSubscriptionRequestsScreen
+          onGoOffline={() => {
+            setShowPendingSubModal(false);
+            _doGoOffline();
+          }}
+          onDismiss={() => setShowPendingSubModal(false)}
+        />
+      )}
     </View>
   );
 }
 
 // ── Custom map style ──────────────────────────────────────────────────────────
 const CUSTOM_MAP_STYLE = [
-  { elementType: 'geometry',           stylers: [{ color: '#ede9f5' }] },
-  { elementType: 'labels.text.fill',   stylers: [{ color: '#7c6fa0' }] },
+  { elementType: 'geometry', stylers: [{ color: '#ede9f5' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#7c6fa0' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f0ff' }] },
-  { featureType: 'road', elementType: 'geometry',         stylers: [{ color: '#ffffff' }] },
-  { featureType: 'road', elementType: 'geometry.stroke',  stylers: [{ color: '#d8d0ea' }] },
-  { featureType: 'water', elementType: 'geometry',        stylers: [{ color: '#c4b5e8' }] },
-  { featureType: 'poi',  elementType: 'geometry',         stylers: [{ color: '#ddd8f0' }] },
-  { featureType: 'poi',  elementType: 'labels',           stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', elementType: 'labels',        stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#d8d0ea' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c4b5e8' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#ddd8f0' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -632,16 +658,16 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#E5E0EF' },
 
   // Map overlays
-  mapLoading:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#EDE9FE' },
+  mapLoading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#EDE9FE' },
   mapLoadingText: { fontSize: 14, color: '#7C6FA0', fontWeight: '500' },
 
   // Driver marker
-  driverMarker:       { alignItems: 'center' },
-  driverMarkerInner:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#5B21B6', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
+  driverMarker: { alignItems: 'center' },
+  driverMarkerInner: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#5B21B6', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
   driverMarkerOnline: { backgroundColor: '#5B21B6', borderColor: '#5B21B6' },
-  markerLabel:        { backgroundColor: '#5B21B6', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
-  markerLabelOnline:  { backgroundColor: '#059669' },
-  markerLabelText:    { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1.5 },
+  markerLabel: { backgroundColor: '#5B21B6', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
+  markerLabelOnline: { backgroundColor: '#059669' },
+  markerLabelText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1.5 },
 
   // Top bar
   topBar: {
@@ -682,23 +708,23 @@ const s = StyleSheet.create({
     backgroundColor: '#D1C4E9',
   },
 
-  sheetContent:  { paddingHorizontal: 24, paddingBottom: 24 },
+  sheetContent: { paddingHorizontal: 24, paddingBottom: 24 },
 
   // Toggle
   toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 20 },
-  toggleBtn:       { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
   toggleBtnOnline: { backgroundColor: '#059669' },
-  toggleDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: '#9CA3AF' },
+  toggleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#9CA3AF' },
   toggleDotOffline: { backgroundColor: '#94A3B8' },
-  toggleDotOnline:  { backgroundColor: '#FFFFFF' },
-  toggleText:       { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
+  toggleDotOnline: { backgroundColor: '#FFFFFF' },
+  toggleText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
   toggleTextActive: { fontSize: 12, fontWeight: '800', color: '#1E1B2E', letterSpacing: 0.5 },
   toggleTextOnline: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
 
   // Status
   statusHeading: { fontSize: 26, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
-  statusSub:     { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginBottom: 24 },
+  statusSub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginBottom: 24 },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10 },
