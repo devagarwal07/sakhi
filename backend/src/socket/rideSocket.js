@@ -123,6 +123,19 @@ function registerRideSocket(io) {
       }
     });
 
+    // ── ride:snooze — driver taps "See Later" on a subscription request ────────
+    // Treat as a reject for the matching engine (dispatch to next driver immediately).
+    // The driver app keeps a local copy in pendingSubRequests for the offline reminder.
+    socket.on('ride:snooze', async ({ ride_id } = {}) => {
+      if (role !== 'driver' || !ride_id) return;
+      try {
+        await matchingEngine.handleDriverReject(ride_id, userId);
+        logger.info('rideSocket — ride:snooze (re-dispatching)', { ride_id, driverId: userId });
+      } catch (err) {
+        logger.error('rideSocket — ride:snooze error', { ride_id, driverId: userId, error: err.message });
+      }
+    });
+
     // ── ride:complete — driver signals trip completion (supplements REST PATCH) ─
     // The driver app already calls patchRideStatus('completed') via REST which
     // does the DB update. This socket event forwards a real-time signal to the

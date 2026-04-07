@@ -50,6 +50,9 @@ export function SocketProvider({ children }) {
   // ── Incoming ride request state ────────────────────────────────────────
   const [incomingRide, setIncomingRide] = useState(null);
 
+  // ── Pending snoozed subscription requests ─────────────────────────────
+  const [pendingSubRequests, setPendingSubRequests] = useState([]);
+
   // ── Connect ────────────────────────────────────────────────────────────
   const connect = useCallback(async () => {
     if (socketRef.current?.connected) return;
@@ -59,7 +62,7 @@ export function SocketProvider({ children }) {
 
     const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-    const socket = io(`${BASE_URL}/rides`, {   // ← /rides namespace (where driver rooms live)
+    const socket = io(`${BASE_URL}/rides`, {
       transports: ['websocket'],
       auth: { token },
       reconnectionAttempts: 5,
@@ -68,11 +71,10 @@ export function SocketProvider({ children }) {
 
     socket.on('connect', () => {
       setConnected(true);
-      // Announce presence — joins driver:<id> room server-side automatically
       socket.emit('driver:online', { driver_id: driver?.id });
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', () => {
       setConnected(false);
     });
 
@@ -80,27 +82,29 @@ export function SocketProvider({ children }) {
       console.warn('[Socket] connection error:', err.message);
     });
 
-    // ── Incoming ride request (matchingEngine emits 'ride_request') ──────────
+    // ── Incoming ride request ─────────────────────────────────────────────
     socket.on('ride_request', (rideData) => {
       setIncomingRide(rideData);
     });
 
-    // ── Ride request expired (driver didn't respond in time) ─────────────────
+    // ── Ride request expired (driver didn't respond in time) ──────────────
     socket.on('ride_request_expired', ({ ride_id }) => {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
     });
 
-    // ── Ride cancelled before driver decision ─────────────────────────────────
+    // ── Ride cancelled before driver decision ─────────────────────────────
     socket.on('ride_cancelled', ({ ride_id }) => {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
+      setPendingSubRequests((prev) => prev.filter((r) => r.ride_id !== ride_id));
     });
 
-    // ── Legacy alias (keep for safety) ──────────────────────────────────────
+    // ── Legacy alias ─────────────────────────────────────────────────────
     socket.on('ride:request_cancelled', ({ ride_id }) => {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
+      setPendingSubRequests((prev) => prev.filter((r) => r.ride_id !== ride_id));
     });
 
-    // ── Re-register any listeners that were added before connect ──────────────
+    // ── Re-register pre-connect listeners ─────────────────────────────────
     Object.entries(listenersRef.current).forEach(([event, handlers]) => {
       handlers.forEach((handler) => socket.on(event, handler));
     });
@@ -137,6 +141,27 @@ export function SocketProvider({ children }) {
     setIncomingRide(null);
   }, []);
 
+  // ── Snooze subscription request ──────────────────────────────────────────
+  // Emits ride:snooze to server (which will re-dispatch to another driver),
+  // and saves the ride into pendingSubRequests so the driver sees it on offline.
+  const snoozeRide = useCallback((ride_id) => {
+    socketRef.current?.emit('ride:snooze', { ride_id });
+    setIncomingRide((prev) => {
+      if (prev?.ride_id === ride_id) {
+        setPendingSubRequests((existing) => {
+          const alreadyExists = existing.some((r) => r.ride_id === ride_id);
+          return alreadyExists ? existing : [...existing, prev];
+        });
+        return null;
+      }
+      return prev;
+    });
+  }, []);
+
+  const clearPendingSubRequests = useCallback(() => {
+    setPendingSubRequests([]);
+  }, []);
+
   // ── Auto-connect while authenticated + online, disconnect on logout ────
   useEffect(() => {
     if (isAuthenticated && driver?.is_online) {
@@ -167,8 +192,11 @@ export function SocketProvider({ children }) {
     off,
     acceptRide,
     rejectRide,
+    snoozeRide,
     incomingRide,
     clearIncomingRide: () => setIncomingRide(null),
+    pendingSubRequests,
+    clearPendingSubRequests,
   };
 
   return (
