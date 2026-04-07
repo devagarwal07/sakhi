@@ -144,7 +144,11 @@ export default function RideEstimateScreen() {
         waiting_charge:   0,
     } : null);
 
-    const displayFare     = fareResult ? `₹${fareResult.estimated_fare ?? fareResult.total ?? '—'}` : '—';
+    const displayFare     = fareResult
+        ? (fareData?.free_ride ? '₹0' : `₹${fareResult.estimated_fare ?? fareResult.total ?? '—'}`)
+        : '—';
+    const isFreeRide      = !!fareData?.free_ride;
+    const originalFare    = fareResult ? `₹${fareResult.estimated_fare ?? fareResult.total}` : null;
     const displayTime     = routeDuration || '—';
     const displayDistance = routeDistance || '—';
 
@@ -226,7 +230,15 @@ export default function RideEstimateScreen() {
                 {/* Main Content Area */}
                 <View style={styles.bottomContent}>
                     
-                    <Text style={styles.sectionHeader}>SELECT RIDE</Text>
+                    {/* Free Ride Banner */}
+                {isFreeRide && (
+                    <View style={styles.freeRideBanner}>
+                        <Text style={styles.freeRideBannerTitle}>🎉 Your next ride is FREE!</Text>
+                        <Text style={styles.freeRideBannerSub}>You had 3 consecutive failed bookings — enjoy a complimentary ride.</Text>
+                    </View>
+                )}
+
+                <Text style={styles.sectionHeader}>SELECT RIDE</Text>
 
                     {/* Ride Selection Card */}
                     <View style={styles.rideCard}>
@@ -250,7 +262,10 @@ export default function RideEstimateScreen() {
                         </View>
                         
                         <View style={styles.ridePricing}>
-                            <Text style={styles.priceText}>{displayFare}</Text>
+                            <Text style={[styles.priceText, isFreeRide && styles.priceTextFree]}>{displayFare}</Text>
+                            {isFreeRide && originalFare && (
+                                <Text style={styles.priceStricken}>{originalFare}</Text>
+                            )}
                             <Text style={styles.timeText}>{displayTime}</Text>
                         </View>
                     </View>
@@ -646,12 +661,27 @@ const styles = StyleSheet.create({
         color: '#BEA3D8',
         letterSpacing: -0.45,
     },
+    priceTextFree: { color: '#059669' },
+    priceStricken: {
+        fontSize: 12, fontWeight: '500', color: '#9CA3AF',
+        textDecorationLine: 'line-through', marginTop: 2,
+    },
     timeText: {
         fontSize: 12,
         fontWeight: '700',
         color: '#16A34A',
         marginTop: 2,
     },
+
+    // Free Ride Banner
+    freeRideBanner: {
+        backgroundColor: '#F0FDF4', borderRadius: 14, padding: 16,
+        borderWidth: 1.5, borderColor: '#BBF7D0', marginBottom: 16,
+        shadowColor: '#059669', shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1, shadowRadius: 16, elevation: 4,
+    },
+    freeRideBannerTitle: { fontSize: 16, fontWeight: '800', color: '#065F46', marginBottom: 4 },
+    freeRideBannerSub:   { fontSize: 12, fontWeight: '400', color: '#047857', lineHeight: 20 },
 
     // Fare Breakdown Header
     breakdownHeaderRow: {
