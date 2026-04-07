@@ -58,6 +58,7 @@ const MOCK_DOCS = [
     iconName: 'badge-account-horizontal-outline',
     iconType: 'MaterialCommunity',
     colorKey: 'success',
+    canReupload: true,
   },
   {
     id: '5',
@@ -219,9 +220,26 @@ export default function MyDocumentsScreen({ navigation }) {
                     <View style={styles.docDetailsBox}>
                       <Text style={styles.docMetaText}>Expires: {doc.expires}</Text>
                       <Text style={styles.docMetaText}>Uploaded: {doc.uploaded}</Text>
-                      
-                      <TouchableOpacity style={styles.reuploadBtn} activeOpacity={0.7}>
+
+                      <TouchableOpacity
+                        style={styles.reuploadBtn}
+                        activeOpacity={0.7}
+                        onPress={() => navigation?.navigate?.('KycReupload', { docType: doc.type })}
+                      >
                         <Text style={styles.reuploadBtnText}>RE-UPLOAD</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Aadhaar (and similar docs without date details) always get view/re-upload */}
+                  {!hasDetails && doc.canReupload && (
+                    <View style={styles.docDetailsBox}>
+                      <TouchableOpacity
+                        style={[styles.reuploadBtn, { marginTop: 4 }]}
+                        activeOpacity={0.7}
+                        onPress={() => navigation?.navigate?.('KycReupload', { docType: doc.type })}
+                      >
+                        <Text style={styles.reuploadBtnText}>VIEW / RE-UPLOAD</Text>
                       </TouchableOpacity>
                     </View>
                   )}
