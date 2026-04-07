@@ -309,7 +309,7 @@ export default function TransactionHistoryScreen({ navigation }) {
     }
   }, [customStart, customEnd]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   // Apply client-side type filter
