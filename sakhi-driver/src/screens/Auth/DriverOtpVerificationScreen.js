@@ -13,8 +13,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
-const OTP_LENGTH    = 6;
-const RESEND_SECS   = 30;
+const OTP_LENGTH = 6;
+const RESEND_SECS = 30;
 
 // Custom keypad layout
 const KEYPAD = [
@@ -28,9 +28,9 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
   const { phone } = route.params ?? {};
   const { login } = useAuth();
 
-  const [otp, setOtp]         = useState([]);   // array of digit strings
+  const [otp, setOtp] = useState([]);   // array of digit strings
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer]     = useState(RESEND_SECS);
+  const [timer, setTimer] = useState(RESEND_SECS);
 
   // Countdown timer
   useEffect(() => {
@@ -128,8 +128,8 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
         {/* OTP Boxes */}
         <View style={styles.otpRow}>
           {Array.from({ length: OTP_LENGTH }).map((_, i) => {
-            const isActive  = i === otp.length;
-            const isFilled  = i < otp.length;
+            const isActive = i === otp.length;
+            const isFilled = i < otp.length;
             return (
               <View
                 key={i}
