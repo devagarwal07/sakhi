@@ -89,14 +89,25 @@ export default function SubscriptionRideScreen() {
             }
         }
 
+        // Guard: start date must be tomorrow or later
+        if (sub.startDate) {
+            const selectedDate = new Date(sub.startDate);
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            if (selectedDate < tomorrow) {
+                return setModal({ icon: '⚠️', title: 'Invalid Start Date', message: 'Subscriptions can only be booked starting from tomorrow.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            }
+        }
+
         router.push('/subscription-plans');
     };
 
     const daysList = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    // Generate next 14 days for Date Picker
+    // Generate next 14 days starting from TOMORROW (subscriptions can't start today)
     const dateOptions = Array.from({ length: 14 }).map((_, i) => {
-        const d = addDays(new Date(), i);
+        const d = addDays(new Date(), i + 1); // i+1 skips today
         return format(d, 'MMM dd, yyyy');
     });
 
@@ -245,6 +256,13 @@ export default function SubscriptionRideScreen() {
                 <TouchableOpacity style={styles.submitBtn} onPress={handleContinue} activeOpacity={0.8}>
                     <Text style={styles.submitText}>Continue to Plan Selection</Text>
                 </TouchableOpacity>
+                {/* 30-min no-driver notice */}
+                <View style={styles.noticeBanner}>
+                    <Text style={styles.noticeIcon}>ℹ️</Text>
+                    <Text style={styles.noticeText}>
+                        We'll notify you 30 minutes before your ride if a driver hasn't been assigned yet.
+                    </Text>
+                </View>
             </View>
 
             {/* Custom Picker Modal (JS only, no native rebuild needed) */}
@@ -559,6 +577,14 @@ const styles = StyleSheet.create({
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
     },
     submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+
+    // 30-min no-driver notice banner
+    noticeBanner: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+        marginTop: 12, paddingHorizontal: 4,
+    },
+    noticeIcon: { fontSize: 14, lineHeight: 20 },
+    noticeText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#7C6FA0', lineHeight: 18 },
 
     // Custom Picker Modal
     pickerOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
