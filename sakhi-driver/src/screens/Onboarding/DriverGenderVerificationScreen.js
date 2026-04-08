@@ -46,7 +46,7 @@ export default function DriverGenderVerificationScreen({ navigation }) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       updateDriver({ onboarding_status: 'gender_verified' });
-      navigation.navigate('DriverKycUpload');
+      navigation.navigate('DigiLockerConsent');
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message ?? 'Verification failed. Try again.');
     } finally {

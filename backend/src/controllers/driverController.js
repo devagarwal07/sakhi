@@ -516,7 +516,7 @@ async function getDriverDocuments(req, res, next) {
     const driverId = req.user.userId;
     const { data, error } = await supabase
       .from('drivers')
-      .select('kyc_status, driving_licence_status, driving_licence_expiry, vehicle_rc_status, vehicle_rc_expiry, insurance_status, insurance_expiry, aadhaar_status, profile_photo_url, kyc_submitted_at')
+      .select('kyc_status, driving_licence_status, driving_licence_expiry, driving_licence_issued_at, driving_licence_verified_at, dl_vehicle_class, vehicle_rc_status, vehicle_rc_expiry, insurance_status, insurance_expiry, aadhaar_status, aadhaar_name, aadhaar_photo_url, digilocker_consent_at, profile_photo_url, kyc_submitted_at')
       .eq('id', driverId)
       .limit(1);
 
@@ -539,12 +539,21 @@ async function getDriverDocuments(req, res, next) {
 
     const docs = [
       {
-        id:       'driving_licence',
-        type:     'driving_licence',
-        title:    'Driving Licence',
-        status:   mapStatus(d.driving_licence_status),
-        colorKey: colorKey(d.driving_licence_status),
-        expires:  d.driving_licence_expiry ? new Date(d.driving_licence_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
+        id:           'driving_licence',
+        type:         'driving_licence',
+        title:        'Driving Licence',
+        status:       mapStatus(d.driving_licence_status),
+        colorKey:     colorKey(d.driving_licence_status),
+        expires:      d.driving_licence_expiry
+          ? new Date(d.driving_licence_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : null,
+        issued_at:    d.driving_licence_issued_at
+          ? new Date(d.driving_licence_issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : null,
+        verified_at:  d.driving_licence_verified_at || null,
+        vehicle_class: d.dl_vehicle_class
+          ? (() => { try { return JSON.parse(d.dl_vehicle_class); } catch { return []; } })()
+          : [],
       },
       {
         id:       'vehicle_rc',
@@ -563,11 +572,15 @@ async function getDriverDocuments(req, res, next) {
         expires:  d.insurance_expiry ? new Date(d.insurance_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
       },
       {
-        id:       'aadhaar',
-        type:     'aadhaar',
-        title:    'Aadhaar Card',
-        status:   mapStatus(d.aadhaar_status ?? d.kyc_status),
-        colorKey: colorKey(d.aadhaar_status ?? d.kyc_status),
+        id:                    'aadhaar',
+        type:                  'aadhaar',
+        title:                 'Aadhaar Card',
+        status:                mapStatus(d.aadhaar_status ?? d.kyc_status),
+        colorKey:              colorKey(d.aadhaar_status ?? d.kyc_status),
+        aadhaar_name:          d.aadhaar_name          || null,
+        aadhaar_photo_url:     d.aadhaar_photo_url     || null,
+        digilocker_verified:   !!d.digilocker_consent_at,
+        digilocker_consent_at: d.digilocker_consent_at || null,
       },
       {
         id:       'profile_photo',

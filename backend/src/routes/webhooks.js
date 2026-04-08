@@ -79,6 +79,126 @@ router.post('/signzy', validateSignzyHMAC, async (req, res) => {
   }
 });
 
+// ── GET /webhooks/signzy/digilocker-callback ──────────────────────────────────
+// DigiLocker redirects back here after the driver grants Aadhaar consent.
+// The URL is passed as `successRedirectUrl` / `failureRedirectUrl` in create-url.
+// Query params: requestId (echoed), status (if failure route used)
+// The driver app's WebView watches for this URL to close and proceed.
+router.get('/signzy/digilocker-callback', async (req, res) => {
+  try {
+    const { requestId, status } = req.query;
+    const success = status !== 'failed';
+    logger.info('webhooks.digilocker-callback — consent completed', { requestId, success });
+
+    if (requestId) {
+      // Mark consent timestamp on the driver record (non-fatal)
+      const supabase = require('../config/supabase');
+      await supabase
+        .from('drivers')
+        .update({ digilocker_consent_at: new Date().toISOString() })
+        .eq('signzy_request_id', requestId)
+        .catch((e) => logger.warn('digilocker-callback — DB update failed', { error: e.message }));
+    }
+
+    const icon    = success ? '✅' : '❌';
+    const heading = success ? 'Aadhaar Linked!' : 'Authorisation Failed';
+    const body    = success
+      ? 'Your DigiLocker Aadhaar has been authorised.<br/>You can close this window to continue.'
+      : 'The DigiLocker authorisation was not completed.<br/>Please return to the app and try again.';
+
+    return res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${heading}</title>
+          <style>
+            body { font-family: -apple-system, sans-serif; display:flex; flex-direction:column;
+              align-items:center; justify-content:center; min-height:100vh; margin:0;
+              background:#F5F0FF; color:#1E1B2E; text-align:center; padding:24px; }
+            .icon { font-size:64px; margin-bottom:24px; }
+            h1 { font-size:24px; font-weight:700; margin:0 0 12px; }
+            p { color:#6B7280; font-size:15px; line-height:1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="icon">${icon}</div>
+          <h1>${heading}</h1>
+          <p>${body}</p>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    logger.error('webhooks.digilocker-callback — error', { error: err.message });
+    return res.status(200).send('<p>Verification complete. Please return to the app.</p>');
+  }
+});
+
+// ── POST /webhooks/signzy/digilocker-match-callback ───────────────────────────
+// Signzy calls this endpoint asynchronously after the driver completes consent.
+// Receives match scores comparing the driver's pre-filled data vs Aadhaar data.
+//
+// Body (from Signzy):
+//   { event, requestId, status, message, timestamp, internalId,
+//     nameMatchScore, dobMatch, faceMatchScore, pincodeMatch }
+//
+// `internalId` is set to the driver's UUID in create-url, enabling fast DB lookup.
+// Falls back to requestId-based lookup if internalId is absent/invalid.
+router.post('/signzy/digilocker-match-callback', async (req, res) => {
+  // Always respond 200 immediately – Signzy does not retry
+  res.status(200).json({ received: true });
+
+  try {
+    const {
+      event,
+      requestId,
+      status,
+      message,
+      internalId,
+      nameMatchScore,
+      dobMatch,
+      faceMatchScore,
+      pincodeMatch,
+    } = req.body ?? {};
+
+    logger.info('webhooks.digilocker-match-callback — received', {
+      event, requestId, status, internalId,
+      nameMatchScore, dobMatch, faceMatchScore, pincodeMatch,
+    });
+
+    if (status !== 'success' && event !== 'consentComplete') {
+      logger.warn('webhooks.digilocker-match-callback — non-success event', { event, status, message });
+      return;
+    }
+
+    const supabase = require('../config/supabase');
+    const updates  = {
+      digilocker_consent_at: new Date().toISOString(),
+    };
+
+    // Persist match scores
+    if (nameMatchScore  !== undefined) updates.digilocker_name_match_score  = nameMatchScore;
+    if (dobMatch        !== undefined) updates.digilocker_dob_match         = dobMatch === true || dobMatch === 'true';
+    if (faceMatchScore  !== undefined) updates.digilocker_face_match_score  = String(faceMatchScore);
+    if (pincodeMatch    !== undefined) updates.digilocker_pincode_match     = pincodeMatch === true || pincodeMatch === 'true';
+
+    // Prefer internalId (= driverId UUID) for lookup — fast and unambiguous
+    const isValidUuid = internalId && /^[0-9a-f-]{36}$/i.test(internalId);
+    if (isValidUuid) {
+      const { error } = await supabase.from('drivers').update(updates).eq('id', internalId);
+      if (error) logger.warn('digilocker-match-callback — update by internalId failed', { error: error.message });
+      else logger.info('digilocker-match-callback — scores persisted', { driverId: internalId });
+    } else if (requestId) {
+      const { error } = await supabase.from('drivers').update(updates).eq('signzy_request_id', requestId);
+      if (error) logger.warn('digilocker-match-callback — update by requestId failed', { error: error.message });
+      else logger.info('digilocker-match-callback — scores persisted by requestId', { requestId });
+    }
+  } catch (err) {
+    logger.error('webhooks.digilocker-match-callback — handler error', { error: err.message });
+  }
+});
+
 // ── POST /webhooks/razorpay ───────────────────────────────────────────────────
 router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
   try {

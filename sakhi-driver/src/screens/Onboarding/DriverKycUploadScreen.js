@@ -89,7 +89,7 @@ export default function DriverKycUploadScreen({ navigation }) {
           {/* Progress Bar Section */}
           <View style={styles.progressSection}>
             <View style={styles.progressTextRow}>
-              <Text style={styles.progressStepLabel}>STEP 3 OF 5</Text>
+              <Text style={styles.progressStepLabel}>STEP 4 OF 5</Text>
               <Text style={styles.progressPctLabel}>{pct}% Complete</Text>
             </View>
             <View style={styles.progressTrack}>

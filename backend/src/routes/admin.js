@@ -169,6 +169,68 @@ router.patch('/drivers/:id/reject', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /admin/drivers/:id/verify-dl
+ * Body: { dl_number?, dob?, issue_date? }  — all optional (fall back to DB values)
+ *
+ * Admin can manually re-trigger DL verification for any driver.
+ * Useful after a driver re-uploads their DL or updates their profile.
+ */
+router.post('/drivers/:id/verify-dl', async (req, res, next) => {
+  try {
+    const kycService = require('../services/kycService');
+    const { id }     = req.params;
+
+    // Fetch stored driver fields
+    const { data: rows, error: fetchErr } = await supabase
+      .from('drivers')
+      .select('dl_number, dl_number_from_digilocker, dob, dl_issue_date, aadhaar_dob, name')
+      .eq('id', id)
+      .limit(1);
+    if (fetchErr) return next(fetchErr);
+    const driver = rows?.[0];
+    if (!driver) return res.status(404).json({ error: { code: 'DRIVER_NOT_FOUND', message: 'Driver not found.', details: {} } });
+
+    const dlNumber  = req.body?.dl_number  || driver.dl_number  || driver.dl_number_from_digilocker;
+    const dob       = req.body?.dob        || driver.dob        || driver.aadhaar_dob;
+    const issueDate = req.body?.issue_date || driver.dl_issue_date;
+
+    if (!dlNumber) return res.status(422).json({ error: { code: 'MISSING_DL_NUMBER', message: 'No DL number on record for this driver.', details: {} } });
+    if (!dob)      return res.status(422).json({ error: { code: 'MISSING_DOB', message: 'No date of birth on record for this driver.', details: {} } });
+
+    const data    = await kycService.verifyDrivingLicence(dlNumber, dob, issueDate);
+    const updates = await kycService.persistDLVerification(id, data);
+
+    const verified = data?.result?.verified === true;
+
+    // Notify driver of the result
+    await fcmService.sendToUser(id, 'driver', {
+      title: verified ? 'Driving Licence Verified ✅' : 'DL Verification Failed',
+      body:  verified
+        ? 'Your Driving Licence has been verified successfully.'
+        : `DL verification failed: ${data?.result?.message ?? 'Please check your details.'}`,
+      data:  { type: 'DL_VERIFICATION_RESULT', verified: String(verified) },
+    }).catch(() => {});  // non-fatal
+
+    logger.info('admin — DL verification triggered', { driverId: id, dlNumber, verified, adminId: req.user.userId });
+    return res.status(200).json({
+      driver_id:  id,
+      dl_number:  dlNumber,
+      verified,
+      message:    data?.result?.message ?? '',
+      moreInfo:   data?.result?.moreInfo ?? {},
+      persisted:  updates,
+    });
+  } catch (err) {
+    if (err.response?.data) {
+      const status = err.response.status || 502;
+      return res.status(status).json({ error: { code: 'SIGNZY_ERROR', message: 'Signzy DL API error', details: err.response.data } });
+    }
+    if (err.code && err.status) return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    return next(err);
+  }
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // USER (RIDER) MANAGEMENT
 // ────────────────────────────────────────────────────────────────────────────
@@ -277,7 +339,7 @@ router.get('/drivers', async (req, res, next) => {
     let query = supabase
       .from('drivers')
       .select(
-        'id, name, phone, email, vehicle_type, vehicle_reg_no, kyc_status, verification_status, is_active, is_online, avg_rating, total_rides, created_at',
+        'id, name, phone, email, vehicle_type, vehicle_reg_no, kyc_status, aadhaar_status, digilocker_consent_at, verification_status, is_active, is_online, avg_rating, total_rides, created_at',
         { count: 'exact' }
       );
 

@@ -13,10 +13,13 @@ const SIGNZY_HOST     = process.env.NODE_ENV === 'production'
 const SIGNZY_STUDIO   = 'https://api.signzy.app/api/v3/studio'; // Studio is always prod
 
 const SIGNZY = {
-  BASE_URL:         SIGNZY_STUDIO,
-  DL_URL:           `${SIGNZY_HOST}/api/v3/dl_/verification`,
-  CKYC_SEARCH_URL:  `${SIGNZY_HOST}/api/v3/ckyc-onprem/search`,
-  CKYC_FETCH_URL:   `${SIGNZY_HOST}/api/v3/ckyc/fetch-analyze`,
+  BASE_URL:              SIGNZY_STUDIO,
+  DL_URL:                `${SIGNZY_HOST}/api/v3/dl_/verification`,
+  CKYC_SEARCH_URL:       `${SIGNZY_HOST}/api/v3/ckyc-onprem/search`,
+  CKYC_FETCH_URL:        `${SIGNZY_HOST}/api/v3/ckyc/fetch-analyze`,
+  EAADHAAR_DIRECT_URL:   `${SIGNZY_HOST}/api/v3/digilocker-v2/geteAadhaar`,
+  DETAILS_DIRECT_URL:    `${SIGNZY_HOST}/api/v3/digilocker-v2/getDetails`,
+  CREATE_URL_DIRECT_URL: `${SIGNZY_HOST}/api/v3/digilocker-v2/create-url-with-matcher`,
   STUDIOS: {
     DIGILOCKER_CREATE_URL:   '69d533b68ed327378f709d1e',
     DIGILOCKER_GET_DETAILS:  '69d533da937ed0dd49584cb5',
@@ -62,8 +65,8 @@ async function urlToBase64(s3Url) {
   }
 }
 
-// ── Step 1: DigiLocker — Create consent URL for driver ───────────────────────
-// Returns a redirect URL that the driver visits to authorise Aadhaar sharing.
+// ── Step 1 (legacy/Studio): DigiLocker — Create consent URL ──────────────────
+// Kept for backwards compatibility — use createDigilockerUrlDirect() for new flows.
 async function createDigilockerUrl(driverPhone, driverName, redirectUrl) {
   const data = await signzyPost(
     SIGNZY.STUDIOS.DIGILOCKER_CREATE_URL,
@@ -74,8 +77,88 @@ async function createDigilockerUrl(driverPhone, driverName, redirectUrl) {
       redirectUrl: redirectUrl || `${process.env.BACKEND_URL}/webhooks/signzy/digilocker-callback`,
     }
   );
-  logger.info('kycService.createDigilockerUrl — created', { phone: driverPhone });
+  logger.info('kycService.createDigilockerUrl (Studio) — created', { phone: driverPhone });
   return data;   // { url, requestId, ... }
+}
+
+// ── Step 1b: DigiLocker — Create consent URL (v2 Direct API with match scores) ─
+// Endpoint: POST /api/v3/digilocker-v2/create-url-with-matcher
+//
+// Returns: { url, requestId }
+//
+// Match scores are POSTed asynchronously to `callbackUrl` by Signzy after consent:
+//   { event, requestId, status, nameMatchScore, dobMatch, faceMatchScore, pincodeMatch }
+//
+// Parameters:
+//   callbackUrl          — MANDATORY: where Signzy POSTs match scores after consent
+//   name                 — driver's name for name-match scoring
+//   dob                  — dd/mm/yyyy for DOB-match scoring
+//   selfieImage          — URL or base64 selfie for face-match scoring
+//   pincode              — 6-digit pincode for pincode-match scoring
+//   successRedirectUrl   — where DigiLocker iframe redirects on success
+//   failureRedirectUrl   — where DigiLocker iframe redirects on failure
+//   successRedirectTime  — redirect delay seconds (default: 10)
+//   failureRedirectTime  — redirect delay seconds (default: 10)
+//   signup               — true to allow new DigiLocker registrations
+//   purpose              — 'kyc'|'verification'|'compliance'|'availing_services'|'educational'
+//   internalId           — arbitrary tracking ID (we use driverId)
+//   getScope             — push scope info to callbackUrl
+//   pinlessAuthentication — PIN-free login on DigiLocker mobile (Wayne domain only)
+async function createDigilockerUrlDirect({
+  name,
+  dob,
+  selfieImage,
+  pincode,
+  callbackUrl,
+  successRedirectUrl,
+  failureRedirectUrl,
+  successRedirectTime,
+  failureRedirectTime,
+  signup            = true,
+  purpose           = 'kyc',
+  getScope          = false,
+  logoVisible,
+  logo,
+  internalId,
+  pinlessAuthentication,
+} = {}) {
+  if (!callbackUrl) throw new Error('callbackUrl is required for createDigilockerUrlDirect');
+
+  const body = {
+    signup,
+    callbackUrl,
+    purpose,
+    ...(name                 && { name }),
+    ...(dob                  && { dob }),
+    ...(selfieImage          && { selfieImage }),
+    ...(pincode              && { pincode }),
+    ...(successRedirectUrl   && { successRedirectUrl }),
+    ...(failureRedirectUrl   && { failureRedirectUrl }),
+    ...(successRedirectTime  && { successRedirectTime }),
+    ...(failureRedirectTime  && { failureRedirectTime }),
+    ...(getScope             && { getScope }),
+    ...(logoVisible          && { logoVisible }),
+    ...(logo                 && { logo }),
+    ...(internalId           && { internalId }),
+    ...(pinlessAuthentication && { pinlessAuthentication }),
+  };
+
+  const response = await axios.post(SIGNZY.CREATE_URL_DIRECT_URL, body, {
+    headers: {
+      Authorization:  process.env.SIGNZY_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    timeout: 20000,
+  });
+
+  logger.info('kycService.createDigilockerUrlDirect — created', {
+    internalId,
+    hasName: !!name, hasDob: !!dob, hasSelfie: !!selfieImage, hasPincode: !!pincode,
+  });
+
+  // Normalise: API returns { result: { url, requestId } } — flatten for convenience
+  const result = response.data?.result ?? response.data;
+  return { url: result.url, requestId: result.requestId, raw: response.data };
 }
 
 // ── Step 2: DigiLocker — Get profile details ──────────────────────────────────
@@ -89,7 +172,7 @@ async function getDigilockerDetails(requestId) {
   return data;
 }
 
-// ── Step 3: DigiLocker — Pull eAadhaar XML ────────────────────────────────────
+// ── Step 3a: DigiLocker — Pull eAadhaar via Studio (legacy/simple) ───────────
 async function getDigilockerEAadhaar(requestId) {
   const data = await signzyPost(
     SIGNZY.STUDIOS.DIGILOCKER_GET_EAADHAAR,
@@ -98,6 +181,87 @@ async function getDigilockerEAadhaar(requestId) {
   );
   logger.info('kycService.getDigilockerEAadhaar — fetched', { requestId });
   return data;
+}
+
+// ── Step 3b: DigiLocker — Pull eAadhaar via v2 Direct API ────────────────────
+// Richer response: DSC (x509Data), split address, JPEG/PDF links, signature data.
+// Options:
+//   extraDigitalCertificateParams — include X.509 DSC + signatureData
+//   getBase64Files                — return base64-encoded file content instead of persist URLs
+//   getEAadhaarPdf                — include Aadhaar PDF (URL or base64)
+//   getEAadhaarJpeg               — include Aadhaar JPEG (URL or base64)
+async function getEAadhaarDirect(requestId, {
+  extraDigitalCertificateParams = true,
+  getBase64Files = false,
+  getEAadhaarPdf = false,
+  getEAadhaarJpeg = false,
+} = {}) {
+  const body = {
+    requestId,
+    extraDigitalCertificateParams,
+    ...(getBase64Files  && { getBase64Files }),
+    ...(getEAadhaarPdf  && { getEAadhaarPdf }),
+    ...(getEAadhaarJpeg && { getEAadhaarJpeg }),
+  };
+
+  const response = await axios.post(SIGNZY.EAADHAAR_DIRECT_URL, body, {
+    headers: {
+      Authorization:  process.env.SIGNZY_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    timeout: 25000,
+  });
+
+  logger.info('kycService.getEAadhaarDirect — fetched', {
+    requestId,
+    validDSC: response.data?.result?.x509Data?.validAadhaarDSC,
+  });
+
+  return response.data;
+  // Shape: { result: { name, uid, dob, gender, address, photo, splitAddress,
+  //   x509Data, signatureData?, aadhaarJpeg?, aadhaarPdf? } }
+}
+
+// ── Step 2b: DigiLocker — Get all linked document details (v2 Direct API) ─────
+// Endpoint: POST /api/v3/digilocker-v2/getDetails
+//
+// Returns:
+//   result.userDetails  — { digilockerid, name, dob, gender, eaadhaar, mobile }
+//   result.files        — Array of issued documents:
+//     { name, type, doctype, description, issuerid, issuer, id, mime, date, size }
+//
+// The `id` field encodes the full document reference:
+//   e.g.  "in.gov.transport-DRVLC-DL1234567890123"
+//         "in.gov.cbdt-PANCR-ABCDE1234F"
+//         "in.gov.uidai-AADHAAR-<masked>"
+//
+// Useful for:
+//   - Pre-flighting which documents the driver has linked (DL, PAN, Aadhaar)
+//   - Populating a document checklist before running CKYC fetch
+//   - Extracting DL number / PAN number programmatically
+async function getDetailsDirect(requestId) {
+  const response = await axios.post(SIGNZY.DETAILS_DIRECT_URL, { requestId }, {
+    headers: {
+      Authorization:  process.env.SIGNZY_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    timeout: 20000,
+  });
+
+  logger.info('kycService.getDetailsDirect — fetched', {
+    requestId,
+    fileCount: response.data?.result?.files?.length ?? 0,
+    hasEadhaar: response.data?.result?.userDetails?.eaadhaar,
+  });
+
+  return response.data;
+  // Shape: {
+  //   result: {
+  //     userDetails: { digilockerid, name, dob, gender, eaadhaar, mobile },
+  //     files: [ { name, type, size, date, mime, doctype, description,
+  //                issuerid, issuer, id } ]
+  //   }
+  // }
 }
 
 // ── Step 4: CKYC Search ───────────────────────────────────────────────────────
@@ -206,21 +370,38 @@ async function ckycFetchAndAnalyze({
 }
 
 // ── Step 6: Driving Licence Verification ─────────────────────────────────────
-// Uses the dedicated DL endpoint (NOT Studio). Body: { number, dob, issueDate }
-// dob and issueDate must be in DD/MM/YYYY format.
-async function verifyDrivingLicence(dlNumber, dobISO, issueDateISO) {
-  // Convert YYYY-MM-DD → DD/MM/YYYY as required by Signzy
-  const toSignzyDate = (iso) => {
-    if (!iso) return undefined;
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+// Endpoint: POST /api/v3/dl_/verification
+// Body:     { number, dob, issueDate? }  — all dates DD/MM/YYYY
+//
+// Accepts dob / issueDate in either format:
+//   YYYY-MM-DD  (ISO, from DB)
+//   DD/MM/YYYY  (Signzy format, from Aadhaar / manual input)
+//
+// Returns: { result: { verified, message, moreInfo: { issueDate, expiryDate, vehicleClass[] } } }
+async function verifyDrivingLicence(dlNumber, dob, issueDate) {
+  // Normalise to DD/MM/YYYY regardless of input format
+  const toSignzyDate = (val) => {
+    if (!val) return undefined;
+    val = String(val).trim();
+    // Already DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
+    // ISO YYYY-MM-DD → DD/MM/YYYY
+    if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+      const [y, m, d] = val.split('T')[0].split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return val; // pass through unknown formats and let Signzy reject
   };
 
+  if (!dlNumber) throw Object.assign(new Error('DL number is required'), { code: 'MISSING_DL_NUMBER', status: 422 });
+  if (!dob)      throw Object.assign(new Error('Date of birth is required for DL verification'), { code: 'MISSING_DOB', status: 422 });
+
   const body = {
-    number: dlNumber,
-    dob:    toSignzyDate(dobISO),
+    number: dlNumber.trim().toUpperCase(),
+    dob:    toSignzyDate(dob),
   };
-  if (issueDateISO) body.issueDate = toSignzyDate(issueDateISO);
+  const issueDateFmt = toSignzyDate(issueDate);
+  if (issueDateFmt) body.issueDate = issueDateFmt;
 
   const response = await axios.post(SIGNZY.DL_URL, body, {
     headers: {
@@ -233,9 +414,48 @@ async function verifyDrivingLicence(dlNumber, dobISO, issueDateISO) {
   logger.info('kycService.verifyDrivingLicence — done', {
     dlNumber,
     verified: response.data?.result?.verified,
+    vehicleClass: response.data?.result?.moreInfo?.vehicleClass,
   });
-  return response.data;   // { result: { verified, message, moreInfo } }
+  return response.data;
+  // Shape: { result: { verified, message, moreInfo: { issueDate, expiryDate, vehicleClass[] } } }
 }
+
+// ── Persist DL verification result to the drivers table ──────────────────────
+// Called by submitKYC and the standalone /drivers/dl/verify route.
+// Non-fatal: errors are logged and re-thrown only when called from standalone route.
+async function persistDLVerification(driverId, dlResult) {
+  const r = dlResult?.result ?? {};
+  const updates = {
+    driving_licence_verified_at: new Date().toISOString(),
+  };
+
+  if (r.verified === true) {
+    updates.driving_licence_status = 'verified';
+    const mi = r.moreInfo ?? {};
+    // expiryDate from Signzy: "Oct 22, 2041" — parse to ISO for DB storage
+    if (mi.expiryDate) {
+      const parsed = new Date(mi.expiryDate);
+      if (!isNaN(parsed)) updates.driving_licence_expiry = parsed.toISOString().split('T')[0];
+    }
+    // issueDate from Signzy: "Oct 25, 2021"
+    if (mi.issueDate) {
+      const parsed = new Date(mi.issueDate);
+      if (!isNaN(parsed)) updates.driving_licence_issued_at = parsed.toISOString().split('T')[0];
+    }
+    // vehicle classes as JSON array
+    if (Array.isArray(mi.vehicleClass) && mi.vehicleClass.length) {
+      updates.dl_vehicle_class = JSON.stringify(mi.vehicleClass);
+    }
+  } else {
+    updates.driving_licence_status = 'rejected';
+  }
+
+  const { error } = await supabase.from('drivers').update(updates).eq('id', driverId);
+  if (error) logger.warn('kycService.persistDLVerification — DB persist failed', { driverId, error: error.message });
+  return updates;
+}
+
+
 
 // ──────────────────────────────────────────────────────────────────────────────
 // submitKYC — Main entry point called after multer-s3 uploads all driver docs.
@@ -273,7 +493,7 @@ async function submitKYC(driverId, files) {
   // Fetch driver profile for KYC fields
   const { data: driverRows } = await supabase
     .from('drivers')
-    .select('name, phone, dob, dl_number')
+    .select('name, phone, dob, dl_number, dl_number_from_digilocker, dl_issue_date, pan')
     .eq('id', driverId)
     .limit(1);
   const driver = driverRows?.[0] ?? {};
@@ -355,16 +575,24 @@ async function submitKYC(driverId, files) {
     }
 
     // DL Verification — only needs DL number + DOB (no base64)
-    if (driver.dl_number && driver.dob) {
+    // Falls back to dl_number_from_digilocker if dl_number is not set.
+    const dlNum = driver.dl_number || driver.dl_number_from_digilocker;
+    if (dlNum && driver.dob) {
       const dlRes = await verifyDrivingLicence(
-        driver.dl_number,
-        driver.dob,          // YYYY-MM-DD from DB — converted to DD/MM/YYYY inside
+        dlNum,
+        driver.dob,          // YYYY-MM-DD from DB — auto-converted inside
         driver.dl_issue_date // optional, YYYY-MM-DD
       ).catch((err) => {
         logger.warn('kycService.submitKYC — DL verification failed', { error: err.message });
         return null;
       });
       signzyMeta.dl_verification = dlRes;
+      // Persist result to DB immediately (non-fatal)
+      if (dlRes) {
+        await persistDLVerification(driverId, dlRes).catch((err) => {
+          logger.warn('kycService.submitKYC — DL persist failed', { error: err.message });
+        });
+      }
     }
 
     // Store a tracking reference
@@ -475,12 +703,16 @@ module.exports = {
   submitKYC,
   resubmitKYC,
   handleSignzyWebhook,
-  // DigiLocker flow (call these from a dedicated controller if you add a DigiLocker route)
-  createDigilockerUrl,
-  getDigilockerDetails,
-  getDigilockerEAadhaar,
+  // DigiLocker flow — step-by-step onboarding
+  createDigilockerUrl,        // Studio-based (legacy, simple)
+  createDigilockerUrlDirect,  // Direct v2 API (match scores: name, DOB, face, pincode)
+  getDigilockerDetails,       // Studio-based (simple profile details)
+  getDetailsDirect,           // Direct v2 API (user profile + full document inventory)
+  getDigilockerEAadhaar,      // Studio-based (simple)
+  getEAadhaarDirect,          // Direct v2 API (richer: DSC, split address, JPEG/PDF)
   // Individual verifications (useful for admin retry)
   ckycSearch,
   ckycFetchAndAnalyze,
   verifyDrivingLicence,
+  persistDLVerification,
 };

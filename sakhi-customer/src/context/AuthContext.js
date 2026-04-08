@@ -7,7 +7,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 // ── DEV BYPASS ─────────────────────────────────────────────────────────────
 // Set to `true` to skip OTP & auth entirely during local development.
 // ⚠️  MUST be `false` before any production build.
-const DEVELOPER_BYPASS = true;
+const DEVELOPER_BYPASS = false;
 
 const MOCK_USER = {
     _id: 'dev-user-001',

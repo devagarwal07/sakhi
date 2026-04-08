@@ -21,6 +21,7 @@ import ChangePhoneNumberOtpVerificationScreen from './src/screens/Auth/ChangePho
 
 // Onboarding screens
 import DriverGenderVerificationScreen  from './src/screens/Onboarding/DriverGenderVerificationScreen';
+import DigiLockerConsentScreen         from './src/screens/Onboarding/DigiLockerConsentScreen';
 import DriverKycUploadScreen           from './src/screens/Onboarding/DriverKycUploadScreen';
 import VehicleDetailsEntryScreen       from './src/screens/Onboarding/VehicleDetailsEntryScreen';
 import DriverVerificationLoadingScreen from './src/screens/Onboarding/DriverVerificationLoadingScreen';
@@ -90,6 +91,7 @@ function OnboardingStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="GenderVerification"   component={DriverGenderVerificationScreen}  />
+      <Stack.Screen name="DigiLockerConsent"    component={DigiLockerConsentScreen}         />
       <Stack.Screen name="DriverKycUpload"      component={DriverKycUploadScreen}           />
       <Stack.Screen name="VehicleDetailsEntry"  component={VehicleDetailsEntryScreen}       />
       <Stack.Screen name="VerificationLoading"  component={DriverVerificationLoadingScreen} />
