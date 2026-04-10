@@ -71,6 +71,7 @@ import HelpSupportScreen               from './src/screens/Profile/HelpSupportSc
 import AboutSakhiScreen               from './src/screens/Profile/AboutSakhiScreen';
 import EditProfileScreen              from './src/screens/Profile/EditProfileScreen';
 import TermsPrivacyScreen             from './src/screens/Profile/TermsPrivacyScreen';
+import DriverReferralsScreen          from './src/screens/Profile/DriverReferralsScreen';
 
 // ── Navigators ────────────────────────────────────────────────────────────────
 const Stack = createNativeStackNavigator();
@@ -143,6 +144,8 @@ function MainStack() {
         <Stack.Screen name="AboutSakhi"             component={AboutSakhiScreen}            />
         <Stack.Screen name="EditProfile"            component={EditProfileScreen}           />
         <Stack.Screen name="TermsPrivacy"           component={TermsPrivacyScreen}          />
+        <Stack.Screen name="TermsAndPrivacy"        component={TermsPrivacyScreen}          />
+        <Stack.Screen name="DriverReferrals"        component={DriverReferralsScreen}       />
         <Stack.Screen name="LogoutConfirmation"     component={SakhiLogoutConfirmationSheet} options={{ presentation: 'transparentModal', animation: 'fade' }} />
       </Stack.Navigator>
       {/* Incoming ride overlay — rendered on top of whatever screen is active */}
