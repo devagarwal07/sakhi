@@ -1144,3 +1144,45 @@ WHERE routine_schema = 'public'
     'increment_subscription_rides'
   )
 ORDER BY routine_name;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phase 2 Subscription Flow Migrations  (run once on existing DB)
+-- Adds pending_payment as a valid subscription status (text column — no change needed).
+-- Ensures referral_code column exists on users.
+-- Adds scheduled_dates JSONB column for subscription rides calendar view.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 1. Referral code on users (auto-generated unique code)
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE
+    DEFAULT upper(substring(md5(random()::text || id::text) from 1 for 8));
+
+-- 2. Referral tracking
+CREATE TABLE IF NOT EXISTS referrals (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  referrer_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  referred_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  referrer_type    TEXT NOT NULL DEFAULT 'rider',   -- 'rider' | 'driver'
+  reward_amount    NUMERIC(10,2) DEFAULT 0,
+  reward_paid      BOOLEAN DEFAULT FALSE,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  completed_at     TIMESTAMPTZ,
+  UNIQUE(referred_id)
+);
+
+-- 3. scheduled_dates on subscriptions (array of YYYY-MM-DD strings from ride generation)
+ALTER TABLE subscriptions
+  ADD COLUMN IF NOT EXISTS scheduled_dates JSONB DEFAULT '[]';
+
+-- 4. Populate scheduled_dates from existing subscription_rides rows
+UPDATE subscriptions s
+SET scheduled_dates = (
+  SELECT jsonb_agg(TO_CHAR(sr.scheduled_date, 'YYYY-MM-DD') ORDER BY sr.scheduled_date)
+  FROM subscription_rides sr
+  WHERE sr.subscription_id = s.id
+    AND sr.scheduled_date >= CURRENT_DATE
+    AND sr.status = 'pending'
+)
+WHERE EXISTS (
+  SELECT 1 FROM subscription_rides sr WHERE sr.subscription_id = s.id
+);
