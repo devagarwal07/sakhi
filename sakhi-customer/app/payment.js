@@ -72,7 +72,10 @@ export default function PaymentMethodsScreen() {
                     {/* Banner: Info */}
                     <View style={styles.infoBanner}>
                         <Text style={styles.infoIcon}>ⓘ</Text>
-                        <Text style={styles.infoText}>Sakhi accepts Cash and UPI payments.</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoBold}>Payment Rules</Text>
+                            <Text style={styles.infoText}>🛺  Single rides  →  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}📅  Subscriptions  →  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
+                        </View>
                     </View>
 
                     {/* Section: Saved UPI IDs */}
@@ -128,7 +131,7 @@ export default function PaymentMethodsScreen() {
                                 </View>
                                 <View style={styles.cashDetails}>
                                     <Text style={styles.cashTitle}>Cash — Pay Driver Directly</Text>
-                                    <Text style={styles.cashSubtitle}>Default for on-demand rides</Text>
+                                    <Text style={styles.cashSubtitle}>For single / on-demand rides only</Text>
                                 </View>
                             </View>
                             {selectedMethod === 'cash' && (
@@ -230,14 +233,15 @@ const styles = StyleSheet.create({
     /* Info Banner */
     infoBanner: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         padding: 16,
         gap: 12,
         backgroundColor: '#EDE9FE',
         borderRadius: 12,
     },
-    infoIcon: { fontSize: 16, color: '#BEA3D8' },
-    infoText: { fontSize: 14, color: '#64748B', lineHeight: 20 },
+    infoIcon: { fontSize: 16, color: '#BEA3D8', marginTop: 2 },
+    infoBold: { fontSize: 13, fontWeight: '700', color: '#1E1B2E', marginBottom: 4 },
+    infoText: { fontSize: 13, color: '#64748B', lineHeight: 22 },
 
     /* Global Section Settings */
     section: { gap: 16 },
