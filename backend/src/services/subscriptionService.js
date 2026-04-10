@@ -152,7 +152,186 @@ async function generateSubscriptionRides(subscriptionId, payload, driverId) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// createSubscription
+// createSubscriptionIntent  (Phase 1 — Book without payment)
+// Creates a subscription in 'pending_payment' status after finding a driver.
+// Returns the driver info and total_cost so UI can show them before UPI payment.
+// ──────────────────────────────────────────────────────────────────────────────
+async function createSubscriptionIntent(riderId, payload) {
+  // 1. Verify rider
+  const { data: riders } = await supabase
+    .from('users')
+    .select('id, gender_verified, verification_status, is_active')
+    .eq('id', riderId)
+    .limit(1);
+
+  const rider = riders?.[0];
+  if (!rider || !rider.gender_verified || rider.verification_status !== 'approved' || !rider.is_active) {
+    throw new AppError('Complete identity verification to create subscriptions.', 403, 'VERIFICATION_REQUIRED');
+  }
+
+  // 2. Overlap validation
+  const { data: existingSubs } = await supabase
+    .from('subscriptions')
+    .select('id, days_of_week, pickup_time')
+    .eq('rider_id', riderId)
+    .in('status', ['active', 'paused', 'pending_payment']);
+
+  for (const existing of existingSubs || []) {
+    const dayOverlap = (payload.days_of_week || []).some((d) => (existing.days_of_week || []).includes(d));
+    if (dayOverlap && existing.pickup_time === payload.pickup_time) {
+      throw new AppError(
+        'You already have an active subscription that overlaps with this schedule.',
+        422,
+        'SUBSCRIPTION_OVERLAP'
+      );
+    }
+  }
+
+  // 3. Calculate fare
+  const { distance_km, duration_min } = await mapsService.getDistanceMatrix(
+    payload.pickup_lat, payload.pickup_lng, payload.drop_lat, payload.drop_lng
+  );
+  const fareConfig = await fareService.getFareConfig('auto');
+  const { estimated_fare: per_ride_fare } = fareService.calculateFare(distance_km, duration_min, fareConfig);
+
+  const multiplier = payload.is_two_way ? 2 : 1;
+  const total_cost = parseFloat((per_ride_fare * payload.plan_rides * multiplier).toFixed(2));
+
+  // 4. Find a driver immediately
+  const driver = await findSubscriptionDriver(
+    payload.pickup_lat,
+    payload.pickup_lng,
+    payload.pickup_time,
+    payload.days_of_week
+  );
+
+  // 5. INSERT subscription in 'pending_payment' state
+  const { data: subRows, error: subErr } = await supabase
+    .from('subscriptions')
+    .insert({
+      rider_id:           riderId,
+      pickup_lat:         payload.pickup_lat,
+      pickup_lng:         payload.pickup_lng,
+      pickup_address:     payload.pickup_address,
+      drop_lat:           payload.drop_lat,
+      drop_lng:           payload.drop_lng,
+      drop_address:       payload.drop_address,
+      pickup_time:        payload.pickup_time,
+      return_pickup_time: payload.return_pickup_time || null,
+      start_date:         payload.start_date,
+      plan_rides:         payload.plan_rides,
+      days_of_week:       payload.days_of_week,
+      is_two_way:         payload.is_two_way || false,
+      per_ride_fare,
+      total_cost,
+      driver_id:          driver?.id || null,
+      status:             'pending_payment',
+      rides_completed:    0,
+    })
+    .select('*')
+    .single();
+
+  if (subErr) {
+    logger.error('subscriptionService.createSubscriptionIntent — insert error', { error: subErr });
+    throw new AppError('Failed to create subscription intent.', 500, 'SUBSCRIPTION_CREATE_FAILED');
+  }
+
+  const sub = subRows;
+
+  // 6. Notify rider via FCM that driver was found (so payment screen shows driver info)
+  fcmService.sendToUser(riderId, 'rider', {
+    title: driver ? '🛺 Sakhi Driver Found!' : '🔍 Looking for Your Sakhi',
+    body: driver
+      ? `${driver.name} will be your dedicated Sakhi. Please complete UPI payment to confirm.`
+      : 'We are finding your Sakhi driver. Complete payment to reserve your slot.',
+    data: { type: 'SUBSCRIPTION_DRIVER_FOUND', subscription_id: sub.id, driver_found: String(!!driver) },
+  }).catch(() => {});
+
+  logger.info('subscriptionService.createSubscriptionIntent — created intent', {
+    subId: sub.id, riderId, driverId: driver?.id,
+  });
+
+  return {
+    subscription_id: sub.id,
+    driver_info: driver ? { id: driver.id, name: driver.name, phone: driver.phone } : null,
+    per_ride_fare,
+    total_cost,
+    distance_km,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// activateSubscription  (Phase 2 — Called after UPI payment verified)
+// Moves subscription from 'pending_payment' → 'active' and generates rides.
+// ──────────────────────────────────────────────────────────────────────────────
+async function activateSubscription(riderId, subscriptionId, paymentId) {
+  // 1. Load the pending subscription
+  const { data: rows } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('id', subscriptionId)
+    .eq('rider_id', riderId)
+    .eq('status', 'pending_payment')
+    .limit(1);
+
+  const sub = rows?.[0];
+  if (!sub) {
+    throw new AppError('Subscription not found or already activated.', 404, 'SUBSCRIPTION_NOT_FOUND');
+  }
+
+  // 2. Mark as active + record payment_id
+  const { error: updateErr } = await supabase
+    .from('subscriptions')
+    .update({ status: 'active', payment_id: paymentId })
+    .eq('id', subscriptionId);
+
+  if (updateErr) {
+    logger.error('subscriptionService.activateSubscription — update error', { error: updateErr });
+    throw new AppError('Failed to activate subscription.', 500, 'SUBSCRIPTION_ACTIVATE_FAILED');
+  }
+
+  // 3. Generate the ride rows now that payment is confirmed
+  const payload = {
+    start_date:         sub.start_date,
+    pickup_time:        sub.pickup_time,
+    return_pickup_time: sub.return_pickup_time,
+    days_of_week:       sub.days_of_week,
+    plan_rides:         sub.plan_rides,
+    is_two_way:         sub.is_two_way,
+    pickup_lat:  sub.pickup_lat,  pickup_lng:  sub.pickup_lng,  pickup_address:  sub.pickup_address,
+    drop_lat:    sub.drop_lat,    drop_lng:    sub.drop_lng,    drop_address:    sub.drop_address,
+  };
+  await generateSubscriptionRides(subscriptionId, payload, sub.driver_id);
+
+  // 4. Notify driver
+  if (sub.driver_id) {
+    fcmService.sendToUser(sub.driver_id, 'driver', {
+      title: 'New Subscription Route 🗓️',
+      body: `You have a confirmed subscription route from ${sub.pickup_address}. Payment received.`,
+      data: { type: 'SUBSCRIPTION_ASSIGNED', subscription_id: subscriptionId },
+    }).catch(() => {});
+  }
+
+  // 5. Notify rider
+  fcmService.sendToUser(riderId, 'rider', {
+    title: '✅ Subscription Confirmed!',
+    body: sub.driver_id
+      ? 'Your Sakhi has been assigned. Ride on!'
+      : 'Your subscription is active. Your Sakhi will be assigned soon.',
+    data: { type: 'SUBSCRIPTION_ACTIVATED', subscription_id: subscriptionId },
+  }).catch(() => {});
+
+  logger.info('subscriptionService.activateSubscription — activated', { subscriptionId, riderId, paymentId });
+
+  return {
+    subscription_id: subscriptionId,
+    status: 'active',
+    driver_id: sub.driver_id,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// createSubscription  (Legacy — kept for backward compat, internally used by webhook flows)
 // ──────────────────────────────────────────────────────────────────────────────
 async function createSubscription(riderId, payload, paymentId) {
   // 1. Verify rider
@@ -506,6 +685,8 @@ async function reassignSubscriptionRide(subscriptionRideId, io) {
 
 module.exports = {
   createSubscription,
+  createSubscriptionIntent,
+  activateSubscription,
   generateSubscriptionRides,
   findSubscriptionDriver,
   pauseSubscription,

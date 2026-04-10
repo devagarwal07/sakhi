@@ -2,8 +2,31 @@
 
 const { z } = require('zod');
 const subscriptionService = require('../services/subscriptionService');
+const paymentService      = require('../services/paymentService');
 const AppError = require('../utils/AppError');
 const supabase = require('../config/supabase');
+
+// ── Zod schemas ───────────────────────────────────────────────────────────────
+const intentSchema = z.object({
+  pickup_lat:          z.number().min(-90).max(90),
+  pickup_lng:          z.number().min(-180).max(180),
+  pickup_address:      z.string().optional(),
+  drop_lat:            z.number().min(-90).max(90),
+  drop_lng:            z.number().min(-180).max(180),
+  drop_address:        z.string().optional(),
+  pickup_time:         z.string().regex(/^\d{2}:\d{2}$/, 'Must be HH:MM'),
+  return_pickup_time:  z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  start_date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  plan_rides:          z.number().int().refine((v) => [7, 14, 21, 30].includes(v), { message: 'plan_rides must be 7, 14, 21, or 30' }),
+  days_of_week:        z.array(z.number().int().min(0).max(6)).min(1),
+  is_two_way:          z.boolean().default(false),
+});
+
+const activateSchema = z.object({
+  order_id:    z.string().min(1),
+  payment_id:  z.string().min(1),
+  signature:   z.string().min(1),
+});
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
 const createSubSchema = z.object({
@@ -137,6 +160,30 @@ async function getPendingPayment(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ── POST /subscriptions/intent ────────────────────────────────────────────────
+// Phase 1: Book subscription (finds driver, calc fare) — NO payment required yet
+async function createIntent(req, res, next) {
+  try {
+    const payload = intentSchema.parse(req.body);
+    const result = await subscriptionService.createSubscriptionIntent(req.user.userId, payload);
+    return res.status(201).json(result);
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ── POST /subscriptions/:id/activate ─────────────────────────────────────────
+// Phase 2: Verify UPI payment and activate the subscription
+async function activateSubscriptionHandler(req, res, next) {
+  try {
+    const { order_id, payment_id, signature } = activateSchema.parse(req.body);
+    const valid = paymentService.verifySignature(order_id, payment_id, signature);
+    if (!valid) {
+      throw new AppError('Payment verification failed.', 400, 'PAYMENT_VERIFICATION_FAILED');
+    }
+    const result = await subscriptionService.activateSubscription(req.user.userId, req.params.id, payment_id);
+    return res.status(200).json(result);
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   listSubscriptions,
   getSubscription,
@@ -145,4 +192,6 @@ module.exports = {
   cancelSubscription,
   getSubscriptionStatus,
   getPendingPayment,
+  createIntent,
+  activateSubscriptionHandler,
 };
