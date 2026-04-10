@@ -246,46 +246,51 @@ export default function HomeScreen() {
                     bounces={false}
                     scrollEnabled={isExpanded}
                 >
-                    {/* Row 1: Greeting & Notification */}
+                    {/* Row 1: Greeting — bell icon removed per design update */}
                     <View style={styles.greetingRow}>
                         <Text style={styles.greetingText}>
                             {getGreeting()}, {greetingName} 👋
                         </Text>
-                        <TouchableOpacity
-                            style={styles.notifBtn}
-                            onPress={() => router.push('/notifications')}
-                        >
-                            <Svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-                                <Path d="M0 17V15H2V8C2 6.61667 2.41667 5.3875 3.25 4.3125C4.08333 3.2375 5.16667 2.53333 6.5 2.2V1.5C6.5 1.08333 6.64583 0.729167 6.9375 0.4375C7.22917 0.145833 7.58333 0 8 0C8.41667 0 8.77083 0.145833 9.0625 0.4375C9.35417 0.729167 9.5 1.08333 9.5 1.5V2.2C10.8333 2.53333 11.9167 3.2375 12.75 4.3125C13.5833 5.3875 14 6.61667 14 8V15H16V17H0ZM8 20C7.45 20 6.97917 19.8042 6.5875 19.4125C6.19583 19.0208 6 18.55 6 18H10C10 18.55 9.80417 19.0208 9.4125 19.4125C9.02083 19.8042 8.55 20 8 20ZM4 15H12V8C12 6.9 11.6083 5.95833 10.825 5.175C10.0417 4.39167 9.1 4 8 4C6.9 4 5.95833 4.39167 5.175 5.175C4.39167 5.95833 4 6.9 4 8V15Z" fill="#64748B"/>
-                            </Svg>
-                            <View style={styles.notifDot} />
-                        </TouchableOpacity>
                     </View>
 
-                    {/* Row 2: Pill Tabs */}
+                    {/* Row 2: Pill Tabs — visually differentiated */}
                     <View style={styles.pillTabs}>
+                        {/* Book Now — solid purple fill, car/auto emoji */}
                         <TouchableOpacity
-                            style={[styles.pillTab, activeTab === 'book' && styles.pillTabActive,
-                            activeTab !== 'book' && styles.pillTabOutline]}
+                            style={[
+                                styles.pillTab,
+                                activeTab === 'book' ? styles.pillTabBookActive : styles.pillTabBookOutline,
+                            ]}
                             onPress={() => {
                                 setActiveTab('book');
                                 router.push('/location-search');
                             }}
                         >
-                            <Text style={[styles.pillTabText, activeTab === 'book' && styles.pillTabTextActive,
-                            activeTab !== 'book' && styles.pillTabTextOutline]}>
+                            <Text style={styles.pillTabEmoji}>🛺</Text>
+                            <Text style={[
+                                styles.pillTabText,
+                                activeTab === 'book' ? styles.pillTabTextActive : styles.pillTabTextOutlineBook,
+                            ]}>
                                 Book Now
                             </Text>
                         </TouchableOpacity>
+
+                        {/* Subscribe — gradient-like amber/gold accent, calendar emoji */}
                         <TouchableOpacity
-                            style={[styles.pillTab, activeTab === 'subscribe' && styles.pillTabActive,
-                            activeTab !== 'subscribe' && styles.pillTabOutline]}
+                            style={[
+                                styles.pillTab,
+                                activeTab === 'subscribe' ? styles.pillTabSubActive : styles.pillTabSubOutline,
+                            ]}
                             onPress={() => {
                                 setActiveTab('subscribe');
                                 router.push('/subscription-ride');
                             }}
                         >
-                            <Text style={[styles.pillTabText, activeTab !== 'subscribe' && styles.pillTabTextOutline]}>
+                            <Text style={styles.pillTabEmoji}>📅</Text>
+                            <Text style={[
+                                styles.pillTabText,
+                                activeTab === 'subscribe' ? styles.pillTabTextActiveSub : styles.pillTabTextOutlineSub,
+                            ]}>
                                 Subscribe
                             </Text>
                         </TouchableOpacity>
@@ -560,7 +565,7 @@ const styles = StyleSheet.create({
     // Greeting row
     greetingRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         paddingHorizontal: 24,
         marginBottom: 24,
@@ -572,25 +577,6 @@ const styles = StyleSheet.create({
         letterSpacing: -0.6,
         lineHeight: 32,
     },
-    notifBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 9999,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-    },
-    notifDot: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 8,
-        height: 8,
-        borderRadius: 9999,
-        backgroundColor: '#BEA3D8',
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
-    },
 
     // Pill tabs
     pillTabs: {
@@ -601,23 +587,43 @@ const styles = StyleSheet.create({
     },
     pillTab: {
         flex: 1,
-        height: 52,
-        borderRadius: 12,
+        height: 56,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 6,
     },
-    pillTabActive: {
+    // Book Now tab
+    pillTabBookActive: {
         backgroundColor: '#BEA3D8',
         shadowColor: 'rgba(124, 58, 237, 1)',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
         elevation: 4,
     },
-    pillTabOutline: {
+    pillTabBookOutline: {
         backgroundColor: '#FFFFFF',
         borderWidth: 2,
         borderColor: '#BEA3D8',
+    },
+    // Subscribe tab
+    pillTabSubActive: {
+        backgroundColor: '#D97706',
+        shadowColor: 'rgba(217, 119, 6, 1)',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 4,
+    },
+    pillTabSubOutline: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#D97706',
+    },
+    pillTabEmoji: {
+        fontSize: 16,
     },
     pillTabText: {
         fontSize: 14,
@@ -628,8 +634,14 @@ const styles = StyleSheet.create({
     pillTabTextActive: {
         color: '#FFFFFF',
     },
-    pillTabTextOutline: {
+    pillTabTextOutlineBook: {
         color: '#BEA3D8',
+    },
+    pillTabTextActiveSub: {
+        color: '#FFFFFF',
+    },
+    pillTabTextOutlineSub: {
+        color: '#D97706',
     },
 
     // Saved places chips

@@ -20,6 +20,7 @@ export default function RideFindingScreen() {
     const { on, off, joinRideRoom } = useSocket();
     const [modal, setModal] = useState(null);
     const [bookingError, setBookingError] = useState(null);
+    const [showNoDrivers, setShowNoDrivers] = useState(false);
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
@@ -96,7 +97,7 @@ export default function RideFindingScreen() {
         const handleNoDrivers = ({ ride_id }) => {
             if (!mountedRef.current) return;
             if (rideIdRef.current && ride_id !== rideIdRef.current) return;
-            setBookingError('No drivers available nearby. Please try again in a few minutes.');
+            setShowNoDrivers(true);
         };
 
         // Register socket listeners BEFORE booking so we never miss the event
@@ -161,14 +162,7 @@ export default function RideFindingScreen() {
     // ── Show booking error ─────────────────────────────────────────────────────
     useEffect(() => {
         if (!bookingError) return;
-        setModal({
-            icon: '❌',
-            title: 'Booking Failed',
-            message: bookingError,
-            buttons: [
-                { text: 'Go Back', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
-            ],
-        });
+        setShowNoDrivers(true);
     }, [bookingError]);
 
     // ── Cancel ride handler ────────────────────────────────────────────────────
@@ -329,6 +323,44 @@ export default function RideFindingScreen() {
                 </View>
                 <View style={styles.fadeBottom} />
             </View>
+            {/* No Drivers / Booking Failed Beautiful Screen */}
+            {showNoDrivers && (
+                <View style={styles.noDriversOverlay}>
+                    <View style={styles.noDriversCard}>
+                        {/* Animated auto illustration */}
+                        <View style={styles.noDriversIconWrap}>
+                            <View style={styles.noDriversPulse1} />
+                            <View style={styles.noDriversPulse2} />
+                            <Text style={styles.noDriversEmoji}>🛺</Text>
+                        </View>
+
+                        <Text style={styles.noDriversTitle}>All Sakhis Are Busy</Text>
+                        <Text style={styles.noDriversMsg}>
+                            We regret to inform you that all Sakhis are currently serving your other sisters. Please book us again soon!
+                        </Text>
+
+                        <TouchableOpacity
+                            style={styles.noDriversRetryBtn}
+                            onPress={() => {
+                                setShowNoDrivers(false);
+                                setBookingError(null);
+                                router.replace('/ride-estimate');
+                            }}
+                            activeOpacity={0.84}
+                        >
+                            <Text style={styles.noDriversRetryText}>Try Again</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.noDriversHomeBtn}
+                            onPress={() => router.replace('/(tabs)/')}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.noDriversHomeText}>Go Home</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
             <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
@@ -597,5 +629,101 @@ const styles = StyleSheet.create({
         borderRadius: 12, justifyContent: 'center', alignItems: 'center',
     },
     cancelBtnText: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
+
+    // No Drivers / Booking Failed overlay
+    noDriversOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(245, 240, 255, 0.96)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+        paddingHorizontal: 28,
+    },
+    noDriversCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 24 },
+        shadowOpacity: 0.12,
+        shadowRadius: 40,
+        elevation: 12,
+    },
+    noDriversIconWrap: {
+        width: 100,
+        height: 100,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+        position: 'relative',
+    },
+    noDriversPulse1: {
+        position: 'absolute',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(190, 163, 216, 0.12)',
+    },
+    noDriversPulse2: {
+        position: 'absolute',
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        backgroundColor: 'rgba(190, 163, 216, 0.18)',
+    },
+    noDriversEmoji: {
+        fontSize: 44,
+    },
+    noDriversTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#1E1B2E',
+        letterSpacing: -0.5,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    noDriversMsg: {
+        fontSize: 15,
+        fontWeight: '400',
+        color: '#64748B',
+        lineHeight: 24,
+        textAlign: 'center',
+        marginBottom: 32,
+    },
+    noDriversRetryBtn: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#BEA3D8',
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 4,
+    },
+    noDriversRetryText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
+    },
+    noDriversHomeBtn: {
+        width: '100%',
+        height: 48,
+        backgroundColor: '#F5F0FF',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noDriversHomeText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#BEA3D8',
+    },
 });
 
