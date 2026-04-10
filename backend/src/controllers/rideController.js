@@ -15,6 +15,8 @@ const latLngSchema = z.object({
   pickup_lng:  z.coerce.number().min(-180).max(180),
   drop_lat:    z.coerce.number().min(-90).max(90),
   drop_lng:    z.coerce.number().min(-180).max(180),
+  stop_lat:    z.coerce.number().min(-90).max(90).optional(),
+  stop_lng:    z.coerce.number().min(-180).max(180).optional(),
   promo_code:  z.string().optional(),
 });
 
@@ -59,37 +61,49 @@ function handleError(err, res, next) {
 // ──────────────────────────────────────────────────────────────────────────────
 async function estimateFare(req, res, next) {
   try {
-    const { pickup_lat, pickup_lng, drop_lat, drop_lng, promo_code } = latLngSchema.parse(req.query);
+    const { pickup_lat, pickup_lng, drop_lat, drop_lng, stop_lat, stop_lng, promo_code } = latLngSchema.parse(req.query);
 
-    const { distance_km, duration_min } = await mapsService.getDistanceMatrix(pickup_lat, pickup_lng, drop_lat, drop_lng);
+    // Multi-leg: pickup → stop → dropoff (or single leg if no stop)
+    let distance_km, duration_min;
+    if (stop_lat != null && stop_lng != null) {
+      const [leg1, leg2] = await Promise.all([
+        mapsService.getDistanceMatrix(pickup_lat, pickup_lng, stop_lat,  stop_lng),
+        mapsService.getDistanceMatrix(stop_lat,  stop_lng,  drop_lat,  drop_lng),
+      ]);
+      distance_km  = (leg1.distance_km  + leg2.distance_km);
+      duration_min = (leg1.duration_min + leg2.duration_min);
+    } else {
+      ({ distance_km, duration_min } = await mapsService.getDistanceMatrix(pickup_lat, pickup_lng, drop_lat, drop_lng));
+    }
+
     const fareConfig = await fareService.getFareConfig('auto');
     const { estimated_fare, breakdown } = fareService.calculateFare(distance_km, duration_min, fareConfig);
 
-    let finalFare = estimated_fare;
+    // Night fare
+    const night = fareService.isNightFare?.() ?? false;
+    const nightMultiplier = fareService.NIGHT_FARE_MULTIPLIER ?? 1.5;
+
+    let finalFare = night ? Math.round(estimated_fare * nightMultiplier) : estimated_fare;
     let promo_discount = 0;
     let promo_applied = false;
 
     if (promo_code) {
-      const r = await fareService.applyPromo(estimated_fare, promo_code);
+      const r = await fareService.applyPromo(finalFare, promo_code);
       finalFare = r.discounted_fare;
       promo_discount = r.promo_discount;
       promo_applied = r.promo_applied;
     }
 
-    // ── Free ride eligibility check ───────────────────────────────────────────
+    // Free ride eligibility
     let free_ride = false;
     const riderId = req.user?.userId;
     if (riderId) {
       const { data: riderRows } = await supabase
-        .from('users')
-        .select('free_ride_eligible')
-        .eq('id', riderId)
-        .limit(1);
-
+        .from('users').select('free_ride_eligible').eq('id', riderId).limit(1);
       if (riderRows?.[0]?.free_ride_eligible) {
         free_ride = true;
+        promo_discount = finalFare;
         finalFare = 0;
-        promo_discount = estimated_fare; // show the full saving
       }
     }
 
@@ -97,9 +111,11 @@ async function estimateFare(req, res, next) {
       estimated_fare: finalFare,
       distance_km,
       duration_min,
-      breakdown: { ...breakdown, promo_discount },
+      breakdown:  { ...breakdown, promo_discount },
       promo_applied,
       free_ride,
+      is_night_fare:    night,
+      night_multiplier: night ? nightMultiplier : 1,
     });
   } catch (err) {
     return handleError(err, res, next);
@@ -564,25 +580,31 @@ async function fareSummary(req, res, next) {
       throw new AppError('Forbidden.', 403, 'FORBIDDEN');
 
     const fareBreakdown = ride.fare_breakdown ?? {};
+    // Night fare: check if ride started between 22:00 and 06:00
+    const startHour = ride.started_at ? new Date(ride.started_at).getHours() : -1;
+    const isNightRide = startHour >= 22 || startHour < 6;
+    const nightMultiplier = fareService.NIGHT_FARE_MULTIPLIER ?? 1.5;
 
     return res.status(200).json({
-      ride_id:         id,
-      status:          ride.status,
-      payment_method:  ride.payment_method  ?? 'cash',
-      payment_status:  ride.payment_status  ?? 'pending',
-      pickup_address:  ride.pickup_address,
-      drop_address:    ride.drop_address,
-      distance_km:     ride.distance_km    ?? 0,
-      duration_min:    ride.duration_min   ?? 0,
-      // Fare fields — prefer driver_earnings row (calculated at trip end)
-      base_fare:       earnings?.gross     ?? fareBreakdown.base     ?? ride.total_fare ?? 0,
-      distance_fare:   fareBreakdown.distance_fare ?? fareBreakdown.distance ?? 0,
-      waiting_fare:    earnings?.waiting_charge     ?? fareBreakdown.waiting  ?? 0,
-      commission:      earnings?.commission         ?? 0,
-      take_home:       earnings?.net                ?? 0,
-      total_fare:      ride.total_fare              ?? earnings?.gross ?? 0,
-      started_at:      ride.started_at,
-      completed_at:    ride.completed_at,
+      ride_id:          id,
+      status:           ride.status,
+      payment_method:   ride.payment_method  ?? 'cash',
+      payment_status:   ride.payment_status  ?? 'pending',
+      pickup_address:   ride.pickup_address,
+      drop_address:     ride.drop_address,
+      distance_km:      ride.distance_km    ?? 0,
+      duration_min:     ride.duration_min   ?? 0,
+      base_fare:        earnings?.gross     ?? fareBreakdown.base     ?? ride.total_fare ?? 0,
+      distance_fare:    fareBreakdown.distance_fare ?? fareBreakdown.distance ?? 0,
+      waiting_fare:     earnings?.waiting_charge     ?? fareBreakdown.waiting  ?? 0,
+      commission:       earnings?.commission         ?? 0,
+      take_home:        earnings?.net                ?? 0,
+      total_fare:       ride.total_fare              ?? earnings?.gross ?? 0,
+      // Night fare info
+      is_night_fare:    isNightRide,
+      night_multiplier: isNightRide ? nightMultiplier : 1,
+      started_at:       ride.started_at,
+      completed_at:     ride.completed_at,
     });
   } catch (err) { return handleError(err, res, next); }
 }

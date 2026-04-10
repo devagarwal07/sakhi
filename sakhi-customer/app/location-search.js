@@ -14,19 +14,21 @@ import { getRideHistory } from '../src/api/endpoints';
 export default function LocationSearchScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { setDropoff, setPickup, ride } = useRide();
+    const { setDropoff, setPickup, setStop, ride } = useRide();
     const insets = useSafeAreaInsets();
-    const [pickupQuery, setPickupQuery] = useState(ride?.pickup?.address || '');
+    const [pickupQuery,  setPickupQuery]  = useState(ride?.pickup?.address || '');
     const [dropoffQuery, setDropoffQuery] = useState('');
-    const [activeInput, setActiveInput] = useState('dropoff');
-    const [results, setResults] = useState([]);
-    const [searching, setSearching] = useState(false);
+    const [stopQuery,    setStopQuery]    = useState(ride?.stop?.address   || '');
+    const [showStop,     setShowStop]     = useState(!!ride?.stop?.address);
+    const [activeInput, setActiveInput]   = useState('dropoff');
+    const [results,     setResults]       = useState([]);
+    const [searching,   setSearching]     = useState(false);
     const [recentDestinations, setRecentDestinations] = useState([]);
-    const [loadingRecent, setLoadingRecent] = useState(true);
+    const [loadingRecent,      setLoadingRecent]      = useState(true);
     const searchTimer = useRef(null);
 
     const returnRoute = params?.returnRoute || '/ride-estimate';
-    const isSearching = (activeInput === 'pickup' ? pickupQuery : dropoffQuery).trim().length >= 3;
+    const isSearching = (activeInput === 'pickup' ? pickupQuery : activeInput === 'stop' ? stopQuery : dropoffQuery).trim().length >= 3;
 
     const headerPaddingTop = Platform.OS === 'ios'
         ? insets.top
@@ -65,24 +67,19 @@ export default function LocationSearchScreen() {
     }, []);
 
     const handleSearch = (text, type = activeInput) => {
-        if (type === 'pickup') setPickupQuery(text);
+        if (type === 'pickup')  setPickupQuery(text);
         if (type === 'dropoff') setDropoffQuery(text);
+        if (type === 'stop')    setStopQuery(text);
         setActiveInput(type);
 
         clearTimeout(searchTimer.current);
-        if (text.trim().length < 3) {
-            setResults([]);
-            return;
-        }
+        if (text.trim().length < 3) { setResults([]); return; }
         setSearching(true);
         searchTimer.current = setTimeout(async () => {
             try {
-                // Build location bias + country restriction
                 const lat = ride?.pickup?.latitude;
                 const lng = ride?.pickup?.longitude;
-                const locationParam = (lat && lng)
-                    ? `&location=${lat},${lng}&radius=50000`
-                    : '';
+                const locationParam = (lat && lng) ? `&location=${lat},${lng}&radius=50000` : '';
                 const response = await fetch(
                     `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}&sessiontoken=${Date.now()}&components=country:in${locationParam}`
                 );
@@ -103,34 +100,36 @@ export default function LocationSearchScreen() {
             if (place.lat && place.lng) {
                 coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lng) };
             } else if (place.place_id && !place.place_id.startsWith('recent')) {
-                // Normal Places API fetch
                 const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
                 const data = await response.json();
                 if (data.result?.geometry?.location) {
                     coords = {
-                        latitude: data.result.geometry.location.lat,
+                        latitude:  data.result.geometry.location.lat,
                         longitude: data.result.geometry.location.lng,
                     };
                 }
             }
-            
-            // Fallback to text search if recent pin lacked place_id and coords
             const newAddress = place.structured_formatting?.main_text || place.description || place.main;
             if (!coords && newAddress) {
                 const textSearch = await fetch(`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(newAddress)}&inputtype=textquery&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
                 const textData = await textSearch.json();
-                if (textData.candidates && textData.candidates.length > 0) {
+                if (textData.candidates?.length > 0) {
                     coords = {
-                        latitude: textData.candidates[0].geometry.location.lat,
+                        latitude:  textData.candidates[0].geometry.location.lat,
                         longitude: textData.candidates[0].geometry.location.lng,
                     };
                 }
             }
+            if (!coords || !coords.latitude) throw new Error('Could not compute valid coordinates for this location.');
 
-            if (!coords || !coords.latitude) throw new Error("Could not compute valid coordinates for this location.");
             if (activeInput === 'pickup') {
                 setPickup({ ...coords, address: newAddress });
                 setPickupQuery(newAddress);
+                setActiveInput('dropoff');
+                setResults([]);
+            } else if (activeInput === 'stop') {
+                setStop?.({ ...coords, address: newAddress });
+                setStopQuery(newAddress);
                 setActiveInput('dropoff');
                 setResults([]);
             } else {
@@ -138,9 +137,7 @@ export default function LocationSearchScreen() {
                 router.replace(returnRoute);
             }
         } catch (error) {
-            console.error("Location Search Error:", error);
-            // In case of complete failure, do NOT wipe out existing coordinates with nulls!
-            // Just return early so the UI doesn't visually break.
+            console.error('Location Search Error:', error);
             Keyboard.dismiss();
         }
     };
@@ -184,6 +181,8 @@ export default function LocationSearchScreen() {
                             <View style={styles.iconColumn}>
                                 <View style={styles.dotGreen} />
                                 <View style={styles.dashedLine} />
+                                {showStop && <View style={styles.dotVia} />}
+                                {showStop && <View style={styles.dashedLine} />}
                                 <Svg width="14" height="17" viewBox="0 0 14 17" fill="none">
                                     <Path d="M6.66667 8.33333C7.125 8.33333 7.51736 8.17014 7.84375 7.84375C8.17014 7.51736 8.33333 7.125 8.33333 6.66667C8.33333 6.20833 8.17014 5.81597 7.84375 5.48958C7.51736 5.16319 7.125 5 6.66667 5C6.20833 5 5.81597 5.16319 5.48958 5.48958C5.16319 5.81597 5 6.20833 5 6.66667C5 7.125 5.16319 7.51736 5.48958 7.84375C5.81597 8.17014 6.20833 8.33333 6.66667 8.33333ZM6.66667 16.6667C4.43056 14.7639 2.76042 12.9965 1.65625 11.3646C0.552083 9.73264 0 8.22222 0 6.83333C0 4.75 0.670139 3.09028 2.01042 1.85417C3.35069 0.618055 4.90278 0 6.66667 0C8.43056 0 9.98264 0.618055 11.3229 1.85417C12.6632 3.09028 13.3333 4.75 13.3333 6.83333C13.3333 8.22222 12.7812 9.73264 11.6771 11.3646C10.5729 12.9965 8.90278 14.7639 6.66667 16.6667Z" fill="#BEA3D8"/>
                                 </Svg>
@@ -201,13 +200,45 @@ export default function LocationSearchScreen() {
                                         value={pickupQuery}
                                         onFocus={() => { setActiveInput('pickup'); setResults([]); }}
                                         onChangeText={(v) => handleSearch(v, 'pickup')}
-                                        returnKeyType="search"
-                                        autoCorrect={false}
-                                        autoCapitalize="words"
-                                        multiline={true}
-                                        blurOnSubmit={true}
+                                        returnKeyType="search" autoCorrect={false}
+                                        autoCapitalize="words" multiline blurOnSubmit
                                     />
                                 </View>
+
+                                {/* Add Stop row */}
+                                <TouchableOpacity
+                                    style={styles.addStopRow}
+                                    onPress={() => {
+                                        if (showStop) {
+                                            setShowStop(false);
+                                            setStopQuery('');
+                                            setStop?.(null);
+                                        } else {
+                                            setShowStop(true);
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.addStopIcon}>{showStop ? '✕' : '+'}</Text>
+                                    <Text style={styles.addStopText}>{showStop ? 'Remove Stop' : 'Add Stop'}</Text>
+                                </TouchableOpacity>
+
+                                {/* Stop (via) input */}
+                                {showStop && (
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.inputLabel}>STOP / VIA</Text>
+                                        <TextInput
+                                            style={activeInput === 'stop' ? styles.dropInputActive : styles.dropInput}
+                                            placeholder="Add a stop along the way"
+                                            placeholderTextColor="rgba(190, 163, 216, 0.6)"
+                                            value={stopQuery}
+                                            onFocus={() => { setActiveInput('stop'); setResults([]); }}
+                                            onChangeText={(v) => handleSearch(v, 'stop')}
+                                            returnKeyType="search" autoCorrect={false}
+                                            autoCapitalize="words" multiline blurOnSubmit
+                                        />
+                                    </View>
+                                )}
 
                                 {/* Drop-off */}
                                 <View style={styles.inputGroup}>
@@ -220,11 +251,9 @@ export default function LocationSearchScreen() {
                                         onFocus={() => { setActiveInput('dropoff'); setResults([]); }}
                                         onChangeText={(v) => handleSearch(v, 'dropoff')}
                                         returnKeyType="search"
-                                        autoFocus
+                                        autoFocus={!stopQuery}
                                         autoCorrect={false}
-                                        autoCapitalize="words"
-                                        multiline={true}
-                                        blurOnSubmit={true}
+                                        autoCapitalize="words" multiline blurOnSubmit
                                     />
                                 </View>
                             </View>
@@ -444,16 +473,46 @@ const styles = StyleSheet.create({
     },
     dashedLine: {
         position: 'absolute',
-        top: 32, // Safely clears the 11px padding + 14px green dot
-        bottom: 34, // Safely clears the 10px padding + 17px purple pin
+        top: 32,
+        bottom: 34,
         width: 0,
         borderWidth: 1, 
         borderStyle: 'dashed',
         borderColor: '#CCC3D8',
     },
+    dotVia: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#F59E0B',
+        borderWidth: 2,
+        borderColor: '#FDE68A',
+    },
     dropPin: {
         fontSize: 14,
         color: '#BEA3D8',
+    },
+    // Add stop button
+    addStopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 4,
+    },
+    addStopIcon: {
+        width: 20, height: 20, borderRadius: 10,
+        backgroundColor: '#EDE9FE',
+        textAlign: 'center',
+        lineHeight: 20,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#7C3AED',
+        overflow: 'hidden',
+    },
+    addStopText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#7C3AED',
     },
 
     // Input column
