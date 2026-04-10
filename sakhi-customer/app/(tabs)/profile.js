@@ -127,6 +127,11 @@ export default function ProfileScreen() {
                                 } 
                                 label="Payment Methods" 
                                 onPress={() => router.push('/payment')} 
+                            />
+                            <SettingRow 
+                                icon={'🎁'}
+                                label="Referrals & Rewards" 
+                                onPress={() => router.push('/referrals')} 
                                 isLast 
                             />
                         </View>
@@ -184,7 +189,7 @@ export default function ProfileScreen() {
                                     </Svg>
                                 } 
                                 label="Help & Support" 
-                                onPress={() => router.push('/complaint')} 
+                                onPress={() => router.push('/help-support')} 
                             />
                             <SettingRow 
                                 icon={
