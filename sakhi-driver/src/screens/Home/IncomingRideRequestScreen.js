@@ -39,10 +39,11 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
   const { incomingRide, acceptRide, rejectRide, clearIncomingRide, snoozeRide } = useSocket();
   const insets = useSafeAreaInsets();
 
-  const bellPulse = useRef(new Animated.Value(1)).current;
-  const slideUp   = useRef(new Animated.Value(SCREEN_H)).current;
-  const [accepting, setAccepting] = useState(false);
-  const [snoozing,  setSnoozing]  = useState(false);
+  const bellPulse  = useRef(new Animated.Value(1)).current;
+  const slideUp    = useRef(new Animated.Value(SCREEN_H)).current;
+  const [accepting, setAccepting]   = useState(false);
+  const [snoozing,  setSnoozing]    = useState(false);
+  const [countdown, setCountdown]   = useState(0);
 
   const isSubscription = incomingRide?.ride_type === 'subscription';
   const theme = isSubscription ? THEME.subscription : THEME.regular;
@@ -50,8 +51,12 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
   useEffect(() => {
     if (!incomingRide) {
       slideUp.setValue(SCREEN_H);
+      setCountdown(0);
       return;
     }
+
+    const totalSecs = isSubscription ? 20 : 15;
+    setCountdown(totalSecs);
 
     Animated.spring(slideUp, {
       toValue: 0, tension: 60, friction: 12, useNativeDriver: true,
@@ -64,13 +69,19 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
       ]),
     ).start();
 
-    // Auto-decline timer: 20s for subscription, 15s for regular
+    // Countdown ticker
+    const ticker = setInterval(() => {
+      setCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    // Auto-decline timer
     const timeout = setTimeout(() => {
       if (incomingRide?.ride_id) rejectRide(incomingRide.ride_id);
       clearIncomingRide();
-    }, isSubscription ? 20000 : 15000);
+      clearInterval(ticker);
+    }, totalSecs * 1000);
 
-    return () => clearTimeout(timeout);
+    return () => { clearTimeout(timeout); clearInterval(ticker); };
   }, [incomingRide]);
 
   // ── Accept ────────────────────────────────────────────────────────────────
@@ -116,8 +127,10 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
     dropoff_address = 'Oberoi Mall, Goregaon',
     drop_address,
     distance_to_pickup_km = 3.2,
+    distance_km           = null,
     eta_to_pickup_min     = 6,
     schedule_label,
+    is_night_fare         = false,
   } = incomingRide;
 
   const normaliseCoord = (coord) =>
@@ -190,15 +203,30 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
             </View>
           )}
 
-          {/* Pulse Header */}
+          {/* Countdown + Pulse Header */}
           <View style={s.pulseHeaderWrap}>
-            <Animated.View style={[s.pulseIconWrap, { transform: [{ scale: bellPulse }] }]}>
-              <View style={[s.pulseIconBg, { backgroundColor: theme.pulseIconBg }]} />
-              <MaterialCommunityIcons name={theme.icon} size={20} color={theme.accentColor} />
-            </Animated.View>
+            {/* Countdown ring */}
+            <View style={[
+              s.countdownRing,
+              { borderColor: countdown > 8 ? '#10B981' : countdown > 4 ? '#F59E0B' : '#EF4444' }
+            ]}>
+              <Animated.View style={[s.pulseIconWrap, { transform: [{ scale: bellPulse }] }]}>
+                <View style={[s.pulseIconBg, { backgroundColor: theme.pulseIconBg }]} />
+                <MaterialCommunityIcons name={theme.icon} size={20} color={theme.accentColor} />
+              </Animated.View>
+              <Text style={[s.countdownText, { color: countdown > 8 ? '#10B981' : countdown > 4 ? '#F59E0B' : '#EF4444' }]}>
+                {countdown}s
+              </Text>
+            </View>
             <Text style={[s.pulseTitle, { color: isSubscription ? '#92400E' : '#1E1B2E' }]}>
               {isSubscription ? 'Subscription Request' : 'New Ride Request'}
             </Text>
+            {/* Night fare badge */}
+            {is_night_fare && (
+              <View style={s.nightBadge}>
+                <Text style={s.nightBadgeText}>🌙 Night Fare (1.5×)</Text>
+              </View>
+            )}
           </View>
 
           {/* Ride Card */}
@@ -252,6 +280,12 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
                 <Feather name="clock" size={16} color="#1E1B2E" />
                 <Text style={s.statText}>ETA ~{eta_to_pickup_min} min</Text>
               </View>
+              {distance_km && (
+                <View style={s.statBox}>
+                  <Feather name="map" size={16} color="#1E1B2E" />
+                  <Text style={s.statText}>{distance_km} km trip</Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -324,9 +358,21 @@ const s = StyleSheet.create({
   subBannerText: { fontFamily: 'Inter', fontWeight: '600', fontSize: 12, color: '#92400E', flex: 1 },
 
   pulseHeaderWrap: { flexDirection: 'column', alignItems: 'center', marginBottom: 20, gap: 8 },
-  pulseIconWrap: { position: 'relative', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  pulseIconBg: { position: 'absolute', width: 40, height: 40, borderRadius: 20 },
-  pulseTitle: { fontFamily: 'Inter', fontWeight: '800', fontSize: 20, letterSpacing: -0.5, marginTop: 4 },
+  countdownRing: {
+    width: 64, height: 64, borderRadius: 32,
+    borderWidth: 3, alignItems: 'center', justifyContent: 'center', gap: 2,
+    backgroundColor: '#FAFAFA',
+  },
+  countdownText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  pulseIconWrap: { position: 'relative', width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
+  pulseIconBg:   { position: 'absolute', width: 32, height: 32, borderRadius: 16 },
+  pulseTitle:    { fontFamily: 'Inter', fontWeight: '800', fontSize: 20, letterSpacing: -0.5, marginTop: 4 },
+  nightBadge: {
+    backgroundColor: '#EDE9FE', borderRadius: 9999,
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderWidth: 1, borderColor: 'rgba(124,58,237,0.2)',
+  },
+  nightBadgeText: { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
 
   rideCard: {
     width: '100%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16,
