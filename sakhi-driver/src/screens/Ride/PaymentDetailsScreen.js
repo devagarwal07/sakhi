@@ -240,12 +240,14 @@ export default function PaymentDetailsScreen({ navigation, route }) {
     );
   }
 
-  const isCash    = summary?.payment_method === 'cash';
-  const netFare   = summary?.net_fare     ?? 0;
-  const baseFare  = summary?.base_fare    ?? 0;
-  const waitChg   = summary?.wait_charge  ?? 0;
-  const commission = summary?.platform_commission ?? 0;
-  const isPaid     = ['paid', 'collected'].includes(summary?.payment_status);
+  const isCash      = summary?.payment_method === 'cash';
+  const netFare     = summary?.net_fare     ?? 0;
+  const baseFare    = summary?.base_fare    ?? 0;
+  const waitChg     = summary?.wait_charge  ?? 0;
+  const commission  = summary?.platform_commission ?? 0;
+  const isPaid      = ['paid', 'collected'].includes(summary?.payment_status);
+  const nightFare   = summary?.is_night_fare ?? false;
+  const nightMultiplier = summary?.night_multiplier ?? 1.5;
 
   return (
     <View style={styles.safe}>
@@ -268,13 +270,14 @@ export default function PaymentDetailsScreen({ navigation, route }) {
           <View style={styles.divider} />
 
           {[
-            { label: 'Base Fare',           value: `₹${baseFare}` },
-            { label: 'Wait Charges',         value: waitChg > 0 ? `₹${waitChg}` : '—' },
-            { label: 'Platform Commission',  value: `-₹${commission}`, red: true },
-          ].map((row) => (
+            { label: 'Base Fare',          value: `₹${baseFare}` },
+            { label: 'Wait Charges',        value: waitChg > 0 ? `₹${waitChg}` : '—' },
+            nightFare ? { label: `🌙 Night Fare (${nightMultiplier}×)`, value: 'Applied', highlight: true } : null,
+            { label: 'Platform Commission', value: `-₹${commission}`, red: true },
+          ].filter(Boolean).map((row) => (
             <View key={row.label} style={styles.breakRow}>
-              <Text style={styles.breakLabel}>{row.label}</Text>
-              <Text style={[styles.breakValue, row.red && styles.breakRed]}>{row.value}</Text>
+              <Text style={[styles.breakLabel, row.highlight && styles.breakNight]}>{row.label}</Text>
+              <Text style={[styles.breakValue, row.red && styles.breakRed, row.highlight && styles.breakNight]}>{row.value}</Text>
             </View>
           ))}
 
@@ -416,6 +419,7 @@ const styles = StyleSheet.create({
   breakLabel:  { fontSize: 13, color: '#64748B' },
   breakValue:  { fontSize: 13, fontWeight: '600', color: '#1E1B2E' },
   breakRed:    { color: '#EF4444' },
+  breakNight:  { color: '#7C3AED', fontWeight: '700' },
   methodRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   methodLabel: { fontSize: 12, color: '#64748B' },
   methodBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 9999, flexDirection: 'row', alignItems: 'center', gap: 4 },
