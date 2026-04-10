@@ -7,23 +7,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
-import { calculateFare, parseKmText, PRICING } from '../src/utils/fareCalculator';
+import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER } from '../src/utils/fareCalculator';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
 
 const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
 
-async function fetchDirectionsPolyline(origin, destination) {
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=${GOOGLE_MAPS_KEY}`;
+async function fetchDirectionsPolyline(origin, destination, waypoint) {
+    const waypointParam = waypoint
+        ? `&waypoints=${waypoint.latitude},${waypoint.longitude}`
+        : '';
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving${waypointParam}&key=${GOOGLE_MAPS_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
     if (data.routes && data.routes.length > 0) {
-        const points = data.routes[0].legs[0].steps.flatMap((step) =>
-            decodePolyline(step.polyline.points)
+        // Flatten across all legs (pickup → stop → dropoff)
+        const points = data.routes[0].legs.flatMap((leg) =>
+            leg.steps.flatMap((step) => decodePolyline(step.polyline.points))
         );
-        const distance = data.routes[0].legs[0].distance.text;
-        const duration = data.routes[0].legs[0].duration.text;
+        const totalDistM = data.routes[0].legs.reduce((s, l) => s + l.distance.value, 0);
+        const totalDurS  = data.routes[0].legs.reduce((s, l) => s + l.duration.value, 0);
+        const distance = `${(totalDistM / 1000).toFixed(1)} km`;
+        const duration = `${Math.round(totalDurS / 60)} mins`;
         return { points, distance, duration };
     }
     return { points: [], distance: null, duration: null };
@@ -70,6 +76,7 @@ export default function RideEstimateScreen() {
 
     const pickup  = ride?.pickup;
     const dropoff = ride?.dropoff;
+    const stop    = ride?.stop;   // optional via/stop point
 
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
     const topNavPaddingTop = topInset + (Platform.OS === 'ios' ? 8 : 12);
@@ -93,11 +100,11 @@ export default function RideEstimateScreen() {
             try {
                 setLoadingRoute(true);
                 const [dir, estReq] = await Promise.all([
-                    fetchDirectionsPolyline(pickup, dropoff).catch(err => {
+                    fetchDirectionsPolyline(pickup, dropoff, stop).catch(err => {
                         console.error('Polyline error:', err);
                         return { points: [], distance: null, duration: null };
                     }),
-                    estimateFare(pickup, dropoff).catch(err => {
+                    estimateFare(pickup, dropoff, stop).catch(err => {
                         console.error('Estimate fare error:', err);
                         return null;
                     })
@@ -145,10 +152,13 @@ export default function RideEstimateScreen() {
     } : null);
 
     const displayFare     = fareResult
-        ? (fareData?.free_ride ? '₹0' : `₹${fareResult.estimated_fare ?? fareResult.total ?? '—'}`)
+        ? (fareData?.free_ride ? '₹0' : `₹${Math.round((fareResult.estimated_fare ?? fareResult.total ?? 0) * (isNightFare() ? NIGHT_FARE_MULTIPLIER : 1))}`)
         : '—';
     const isFreeRide      = !!fareData?.free_ride;
-    const originalFare    = fareResult ? `₹${fareResult.estimated_fare ?? fareResult.total}` : null;
+    const nightFare       = isNightFare();
+    const baseTotal       = fareResult ? (fareResult.estimated_fare ?? fareResult.total ?? 0) : 0;
+    const nightTotal      = nightFare ? Math.round(baseTotal * NIGHT_FARE_MULTIPLIER) : baseTotal;
+    const originalFare    = fareResult ? `₹${baseTotal}` : null;
     const displayTime     = routeDuration || '—';
     const displayDistance = routeDistance || '—';
 
@@ -235,6 +245,13 @@ export default function RideEstimateScreen() {
                     <View style={styles.freeRideBanner}>
                         <Text style={styles.freeRideBannerTitle}>🎉 Your next ride is FREE!</Text>
                         <Text style={styles.freeRideBannerSub}>You had 3 consecutive failed bookings — enjoy a complimentary ride.</Text>
+                    </View>
+                )}
+
+                {/* Night Fare Banner */}
+                {isNightFare() && (
+                    <View style={styles.nightFareBanner}>
+                        <Text style={styles.nightFareBannerText}>🌙 Night Fare Active (1.5×) — Applies between 10 PM and 6 AM</Text>
                     </View>
                 )}
 
@@ -345,16 +362,43 @@ export default function RideEstimateScreen() {
                                         <Text style={styles.breakdownValue}>₹0 est.</Text>
                                     </View>
 
+                                    {/* Row 5: Night Surcharge (only when applicable) */}
+                                    {nightFare && (
+                                        <View style={styles.breakdownRow}>
+                                            <View style={styles.breakdownLabelWrap}>
+                                                <Text style={styles.breakdownLabel}>🌙 Night Surcharge</Text>
+                                                <Text style={styles.breakdownSubLabel}>+50% applied between 10 PM – 6 AM</Text>
+                                            </View>
+                                            <Text style={[styles.breakdownValue, { color: '#F59E0B' }]}>
+                                                +₹{Math.round(baseTotal * (NIGHT_FARE_MULTIPLIER - 1))}
+                                            </Text>
+                                        </View>
+                                    )}
+
                                     {/* Divider */}
                                     <View style={styles.breakdownDivider} />
 
-                                    {/* Row 5: Total */}
+                                    {/* Row 6: Total */}
                                     <View style={styles.breakdownRow}>
                                         <Text style={[styles.breakdownLabel, styles.breakdownTotalLabel]}>Estimated Total</Text>
                                         <Text style={[styles.breakdownValue, styles.breakdownTotalValue]}>
-                                            ₹{fareResult.estimated_fare ?? fareResult.total ?? '—'}
+                                            ₹{nightTotal}
                                         </Text>
                                     </View>
+
+                                    {/* Offers & Discounts info button */}
+                                    <TouchableOpacity
+                                        style={styles.offersRow}
+                                        onPress={() => setModal({
+                                            icon: '🎁',
+                                            title: 'Offers & Discounts',
+                                            message: '5% off up to ₹100 on your first 3 rides\n\n10% off up to ₹150 on 15-day subscription rides\n\n15% off up to ₹200 on 30-day subscription rides',
+                                            buttons: [{ text: 'Got it', onPress: () => setModal(null) }],
+                                        })}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={styles.offersRowText}>ⓘ View Offers & Discounts</Text>
+                                    </TouchableOpacity>
                                 </>
                             )}
                         </View>
@@ -778,6 +822,34 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         paddingVertical: 8,
         lineHeight: 20,
+    },
+    // Night Fare Banner
+    nightFareBanner: {
+        backgroundColor: '#1E1B2E',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 16,
+        marginHorizontal: 20,
+    },
+    nightFareBannerText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#FCD34D',
+        lineHeight: 18,
+    },
+    // Offers & Discounts row
+    offersRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 8,
+    },
+    offersRowText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#BEA3D8',
+        textDecorationLine: 'underline',
     },
     // Footer
     footerSticky: {

@@ -29,13 +29,14 @@ export const getRideHistory = (page = 1) => apiClient.get(`/users/rides?page=${p
 export const getTransactionHistory = (page = 1) => apiClient.get(`/users/transactions?page=${page}`);
 
 // ── Rides ─────────────────────────────────────────────────────────────────
-export const estimateFare = (pickup, dropoff) =>
+export const estimateFare = (pickup, dropoff, stop = null) =>
     apiClient.get('/rides/estimate', {
         params: {
             pickup_lat: pickup.latitude,
             pickup_lng: pickup.longitude,
-            drop_lat:   dropoff.latitude,   // backend uses drop_lat not dropoff_lat
-            drop_lng:   dropoff.longitude,  // backend uses drop_lng not dropoff_lng
+            drop_lat:   dropoff.latitude,
+            drop_lng:   dropoff.longitude,
+            ...(stop ? { stop_lat: stop.latitude, stop_lng: stop.longitude } : {}),
         },
     });
 export const bookRide = (data) => apiClient.post('/rides', data);
