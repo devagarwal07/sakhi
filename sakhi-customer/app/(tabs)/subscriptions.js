@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,6 +7,89 @@ import SakhiModal from '../../src/components/SakhiModal';
 import { cancelSubscription, toggleSubscriptionPause } from '../../src/api/endpoints';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../src/utils/androidUtils';
 
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const MONTH_NAMES = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
+];
+
+function buildCalendarGrid(year, month) {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return cells;
+}
+
+function MiniCalendar({ year, month, rideDates, today, selectedDate, onSelect }) {
+    const cells = useMemo(() => buildCalendarGrid(year, month), [year, month]);
+    const todayDate  = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear  = today.getFullYear();
+
+    return (
+        <View style={cal.wrap}>
+            <Text style={cal.monthLabel}>{MONTH_NAMES[month]} {year}</Text>
+            <View style={cal.row}>
+                {DAY_LABELS.map(d => (
+                    <Text key={d} style={cal.dayHeader}>{d}</Text>
+                ))}
+            </View>
+            {Array.from({ length: Math.ceil(cells.length / 7) }, (_, ri) => {
+                const slice = cells.slice(ri * 7, ri * 7 + 7);
+                const pad   = 7 - slice.length;
+                return (
+                    <View key={ri} style={cal.row}>
+                        {slice.map((day, ci) => {
+                            if (!day) return <View key={`e-${ci}`} style={cal.cell} />;
+                            const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                            const isToday    = day === todayDate && month === todayMonth && year === todayYear;
+                            const hasRide    = rideDates.has(dateStr);
+                            const isSelected = selectedDate === dateStr;
+                            const isPast     = new Date(year, month, day) < today && !isToday;
+                            return (
+                                <TouchableOpacity
+                                    key={`d-${ci}`}
+                                    style={[cal.cell, isSelected && cal.cellSelected]}
+                                    onPress={() => hasRide && onSelect(isSelected ? null : dateStr)}
+                                    activeOpacity={hasRide ? 0.75 : 1}
+                                >
+                                    <Text style={[
+                                        cal.dayNum,
+                                        isToday && cal.dayNumToday,
+                                        isSelected && cal.dayNumSelected,
+                                        isPast && !isToday && cal.dayNumPast,
+                                    ]}>{day}</Text>
+                                    {hasRide && <View style={[cal.dot, isSelected && cal.dotSelected]} />}
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {Array.from({ length: pad }, (_, i) => <View key={`p-${i}`} style={cal.cell} />)}
+                    </View>
+                );
+            })}
+        </View>
+    );
+}
+
+const cal = StyleSheet.create({
+    wrap: { paddingVertical: 8 },
+    monthLabel: { fontSize: 13, fontWeight: '700', color: '#1E1B2E', marginBottom: 12, letterSpacing: -0.2 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    dayHeader: { width: 36, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
+    cell: { width: 36, height: 40, alignItems: 'center', justifyContent: 'center', gap: 2 },
+    cellSelected: { backgroundColor: '#BEA3D8', borderRadius: 12 },
+    dayNum: { fontSize: 13, fontWeight: '500', color: '#1E1B2E' },
+    dayNumToday: { fontWeight: '800', color: '#7C3AED' },
+    dayNumSelected: { color: '#FFFFFF', fontWeight: '800' },
+    dayNumPast: { color: '#CBD5E1' },
+    dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#BEA3D8' },
+    dotSelected: { backgroundColor: '#FFFFFF' },
+});
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function SubscriptionsDashboard() {
     const router = useRouter();
     const { showBack } = useLocalSearchParams();
@@ -14,6 +97,7 @@ export default function SubscriptionsDashboard() {
     const sub = ride?.subscription || {};
     const [isPaused, setIsPaused] = useState(false);
     const [modal, setModal] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(null);
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
@@ -21,8 +105,51 @@ export default function SubscriptionsDashboard() {
     const topNavHeight = topInset + 60;
     const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
 
+    // ── Computed values ───────────────────────────────────────────────────────
+    const pickupTime     = sub.morningTime || '8:30 AM';
+    const ridesTotal     = sub.rides_total ?? sub.plan ?? sub.total_rides ?? 30;
+    const ridesUsed      = sub.rides_used  ?? sub.used  ?? 0;
+    const ridesRemaining = Math.max(0, ridesTotal - ridesUsed);
+    const progressPct    = ridesTotal > 0 ? (ridesRemaining / ridesTotal) * 100 : 0;
+    const pickupName     = ride?.pickup?.address?.split(',')[0]  || 'Pickup location';
+    const dropoffName    = ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
+    const daysRange      = sub.days?.length > 3
+        ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
+        : (sub.days?.join(', ') || 'Mon–Fri');
+
+    const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
+    // ── Build ride date set ───────────────────────────────────────────────────
+    const rideDates = useMemo(() => {
+        const set = new Set();
+        if (sub.scheduled_dates?.length) {
+            sub.scheduled_dates.forEach(d => set.add(d.slice(0, 10)));
+        } else {
+            const cur = new Date(today);
+            for (let i = 0; i < 90 && set.size < ridesRemaining; i++) {
+                cur.setDate(cur.getDate() + 1);
+                const dow = cur.getDay();
+                if (dow !== 0 && dow !== 6) set.add(cur.toISOString().slice(0, 10));
+            }
+        }
+        return set;
+    }, [sub.scheduled_dates, today, ridesRemaining]);
+
+    const selectedRide = selectedDate ? {
+        date: selectedDate, time: pickupTime, from: pickupName, to: dropoffName,
+    } : null;
+
+    const months = useMemo(() => {
+        const y = today.getFullYear(), m = today.getMonth();
+        return [
+            { year: y, month: m },
+            { year: m === 11 ? y + 1 : y, month: (m + 1) % 12 },
+        ];
+    }, [today]);
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
     const handlePause = () => {
-        if (!sub.id) return; // Prevent action if mock data
+        if (!sub.id) return;
         setModal({
             icon: isPaused ? '▶️' : '⏸️',
             title: isPaused ? 'Resume Subscription' : 'Pause Subscription',
@@ -31,194 +158,144 @@ export default function SubscriptionsDashboard() {
                 : 'Your upcoming rides will be paused until you resume.',
             buttons: [
                 { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
-                { 
-                    text: isPaused ? 'Resume' : 'Pause', 
-                    onPress: async () => {
-                        setModal(null);
-                        try {
-                            // Call API to toggle pause state
-                            await toggleSubscriptionPause(sub.id, !isPaused);
-                            setIsPaused(!isPaused);
-                        } catch (err) {
-                            console.error('Failed to toggle pause:', err);
-                            setTimeout(() => {
-                                setModal({
-                                    icon: '❌', title: 'Error', message: 'Could not update subscription.',
-                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                });
-                            }, 500);
-                        }
-                    } 
-                },
-            ]
+                { text: isPaused ? 'Resume' : 'Pause', onPress: async () => {
+                    setModal(null);
+                    try { await toggleSubscriptionPause(sub.id, !isPaused); setIsPaused(!isPaused); }
+                    catch { setTimeout(() => setModal({ icon: '❌', title: 'Error', message: 'Could not update subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500); }
+                }},
+            ],
         });
     };
 
     const handleCancel = () => {
-        if (!sub.id) return; // Prevent action if mock data
+        if (!sub.id) return;
         setModal({
             icon: '⚠️',
             title: 'Cancel Subscription?',
             message: 'This will permanently cancel your current plan. Any unused rides will be forfeited.',
             buttons: [
                 { text: 'Keep Plan', style: 'cancel', onPress: () => setModal(null) },
-                { 
-                    text: 'Yes, Cancel', 
-                    style: 'destructive', 
-                    onPress: async () => {
-                        setModal(null);
-                        try {
-                            // Call API to cancel subscription
-                            await cancelSubscription(sub.id);
-                            
-                            setTimeout(() => {
-                                setModal({
-                                    icon: '✅',
-                                    title: 'Subscription Cancelled',
-                                    message: 'Your plan has been cancelled successfully.',
-                                    buttons: [{ text: 'OK', onPress: () => {
-                                        setModal(null);
-                                        router.replace('/(tabs)/'); // Go back to Home
-                                    }}]
-                                });
-                            }, 500);
-                        } catch (err) {
-                            console.error('Failed to cancel subscription:', err);
-                            setTimeout(() => {
-                                setModal({
-                                    icon: '❌', title: 'Error', message: 'Could not cancel subscription.',
-                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                });
-                            }, 500);
-                        }
-                    } 
-                },
-            ]
+                { text: 'Yes, Cancel', style: 'destructive', onPress: async () => {
+                    setModal(null);
+                    try {
+                        await cancelSubscription(sub.id);
+                        setTimeout(() => setModal({ icon: '✅', title: 'Subscription Cancelled', message: 'Your plan has been cancelled successfully.', buttons: [{ text: 'OK', onPress: () => { setModal(null); router.replace('/(tabs)/'); } }] }), 500);
+                    } catch {
+                        setTimeout(() => setModal({ icon: '❌', title: 'Error', message: 'Could not cancel subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
+                    }
+                }},
+            ],
         });
     };
-    
-    // Dynamic values mapped from context
-    const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup location';
-    const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
-    
-    const daysRange = sub.days?.length > 3 
-        ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}` 
-        : (sub.days?.join(', ') || 'Mon–Fri');
-
-    const pickupTime = sub.morningTime || '8:30 AM';
-    const ridesTotal = sub.rides_total ?? sub.plan ?? sub.total_rides ?? 30;
-    const ridesUsed  = sub.rides_used  ?? sub.used  ?? 0;
-    const ridesRemaining = Math.max(0, ridesTotal - ridesUsed);
-    const progressPercent = ridesTotal > 0 ? (ridesRemaining / ridesTotal) * 100 : 0;
-
-    // Generate upcoming dates sequentially from tomorrow
-    const generateUpcoming = () => {
-        const rides = [];
-        const today = new Date();
-        for (let i = 1; i <= 5; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            rides.push({
-                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-                time: pickupTime,
-                status: 'SCHEDULED'
-            });
-        }
-        return rides;
-    };
-    
-    const upcomingRides = generateUpcoming();
 
     return (
-        <View style={styles.container}>
-            {/* Top Navigation Bar */}
-            <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
-                <View style={styles.headerLeft}>
+        <View style={s.container}>
+            {/* Top Nav */}
+            <View style={[s.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
+                <View style={s.headerLeft}>
                     {(router.canGoBack() || showBack) && (
-                        <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={styles.backIcon}>←</Text>
+                        <TouchableOpacity style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
+                            <Text style={s.backIcon}>←</Text>
                         </TouchableOpacity>
                     )}
-                    <Text style={styles.title}>My Subscription</Text>
+                    <Text style={s.title}>My Subscription</Text>
                 </View>
-                <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/subscription-plans')}>
-                    <Text style={styles.menuIcon}>＋</Text>
+                <TouchableOpacity style={s.menuBtn} onPress={() => router.push('/subscription-plans')}>
+                    <Text style={s.menuIcon}>＋</Text>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView 
-                contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView contentContainerStyle={[s.scrollContent, { paddingTop: scrollTopPadding }]} showsVerticalScrollIndicator={false}>
+
                 {/* Active Subscription Card */}
-                <View style={styles.activeCard}>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.routeCol}>
-                            <Text style={styles.routeTitle} numberOfLines={1}>{pickupName} → {dropoffName}</Text>
-                            <Text style={styles.routeSub}>{pickupTime.replace(' ', '')} pickup · {daysRange}</Text>
+                <View style={s.activeCard}>
+                    <View style={s.cardHeader}>
+                        <View style={s.routeCol}>
+                            <Text style={s.routeTitle} numberOfLines={1}>{pickupName} → {dropoffName}</Text>
+                            <Text style={s.routeSub}>{pickupTime} pickup · {daysRange}</Text>
                         </View>
-                        <View style={styles.statusBadge}>
-                            <View style={styles.statusDot} />
-                            <Text style={styles.statusText}>Active</Text>
-                        </View>
-                    </View>
-
-                    {/* Progress */}
-                    <View style={styles.progressSection}>
-                        <View style={styles.progressRow}>
-                            <View style={styles.progressLeft}>
-                                <Text style={styles.progressNumbers}>
-                                    {ridesRemaining}
-                                    <Text style={styles.progressTotal}> / {ridesTotal}</Text>
-                                </Text>
-                            </View>
-                            <Text style={styles.progressLabel}>RIDES REMAINING</Text>
-                        </View>
-                        <View style={styles.progressTrack}>
-                            <View style={[styles.progressBar, { width: `${progressPercent}%` }]} />
+                        <View style={[s.statusBadge, isPaused && s.statusBadgePaused]}>
+                            <View style={[s.statusDot, isPaused && s.statusDotPaused]} />
+                            <Text style={[s.statusText, isPaused && s.statusTextPaused]}>{isPaused ? 'Paused' : 'Active'}</Text>
                         </View>
                     </View>
 
-                    {/* Next Ride Indicator */}
-                    <View style={styles.nextRideRow}>
-                        <Text style={styles.calendarIcon}>📅</Text>
-                        <Text style={styles.nextRideText}>Tomorrow, {pickupTime}</Text>
+                    <View style={s.progressSection}>
+                        <View style={s.progressRow}>
+                            <Text style={s.progressNumbers}>{ridesRemaining}<Text style={s.progressTotal}> / {ridesTotal}</Text></Text>
+                            <Text style={s.progressLabel}>RIDES REMAINING</Text>
+                        </View>
+                        <View style={s.progressTrack}>
+                            <View style={[s.progressBar, { width: `${progressPct}%` }]} />
+                        </View>
+                    </View>
+
+                    <View style={s.paymentBadge}>
+                        <Text style={s.paymentBadgeText}>💳  Paid via UPI · Single rides are Cash only</Text>
                     </View>
                 </View>
 
                 {/* Actions */}
-                <View style={styles.actionsRow}>
-                    <TouchableOpacity style={[styles.actionBtn, styles.pauseBtn]} activeOpacity={0.8} onPress={handlePause}>
-                        <Text style={styles.pauseText}>{isPaused ? 'Resume' : 'Pause'}</Text>
+                <View style={s.actionsRow}>
+                    <TouchableOpacity style={[s.actionBtn, s.pauseBtn]} onPress={handlePause} activeOpacity={0.8}>
+                        <Text style={s.pauseText}>{isPaused ? 'Resume' : 'Pause'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.modifyBtn]} activeOpacity={0.8} onPress={() => router.push('/subscription-ride')}>
-                        <Text style={styles.modifyText}>Modify</Text>
+                    <TouchableOpacity style={[s.actionBtn, s.modifyBtn]} onPress={() => router.push('/subscription-ride')} activeOpacity={0.8}>
+                        <Text style={s.modifyText}>Modify</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} activeOpacity={0.8} onPress={handleCancel}>
-                        <Text style={styles.cancelText}>Cancel</Text>
+                    <TouchableOpacity style={[s.actionBtn, s.cancelBtn]} onPress={handleCancel} activeOpacity={0.8}>
+                        <Text style={s.cancelText}>Cancel</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Upcoming Rides */}
-                <View style={styles.upcomingSection}>
-                    <Text style={styles.upcomingTitle}>Upcoming Rides</Text>
-                    
-                    <View style={styles.ridesList}>
-                        {upcomingRides.map((ride, idx) => (
-                            <View key={idx} style={styles.rideRow}>
-                                <View style={styles.dateCol}>
-                                    <Text style={styles.dateBold}>{ride.date}</Text>
-                                    <Text style={styles.dayLight}>{ride.day}</Text>
-                                </View>
-                                <View style={styles.dividerVertical} />
-                                <Text style={styles.timeText}>{ride.time} Pickup</Text>
-                                <View style={styles.statusPill}>
-                                    <Text style={styles.statusPillText}>{ride.status}</Text>
+                {/* Calendar Card */}
+                <View style={s.calendarCard}>
+                    <View style={s.calendarHeader}>
+                        <Text style={s.calendarTitle}>📅  Upcoming Rides</Text>
+                        <View style={s.legendRow}>
+                            <View style={s.legendDot} />
+                            <Text style={s.legendText}>Scheduled ride</Text>
+                        </View>
+                    </View>
+
+                    {months.map((m, i) => (
+                        <View key={i}>
+                            <MiniCalendar
+                                year={m.year} month={m.month}
+                                rideDates={rideDates} today={today}
+                                selectedDate={selectedDate} onSelect={setSelectedDate}
+                            />
+                            {i === 0 && <View style={s.calDivider} />}
+                        </View>
+                    ))}
+
+                    {selectedRide ? (
+                        <View style={s.rideDetail}>
+                            <View style={s.rideDetailHeader}>
+                                <Text style={s.rideDetailDate}>
+                                    {new Date(selectedRide.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </Text>
+                                <View style={s.scheduledPill}><Text style={s.scheduledPillText}>SCHEDULED</Text></View>
+                            </View>
+                            <View style={s.rideDetailRow}>
+                                <View style={s.dotGreen} />
+                                <View style={s.rideDetailInfo}>
+                                    <Text style={s.rideDetailLabel}>PICKUP · {selectedRide.time}</Text>
+                                    <Text style={s.rideDetailAddr}>{selectedRide.from}</Text>
                                 </View>
                             </View>
-                        ))}
-                    </View>
+                            <View style={s.rideDetailDivLine} />
+                            <View style={s.rideDetailRow}>
+                                <View style={s.dotPurple} />
+                                <View style={s.rideDetailInfo}>
+                                    <Text style={s.rideDetailLabel}>DROP</Text>
+                                    <Text style={s.rideDetailAddr}>{selectedRide.to}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    ) : (
+                        <Text style={s.calHint}>Tap a purple dot to see ride details</Text>
+                    )}
                 </View>
 
                 <View style={{ height: 120 }} />
@@ -228,15 +305,13 @@ export default function SubscriptionsDashboard() {
     );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F0FF' },
-    
+
     topNav: {
-        position: 'absolute', top: 0, left: 0, right: 0,
-        paddingHorizontal: 24,
+        position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: 'rgba(245, 240, 255, 0.8)',
-        zIndex: 10,
+        backgroundColor: 'rgba(245,240,255,0.97)', zIndex: 10,
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     backBtn: { width: 32, height: 32, justifyContent: 'center' },
@@ -245,71 +320,74 @@ const styles = StyleSheet.create({
     menuBtn: { width: 32, height: 32, alignItems: 'flex-end', justifyContent: 'center' },
     menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
 
-    scrollContent: {
-        paddingTop: 0,
-        paddingHorizontal: 24,
-    },
+    scrollContent: { paddingHorizontal: 24 },
 
+    // Active card
     activeCard: {
-        width: '100%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 24,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
-        marginBottom: 24,
-        borderLeftWidth: 6, borderLeftColor: '#BEA3D8'
+        backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24,
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
+        marginBottom: 16, borderLeftWidth: 5, borderLeftColor: '#BEA3D8',
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-    routeCol: { flex: 1, paddingRight: 10 },
-    routeTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', lineHeight: 25, marginBottom: 4 },
-    routeSub: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
-    
-    statusBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: '#ECFDF5', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 9999
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+    routeCol: { flex: 1, gap: 4, paddingRight: 12 },
+    routeTitle: { fontSize: 15, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.3 },
+    routeSub: { fontSize: 12, color: '#64748B' },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9999, borderWidth: 1, borderColor: '#BBF7D0' },
+    statusBadgePaused: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
+    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#22C55E' },
+    statusDotPaused: { backgroundColor: '#F59E0B' },
+    statusText: { fontSize: 11, fontWeight: '700', color: '#15803D' },
+    statusTextPaused: { color: '#B45309' },
+
+    progressSection: { gap: 10 },
+    progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    progressNumbers: { fontSize: 28, fontWeight: '900', color: '#1E1B2E', letterSpacing: -1 },
+    progressTotal: { fontSize: 16, fontWeight: '500', color: '#94A3B8' },
+    progressLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' },
+    progressTrack: { height: 8, backgroundColor: '#F1F5F9', borderRadius: 9999, overflow: 'hidden' },
+    progressBar: { height: 8, backgroundColor: '#BEA3D8', borderRadius: 9999 },
+
+    paymentBadge: { marginTop: 14, backgroundColor: '#F5F0FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+    paymentBadgeText: { fontSize: 12, fontWeight: '600', color: '#7C3AED' },
+
+    // Actions
+    actionsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    actionBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    pauseBtn: { backgroundColor: '#EDE9FE' },
+    modifyBtn: { backgroundColor: '#BEA3D8' },
+    cancelBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
+    pauseText: { fontSize: 13, fontWeight: '700', color: '#7C3AED' },
+    modifyText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+    cancelText: { fontSize: 13, fontWeight: '700', color: '#EF4444' },
+
+    // Calendar card
+    calendarCard: {
+        backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20,
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.07, shadowRadius: 24, elevation: 5,
+        marginBottom: 16,
     },
-    statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
-    statusText: { fontSize: 12, fontWeight: '600', color: '#059669', letterSpacing: 0.3 },
+    calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    calendarTitle: { fontSize: 15, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.3 },
+    legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    legendDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#BEA3D8' },
+    legendText: { fontSize: 11, fontWeight: '500', color: '#64748B' },
+    calDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 16 },
+    calHint: { fontSize: 12, color: '#94A3B8', textAlign: 'center', paddingTop: 12 },
 
-    progressSection: { marginBottom: 16 },
-    progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 },
-    progressLeft: { flexDirection: 'column' },
-    progressNumbers: { fontSize: 32, fontWeight: '900', color: '#1E1B2E', letterSpacing: -0.8 },
-    progressTotal: { fontSize: 20, fontWeight: '500', color: '#9CA3AF', letterSpacing: -0.4 },
-    progressLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
-    progressTrack: { height: 10, backgroundColor: '#F5F0FF', borderRadius: 5, overflow: 'hidden' },
-    progressBar: { height: '100%', backgroundColor: '#BEA3D8', borderRadius: 5 },
-
-    nextRideRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    calendarIcon: { fontSize: 14 },
-    nextRideText: { fontSize: 14, fontWeight: '600', color: '#BEA3D8' },
-
-    actionsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 32 },
-    actionBtn: { flex: 1, marginHorizontal: 4, height: 40, borderRadius: 20, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    
-    pauseBtn: { borderColor: '#FB923C' },
-    pauseText: { fontSize: 12, fontWeight: '700', color: '#F97316' },
-    
-    modifyBtn: { borderColor: '#10B981' },
-    modifyText: { fontSize: 12, fontWeight: '700', color: '#10B981' },
-    
-    cancelBtn: { borderColor: '#F87171' },
-    cancelText: { fontSize: 12, fontWeight: '700', color: '#EF4444' },
-
-    upcomingSection: { width: '100%' },
-    upcomingTitle: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', marginBottom: 24 },
-    ridesList: { gap: 24 },
-    
-    rideRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 40 },
-    dateCol: { width: 56 },
-    dateBold: { fontSize: 16, fontWeight: '700', color: '#1E1B2E', marginBottom: 2 },
-    dayLight: { fontSize: 12, fontWeight: '400', color: '#6B7280' },
-    
-    dividerVertical: { width: 1, height: 32, backgroundColor: '#EDE9FA', marginHorizontal: 16 },
-    
-    timeText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#1E1B2E' },
-    
-    statusPill: { backgroundColor: '#EDE9FE', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 12 },
-    statusPillText: { fontSize: 10, fontWeight: '700', color: '#BEA3D8', textTransform: 'uppercase', letterSpacing: 0.5 },
-
+    // Ride detail
+    rideDetail: {
+        backgroundColor: '#F5F0FF', borderRadius: 14, padding: 16, marginTop: 16, gap: 10,
+        borderWidth: 1, borderColor: 'rgba(190,163,216,0.3)',
+    },
+    rideDetailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+    rideDetailDate: { fontSize: 13, fontWeight: '700', color: '#1E1B2E' },
+    scheduledPill: { backgroundColor: '#BEA3D8', borderRadius: 9999, paddingHorizontal: 8, paddingVertical: 3 },
+    scheduledPillText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+    rideDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+    dotGreen:   { width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981', marginTop: 4 },
+    dotPurple:  { width: 10, height: 10, borderRadius: 5, backgroundColor: '#BEA3D8', marginTop: 4 },
+    rideDetailInfo: { flex: 1, gap: 2 },
+    rideDetailLabel: { fontSize: 9, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' },
+    rideDetailAddr: { fontSize: 13, fontWeight: '600', color: '#1E1B2E' },
+    rideDetailDivLine: { height: 1, backgroundColor: 'rgba(190,163,216,0.25)', marginLeft: 22 },
 });
