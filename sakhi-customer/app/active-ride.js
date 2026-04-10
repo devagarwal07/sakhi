@@ -44,6 +44,7 @@ export default function ActiveRideScreen() {
     })).current;
     const sheetSlide = useRef(new Animated.Value(300)).current;
     const [modal, setModal] = useState(null);
+    const [shareShown, setShareShown] = useState(false);
 
     useEffect(() => {
         // Slide up bottom sheet
@@ -132,11 +133,10 @@ export default function ActiveRideScreen() {
             return;
         }
         try {
-            // Call the backend to get a JWT-signed tracking URL
             const { data } = await shareTrip(ride.rideId);
             const shareUrl = data?.share_url;
             if (!shareUrl) throw new Error('No share URL returned');
-
+            setShareShown(true);
             const isAvailable = await Sharing.isAvailableAsync();
             if (isAvailable) {
                 await Sharing.shareAsync(shareUrl, { dialogTitle: 'Track my Sakhi ride' });
@@ -212,7 +212,7 @@ export default function ActiveRideScreen() {
                 polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#BEA3D8', width: 3 }] : []}
             />
 
-            {/* SOS Pills and Share Pill */}
+            {/* SOS Pill — always visible */}
             <View style={[styles.topRightPills, { top: topOverlayTop }]}>
                 <TouchableOpacity
                     style={styles.sosPill}
@@ -222,13 +222,16 @@ export default function ActiveRideScreen() {
                     <Text style={styles.sosPillText}>🆘  SOS</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.sharePill}
-                    onPress={handleShareTrip}
-                    activeOpacity={0.85}
-                >
-                    <Text style={styles.sharePillText}>🔗  Share</Text>
-                </TouchableOpacity>
+                {/* Share pill — only shown after user taps Share Trip */}
+                {shareShown && (
+                    <TouchableOpacity
+                        style={styles.sharePill}
+                        onPress={handleShareTrip}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={styles.sharePillText}>🔗  Share</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Status Chip */}
@@ -315,10 +318,19 @@ export default function ActiveRideScreen() {
                     </View>
                 </View>
 
-                {/* Cancel (only if not in-progress) */}
-                {ride.status !== 'in_progress' && (
-                    <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-                        <Text style={styles.cancelBtnText}>Cancel Ride</Text>
+                {/* Cancel + Share Trip row (only if not in-progress) */}
+                {ride.status !== 'in_progress' ? (
+                    <View style={styles.bottomActionRow}>
+                        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.85}>
+                            <Text style={styles.cancelBtnText}>Cancel Ride</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
+                            <Text style={styles.shareBtnText}>🔗 Share Trip</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
+                        <Text style={styles.shareBtnText}>🔗 Share Trip</Text>
                     </TouchableOpacity>
                 )}
             </Animated.View>
@@ -413,11 +425,21 @@ const styles = StyleSheet.create({
     tripInfoText: { flex: 1, fontSize: 11, color: Colors.onSurface, fontWeight: '500' },
     tripInfoArrow: { fontSize: 14, color: Colors.outline },
     cancelBtn: {
+        flex: 1,
         borderWidth: 1.5, borderColor: '#fca5a5',
         borderRadius: BorderRadius.md, paddingVertical: 12,
         alignItems: 'center',
     },
     cancelBtnText: { color: '#dc2626', fontWeight: '600', fontSize: 14 },
+    shareBtn: {
+        flex: 1,
+        backgroundColor: '#F5F0FF',
+        borderRadius: BorderRadius.md, paddingVertical: 12,
+        alignItems: 'center',
+        borderWidth: 1, borderColor: 'rgba(190,163,216,0.4)',
+    },
+    shareBtnText: { color: '#7C3AED', fontWeight: '700', fontSize: 13 },
+    bottomActionRow: { flexDirection: 'row', gap: 10 },
     pickupMarker: { alignItems: 'center', justifyContent: 'center' },
     dropoffMarker: { alignItems: 'center', justifyContent: 'center' },
     carMarker: { alignItems: 'center', justifyContent: 'center' },
