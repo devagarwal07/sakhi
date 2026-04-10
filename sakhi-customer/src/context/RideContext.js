@@ -7,6 +7,7 @@ const initialState = {
     status: null,
     pickup: null,    // { latitude, longitude, address }
     dropoff: null,   // { latitude, longitude, address }
+    stop: null,      // { latitude, longitude, address } — optional via/stop point
     driver: null,    // { id, name, photo, rating, vehicle, plate, phone }
     fare: null,      // { base, distance_fare, waiting, promo, total }
     paymentMethod: 'cash',
@@ -22,6 +23,7 @@ export function RideProvider({ children }) {
 
     const setPickup = useCallback((pickup) => setRide((r) => ({ ...r, pickup })), []);
     const setDropoff = useCallback((dropoff) => setRide((r) => ({ ...r, dropoff })), []);
+    const setStop   = useCallback((stop)   => setRide((r) => ({ ...r, stop })),   []);
     const setRideId = useCallback((rideId) => setRide((r) => ({ ...r, rideId })), []);
     const setDriver = useCallback((driver) => setRide((r) => ({ ...r, driver })), []);
     const setFare   = useCallback((fare)   => setRide((r) => ({ ...r, fare })), []);
@@ -62,6 +64,7 @@ export function RideProvider({ children }) {
                 ride,
                 setPickup,
                 setDropoff,
+                setStop,
                 setRideId,
                 setDriver,
                 setFare,
