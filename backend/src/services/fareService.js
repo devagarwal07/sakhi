@@ -202,6 +202,35 @@ function applySubscriptionDiscount(baseFare, planDays) {
   return { discounted_fare, saving, pct: rule.pct };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Night Fare — 1.5× multiplier between 22:00 and 06:00
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Returns true if the given date/time falls within night fare hours (22:00 – 06:00).
+ * @param {Date} [date=new Date()]
+ */
+function isNightFare(date = new Date()) {
+  const h = date.getHours();
+  return h >= 22 || h < 6;
+}
+
+const NIGHT_FARE_MULTIPLIER = 1.5;
+
+/**
+ * Applies the night fare multiplier if applicable.
+ * @param {number} fare
+ * @param {Date} [date=new Date()]
+ * @returns {{ final_fare: number, night_surcharge: number, is_night_fare: boolean }}
+ */
+function applyNightFare(fare, date = new Date()) {
+  if (!isNightFare(date)) {
+    return { final_fare: fare, night_surcharge: 0, is_night_fare: false };
+  }
+  const night_surcharge = parseFloat((fare * (NIGHT_FARE_MULTIPLIER - 1)).toFixed(2));
+  const final_fare      = parseFloat((fare + night_surcharge).toFixed(2));
+  return { final_fare, night_surcharge, is_night_fare: true };
+}
+
 module.exports = {
   calculateFare,
   calculateWaitingCharge,
@@ -209,4 +238,7 @@ module.exports = {
   getFareConfig,
   applyPromo,
   applySubscriptionDiscount,
+  isNightFare,
+  applyNightFare,
+  NIGHT_FARE_MULTIPLIER,
 };

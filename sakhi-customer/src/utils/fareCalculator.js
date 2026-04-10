@@ -102,6 +102,17 @@ export function parseKmText(distanceText) {
 }
 
 /**
+ * Returns true if the current time is within night fare hours (22:00 – 06:00).
+ * Night fare applies a 1.5× multiplier.
+ */
+export function isNightFare(date = new Date()) {
+  const h = date.getHours();
+  return h >= 22 || h < 6;
+}
+
+export const NIGHT_FARE_MULTIPLIER = 1.5;
+
+/**
  * Apply a subscription discount to a base fare total.
  *
  * @param {number} baseFare   - Undiscounted total
