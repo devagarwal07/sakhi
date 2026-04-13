@@ -40,8 +40,10 @@ const NOTIFICATION_GROUPS = [
   {
     title: 'SUBSCRIPTIONS',
     items: [
-      { key: 'upcoming_sub_ride', label: 'Upcoming Subscription Ride', sub: null, badge: '30 MINS BEFORE' },
-      { key: 'sub_assigned',      label: 'New Subscription Assigned',  sub: 'When a rider books you for subscription' },
+      { key: 'upcoming_sub_ride', label: 'Upcoming Subscription Ride',      sub: null, badge: '30 MINS BEFORE' },
+      { key: 'sub_assigned',      label: 'New Subscription Assigned',        sub: 'When a rider books you for subscription' },
+      { key: 'sub_cancelled',     label: 'Subscription Cancelled by Rider',  sub: 'When a rider cancels their subscription' },
+      { key: 'sub_paused',        label: 'Subscription Paused by Rider',     sub: 'When a rider temporarily pauses rides' },
     ],
   },
   {
@@ -100,6 +102,8 @@ export default function NotificationSettingsScreen({ navigation }) {
     payout_received:   true,
     upcoming_sub_ride: true,
     sub_assigned:      true,
+    sub_cancelled:     true,
+    sub_paused:        true,
     doc_expiry:        true,
     promotions:        false,
   });
@@ -137,6 +141,8 @@ export default function NotificationSettingsScreen({ navigation }) {
               payout_received:   true,
               upcoming_sub_ride: true,
               sub_assigned:      true,
+              sub_cancelled:     true,
+              sub_paused:        true,
               doc_expiry:        true,
               promotions:        false,
             });
