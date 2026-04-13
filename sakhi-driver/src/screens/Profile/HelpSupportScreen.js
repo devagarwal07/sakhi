@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Platform, Linking, Animated,
@@ -63,11 +63,10 @@ const FAQS = [
   {
     id: 'q1',
     q: 'How is my commission calculated?',
-    a: 'Commission is calculated based on the distance and time of each completed ride, minus standard platform fees and applicable taxes.',
+    a: 'Commission is calculated based on the distance and time of each completed ride — depends on the distance/time spent since you are en-route.',
   },
-  { id: 'q2', q: 'What if a rider cancels?', a: 'If a rider cancels after you have already accepted the ride and are en-route, you may receive a cancellation fee. Details depend on the time elapsed.' },
   { id: 'q3', q: 'How do I update expired documents?', a: 'Go to My Profile → Documents and tap "Re-upload" next to the expired document. The review team will approve it within 24 hours.' },
-  { id: 'q4', q: 'When does Sakhi pay me?', a: "Earnings are settled to your registered bank account every Monday for the previous week's completed rides." },
+  { id: 'q4', q: 'When does Sakhi pay me?', a: 'On-demand rides are settled directly by customers. For subscription rides, payment is made every time you complete 7 rides of the subscription.' },
 ];
 
 // ─── Contact channels ─────────────────────────────────────────────────────────
