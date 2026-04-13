@@ -261,7 +261,7 @@ async function getRide(req, res, next) {
       .select(`
         *,
         users!rides_rider_id_fkey(id, name, phone),
-        drivers(id, name, phone, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model, profile_photo_url)
+        drivers(id, name, phone, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model, profile_photo_url, upi_id)
       `)
       .eq('id', id)
       .limit(1);
