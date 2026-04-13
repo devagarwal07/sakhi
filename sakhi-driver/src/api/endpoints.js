@@ -22,6 +22,17 @@ export const getDriverDocuments = () => client.get('/drivers/documents');
 export const uploadDocument    = (formData) =>
   client.post('/drivers/kyc/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
+// ── KYC Verification (Surepass) ───────────────────────────────────────────────
+/** Trigger Surepass DL verification for the authenticated driver.
+ *  Body fields are all optional — backend falls back to stored values. */
+export const verifyDriverDL = (params = {}) =>
+  client.post('/drivers/dl/verify', params);
+
+/** Trigger Surepass RC V2 verification for the authenticated driver.
+ *  Pass { enrich: true } only when unmasked owner/chassis detail is needed. */
+export const verifyDriverRC = (params = {}) =>
+  client.post('/drivers/rc/verify', params);
+
 // ── Rides ─────────────────────────────────────────────────────────────────────
 export const getRideHistory = (params = {}) => {
   if (typeof params === 'number') return client.get('/drivers/rides', { params: { page: params } });
