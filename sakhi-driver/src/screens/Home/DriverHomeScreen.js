@@ -295,11 +295,13 @@ export default function DriverHomeScreen({ navigation }) {
   const lastY = useRef(SNAP_DEFAULT);
   const isDragging = useRef(false);
 
-  const panResponder = useRef(
+  // ── Pan responder for the HANDLE BAR — always captures on start ─────────
+  const handlePanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, { dy }) => Math.abs(dy) > 8,
-      onMoveShouldSetPanResponderCapture: (_, { dy, dx }) => Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx),
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderGrant: () => {
         isDragging.current = true;
         sheetY.stopAnimation(val => { lastY.current = val; });
@@ -308,7 +310,6 @@ export default function DriverHomeScreen({ navigation }) {
       },
       onPanResponderMove: (_, { dy }) => {
         const next = lastY.current + dy;
-        // Clamp within snap range with resistance at extremes
         const clamped = Math.max(SNAP_EXPANDED - 20, Math.min(SNAP_PEEK + 20, next));
         sheetY.setValue(clamped - lastY.current);
       },
@@ -316,24 +317,43 @@ export default function DriverHomeScreen({ navigation }) {
         sheetY.flattenOffset();
         isDragging.current = false;
         const currentY = lastY.current + dy;
-
-        // Use velocity to pick snap point
         let target;
-        if (vy < -0.5) {
-          target = SNAP_EXPANDED;         // Flick up → expand
-        } else if (vy > 0.5) {
-          target = SNAP_PEEK;             // Flick down → peek
-        } else {
-          target = snapToNearest(currentY);
-        }
-
+        if (vy < -0.5)      target = SNAP_EXPANDED;
+        else if (vy > 0.5)  target = SNAP_PEEK;
+        else                target = snapToNearest(currentY);
         lastY.current = target;
-        Animated.spring(sheetY, {
-          toValue: target,
-          useNativeDriver: false,
-          tension: 68,
-          friction: 12,
-        }).start();
+        Animated.spring(sheetY, { toValue: target, useNativeDriver: false, tension: 68, friction: 12 }).start();
+      },
+    })
+  ).current;
+
+  // ── Pan responder for the SHEET CONTENT — activates on vertical swipe ────
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, { dy, dx }) => Math.abs(dy) > 5 && Math.abs(dy) > Math.abs(dx),
+      onMoveShouldSetPanResponderCapture: (_, { dy, dx }) => Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.5,
+      onPanResponderGrant: () => {
+        isDragging.current = true;
+        sheetY.stopAnimation(val => { lastY.current = val; });
+        sheetY.setOffset(lastY.current);
+        sheetY.setValue(0);
+      },
+      onPanResponderMove: (_, { dy }) => {
+        const next = lastY.current + dy;
+        const clamped = Math.max(SNAP_EXPANDED - 20, Math.min(SNAP_PEEK + 20, next));
+        sheetY.setValue(clamped - lastY.current);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        sheetY.flattenOffset();
+        isDragging.current = false;
+        const currentY = lastY.current + dy;
+        let target;
+        if (vy < -0.5)      target = SNAP_EXPANDED;
+        else if (vy > 0.5)  target = SNAP_PEEK;
+        else                target = snapToNearest(currentY);
+        lastY.current = target;
+        Animated.spring(sheetY, { toValue: target, useNativeDriver: false, tension: 68, friction: 12 }).start();
       },
     })
   ).current;
@@ -527,9 +547,11 @@ export default function DriverHomeScreen({ navigation }) {
       {/* ── DRAGGABLE BOTTOM SHEET ── */}
       <Animated.View style={[s.sheet, { top: sheetY }]} {...panResponder.panHandlers}>
 
-        {/* ── Visual drag handle (decorative — gesture now works on whole sheet) ── */}
-        <View style={s.handleArea}>
+        {/* ── Drag handle — dedicated pan responder, always captures ── */}
+        <View style={s.handleArea} {...handlePanResponder.panHandlers}>
+          <View style={s.handleHint} />
           <View style={s.handle} />
+          <View style={s.handleHint} />
         </View>
 
         {/* ── Scrollable content ── */}
@@ -694,18 +716,25 @@ const s = StyleSheet.create({
     elevation: 20,
   },
 
-  // Handle area — entire width, taller hit target for easier dragging
+  // Handle area — wider, taller hit target with visible pill
   handleArea: {
     width: '100%',
-    height: 36,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 3,
+    cursor: 'grab',
+  },
+  // Invisible spacer strips above/below the pill to expand hit area
+  handleHint: {
+    width: '100%',
+    height: 8,
   },
   handle: {
-    width: 44,
+    width: 48,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#D1C4E9',
+    backgroundColor: '#C4B5E9',
   },
 
   sheetContent: { paddingHorizontal: 24, paddingBottom: 24 },
