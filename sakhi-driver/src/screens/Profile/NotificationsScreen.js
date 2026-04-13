@@ -14,6 +14,8 @@ const ICON_MAP = {
   commission_due:   '⚠️',
   system:           '📣',
   subscription:     '🔄',
+  sub_cancelled:    '❌',
+  sub_paused:       '⏸️',
 };
 
 function NotifCard({ item }) {
