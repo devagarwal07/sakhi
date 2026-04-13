@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, TextInput
+    Dimensions, ScrollView, Platform, TextInput, Linking, Alert, Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -20,6 +21,8 @@ export default function RideSummaryScreen() {
     const [rating, setRating] = useState(4); 
     const [comment, setComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
+    const [permission, requestPermission] = useCameraPermissions();
 
     const insets = useSafeAreaInsets();
 
@@ -57,6 +60,26 @@ export default function RideSummaryScreen() {
         clearRide(); // Reset ride context so next booking starts clean
         setSubmitting(false);
         router.replace('/');
+    };
+
+    const handleOpenScanner = async () => {
+        if (!permission?.granted) {
+            const resp = await requestPermission();
+            if (!resp.granted) {
+                Alert.alert("Permission Required", "Camera access is needed to scan QR codes.");
+                return;
+            }
+        }
+        setShowScanner(true);
+    };
+
+    const handleBarcodeScanned = ({ type, data }) => {
+        setShowScanner(false);
+        if (data && data.startsWith('upi://')) {
+            Linking.openURL(data).catch(() => Alert.alert('UPI Error', 'Could not open UPI app.'));
+        } else {
+            Alert.alert('Invalid QR', 'Please scan a valid UPI QR code.');
+        }
     };
 
     return (
@@ -144,6 +167,31 @@ export default function RideSummaryScreen() {
                         <Text style={styles.paymentIcon}>💵</Text>
                         <Text style={styles.paymentText}>{paymentMethod} Payment</Text>
                     </View>
+
+                    {/* Pay via UPI App Action */}
+                    {paymentMethod === 'Cash' && (
+                        <View style={{ gap: 8, marginTop: 12 }}>
+                            {ride?.driver?.upi_id && (
+                                <TouchableOpacity
+                                    style={[styles.paymentRow, { backgroundColor: '#E8F5E9', justifyContent: 'center' }]}
+                                    onPress={() => {
+                                        const upiUrl = `upi://pay?pa=${ride.driver.upi_id}&pn=${encodeURIComponent(ride.driver.name)}&am=${total}&cu=INR`;
+                                        Linking.openURL(upiUrl).catch(() => {
+                                            Alert.alert('UPI Failed', 'Could not open UPI app. You can pay via cash or scan QR manually.');
+                                        });
+                                    }}
+                                >
+                                    <Text style={[styles.paymentText, { color: '#16A34A', fontWeight: '700' }]}>📲 Pay Directly (UPI Intent)</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                style={[styles.paymentRow, { backgroundColor: '#F3E8FF', justifyContent: 'center' }]}
+                                onPress={handleOpenScanner}
+                            >
+                                <Text style={[styles.paymentText, { color: '#9333EA', fontWeight: '700' }]}>📷 Scan Driver QR to Pay</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 {/* Rating Section */}
@@ -178,8 +226,33 @@ export default function RideSummaryScreen() {
                 </View>
 
                 {/* Bottom spacer for mock tab bar */}
-                <View style={{ height: bottomSpacerHeight }} />
+                <View style={[styles.bottomSpacer, { height: bottomSpacerHeight }]} />
             </ScrollView>
+
+            {/* QR Scanner Modal */}
+            <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+                <View style={styles.scannerWrapper}>
+                    <View style={styles.scannerHeader}>
+                        <TouchableOpacity style={styles.scannerCloseBtn} onPress={() => setShowScanner(false)}>
+                            <Text style={styles.scannerCloseText}>Close</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.scannerTitle}>Scan QR Code</Text>
+                    </View>
+                    <CameraView
+                        style={StyleSheet.absoluteFill}
+                        facing="back"
+                        onBarcodeScanned={handleBarcodeScanned}
+                        barcodeScannerSettings={{
+                            barcodeTypes: ['qr'],
+                        }}
+                    >
+                        <View style={styles.scannerOverlay}>
+                            <View style={styles.scannerCutout} />
+                            <Text style={styles.scannerNote}>Position QR code inside the frame</Text>
+                        </View>
+                    </CameraView>
+                </View>
+            </Modal>
 
             {/* Dummy Tab Bar Overlay */}
             <View style={[styles.dummyTabBar, { height: tabBarHeight, paddingBottom: tabBarPaddingBottom }]}>
@@ -346,4 +419,23 @@ const styles = StyleSheet.create({
     tabLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', letterSpacing: 1 },
     tabIconActive: { fontSize: 20, color: '#BEA3D8' },
     tabLabelActive: { fontSize: 10, fontWeight: '600', color: '#BEA3D8', letterSpacing: 1 },
+
+    // Scanner Styles
+    bottomSpacer: { width: '100%' },
+    scannerWrapper: { flex: 1, backgroundColor: '#000' },
+    scannerHeader: {
+        flexDirection: 'row', alignItems: 'center', paddingTop: 56, paddingBottom: 16,
+        paddingHorizontal: 20, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 10,
+    },
+    scannerCloseBtn: { padding: 8 },
+    scannerCloseText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    scannerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginLeft: 'auto', marginRight: 'auto', paddingRight: 50 },
+    scannerOverlay: {
+        ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    scannerCutout: {
+        width: 250, height: 250, backgroundColor: 'transparent',
+        borderColor: 'rgba(255,255,255,0.8)', borderWidth: 2, borderRadius: 24,
+    },
+    scannerNote: { color: '#fff', marginTop: 32, fontSize: 14, fontWeight: '500' },
 });
