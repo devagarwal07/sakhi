@@ -71,20 +71,32 @@ const BADGE_MAP = {
   expired:  { bg: '#FFE4E6', text: '#BE123C', label: 'EXPIRED'       },
 };
 
-function DocRow({ title, expiry, badgeState = 'verified', onReUpload, isFirst }) {
+function DocRow({ title, expiry, subLabel, badgeState = 'verified', onReUpload, onView, isFirst }) {
   const b = BADGE_MAP[badgeState] ?? BADGE_MAP.verified;
   return (
     <View style={[doc.wrap, !isFirst && doc.border]}>
       <View style={doc.left}>
         <Text style={doc.title}>{title}</Text>
-        <Text style={doc.expiry}>Exp: {expiry}</Text>
+        {expiry
+          ? <Text style={doc.expiry}>Exp: {expiry}</Text>
+          : subLabel
+            ? <Text style={doc.expiry}>{subLabel}</Text>
+            : null
+        }
         <View style={[doc.badge, { backgroundColor: b.bg }]}>
           <Text style={[doc.badgeText, { color: b.text }]}>{b.label}</Text>
         </View>
       </View>
-      <TouchableOpacity style={doc.btn} onPress={onReUpload} activeOpacity={0.8}>
-        <Text style={doc.btnText}>Re-upload</Text>
-      </TouchableOpacity>
+      <View style={doc.actions}>
+        {onView && (
+          <TouchableOpacity style={[doc.btn, doc.btnGhost]} onPress={onView} activeOpacity={0.8}>
+            <Text style={[doc.btnText, { color: '#64748B' }]}>View</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={doc.btn} onPress={onReUpload} activeOpacity={0.8}>
+          <Text style={doc.btnText}>Re-upload</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -96,7 +108,9 @@ const doc = StyleSheet.create({
   expiry:    { fontSize: 10, fontWeight: '400', color: MUTED, lineHeight: 15 },
   badge:     { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 9999 },
   badgeText: { fontSize: 9, fontWeight: '700', letterSpacing: -0.45, textTransform: 'uppercase', lineHeight: 14 },
+  actions:   { flexDirection: 'row', gap: 6 },
   btn:       { backgroundColor: 'rgba(190,163,216,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  btnGhost:  { backgroundColor: 'rgba(100,116,139,0.10)' },
   btnText:   { fontSize: 12, fontWeight: '700', color: PURPLE, lineHeight: 16 },
 });
 
@@ -310,21 +324,28 @@ export default function MyProfileScreen({ navigation }) {
         <View style={s.sectionCard}>
           <DocRow
             title="Driving Licence"
-            expiry="14 Oct 2028"
+            expiry={driver?.dl_expiry ?? '14 Oct 2028'}
             badgeState="verified"
             onReUpload={() => navigation?.navigate('MyDocuments')}
             isFirst
           />
           <DocRow
             title="Vehicle RC"
-            expiry="22 Jan 2030"
+            expiry={driver?.rc_expiry ?? '22 Jan 2030'}
             badgeState="verified"
             onReUpload={() => navigation?.navigate('MyDocuments')}
           />
           <DocRow
             title="Insurance"
-            expiry="15 Aug 2024"
+            expiry={driver?.insurance_expiry ?? '15 Aug 2024'}
             badgeState="expiring"
+            onReUpload={() => navigation?.navigate('MyDocuments')}
+          />
+          <DocRow
+            title="Aadhaar Card"
+            subLabel={driver?.aadhaar_masked ? `XXXX XXXX ${driver.aadhaar_masked}` : 'XXXX XXXX 4521'}
+            badgeState="verified"
+            onView={() => navigation?.navigate('MyDocuments')}
             onReUpload={() => navigation?.navigate('MyDocuments')}
           />
         </View>
