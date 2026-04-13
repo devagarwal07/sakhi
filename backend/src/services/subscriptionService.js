@@ -537,6 +537,83 @@ async function cancelSubscription(riderId, subscriptionId) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// recordSubscriptionFailure
+// Called when a subscription ride is missed, cancelled, or has no driver.
+// Increments consecutive_failures on the subscription. At 3, grants a free
+// ride credit for the rider and resets the counter.
+// ──────────────────────────────────────────────────────────────────────────────
+async function recordSubscriptionFailure(subscriptionId) {
+  // 1. Load current subscription
+  const { data: rows } = await supabase
+    .from('subscriptions')
+    .select('id, rider_id, consecutive_failures')
+    .eq('id', subscriptionId)
+    .limit(1);
+
+  const sub = rows?.[0];
+  if (!sub) return;
+
+  const newCount = (sub.consecutive_failures || 0) + 1;
+
+  if (newCount >= 3) {
+    // Grant free ride credit and reset counter
+    await Promise.all([
+      supabase.from('subscriptions')
+        .update({ consecutive_failures: 0 })
+        .eq('id', subscriptionId),
+      supabase.from('rider_free_ride_credits').insert({
+        rider_id: sub.rider_id,
+        reason:   'consecutive_subscription_failure',
+        status:   'available',
+      }),
+    ]);
+
+    // Notify rider about their free ride
+    fcmService.sendToUser(sub.rider_id, 'rider', {
+      title: '🎁 Your Next Ride is FREE!',
+      body:  "We're sorry for the 3 missed rides. As compensation, your next Sakhi ride is on us!",
+      data:  { type: 'FREE_RIDE_GRANTED' },
+    }).catch(() => {});
+
+    logger.info('subscriptionService.recordSubscriptionFailure — free ride granted', {
+      subscriptionId, riderId: sub.rider_id,
+    });
+  } else {
+    await supabase.from('subscriptions')
+      .update({ consecutive_failures: newCount })
+      .eq('id', subscriptionId);
+
+    logger.info('subscriptionService.recordSubscriptionFailure — failure recorded', {
+      subscriptionId, newCount,
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// consumeFreeRideCredit
+// Checks if the rider has an available free ride credit.
+// If yes, marks it used and returns { isFree: true, creditId }.
+// ──────────────────────────────────────────────────────────────────────────────
+async function consumeFreeRideCredit(riderId) {
+  const { data: credits } = await supabase
+    .from('rider_free_ride_credits')
+    .select('id')
+    .eq('rider_id', riderId)
+    .eq('status', 'available')
+    .order('granted_at', { ascending: true })
+    .limit(1);
+
+  const credit = credits?.[0];
+  if (!credit) return { isFree: false };
+
+  await supabase.from('rider_free_ride_credits')
+    .update({ status: 'used', used_at: new Date().toISOString() })
+    .eq('id', credit.id);
+
+  return { isFree: true, creditId: credit.id };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────────
 async function getOwnedSubscription(riderId, subscriptionId, allowedStatuses = []) {
@@ -693,5 +770,7 @@ module.exports = {
   resumeSubscription,
   cancelSubscription,
   reassignSubscriptionRide,
+  recordSubscriptionFailure,
+  consumeFreeRideCredit,
 };
 
