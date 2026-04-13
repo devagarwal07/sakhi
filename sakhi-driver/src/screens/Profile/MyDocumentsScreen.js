@@ -59,6 +59,8 @@ const MOCK_DOCS = [
     iconType: 'MaterialCommunity',
     colorKey: 'success',
     canReupload: true,
+    maskedNumber: 'XXXX XXXX 4521',
+    verified_on: '10 Jan 2024',
   },
   {
     id: '5',
@@ -89,6 +91,12 @@ const COLORS = {
     badgeText: '#BEA3D8',
     icon: 'refresh-cw',
   },
+  danger: {
+    border: '#DC2626',
+    badgeBg: '#FEF2F2',
+    badgeText: '#991B1B',
+    icon: 'alert-octagon',
+  },
 };
 
 function HelpIcon() {
@@ -109,12 +117,22 @@ export default function MyDocumentsScreen({ navigation }) {
   const [loading,          setLoading]           = useState(true);
 
   // ── Fetch real KYC document statuses from backend ─────────────────────
+  // We always render ALL doc slots from MOCK_DOCS (the fixed template).
+  // API data is merged in by type so partial responses never drop cards.
   useEffect(() => {
     (async () => {
       try {
         const { data } = await client.get('/drivers/documents');
         if (data?.docs?.length) {
-          setDocs(data.docs);
+          // Build a lookup: type → api doc
+          const apiMap = {};
+          data.docs.forEach((d) => { apiMap[d.type] = d; });
+
+          // Merge: for every base slot, overlay API fields if available
+          const merged = MOCK_DOCS.map((base) =>
+            apiMap[base.type] ? { ...base, ...apiMap[base.type] } : base
+          );
+          setDocs(merged);
           setExpiringSoon(data.expiringSoonCount ?? 0);
         }
       } catch {
@@ -216,10 +234,63 @@ export default function MyDocumentsScreen({ navigation }) {
                     {renderBadge(doc.status, doc.colorKey)}
                   </View>
 
-                  {hasDetails && (
+                  {/* ── Aadhaar: always show masked number + View + Re-upload ── */}
+                  {doc.type === 'aadhaar' && (
                     <View style={styles.docDetailsBox}>
-                      <Text style={styles.docMetaText}>Expires: {doc.expires}</Text>
-                      <Text style={styles.docMetaText}>Uploaded: {doc.uploaded}</Text>
+                      {doc.maskedNumber && (
+                        <Text style={styles.docMetaText}>Aadhaar: {doc.maskedNumber}</Text>
+                      )}
+                      {doc.verified_on && (
+                        <Text style={styles.docMetaText}>Verified on: {doc.verified_on}</Text>
+                      )}
+                      <View style={styles.aadhaarActions}>
+                        <TouchableOpacity
+                          style={[styles.reuploadBtn, styles.aadhaarViewBtn]}
+                          activeOpacity={0.7}
+                          onPress={() => navigation?.navigate?.('KycReupload', { docType: 'aadhaar', mode: 'view' })}
+                        >
+                          <Text style={[styles.reuploadBtnText, { color: '#64748B' }]}>VIEW</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.reuploadBtn, styles.aadhaarViewBtn]}
+                          activeOpacity={0.7}
+                          onPress={() => navigation?.navigate?.('KycReupload', { docType: 'aadhaar', mode: 'reupload' })}
+                        >
+                          <Text style={styles.reuploadBtnText}>RE-UPLOAD</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Docs with expiry/upload dates → Re-upload button */}
+                  {hasDetails && doc.type !== 'aadhaar' && (
+                    <View style={styles.docDetailsBox}>
+                      {doc.expires   && <Text style={styles.docMetaText}>Expires: {doc.expires}</Text>}
+                      {doc.issued_at && <Text style={styles.docMetaText}>Issued: {doc.issued_at}</Text>}
+
+                      {/* ── DL Surepass enrichment fields ── */}
+                      {doc.type === 'driving_licence' && (
+                        <>
+                          {doc.dl_name        && <Text style={styles.docMetaText}>Name on DL: {doc.dl_name}</Text>}
+                          {doc.vehicle_class?.length > 0 && (
+                            <Text style={styles.docMetaText}>Classes: {doc.vehicle_class.join(', ')}</Text>
+                          )}
+                          {doc.issuing_state  && <Text style={styles.docMetaText}>Issuing State: {doc.issuing_state}</Text>}
+                          {doc.blood_group    && <Text style={styles.docMetaText}>Blood Group: {doc.blood_group}</Text>}
+                        </>
+                      )}
+
+                      {/* ── RC Surepass enrichment fields ── */}
+                      {doc.type === 'vehicle_rc' && (
+                        <>
+                          {doc.maker_model    && <Text style={styles.docMetaText}>Vehicle: {doc.maker_model}</Text>}
+                          {doc.fuel_type      && <Text style={styles.docMetaText}>Fuel: {doc.fuel_type}</Text>}
+                          {doc.insurance_upto && <Text style={styles.docMetaText}>Insurance upto: {doc.insurance_upto}</Text>}
+                          {doc.blacklisted    && (
+                            <Text style={[styles.docMetaText, styles.dangerText]}>⚠ RC is blacklisted — contact support</Text>
+                          )}
+                        </>
+                      )}
 
                       <TouchableOpacity
                         style={styles.reuploadBtn}
@@ -231,8 +302,8 @@ export default function MyDocumentsScreen({ navigation }) {
                     </View>
                   )}
 
-                  {/* Aadhaar (and similar docs without date details) always get view/re-upload */}
-                  {!hasDetails && doc.canReupload && (
+                  {/* Other docs without date details but canReupload */}
+                  {!hasDetails && doc.type !== 'aadhaar' && doc.canReupload && (
                     <View style={styles.docDetailsBox}>
                       <TouchableOpacity
                         style={[styles.reuploadBtn, { marginTop: 4 }]}
@@ -419,6 +490,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
   },
+  dangerText: {
+    color: '#DC2626',
+    fontWeight: '600',
+  },
   reuploadBtn: {
     marginTop: 8,
     alignSelf: 'flex-start',
@@ -431,6 +506,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: '#BEA3D8',
     textTransform: 'uppercase',
+  },
+  aadhaarActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 8,
+  },
+  aadhaarViewBtn: {
+    marginTop: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
   },
 
   // Sticky Bottom Action
