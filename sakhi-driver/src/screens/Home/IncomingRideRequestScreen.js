@@ -193,7 +193,19 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
 
         <ScrollView contentContainerStyle={s.bottomSheetContent} showsVerticalScrollIndicator={false}>
 
-          {/* Subscription banner */}
+          {/* ── Subscription distinguishing header strip ── */}
+          {isSubscription && (
+            <View style={s.subHeaderStrip}>
+              <View style={s.subHeaderLeft}>
+                <MaterialCommunityIcons name="calendar-repeat" size={22} color="#92400E" />
+                <View>
+                  <Text style={s.subHeaderBadge}>📅 SUBSCRIPTION REQUEST</Text>
+                  <Text style={s.subHeaderNote}>Not a regular ride — recurring weekly commitment</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {isSubscription && (
             <View style={s.subBanner}>
               <MaterialCommunityIcons name="repeat" size={14} color="#92400E" />
@@ -308,7 +320,10 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               activeOpacity={0.75}
             >
               <MaterialCommunityIcons name="clock-outline" size={16} color="#92400E" />
-              <Text style={s.seeLaterBtnText}>{snoozing ? 'Noted...' : 'See Later'}</Text>
+              <View>
+                <Text style={s.seeLaterBtnText}>{snoozing ? 'Noted...' : 'See Later'}</Text>
+                <Text style={s.seeLaterBtnSub}>Remind me when I go online again</Text>
+              </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -350,9 +365,32 @@ const s = StyleSheet.create({
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   bottomSheetContent: { paddingHorizontal: 24, paddingBottom: 40, alignItems: 'center' },
 
+  subHeaderStrip: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: '#FCD34D',
+  },
+  subHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  subHeaderBadge: {
+    fontSize: 13, fontWeight: '800', color: '#92400E',
+    letterSpacing: 0.3, lineHeight: 18,
+  },
+  subHeaderNote: {
+    fontSize: 11, fontWeight: '400', color: '#B45309',
+    lineHeight: 16, marginTop: 1,
+  },
+
   subBanner: {
     width: '100%', flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#FEF3C7', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: '#FEF9E8', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
     marginBottom: 16, borderWidth: 1, borderColor: '#FDE68A',
   },
   subBannerText: { fontFamily: 'Inter', fontWeight: '600', fontSize: 12, color: '#92400E', flex: 1 },
@@ -415,11 +453,14 @@ const s = StyleSheet.create({
   acceptBtnText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 16, color: '#FFFFFF', letterSpacing: 0.5 },
 
   seeLaterBtn: {
-    width: '100%', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
-    flexDirection: 'row', gap: 8,
+    width: '100%', minHeight: 52, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+    flexDirection: 'row', gap: 10,
     backgroundColor: '#FEF3C7', borderWidth: 1.5, borderColor: '#FDE68A', marginBottom: 20,
+    paddingVertical: 10, paddingHorizontal: 16,
   },
-  seeLaterBtnText: { fontFamily: 'Inter', fontWeight: '600', fontSize: 15, color: '#92400E', letterSpacing: 0.3 },
+  seeLaterBtnText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 15, color: '#92400E', letterSpacing: 0.3 },
+  seeLaterBtnSub:  { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#B45309', letterSpacing: 0.1, marginTop: 1 },
 
   declineBtn: {
     width: '100%', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
