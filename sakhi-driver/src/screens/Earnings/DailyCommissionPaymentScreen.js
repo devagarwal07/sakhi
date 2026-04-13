@@ -330,7 +330,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       >
         {/* ── Greeting ── */}
         <View style={s.greeting}>
-          <Text style={s.greetingHi}>Good Day, {driverName} 👋</Text>
+          <Text style={s.greetingHi}>Good Day, Sakhi 🙋🏻‍♀️</Text>
           <Text style={s.greetingSub}>Complete your {isWeekly ? 'weekly' : 'daily'} platform fee to go online.</Text>
         </View>
 
