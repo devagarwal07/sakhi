@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl,
+  StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl, Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
+import SakhiModal from '../../components/SakhiModal';
 
 // ─── Icon components (no SVG library needed) ──────────────────────────────────
 
@@ -271,7 +272,159 @@ const pm = StyleSheet.create({
   tick:     { fontSize: 16, color: '#BEA3D8', fontWeight: '700' },
 });
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Export Bottom Sheet ──────────────────────────────────────────────────────
+function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailDone,    setEmailDone]    = useState(false);
+  const [emailError,   setEmailError]   = useState(null);
+
+  // Reset state each time sheet opens
+  useEffect(() => {
+    if (visible) { setEmailSending(false); setEmailDone(false); setEmailError(null); }
+  }, [visible]);
+
+  // Build a plain-text summary of visible transactions for Share
+  const buildShareText = () => {
+    const lines = ['Sakhi — Transaction History', ''];
+    (sections ?? []).forEach((sec) => {
+      lines.push(sec.date);
+      sec.rows.forEach((r) => {
+        const sign = r.isCredit ? '+' : '−';
+        lines.push(`  ${r.time}  ${r.title}  ${sign}₹${r.rawAmount}`);
+      });
+      lines.push(sec.dayTotal);
+      lines.push('');
+    });
+    if (customStart) {
+      const fmt = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      lines.unshift(`Period: ${fmt(customStart)}${customEnd && customEnd !== customStart ? ' – ' + fmt(customEnd) : ''}`, '');
+    }
+    return lines.join('\n');
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        title:   'Sakhi Transactions',
+        message: buildShareText(),
+      });
+    } catch { /* user dismissed */ }
+    onClose();
+  };
+
+  const handleEmailExport = async () => {
+    setEmailSending(true);
+    setEmailError(null);
+    try {
+      const params = {};
+      if (customStart) {
+        params.start_date = customStart.toISOString().split('T')[0];
+        params.end_date   = (customEnd ?? customStart).toISOString().split('T')[0];
+      }
+      await client.post('/drivers/transactions/export', params);
+      setEmailDone(true);
+    } catch {
+      setEmailError('Could not send email. Please try again.');
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  return (
+    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={ex.backdrop} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={ex.sheet}>
+
+          {/* Pill */}
+          <View style={ex.pill} />
+          <Text style={ex.title}>Export Transactions</Text>
+
+          {/* ── Option 1: Share ── */}
+          <TouchableOpacity style={ex.option} onPress={handleShare} activeOpacity={0.75}>
+            <View style={[ex.iconBubble, { backgroundColor: '#EDE9FE' }]}>
+              <Text style={ex.iconEmoji}>📤</Text>
+            </View>
+            <View style={ex.optText}>
+              <Text style={ex.optTitle}>Share</Text>
+              <Text style={ex.optSub}>WhatsApp, Drive, Messages & more</Text>
+            </View>
+            <View style={ex.chevron}>
+              <View style={ex.chevLine} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={ex.divider} />
+
+          {/* ── Option 2: Email ── */}
+          <TouchableOpacity
+            style={ex.option}
+            onPress={emailDone ? undefined : handleEmailExport}
+            activeOpacity={emailDone ? 1 : 0.75}
+            disabled={emailSending}
+          >
+            <View style={[ex.iconBubble, { backgroundColor: emailDone ? '#ECFDF5' : '#F5F0FF' }]}>
+              {emailSending
+                ? <ActivityIndicator size="small" color="#BEA3D8" />
+                : <Text style={ex.iconEmoji}>{emailDone ? '✅' : '📧'}</Text>
+              }
+            </View>
+            <View style={ex.optText}>
+              <Text style={ex.optTitle}>
+                {emailDone ? 'Email sent!' : 'Send to Registered Email'}
+              </Text>
+              <Text style={[ex.optSub, emailError && { color: '#EF4444' }]}>
+                {emailError
+                  ? emailError
+                  : emailDone
+                    ? 'Check your inbox in a few minutes.'
+                    : 'Receive a CSV/PDF to your account email'}
+              </Text>
+            </View>
+            {!emailDone && !emailSending && (
+              <View style={ex.chevron}>
+                <View style={ex.chevLine} />
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Close */}
+          <TouchableOpacity style={ex.closeBtn} onPress={onClose}>
+            <Text style={ex.closeTxt}>Close</Text>
+          </TouchableOpacity>
+
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const ex = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.30)', justifyContent: 'flex-end' },
+  sheet:    {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40,
+    gap: 0,
+  },
+  pill:     { width: 36, height: 4, backgroundColor: '#DDD', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  title:    { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 8 },
+
+  option:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, gap: 16 },
+  iconBubble:{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  iconEmoji: { fontSize: 22 },
+  optText:   { flex: 1 },
+  optTitle:  { fontSize: 15, fontWeight: '700', color: '#1E1B2E', lineHeight: 22 },
+  optSub:    { fontSize: 12, fontWeight: '400', color: '#94A3B8', lineHeight: 18, marginTop: 2 },
+  chevron:   { width: 8, height: 8, justifyContent: 'center', alignItems: 'center' },
+  chevLine:  { width: 8, height: 8, borderRightWidth: 1.5, borderTopWidth: 1.5, borderColor: '#CBD5E1', transform: [{ rotate: '45deg' }] },
+
+  divider:   { height: 1, backgroundColor: '#F5F0FF', marginHorizontal: -24 },
+
+  closeBtn:  { marginTop: 20, paddingVertical: 14, backgroundColor: '#F5F0FF', borderRadius: 14, alignItems: 'center' },
+  closeTxt:  { fontSize: 14, fontWeight: '600', color: '#94A3B8' },
+});
+
+
 export default function TransactionHistoryScreen({ navigation }) {
   const [sections,       setSections]       = useState(FALLBACK_SECTIONS);
   const [loading,        setLoading]        = useState(false);
@@ -279,8 +432,9 @@ export default function TransactionHistoryScreen({ navigation }) {
   const [typeFilter,     setTypeFilter]     = useState('All');
   const [customStart,    setCustomStart]    = useState(null);
   const [customEnd,      setCustomEnd]      = useState(null);
-  const [showTypePicker, setShowTypePicker] = useState(false);
-  const [showCalendar,   setShowCalendar]   = useState(false);
+  const [showTypePicker,  setShowTypePicker]  = useState(false);
+  const [showCalendar,    setShowCalendar]    = useState(false);
+  const [showExportSheet, setShowExportSheet] = useState(false);
 
   const dateRangeLabel = () => {
     if (!customStart) return 'Date Range';
@@ -329,7 +483,12 @@ export default function TransactionHistoryScreen({ navigation }) {
         title="Transactions"
         onBack={() => navigation?.goBack()}
         rightSlot={
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={s.filterIconBtn}>
+          <TouchableOpacity
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={s.filterIconBtn}
+            onPress={() => setShowTypePicker(true)}
+            activeOpacity={0.7}
+          >
             <FilterIcon />
           </TouchableOpacity>
         }
@@ -369,7 +528,11 @@ export default function TransactionHistoryScreen({ navigation }) {
             </TouchableOpacity>
 
             {/* Export */}
-            <TouchableOpacity style={s.exportBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={s.exportBtn}
+              activeOpacity={0.8}
+              onPress={() => setShowExportSheet(true)}
+            >
               <ExportIcon />
               <Text style={s.exportText}>Export</Text>
             </TouchableOpacity>
@@ -411,6 +574,14 @@ export default function TransactionHistoryScreen({ navigation }) {
           setCustomEnd(end);
           setShowCalendar(false);
         }}
+      />
+
+      <ExportSheet
+        visible={showExportSheet}
+        onClose={() => setShowExportSheet(false)}
+        sections={filtered}
+        customStart={customStart}
+        customEnd={customEnd}
       />
 
     </View>
