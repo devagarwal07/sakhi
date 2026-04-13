@@ -32,8 +32,8 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
   const isWeekly    = period === 'weekly';
   const periodLabel = isWeekly ? '23 Mar – 29 Mar 2026' : 'Today';
   const infoText    = isWeekly
-    ? 'Your platform fee is active for 7 days. Earning starts now! 💜'
-    : 'Your platform fee is active for today. Earning starts now! 💜';
+    ? 'You\'re all set for this week, Sakhi. Start earning now! 💜'
+    : 'You\'re all set for today, Sakhi. Start earning now! 💜';
 
   const [modal, setModal] = useState(null);
 
