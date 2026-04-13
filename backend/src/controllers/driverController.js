@@ -516,7 +516,14 @@ async function getDriverDocuments(req, res, next) {
     const driverId = req.user.userId;
     const { data, error } = await supabase
       .from('drivers')
-      .select('kyc_status, driving_licence_status, driving_licence_expiry, driving_licence_issued_at, driving_licence_verified_at, dl_vehicle_class, vehicle_rc_status, vehicle_rc_expiry, insurance_status, insurance_expiry, aadhaar_status, aadhaar_name, aadhaar_photo_url, digilocker_consent_at, profile_photo_url, kyc_submitted_at')
+      .select(
+        'kyc_status, driving_licence_status, driving_licence_expiry, driving_licence_issued_at, driving_licence_verified_at, dl_vehicle_class,' +
+        'dl_surepass_name, dl_gender, dl_issuing_state, dl_ola_name, dl_blood_group, dl_has_image,' + // Surepass DL fields
+        'vehicle_rc_status, vehicle_rc_expiry,' +
+        'rc_status, rc_fit_upto, rc_insurance_upto, rc_maker_model, rc_fuel_type, rc_verified_at, rc_blacklist_status,' +
+        'insurance_status, insurance_expiry,' +
+        'aadhaar_status, aadhaar_name, aadhaar_photo_url, digilocker_consent_at, profile_photo_url, kyc_submitted_at'
+      )
       .eq('id', driverId)
       .limit(1);
 
@@ -539,29 +546,49 @@ async function getDriverDocuments(req, res, next) {
 
     const docs = [
       {
-        id:           'driving_licence',
-        type:         'driving_licence',
-        title:        'Driving Licence',
-        status:       mapStatus(d.driving_licence_status),
-        colorKey:     colorKey(d.driving_licence_status),
-        expires:      d.driving_licence_expiry
+        id:            'driving_licence',
+        type:          'driving_licence',
+        title:         'Driving Licence',
+        status:        mapStatus(d.driving_licence_status),
+        colorKey:      colorKey(d.driving_licence_status),
+        expires:       d.driving_licence_expiry
           ? new Date(d.driving_licence_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
           : null,
-        issued_at:    d.driving_licence_issued_at
+        issued_at:     d.driving_licence_issued_at
           ? new Date(d.driving_licence_issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
           : null,
-        verified_at:  d.driving_licence_verified_at || null,
+        verified_at:   d.driving_licence_verified_at || null,
         vehicle_class: d.dl_vehicle_class
           ? (() => { try { return JSON.parse(d.dl_vehicle_class); } catch { return []; } })()
           : [],
+        // Surepass DL enrichment fields
+        dl_name:        d.dl_surepass_name  || null,
+        dl_gender:      d.dl_gender         || null,
+        issuing_state:  d.dl_issuing_state  || null,
+        ola_name:       d.dl_ola_name       || null,
+        blood_group:    d.dl_blood_group    || null,
+        has_image:      d.dl_has_image      ?? false,
+        surepass_verified: d.driving_licence_status === 'verified' || d.driving_licence_status === 'expired',
       },
       {
-        id:       'vehicle_rc',
-        type:     'vehicle_rc',
-        title:    'Vehicle RC',
-        status:   mapStatus(d.vehicle_rc_status),
-        colorKey: colorKey(d.vehicle_rc_status),
-        expires:  d.vehicle_rc_expiry ? new Date(d.vehicle_rc_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null,
+        id:             'vehicle_rc',
+        type:           'vehicle_rc',
+        title:          'Vehicle RC',
+        // Prefer Surepass rc_status; fall back to legacy vehicle_rc_status
+        status:         mapStatus(d.rc_status ?? d.vehicle_rc_status),
+        colorKey:       colorKey(d.rc_status ?? d.vehicle_rc_status),
+        // Fitness validity date from Surepass; fall back to legacy expiry
+        expires:        (d.rc_fit_upto ?? d.vehicle_rc_expiry)
+          ? new Date(d.rc_fit_upto ?? d.vehicle_rc_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : null,
+        insurance_upto: d.rc_insurance_upto
+          ? new Date(d.rc_insurance_upto).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : null,
+        maker_model:    d.rc_maker_model    || null,
+        fuel_type:      d.rc_fuel_type      || null,
+        verified_at:    d.rc_verified_at    || null,
+        blacklisted:    !!(d.rc_blacklist_status && d.rc_blacklist_status.trim()),
+        surepass_verified: d.rc_status === 'verified' || d.rc_status === 'blacklisted',
       },
       {
         id:       'insurance',
