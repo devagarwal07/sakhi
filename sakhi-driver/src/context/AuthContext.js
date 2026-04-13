@@ -26,6 +26,32 @@ function normalizeDriver(raw) {
 }
 
 // ---------------------------------------------------------------------------
+// DEV BYPASS — set to `true` to skip OTP & auth during local UI testing.
+// ⚠️  MUST be `false` before any production / TestFlight build.
+// ---------------------------------------------------------------------------
+const DEVELOPER_BYPASS = true;
+
+const MOCK_DRIVER = {
+  id:                 'dev-driver-001',
+  name:               'Dev Driver',
+  phone:              '+919999999999',
+  email:              'dev@sakhi.app',
+  onboarding_status:  'approved',        // lands straight in main stack
+  verification_status:'approved',
+  kyc_status:         'verified',
+  aadhaar_status:     'verified',
+  driving_licence_status: 'verified',
+  vehicle_rc_status:  'verified',
+  vehicle_type:       'auto',
+  vehicle_reg_no:     'UP20AB1234',
+  avg_rating:         4.8,
+  total_rides:        42,
+  is_active:          true,
+  is_online:          false,
+};
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
 const AuthContext = createContext(null);
@@ -46,6 +72,12 @@ export function AuthProvider({ children }) {
 
   // ─── checkAuth ────────────────────────────────────────────────────────────
   const checkAuth = useCallback(async () => {
+    if (DEVELOPER_BYPASS) {
+      setDriver(MOCK_DRIVER);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       const token = await getAccessToken();
@@ -83,6 +115,11 @@ export function AuthProvider({ children }) {
 
   // ─── login ────────────────────────────────────────────────────────────────
   const login = useCallback(async (phone, otp) => {
+    if (DEVELOPER_BYPASS) {
+      setDriver(MOCK_DRIVER);
+      setIsAuthenticated(true);
+      return { success: true, driver: MOCK_DRIVER };
+    }
     setIsLoading(true);
     try {
       const { data } = await client.post('/auth/verify-otp', {
@@ -110,6 +147,11 @@ export function AuthProvider({ children }) {
 
   // ─── logout ───────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
+    if (DEVELOPER_BYPASS) {
+      setDriver(null);
+      setIsAuthenticated(false);
+      return;
+    }
     try {
       await client.post('/auth/logout');
     } catch {
