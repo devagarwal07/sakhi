@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Image, Animated, Modal,
+    ScrollView, Image, Animated, Modal, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmartMapView from '../src/components/SmartMapView';
@@ -318,21 +318,33 @@ export default function ActiveRideScreen() {
                     </View>
                 </View>
 
-                {/* Cancel + Share Trip row (only if not in-progress) */}
-                {ride.status !== 'in_progress' ? (
-                    <View style={styles.bottomActionRow}>
+                {/* Cancel + Share Trip row */}
+                <View style={[styles.bottomActionRow, { flexWrap: 'wrap', gap: 8 }]}>
+                    {ride.status !== 'in_progress' && (
                         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.85}>
-                            <Text style={styles.cancelBtnText}>Cancel Ride</Text>
+                            <Text style={styles.cancelBtnText}>Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
-                            <Text style={styles.shareBtnText}>🔗 Share Trip</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
+                    )}
                     <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
-                        <Text style={styles.shareBtnText}>🔗 Share Trip</Text>
+                        <Text style={styles.shareBtnText}>🔗 Share</Text>
                     </TouchableOpacity>
-                )}
+                    {ride.driver?.upi_id && ride.paymentMethod === 'cash' && (
+                        <TouchableOpacity 
+                            style={[styles.shareBtn, { backgroundColor: '#E8F5E9', borderColor: '#22C55E' }]} 
+                            onPress={() => {
+                                const upiUrl = `upi://pay?pa=${ride.driver.upi_id}&pn=${encodeURIComponent(ride.driver.name)}&am=${ride.fare?.total || ride.fare?.estimated || ''}&cu=INR`;
+                                Linking.openURL(upiUrl).catch(() => {
+                                    setModal({
+                                        icon: '⚠️', title: 'UPI Failed', message: 'Could not open UPI app.', buttons: [{ text: 'OK', onPress: () => setModal(null)}]
+                                    });
+                                });
+                            }} 
+                            activeOpacity={0.85}
+                        >
+                            <Text style={[styles.shareBtnText, { color: '#16A34A' }]}>📲 Pay via UPI</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </Animated.View>
 
             {/* In-ride Chat Modal */}
