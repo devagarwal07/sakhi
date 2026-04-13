@@ -1,34 +1,66 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Animated, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { verifyDriverDL, verifyDriverRC } from '../../api/endpoints';
+
+// Verification steps shown to the driver during auto-check
+const STEPS = [
+  { key: 'dl',        label: 'Checking Driving Licence…' },
+  { key: 'rc',        label: 'Verifying Vehicle RC…'      },
+  { key: 'submitting',label: 'Submitting your details…'   },
+];
 
 export default function DriverVerificationLoadingScreen({ navigation }) {
-  const spin = useRef(new Animated.Value(0)).current;
+  const spin  = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
+  const [stepIdx, setStepIdx] = useState(0);
 
   useEffect(() => {
+    // ── Continuous animations ──────────────────────────────────────
     Animated.loop(
       Animated.timing(spin, {
-        toValue: 1,
-        duration: 1500,
-        easing: Easing.linear,
-        useNativeDriver: true,
+        toValue: 1, duration: 1500,
+        easing: Easing.linear, useNativeDriver: true,
       }),
     ).start();
 
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1.05, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1,    duration: 800, useNativeDriver: true }),
       ]),
     ).start();
 
-    // Auto-navigate to DocumentUnderReview after a short delay
-    const t = setTimeout(() => navigation.replace('DocumentUnderReview'), 4000);
-    return () => clearTimeout(t);
+    // ── Sequential Surepass verification ──────────────────────────
+    let cancelled = false;
+    (async () => {
+      // Step 0 — DL verification
+      try {
+        await verifyDriverDL();
+      } catch (_) {
+        // non-fatal: backend persists 'rejected' if it fails
+      }
+      if (cancelled) return;
+      setStepIdx(1);
+
+      // Step 1 — RC verification
+      try {
+        await verifyDriverRC();
+      } catch (_) {
+        // non-fatal
+      }
+      if (cancelled) return;
+      setStepIdx(2);
+
+      // Step 2 — brief pause then navigate
+      await new Promise(r => setTimeout(r, 1200));
+      if (!cancelled) navigation.replace('DocumentUnderReview');
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -49,12 +81,24 @@ export default function DriverVerificationLoadingScreen({ navigation }) {
             </Animated.View>
           </View>
 
-          {/* Heading and Subtext */}
+          {/* Heading and step-based subtext */}
           <View style={styles.textStack}>
             <Text style={styles.headline}>Verifying Your Documents...</Text>
-            <Text style={styles.subline}>
-              Auto-checking your documents.{'\n'}This takes a few seconds.
-            </Text>
+            <Text style={styles.subline}>{STEPS[stepIdx]?.label ?? 'Almost done…'}</Text>
+          </View>
+
+          {/* Step indicators */}
+          <View style={styles.stepsRow}>
+            {STEPS.map((s, i) => (
+              <View key={s.key} style={[styles.stepPill, i <= stepIdx && styles.stepPillActive]}>
+                {i < stepIdx
+                  ? <Feather name="check" size={10} color="#FFFFFF" />
+                  : <Text style={[styles.stepPillText, i === stepIdx && styles.stepPillTextActive]}>
+                      {i + 1}
+                    </Text>
+                }
+              </View>
+            ))}
           </View>
         </View>
 
@@ -249,5 +293,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     letterSpacing: 0.4,
+  },
+  // Step progress pills
+  stepsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EDE9FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepPillActive: {
+    backgroundColor: '#BEA3D8',
+  },
+  stepPillText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#9B8BB5',
+  },
+  stepPillTextActive: {
+    color: '#FFFFFF',
   },
 });
