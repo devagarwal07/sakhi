@@ -171,60 +171,154 @@ router.patch('/drivers/:id/reject', async (req, res, next) => {
 
 /**
  * POST /admin/drivers/:id/verify-dl
- * Body: { dl_number?, dob?, issue_date? }  — all optional (fall back to DB values)
+ * Body: { dl_number?, dob?, full_name? }  — all optional (fall back to DB values)
  *
- * Admin can manually re-trigger DL verification for any driver.
- * Useful after a driver re-uploads their DL or updates their profile.
+ * Admin can manually re-trigger DL verification via Surepass for any driver.
+ *
+ * Returns:
+ *   { driver_id, dl_number, verified, dl_status, name, doe, doi,
+ *     vehicle_classes, gender, state, ola_name, persisted }
  */
 router.post('/drivers/:id/verify-dl', async (req, res, next) => {
   try {
-    const kycService = require('../services/kycService');
-    const { id }     = req.params;
+    const surepassService = require('../services/surepassService');
+    const { id }          = req.params;
 
     // Fetch stored driver fields
     const { data: rows, error: fetchErr } = await supabase
       .from('drivers')
-      .select('dl_number, dl_number_from_digilocker, dob, dl_issue_date, aadhaar_dob, name')
+      .select('dl_number, dl_number_from_digilocker, dob, aadhaar_dob, name')
       .eq('id', id)
       .limit(1);
     if (fetchErr) return next(fetchErr);
     const driver = rows?.[0];
     if (!driver) return res.status(404).json({ error: { code: 'DRIVER_NOT_FOUND', message: 'Driver not found.', details: {} } });
 
-    const dlNumber  = req.body?.dl_number  || driver.dl_number  || driver.dl_number_from_digilocker;
-    const dob       = req.body?.dob        || driver.dob        || driver.aadhaar_dob;
-    const issueDate = req.body?.issue_date || driver.dl_issue_date;
+    const dlNumber = req.body?.dl_number  || driver.dl_number || driver.dl_number_from_digilocker;
+    const dob      = req.body?.dob        || driver.dob       || driver.aadhaar_dob;
+    const fullName = req.body?.full_name  || driver.name;
 
     if (!dlNumber) return res.status(422).json({ error: { code: 'MISSING_DL_NUMBER', message: 'No DL number on record for this driver.', details: {} } });
-    if (!dob)      return res.status(422).json({ error: { code: 'MISSING_DOB', message: 'No date of birth on record for this driver.', details: {} } });
 
-    const data    = await kycService.verifyDrivingLicence(dlNumber, dob, issueDate);
-    const updates = await kycService.persistDLVerification(id, data);
+    const payload  = await surepassService.verifyDL(dlNumber, { fullName, dob });
+    const persisted = await surepassService.persistDLVerification(id, payload);
 
-    const verified = data?.result?.verified === true;
+    const d        = payload?.data || {};
+    const verified = payload?.success === true;
+    const dlStatus = verified ? (d.doe && new Date(d.doe) < new Date() ? 'expired' : 'verified') : 'rejected';
 
-    // Notify driver of the result
+    // Notify driver (non-fatal)
     await fcmService.sendToUser(id, 'driver', {
       title: verified ? 'Driving Licence Verified ✅' : 'DL Verification Failed',
       body:  verified
         ? 'Your Driving Licence has been verified successfully.'
-        : `DL verification failed: ${data?.result?.message ?? 'Please check your details.'}`,
-      data:  { type: 'DL_VERIFICATION_RESULT', verified: String(verified) },
-    }).catch(() => {});  // non-fatal
+        : 'DL verification failed. Please ensure your licence number is correct.',
+      data: { type: 'DL_VERIFICATION_RESULT', verified: String(verified) },
+    }).catch(() => {});
 
-    logger.info('admin — DL verification triggered', { driverId: id, dlNumber, verified, adminId: req.user.userId });
+    logger.info('admin — DL verification triggered (Surepass)', {
+      driverId: id, dlNumber, verified, adminId: req.user.userId,
+    });
+
     return res.status(200).json({
-      driver_id:  id,
-      dl_number:  dlNumber,
+      driver_id:      id,
+      dl_number:      d.license_number   || dlNumber,
       verified,
-      message:    data?.result?.message ?? '',
-      moreInfo:   data?.result?.moreInfo ?? {},
-      persisted:  updates,
+      dl_status:      dlStatus,
+      name:           d.name             || null,
+      doe:            d.doe              || null,
+      doi:            d.doi              || null,
+      vehicle_classes: d.vehicle_classes || [],
+      gender:         d.gender           || null,
+      state:          d.state            || null,
+      ola_name:       d.ola_name         || null,
+      persisted,
     });
   } catch (err) {
     if (err.response?.data) {
       const status = err.response.status || 502;
-      return res.status(status).json({ error: { code: 'SIGNZY_ERROR', message: 'Signzy DL API error', details: err.response.data } });
+      return res.status(status).json({ error: { code: 'SUREPASS_ERROR', message: 'Surepass DL API error', details: err.response.data } });
+    }
+    if (err.code && err.status) return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    return next(err);
+  }
+});
+
+
+/**
+ * POST /admin/drivers/:id/verify-rc
+ * Body: { rc_number?, enrich? }  — all optional (fall back to DB values)
+ *
+ * Admin can manually trigger or re-trigger RC verification for any driver.
+ * Pass enrich: true to get owner name + chassis number unmasked in the response.
+ *
+ * Returns:
+ *   { driver_id, rc_number, verified, rc_status, maker_model, fuel_type,
+ *     insurance_upto, fit_upto, blacklist_status, response_metadata, persisted }
+ */
+router.post('/drivers/:id/verify-rc', async (req, res, next) => {
+  try {
+    const rcService = require('../services/rcService');
+    const { id }    = req.params;
+
+    // Fetch stored vehicle_reg_no as fallback
+    const { data: rows, error: fetchErr } = await supabase
+      .from('drivers')
+      .select('vehicle_reg_no, name')
+      .eq('id', id)
+      .limit(1);
+    if (fetchErr) return next(fetchErr);
+    const driver = rows?.[0];
+    if (!driver) {
+      return res.status(404).json({ error: { code: 'DRIVER_NOT_FOUND', message: 'Driver not found.', details: {} } });
+    }
+
+    const rcNumber = req.body?.rc_number || driver.vehicle_reg_no;
+    const enrich   = !!req.body?.enrich;
+
+    if (!rcNumber) {
+      return res.status(422).json({
+        error: { code: 'MISSING_RC_NUMBER', message: 'No vehicle registration number on record for this driver.', details: {} },
+      });
+    }
+
+    const payload  = await rcService.verifyRC(rcNumber, enrich);
+    const persisted = await rcService.persistRCVerification(id, payload);
+
+    const d        = payload?.data || {};
+    const verified = payload?.success === true;
+    const rcStatus = verified ? (d.blacklist_status ? 'blacklisted' : 'verified') : 'rejected';
+
+    // Notify driver of result (non-fatal)
+    await fcmService.sendToUser(id, 'driver', {
+      title: verified ? 'RC Verified ✅' : 'RC Verification Failed',
+      body:  verified
+        ? 'Your vehicle Registration Certificate has been verified successfully.'
+        : 'RC verification failed. Please ensure your vehicle registration number is correct.',
+      data: { type: 'RC_VERIFICATION_RESULT', verified: String(verified) },
+    }).catch(() => {});
+
+    logger.info('admin — RC verification triggered', {
+      driverId: id, rcNumber, verified, enrich, adminId: req.user.userId,
+    });
+
+    return res.status(200).json({
+      driver_id:         id,
+      rc_number:         d.rc_number         || rcNumber,
+      verified,
+      rc_status:         rcStatus,
+      maker_model:       d.maker_model        || null,
+      fuel_type:         d.fuel_type          || null,
+      insurance_upto:    d.insurance_upto     || null,
+      fit_upto:          d.fit_up_to          || null,
+      blacklist_status:  d.blacklist_status   || '',
+      response_metadata: d.response_metadata  || {},
+      persisted,
+    });
+  } catch (err) {
+    if (err.response?.data) {
+      const status = err.response.status || 502;
+      return res.status(status).json({ error: { code: 'SUREPASS_ERROR', message: 'Surepass RC API error', details: err.response.data } });
     }
     if (err.code && err.status) return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
     return next(err);
@@ -339,7 +433,7 @@ router.get('/drivers', async (req, res, next) => {
     let query = supabase
       .from('drivers')
       .select(
-        'id, name, phone, email, vehicle_type, vehicle_reg_no, kyc_status, aadhaar_status, digilocker_consent_at, verification_status, is_active, is_online, avg_rating, total_rides, created_at',
+        'id, name, phone, email, vehicle_type, vehicle_reg_no, kyc_status, aadhaar_status, digilocker_consent_at, verification_status, is_active, is_online, avg_rating, total_rides, created_at, rc_status, rc_verified_at',
         { count: 'exact' }
       );
 
