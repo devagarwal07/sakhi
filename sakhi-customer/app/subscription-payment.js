@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, ActivityIndicator, Linking
+    Dimensions, ScrollView, Platform, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,9 +10,10 @@ import { useAuth } from '../src/context/AuthContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { createSubscriptionOrder, verifyPayment } from '../src/api/endpoints';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const { width } = Dimensions.get('window');
-const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY || '';
+const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '';
 
 export default function SubscriptionPaymentScreen() {
     const router = useRouter();
@@ -31,7 +32,7 @@ export default function SubscriptionPaymentScreen() {
     const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
 
     const footerPaddingBottom = Math.max(insets.bottom, 24) + (Platform.OS === 'ios' ? 10 : 0);
-    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 24;
+    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 64 + 24; // taller footer with UPI strip
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
     const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
@@ -41,11 +42,21 @@ export default function SubscriptionPaymentScreen() {
         : (sub.days?.join(', ') || 'Mon–Fri');
 
     const handlePay = async () => {
+        if (!RAZORPAY_KEY || !RAZORPAY_KEY.startsWith('rzp_')) {
+            setModal({
+                icon: '⚠️',
+                title: 'Payment Unavailable',
+                message: 'Razorpay API key is pending. Payment will be enabled once the client provides the key.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+            });
+            return;
+        }
+
         setLoading(true);
         try {
-            // Step 1: Create Razorpay order on backend
+            // Step 1: Create order on backend
             const { data } = await createSubscriptionOrder({
-                amount: (sub.price || 364) * 100,  // paise
+                amount: (sub.price || 364) * 100, // paise
                 currency: 'INR',
                 plan: sub.plan,
             });
@@ -53,47 +64,85 @@ export default function SubscriptionPaymentScreen() {
             const orderId = data?.order_id;
             if (!orderId) throw new Error('Order creation failed');
 
-            // Step 2: Build Razorpay hosted checkout URL
-            // When Razorpay key is available, this opens the real payment page.
-            // The Razorpay key will be injected via env once provided by the client.
-            if (!RAZORPAY_KEY || !RAZORPAY_KEY.startsWith('rzp_')) {
-                setModal({
-                    icon: '⚠️',
-                    title: 'Payment Unavailable',
-                    message: 'Razorpay API key is pending. Payment will be enabled once the client provides the key.',
-                    buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-                });
-                return;
-            }
+            // Step 2: Open native Razorpay in-app checkout
+            // Shows UPI QR scanner, UPI apps (GPay/PhonePe/Paytm), UPI ID, cards, etc.
+            const options = {
+                description: 'Sakhi Subscription',
+                image: 'https://i.ibb.co/your-logo', // replace with Sakhi logo URL
+                currency: 'INR',
+                key: RAZORPAY_KEY,
+                amount: String((sub.price || 364) * 100),
+                order_id: orderId,
+                name: 'Sakhi',
+                prefill: {
+                    email: user?.email || '',
+                    contact: user?.phone || '',
+                    name: user?.name || '',
+                    // Pre-select UPI method to open scanner/UPI directly
+                    method: 'upi',
+                },
+                theme: { color: '#BEA3D8' },
+                modal: {
+                    ondismiss: () => {
+                        setLoading(false);
+                    },
+                    // Show UPI apps and scanner prominently
+                    animation: true,
+                },
+                // UPI-specific: show scanner + collect
+                config: {
+                    display: {
+                        // Prioritise UPI options
+                        preferences: { show_default_blocks: true },
+                        blocks: {
+                            utib: {
+                                name: 'Pay using UPI',
+                                instruments: [
+                                    { method: 'upi', flows: ['qr', 'collect', 'intent'] },
+                                ],
+                            },
+                        },
+                        sequence: ['block.utib'],
+                    },
+                },
+            };
 
-            // Open Razorpay standard checkout in external browser
-            const checkoutUrl =
-                `https://api.razorpay.com/v1/checkout/embedded` +
-                `?key_id=${RAZORPAY_KEY}` +
-                `&order_id=${orderId}` +
-                `&name=Sakhi` +
-                `&description=Ride+Subscription` +
-                `&prefill[name]=${encodeURIComponent(user?.name || '')}` +
-                `&prefill[email]=${encodeURIComponent(user?.email || '')}` +
-                `&prefill[contact]=${encodeURIComponent(user?.phone || '')}` +
-                `&theme[color]=%23BEA3D8` +
-                `&callback_url=sakhiapp://payment-success` +
-                `&cancel_url=sakhiapp://payment-cancel`;
+            const paymentData = await RazorpayCheckout.open(options);
 
-            await Linking.openURL(checkoutUrl);
+            // Step 3: Verify payment signature on backend
+            setLoading(true);
+            await verifyPayment({
+                razorpay_order_id:    paymentData.razorpay_order_id,
+                razorpay_payment_id:  paymentData.razorpay_payment_id,
+                razorpay_signature:   paymentData.razorpay_signature,
+                plan:                 sub.plan,
+                subscription_id:      sub.subscriptionId,
+            });
+
+            // Step 4: Navigate to success screen
+            router.replace('/payment-success');
 
         } catch (err) {
-            const msg = err?.response?.data?.error?.message || err.message || 'Payment initiation failed.';
+            // User pressed back / cancelled — Razorpay throws a specific code
+            if (err?.code === 0 || err?.description === 'Payment cancelled') {
+                // Silent — user dismissed, don't show error
+                return;
+            }
+            const msg = err?.response?.data?.error?.message
+                || err?.description
+                || err?.message
+                || 'Payment initiation failed.';
             setModal({
                 icon: '❌',
                 title: 'Payment Failed',
                 message: msg,
-                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                buttons: [{ text: 'Try Again', onPress: () => setModal(null) }],
             });
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <View style={styles.container}>
@@ -171,8 +220,35 @@ export default function SubscriptionPaymentScreen() {
                 <View style={{ height: footerSpacerHeight }} />
             </ScrollView>
 
-            {/* Footer Action Button */}
+            {/* Footer: UPI + Pay Button */}
             <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
+
+                {/* UPI Apps Strip */}
+                <View style={styles.upiStrip}>
+                    <Text style={styles.upiStripLabel}>Pay directly using</Text>
+                    <View style={styles.upiAppRow}>
+                        {[
+                            { label: 'GPay', emoji: '🟢' },
+                            { label: 'PhonePe', emoji: '🟣' },
+                            { label: 'Paytm', emoji: '🔵' },
+                            { label: 'BHIM', emoji: '🟠' },
+                            { label: 'UPI QR', emoji: '📷' },
+                        ].map((app) => (
+                            <TouchableOpacity
+                                key={app.label}
+                                style={styles.upiAppBtn}
+                                onPress={handlePay}
+                                disabled={loading}
+                                activeOpacity={0.75}
+                            >
+                                <Text style={styles.upiAppEmoji}>{app.emoji}</Text>
+                                <Text style={styles.upiAppLabel}>{app.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Main Pay Button */}
                 <TouchableOpacity
                     style={[styles.submitBtn, loading && { opacity: 0.7 }]}
                     onPress={handlePay}
@@ -181,9 +257,11 @@ export default function SubscriptionPaymentScreen() {
                 >
                     {loading
                         ? <ActivityIndicator color="#FFFFFF" />
-                        : <Text style={styles.submitText}>Proceed to Pay ₹{sub.price || 364}</Text>
+                        : <Text style={styles.submitText}>Pay ₹{sub.price || 364} — Open Payment</Text>
                     }
                 </TouchableOpacity>
+
+                <Text style={styles.securedNote}>🔒 Secured by Razorpay · 256-bit encryption</Text>
             </View>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
@@ -245,13 +323,58 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: 24,
         paddingTop: 16,
-        backgroundColor: 'rgba(245, 240, 255, 0.8)',
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(245, 240, 255, 0.95)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(190, 163, 216, 0.2)',
+        gap: 12,
     },
+
+    // UPI app strip
+    upiStrip: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    upiStripLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+    },
+    upiAppRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    upiAppBtn: {
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        minWidth: 52,
+        shadowColor: '#BEA3D8',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    upiAppEmoji: { fontSize: 20 },
+    upiAppLabel: { fontSize: 9, fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
+
     submitBtn: {
         width: '100%', height: 56, backgroundColor: '#BEA3D8', borderRadius: 12,
         alignItems: 'center', justifyContent: 'center',
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
     },
     submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+
+    securedNote: {
+        textAlign: 'center',
+        fontSize: 11,
+        fontWeight: '500',
+        color: '#94A3B8',
+        paddingBottom: 4,
+    },
 });
