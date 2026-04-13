@@ -635,7 +635,7 @@ class MatchingEngine extends EventEmitter {
 
       const { data: drivers } = await supabase
         .from('drivers')
-        .select('id, name, phone, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model, profile_photo_url')
+        .select('id, name, phone, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model, profile_photo_url, upi_id')
         .eq('id', driverId).limit(1);
       const driver = drivers?.[0] || { id: driverId };
 
