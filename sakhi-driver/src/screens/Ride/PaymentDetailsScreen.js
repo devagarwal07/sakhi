@@ -10,6 +10,7 @@ import client from '../../api/client';
 import { useSocket } from '../../context/SocketContext';
 import ScreenHeader from '../../components/ScreenHeader';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 
 // ── Razorpay Checkout WebView HTML ───────────────────────────────────────────
 function buildRazorpayHtml({ key_id, order_id, amount, currency, name, description, prefill_name, prefill_contact }) {
@@ -257,7 +258,12 @@ export default function PaymentDetailsScreen({ navigation, route }) {
 
         {/* Trip complete icon */}
         <View style={styles.iconCircle}>
-          <Feather name="check-circle" size={48} color="#10B981" />
+          <Svg width={48} height={48} viewBox="0 0 50 50" fill="none">
+            <Path
+              d="M21.5 36.5L39.125 18.875L35.625 15.375L21.5 29.5L14.375 22.375L10.875 25.875L21.5 36.5ZM25 50C21.5417 50 18.2917 49.3438 15.25 48.0312C12.2083 46.7188 9.5625 44.9375 7.3125 42.6875C5.0625 40.4375 3.28125 37.7917 1.96875 34.75C0.65625 31.7083 0 28.4583 0 25C0 21.5417 0.65625 18.2917 1.96875 15.25C3.28125 12.2083 5.0625 9.5625 7.3125 7.3125C9.5625 5.0625 12.2083 3.28125 15.25 1.96875C18.2917 0.65625 21.5417 0 25 0C28.4583 0 31.7083 0.65625 34.75 1.96875C37.7917 3.28125 40.4375 5.0625 42.6875 7.3125C44.9375 9.5625 46.7188 12.2083 48.0312 15.25C49.3438 18.2917 50 21.5417 50 25C50 28.4583 49.3438 31.7083 48.0312 34.75C46.7188 37.7917 44.9375 40.4375 42.6875 42.6875C40.4375 44.9375 37.7917 46.7188 34.75 48.0312C31.7083 49.3438 28.4583 50 25 50Z"
+              fill="#22C55E"
+            />
+          </Svg>
         </View>
         <Text style={styles.headline}>Trip Completed!</Text>
         <Text style={styles.subline}>{dropoffLabel}</Text>
@@ -292,7 +298,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
                 color={isCash ? '#D97706' : '#BEA3D8'}
               />
               <Text style={[styles.methodBadgeText, isCash ? styles.cashText : styles.onlineText]}>
-                {isCash ? 'Cash' : 'Online'}
+                {isCash ? 'Cash' : 'CASH'}
               </Text>
             </View>
           </View>
