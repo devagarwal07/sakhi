@@ -260,7 +260,7 @@ export default function SubscriptionRideScreen() {
                 <View style={styles.noticeBanner}>
                     <Text style={styles.noticeIcon}>ℹ️</Text>
                     <Text style={styles.noticeText}>
-                        We'll notify you 30 minutes before your ride if a driver hasn't been assigned yet.
+                        We will notify you before 30 mins if there isn't a driver.
                     </Text>
                 </View>
             </View>
@@ -343,7 +343,12 @@ const CustomCalendar = ({ onSelectDate, selectedDateStr }) => {
                 {days.map((day, idx) => {
                     if (!day) return <View key={idx} style={styles.calDayBox} />;
                     
-                    const isPast = new Date(year, month, day) < new Date(new Date().setHours(0,0,0,0));
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const dayDate = new Date(year, month, day);
+                    dayDate.setHours(0, 0, 0, 0);
+                    // Block today AND past — only tomorrow+ is selectable
+                    const isPast = dayDate <= today;
                     const formatStr = `${monthNamesShort[month]} ${String(day).padStart(2,'0')}, ${year}`;
                     const isSelected = selectedDateStr === formatStr;
 
