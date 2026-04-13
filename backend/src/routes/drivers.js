@@ -5,7 +5,9 @@ const multer       = require('multer');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleGuard    = require('../middleware/roleGuard');
 const { uploadDriverDocs, uploadSelfie } = require('../middleware/upload');
-const kycService   = require('../services/kycService');
+const kycService      = require('../services/kycService');
+const rcService       = require('../services/rcService');
+const surepassService = require('../services/surepassService');
 const driverController = require('../controllers/driverController');
 const { apiLimiter } = require('../middleware/rateLimiter');
 
@@ -277,63 +279,145 @@ router.post('/digilocker/get-eaadhaar', authMiddleware, roleGuard('driver'), asy
 
 /**
  * POST /drivers/dl/verify
- * Body: { dl_number?, dob?, issue_date? }  — all optional (fall back to DB values)
+ * Body: { dl_number?, dob?, full_name? }  — all optional (fall back to DB values)
  *
- * Triggers a live DL verification against the Signzy API.
- * On success, persists driving_licence_status, expiry, issued_at, and vehicle_class.
+ * Triggers a live DL verification against the Surepass API.
+ * On success persists: driving_licence_status, expiry, issued_at, vehicle_class,
+ * dl_surepass_name, dl_gender, dl_issuing_state, dl_ola_name, dl_blood_group.
  *
  * Returns:
- *   { verified, message, moreInfo: { issueDate, expiryDate, vehicleClass[] } }
+ *   { verified, dl_status, license_number, name, doe, doi, vehicle_classes,
+ *     gender, state, ola_name }
  */
 router.post('/dl/verify', authMiddleware, roleGuard('driver'), async (req, res, next) => {
   try {
-    const supabase  = require('../config/supabase');
-    const logger    = require('../utils/logger');
-    const driverId  = req.user.userId;
+    const supabase = require('../config/supabase');
+    const logger   = require('../utils/logger');
+    const driverId = req.user.userId;
 
     // Fetch stored driver fields as fallback
     const { data: rows } = await supabase
       .from('drivers')
-      .select('dl_number, dl_number_from_digilocker, dob, dl_issue_date, aadhaar_dob')
+      .select('dl_number, dl_number_from_digilocker, dob, aadhaar_dob, name')
       .eq('id', driverId)
       .limit(1);
     const driver = rows?.[0] ?? {};
 
     // Body params override stored values
-    const dlNumber  = req.body?.dl_number   || driver.dl_number || driver.dl_number_from_digilocker;
-    const dob       = req.body?.dob         || driver.dob       || driver.aadhaar_dob; // ISO or DD/MM/YYYY
-    const issueDate = req.body?.issue_date  || driver.dl_issue_date;
+    const dlNumber = req.body?.dl_number  || driver.dl_number || driver.dl_number_from_digilocker;
+    const dob      = req.body?.dob        || driver.dob       || driver.aadhaar_dob;  // YYYY-MM-DD
+    const fullName = req.body?.full_name  || driver.name;
 
     if (!dlNumber) {
       return res.status(422).json({
-        error: { code: 'MISSING_DL_NUMBER', message: 'Driving License number is required. Please update your profile first.', details: {} },
-      });
-    }
-    if (!dob) {
-      return res.status(422).json({
-        error: { code: 'MISSING_DOB', message: 'Date of birth is required for DL verification. Please update your profile first.', details: {} },
+        error: { code: 'MISSING_DL_NUMBER', message: 'Driving Licence number is required. Please update your profile first.', details: {} },
       });
     }
 
-    const data = await kycService.verifyDrivingLicence(dlNumber, dob, issueDate);
-    await kycService.persistDLVerification(driverId, data);
+    const payload = await surepassService.verifyDL(dlNumber, { fullName, dob });
+    await surepassService.persistDLVerification(driverId, payload);
 
-    logger.info('drivers.dl/verify — completed', {
-      driverId, dlNumber,
-      verified: data?.result?.verified,
-    });
+    const d = payload?.data || {};
+    logger.info('drivers.dl/verify — completed', { driverId, dlNumber, success: payload?.success });
 
     return res.status(200).json({
-      verified:  data?.result?.verified  ?? false,
-      message:   data?.result?.message   ?? '',
-      moreInfo:  data?.result?.moreInfo  ?? {},
+      verified:       payload?.success === true,
+      dl_status:      payload?.success ? (d.doe && new Date(d.doe) < new Date() ? 'expired' : 'verified') : 'rejected',
+      license_number: d.license_number  || dlNumber,
+      name:           d.name            || null,
+      doe:            d.doe             || null,
+      doi:            d.doi             || null,
+      vehicle_classes: d.vehicle_classes || [],
+      gender:         d.gender          || null,
+      state:          d.state           || null,
+      ola_name:       d.ola_name        || null,
     });
   } catch (err) {
     if (err.response?.data) {
       const status = err.response.status || 502;
-      return res.status(status).json({ error: { code: 'SIGNZY_ERROR', message: 'Signzy DL API error', details: err.response.data } });
+      return res.status(status).json({
+        error: { code: 'SUREPASS_ERROR', message: 'Surepass DL API error', details: err.response.data },
+      });
     }
     if (err.code && err.status) return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    return next(err);
+  }
+});
+
+
+// ── RC Verification ───────────────────────────────────────────────────────────
+
+/**
+ * POST /drivers/rc/verify
+ * Body: { rc_number?, enrich? }
+ *   rc_number — optional; falls back to vehicle_reg_no stored on the driver record.
+ *   enrich    — optional boolean; true → enriched mode (owner name + chassis visible).
+ *               Defaults to false (masked). Use true only when admin-level detail needed.
+ *
+ * Verifies the vehicle registration certificate via the Surepass RC V2 API and
+ * persists the result to the drivers table.
+ *
+ * Returns:
+ *   { verified, rc_status, rc_number, maker_model, fuel_type,
+ *     insurance_upto, fit_upto, blacklist_status, response_metadata }
+ */
+router.post('/rc/verify', authMiddleware, roleGuard('driver'), async (req, res, next) => {
+  try {
+    const supabase = require('../config/supabase');
+    const logger   = require('../utils/logger');
+    const driverId = req.user.userId;
+
+    // Resolve RC number: body param → stored vehicle_reg_no
+    let { rc_number, enrich } = req.body || {};
+    if (!rc_number) {
+      const { data: rows } = await supabase
+        .from('drivers')
+        .select('vehicle_reg_no')
+        .eq('id', driverId)
+        .limit(1);
+      rc_number = rows?.[0]?.vehicle_reg_no;
+    }
+
+    if (!rc_number) {
+      return res.status(422).json({
+        error: {
+          code:    'MISSING_RC_NUMBER',
+          message: 'Vehicle registration number is required. Please update your vehicle details first.',
+          details: {},
+        },
+      });
+    }
+
+    const payload = await rcService.verifyRC(rc_number, !!enrich);
+    await rcService.persistRCVerification(driverId, payload);
+
+    const d = payload?.data || {};
+    logger.info('drivers.rc/verify — completed', {
+      driverId, rc_number,
+      success: payload?.success,
+    });
+
+    return res.status(200).json({
+      verified:           payload?.success === true,
+      rc_status:          payload?.success ? (d.blacklist_status ? 'blacklisted' : 'verified') : 'rejected',
+      rc_number:          d.rc_number          || rc_number,
+      maker_model:        d.maker_model         || null,
+      fuel_type:          d.fuel_type           || null,
+      insurance_upto:     d.insurance_upto      || null,
+      fit_upto:           d.fit_up_to           || null,
+      blacklist_status:   d.blacklist_status     || '',
+      response_metadata:  d.response_metadata    || {},
+    });
+  } catch (err) {
+    if (err.response?.data) {
+      const status = err.response.status || 502;
+      return res.status(status).json({
+        error: { code: 'SUREPASS_ERROR', message: 'Surepass RC API error', details: err.response.data },
+      });
+    }
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
     return next(err);
   }
 });
