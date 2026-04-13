@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../../components/ScreenHeader';
 
 // ─── Policy Content ───────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ export default function TermsPrivacyScreen({ navigation }) {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
             <ScreenHeader title="Terms & Privacy" onBack={() => navigation?.goBack()} />
 
             <View style={styles.container}>
@@ -164,7 +163,7 @@ export default function TermsPrivacyScreen({ navigation }) {
                     </View>
                 </ScrollView>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 
