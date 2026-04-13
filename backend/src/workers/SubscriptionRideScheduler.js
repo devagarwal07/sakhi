@@ -173,6 +173,14 @@ async function checkAutoCreateRides() {
         duration_min = dist.duration_min;
       } catch { /* non-fatal */ }
 
+      // ── Check for free ride credit (3 consecutive failures) ──────────────
+      const { isFree, creditId } = await subscriptionService.consumeFreeRideCredit(sub.rider_id).catch(() => ({ isFree: false }));
+      const appliedFare = isFree ? 0 : sub.per_ride_fare;
+
+      if (isFree) {
+        logger.info('SubscriptionScheduler — applying free ride credit', { riderId: sub.rider_id, creditId });
+      }
+
       const { data: rideRows } = await supabase.from('rides').insert({
         rider_id:        sub.rider_id,
         driver_id:       driverId,
@@ -184,9 +192,10 @@ async function checkAutoCreateRides() {
         drop_lng:        sr.drop_lng,
         drop_address:    sr.drop_address,
         estimated_fare:  sub.per_ride_fare,
-        final_fare:      sub.per_ride_fare,
+        final_fare:      appliedFare,
+        is_free_ride:    isFree,
         status:          'assigned',
-        payment_method:  'cash',
+        payment_method:  isFree ? 'free_credit' : 'cash',
         distance_km,
         duration_min,
       }).select('id').single();
@@ -196,9 +205,26 @@ async function checkAutoCreateRides() {
 
       await supabase.from('subscription_rides').update({ ride_id: rideId, status: 'in_progress' }).eq('id', sr.id);
 
+      // If a free credit was used, link it to this ride for audit
+      if (isFree && creditId) {
+        await supabase.from('rider_free_ride_credits')
+          .update({ ride_id: rideId })
+          .eq('id', creditId)
+          .catch(() => {});
+      }
+
+      // Successful ride — reset consecutive failure counter
+      if (sr.subscription_id) {
+        supabase.from('subscriptions')
+          .update({ consecutive_failures: 0 })
+          .eq('id', sr.subscription_id)
+          .then(() => {})
+          .catch(() => {});
+      }
+
       // Socket events
       if (_io) {
-        _io.of('/rides').to(`rider:${sub.rider_id}`).emit('ride_assigned', { ride_id: rideId, status: 'assigned' });
+        _io.of('/rides').to(`rider:${sub.rider_id}`).emit('ride_assigned', { ride_id: rideId, status: 'assigned', is_free_ride: isFree });
         if (driverId) _io.of('/rides').to(`driver:${driverId}`).emit('ride_assigned', { ride_id: rideId, status: 'assigned' });
       }
 
@@ -210,9 +236,11 @@ async function checkAutoCreateRides() {
       }
 
       fcmService.sendToUser(sub.rider_id, 'rider', {
-        title: 'Scheduled Ride Started 🚖',
-        body: `${driverName} is on the way to pick you up!`,
-        data: { type: 'SUBSCRIPTION_RIDE_STARTED', ride_id: rideId },
+        title: isFree ? '🎁 FREE Ride Started!' : 'Scheduled Ride Started 🚖',
+        body: isFree
+          ? `${driverName} is on the way — this ride is complimentary!`
+          : `${driverName} is on the way to pick you up!`,
+        data: { type: 'SUBSCRIPTION_RIDE_STARTED', ride_id: rideId, is_free_ride: String(isFree) },
       }).catch(() => {});
 
       if (driverId) {
@@ -223,7 +251,7 @@ async function checkAutoCreateRides() {
         }).catch(() => {});
       }
 
-      logger.info('SubscriptionScheduler — auto-created ride', { rideId, subscriptionRideId: sr.id });
+      logger.info('SubscriptionScheduler — auto-created ride', { rideId, subscriptionRideId: sr.id, isFree });
     } catch (err) {
       logger.error('SubscriptionScheduler.checkAutoCreateRides — error', { srId: sr.id, error: err.message });
     }
@@ -237,7 +265,7 @@ async function checkMissedRides() {
 
   const { data: rides } = await supabase
     .from('subscription_rides')
-    .select('id, assigned_driver_id, subscriptions!inner(rider_id)')
+    .select('id, subscription_id, assigned_driver_id, subscriptions!inner(rider_id)')
     .eq('status', 'scheduled')
     .eq('scheduled_date', today)
     .lt('scheduled_time', cutoff)
@@ -257,6 +285,13 @@ async function checkMissedRides() {
       }).catch(() => {});
     }
 
+    // Track consecutive failure → may grant free ride at 3
+    if (sr.subscription_id) {
+      subscriptionService.recordSubscriptionFailure(sr.subscription_id).catch((err) =>
+        logger.error('SubscriptionScheduler — recordFailure error', { srId: sr.id, error: err.message })
+      );
+    }
+
     // Trigger fallback reassignment
     subscriptionService.reassignSubscriptionRide(sr.id, _io).catch((err) =>
       logger.error('SubscriptionScheduler — reassign failed', { srId: sr.id, error: err.message })
@@ -266,7 +301,52 @@ async function checkMissedRides() {
   if (rides.length) logger.info(`SubscriptionScheduler — missed rides detected: ${rides.length}`);
 }
 
-// ── CLEANUP — expired driver blocks ──────────────────────────────────────────
+// ── CHECK 6 — No driver assigned 30 min before → notify customer ──────────────
+async function checkNoDriverNotification() {
+  const today = todayStr();
+  const timeFrom = timeOffset(25); // window: 25–35 min from now
+  const timeTo   = timeOffset(35);
+
+  const { data: rides } = await supabase
+    .from('subscription_rides')
+    .select('id, subscription_id, scheduled_time, subscriptions!inner(rider_id)')
+    .eq('status', 'scheduled')
+    .eq('scheduled_date', today)
+    .gte('scheduled_time', timeFrom)
+    .lte('scheduled_time', timeTo)
+    .is('assigned_driver_id', null)       // no driver assigned
+    .eq('no_driver_notified', false);     // haven't notified yet
+
+  if (!rides?.length) return;
+
+  await Promise.all(rides.map(async (sr) => {
+    const riderId = sr.subscriptions?.rider_id;
+    if (!riderId) return;
+
+    await fcmService.sendToUser(riderId, 'rider', {
+      title: 'Unable to Fulfill Subscription ⚠️',
+      body: 'Sorry, we were unable to fulfill your subscription. Please try booking an on-demand ride.',
+      data: { type: 'SUBSCRIPTION_NO_DRIVER', subscription_ride_id: sr.id },
+    }).catch(() => {});
+
+    // Mark so we don't send duplicate notifications
+    await supabase
+      .from('subscription_rides')
+      .update({ no_driver_notified: true, status: 'driver_not_found' })
+      .eq('id', sr.id);
+
+    // Track consecutive failure → may grant free ride at 3
+    if (sr.subscription_id) {
+      subscriptionService.recordSubscriptionFailure(sr.subscription_id).catch((err) =>
+        logger.error('SubscriptionScheduler — recordFailure (no-driver) error', { srId: sr.id, error: err.message })
+      );
+    }
+  }));
+
+  if (rides.length) logger.info(`SubscriptionScheduler — no-driver notifications sent: ${rides.length}`);
+}
+
+
 async function cleanupExpiredBlocks() {
   const { data: expired } = await supabase
     .from('driver_blocks')
@@ -297,6 +377,7 @@ async function runSchedulerChecks() {
       check30mDriverBlock(),
       checkAutoCreateRides(),
       checkMissedRides(),
+      checkNoDriverNotification(),
       cleanupExpiredBlocks(),
     ]);
   } catch (err) {
