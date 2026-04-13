@@ -87,6 +87,7 @@ export default function RideFindingScreen() {
                     model: driver?.vehicle_model  ?? '',
                     color: driver?.vehicle_color  ?? '',
                 },
+                upi_id:  driver?.upi_id ?? null,
             };
 
             setDriver(normalised);
