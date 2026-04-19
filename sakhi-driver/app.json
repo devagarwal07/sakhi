@@ -24,6 +24,7 @@
     },
     "android": {
       "package": "com.sakhi.driver",
+      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
@@ -38,8 +39,22 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
       ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sakhi.driver",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "config": {
+        "googleMapsApiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Sakhi Driver needs your location to show your position on the map and match you with nearby riders.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location in the background to keep sharing your position with riders while you are online."
+      }
     },
     "plugins": [
       [
@@ -48,6 +63,15 @@
           "locationAlwaysAndWhenInUsePermission": "Sakhi Driver needs your location to share your position with riders while you are online.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#BEA3D8",
+          "defaultChannel": "default",
+          "androidMode": "default"
         }
       ]
     ],

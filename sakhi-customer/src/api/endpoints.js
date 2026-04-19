@@ -110,3 +110,9 @@ export const getSupportSessions = () =>
 /** Close a resolved support session. */
 export const closeSupportSession = (session_id) =>
     apiClient.post(`/support/sessions/${session_id}/close`);
+
+// ── Notifications / FCM ───────────────────────────────────────────────────────
+/** Register or update the customer's FCM push token with the backend. */
+export const updateCustomerFcmToken = (fcm_token) =>
+    apiClient.patch('/notifications/users/fcm-token', { fcm_token });
+

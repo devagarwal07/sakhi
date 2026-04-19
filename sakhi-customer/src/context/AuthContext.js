@@ -3,6 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 import { DeviceEventEmitter } from 'react-native';
 import { sendOtp, verifyOtp, logout as apiLogout, getProfile } from '../api/endpoints';
 import { STORAGE_KEYS } from '../utils/constants';
+import { registerForPushAsync } from '../services/notificationService';
+
 
 // ── DEV BYPASS ─────────────────────────────────────────────────────────────
 // Set to `true` to skip OTP & auth entirely during local development.
@@ -91,6 +93,12 @@ export function AuthProvider({ children }) {
 
         setUser(userData);
         setIsAuthenticated(true);
+
+        // Register FCM token with backend (non-blocking)
+        registerForPushAsync().catch((e) =>
+            console.warn('[FCM] token registration failed:', e?.message)
+        );
+
         return userData;
     };
 

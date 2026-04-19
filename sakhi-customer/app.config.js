@@ -32,6 +32,7 @@ export default {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#F5F0FF"
       },
+      googleServicesFile: "./google-services.json",
       config: {
         googleMaps: {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
@@ -43,15 +44,37 @@ export default {
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
       ]
     },
-    web: {
-      favicon: "./assets/favicon.png"
+    ios: {
+      supportsTablet: false,
+      bundleIdentifier: "in.sakhirides.customer",
+      googleServicesFile: "./GoogleService-Info.plist",
+      config: {
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
+      },
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription: "Sakhi needs your location to find nearby drivers and track your ride.",
+        NSLocationAlwaysUsageDescription: "Sakhi needs your location to share it with emergency contacts during an active ride.",
+        NSCameraUsageDescription: "Sakhi needs camera access for gender verification via selfie.",
+        NSPhotoLibraryUsageDescription: "Sakhi needs photo library access to upload your Aadhaar card images."
+      }
     },
     plugins: [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#BEA3D8",
+          "defaultChannel": "default",
+          "androidMode": "default"
+        }
+      ],
       [
         "expo-location",
         {

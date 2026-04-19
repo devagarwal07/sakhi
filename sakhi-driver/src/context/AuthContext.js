@@ -12,6 +12,8 @@ import client, {
   clearTokens,
   getAccessToken,
 } from '../api/client';
+import { registerForPushAsync } from '../services/notificationService';
+
 
 /** Map GET /drivers/profile (flat) and verify-otp `driver` to app driver shape */
 function normalizeDriver(raw) {
@@ -133,6 +135,12 @@ export function AuthProvider({ children }) {
 
       setDriver(normalizeDriver(driverData));
       setIsAuthenticated(true);
+
+      // Register FCM token with backend (non-blocking)
+      registerForPushAsync().catch((e) =>
+        console.warn('[FCM] token registration failed:', e?.message)
+      );
+
       return { success: true, driver: driverData };
     } catch (error) {
       const message =
