@@ -68,6 +68,8 @@ export async function registerForPushAsync() {
 }
 
 export function setupForegroundHandler() {
+  if (!Notifications) return () => {};
+
   const subscription = Notifications.addNotificationReceivedListener((notification) => {
     const { title, body } = notification.request.content;
     console.log('[FCM] Foreground notification:', title, body);
@@ -76,6 +78,8 @@ export function setupForegroundHandler() {
 }
 
 export function setupNotificationTapHandler(onTap) {
+  if (!Notifications) return () => {};
+
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data || {};
     console.log('[FCM] Notification tapped:', data);

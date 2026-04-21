@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    TextInput, Platform, Linking,
+    TextInput, Linking, StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 // ── FAQ Data ──────────────────────────────────────────────────────────────────
 const FAQ_CATEGORIES = [
@@ -90,8 +89,6 @@ const ac = StyleSheet.create({
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function HelpSupportScreen() {
     const router = useRouter();
-    const insets = useSafeAreaInsets();
-    const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
 
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState(null);
@@ -112,17 +109,20 @@ export default function HelpSupportScreen() {
             : FAQ_CATEGORIES;
 
     return (
-        <View style={[s.root, { paddingTop: topInset }]}>
+        <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F5F0FF" />
             {/* ── Header ── */}
             <View style={s.header}>
-                <TouchableOpacity
-                    style={s.backBtn}
-                    onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
-                >
-                    <Text style={s.backArrow}>←</Text>
-                </TouchableOpacity>
-                <Text style={s.headerTitle}>Help & Support</Text>
-                <View style={{ width: 40 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                        style={s.backBtn}
+                        onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
+                    >
+                        <Text style={s.backArrow}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={s.headerTitle}>Help & Support</Text>
+                </View>
+                <View style={s.backBtn} />
             </View>
 
             <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -259,7 +259,7 @@ export default function HelpSupportScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -271,22 +271,16 @@ const s = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        height: 64,
+        backgroundColor: '#F5F0FF',
     },
     backBtn: {
-        width: 40, height: 40,
-        borderRadius: 20,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: 'rgba(124,58,237,1)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
+        width: 32, height: 32,
+        justifyContent: 'center', alignItems: 'flex-start',
+        backgroundColor: 'transparent',
     },
-    backArrow: { fontSize: 20, color: '#BEA3D8', fontWeight: '700' },
-    headerTitle: { fontSize: 18, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.4 },
+    backArrow: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
+    headerTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5, marginLeft: 16 },
 
     scroll: { paddingBottom: 40 },
 

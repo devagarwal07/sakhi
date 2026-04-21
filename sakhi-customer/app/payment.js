@@ -2,7 +2,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Modal, TextInput
+    Modal, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
@@ -167,23 +167,30 @@ export default function PaymentMethodsScreen() {
 
             {/* Add UPI Modal */}
             <Modal visible={showAddUpi} transparent animationType="slide">
-                <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowAddUpi(false)} activeOpacity={1} />
-                <View style={[styles.modalSheet, { paddingBottom: modalSheetPaddingBottom }]}>
-                    <View style={styles.modalHandle} />
-                    <Text style={styles.modalTitle}>Add UPI ID</Text>
-                    <TextInput
-                        style={styles.modalInput}
-                        value={newUpi}
-                        onChangeText={setNewUpi}
-                        placeholder="example@okaxis"
-                        placeholderTextColor="#AAA"
-                        autoCapitalize="none"
-                        autoFocus
-                    />
-                    <TouchableOpacity style={styles.modalBtn} onPress={handleAddUpi}>
-                        <Text style={styles.modalBtnText}>Add UPI ID</Text>
-                    </TouchableOpacity>
-                </View>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowAddUpi(false)} activeOpacity={1} />
+                    <View style={[styles.modalSheet, { paddingBottom: modalSheetPaddingBottom }]}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>Add UPI ID</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            value={newUpi}
+                            onChangeText={setNewUpi}
+                            placeholder="example@okaxis"
+                            placeholderTextColor="#AAA"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="email-address"
+                            autoFocus
+                        />
+                        <TouchableOpacity style={styles.modalBtn} onPress={handleAddUpi}>
+                            <Text style={styles.modalBtnText}>Add UPI ID</Text>
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
             </Modal>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />

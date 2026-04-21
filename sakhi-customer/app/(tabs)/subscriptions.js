@@ -76,7 +76,7 @@ function MiniCalendar({ year, month, rideDates, today, selectedDate, onSelect })
 
 const cal = StyleSheet.create({
     wrap: { paddingVertical: 8 },
-    monthLabel: { fontSize: 13, fontWeight: '700', color: '#1E1B2E', marginBottom: 12, letterSpacing: -0.2 },
+    monthLabel: { fontSize: 15, fontWeight: '700', color: '#1E1B2E', marginBottom: 14, letterSpacing: -0.3 },
     row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
     dayHeader: { width: 36, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
     cell: { width: 36, height: 40, alignItems: 'center', justifyContent: 'center', gap: 2 },
@@ -94,10 +94,28 @@ export default function SubscriptionsDashboard() {
     const router = useRouter();
     const { showBack } = useLocalSearchParams();
     const { ride } = useRide();
-    const sub = ride?.subscription || {};
+
+    // ── Support multiple subscriptions ────────────────────────────────────────
+    const allSubs = useMemo(() => {
+        if (ride?.subscriptions?.length) return ride.subscriptions;
+        if (ride?.subscription?.id)      return [ride.subscription];
+        return [{}];
+    }, [ride]);
+    const [activeSubIdx, setActiveSubIdx] = useState(0);
+    const sub = allSubs[activeSubIdx] || {};
+
     const [isPaused, setIsPaused] = useState(false);
     const [modal, setModal] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [calMonthOffset, setCalMonthOffset] = useState(0);
+
+    // Reset calendar state when switching subscription
+    const switchSub = (idx) => {
+        setActiveSubIdx(idx);
+        setSelectedDate(null);
+        setCalMonthOffset(0);
+        setIsPaused(false);
+    };
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
@@ -105,21 +123,22 @@ export default function SubscriptionsDashboard() {
     const topNavHeight = topInset + 60;
     const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
 
-    // ── Computed values ───────────────────────────────────────────────────────
+    // ── Computed values from the selected sub ─────────────────────────────────
     const pickupTime     = sub.morningTime || '8:30 AM';
     const ridesTotal     = sub.rides_total ?? sub.plan ?? sub.total_rides ?? 30;
     const ridesUsed      = sub.rides_used  ?? sub.used  ?? 0;
     const ridesRemaining = Math.max(0, ridesTotal - ridesUsed);
     const progressPct    = ridesTotal > 0 ? (ridesRemaining / ridesTotal) * 100 : 0;
-    const pickupName     = ride?.pickup?.address?.split(',')[0]  || 'Pickup location';
-    const dropoffName    = ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
-    const daysRange      = sub.days?.length > 3
+    // Each sub carries its own pickup/dropoff; fall back to ride-level for legacy
+    const pickupName  = sub.pickup?.address?.split(',')[0]  || ride?.pickup?.address?.split(',')[0]  || 'Pickup location';
+    const dropoffName = sub.dropoff?.address?.split(',')[0] || ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
+    const daysRange   = sub.days?.length > 3
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
         : (sub.days?.join(', ') || 'Mon–Fri');
 
     const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
 
-    // ── Build ride date set ───────────────────────────────────────────────────
+    // ── Build ride date set for selected sub ──────────────────────────────────
     const rideDates = useMemo(() => {
         const set = new Set();
         if (sub.scheduled_dates?.length) {
@@ -133,19 +152,17 @@ export default function SubscriptionsDashboard() {
             }
         }
         return set;
-    }, [sub.scheduled_dates, today, ridesRemaining]);
+    }, [sub.scheduled_dates, sub.id, today, ridesRemaining]);
 
     const selectedRide = selectedDate ? {
         date: selectedDate, time: pickupTime, from: pickupName, to: dropoffName,
     } : null;
 
-    const months = useMemo(() => {
-        const y = today.getFullYear(), m = today.getMonth();
-        return [
-            { year: y, month: m },
-            { year: m === 11 ? y + 1 : y, month: (m + 1) % 12 },
-        ];
-    }, [today]);
+    // ── Active calendar month (navigable) ─────────────────────────────────────
+    const calMonth = useMemo(() => {
+        const base = new Date(today.getFullYear(), today.getMonth() + calMonthOffset, 1);
+        return { year: base.getFullYear(), month: base.getMonth() };
+    }, [today, calMonthOffset]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handlePause = () => {
@@ -201,13 +218,35 @@ export default function SubscriptionsDashboard() {
                     <Text style={s.title}>My Subscription</Text>
                 </View>
                 <TouchableOpacity style={s.menuBtn} onPress={() => router.push('/subscription-plans')}>
-                    <Text style={s.menuIcon}>＋</Text>
+                    <Text style={s.menuIcon}>+</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={[s.scrollContent, { paddingTop: scrollTopPadding }]} showsVerticalScrollIndicator={false}>
 
-                {/* Active Subscription Card */}
+                {/* Subscription Tabs — shown only when there are multiple subs */}
+                {allSubs.length > 1 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabsScroll} contentContainerStyle={s.tabsContent}>
+                        {allSubs.map((item, idx) => {
+                            const pName = item.pickup?.address?.split(',')[0] || `Plan ${idx + 1}`;
+                            const dName = item.dropoff?.address?.split(',')[0] || '';
+                            const isActive = idx === activeSubIdx;
+                            return (
+                                <TouchableOpacity
+                                    key={item.id || idx}
+                                    style={[s.tab, isActive && s.tabActive]}
+                                    onPress={() => switchSub(idx)}
+                                    activeOpacity={0.75}
+                                >
+                                    <Text style={[s.tabRoute, isActive && s.tabRouteActive]} numberOfLines={1}>
+                                        {pName} → {dName}
+                                    </Text>
+                                    <Text style={[s.tabTime, isActive && s.tabTimeActive]}>{item.morningTime || '—'}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                )}
                 <View style={s.activeCard}>
                     <View style={s.cardHeader}>
                         <View style={s.routeCol}>
@@ -250,24 +289,47 @@ export default function SubscriptionsDashboard() {
 
                 {/* Calendar Card */}
                 <View style={s.calendarCard}>
+                    {/* Calendar header with month navigation */}
                     <View style={s.calendarHeader}>
                         <Text style={s.calendarTitle}>📅  Upcoming Rides</Text>
-                        <View style={s.legendRow}>
-                            <View style={s.legendDot} />
-                            <Text style={s.legendText}>Scheduled ride</Text>
+                        <View style={s.calNavRow}>
+                            <TouchableOpacity
+                                style={[s.calNavBtn, calMonthOffset === 0 && s.calNavBtnDisabled]}
+                                onPress={() => {
+                                    if (calMonthOffset > 0) {
+                                        setCalMonthOffset(o => o - 1);
+                                        setSelectedDate(null);
+                                    }
+                                }}
+                                activeOpacity={calMonthOffset === 0 ? 1 : 0.7}
+                            >
+                                <Text style={[s.calNavIcon, calMonthOffset === 0 && s.calNavIconDisabled]}>‹</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={s.calNavBtn}
+                                onPress={() => {
+                                    setCalMonthOffset(o => o + 1);
+                                    setSelectedDate(null);
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={s.calNavIcon}>›</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
 
-                    {months.map((m, i) => (
-                        <View key={i}>
-                            <MiniCalendar
-                                year={m.year} month={m.month}
-                                rideDates={rideDates} today={today}
-                                selectedDate={selectedDate} onSelect={setSelectedDate}
-                            />
-                            {i === 0 && <View style={s.calDivider} />}
-                        </View>
-                    ))}
+                    <View style={s.legendRow}>
+                        <View style={s.legendDot} />
+                        <Text style={s.legendText}>Scheduled ride</Text>
+                    </View>
+
+                    <View style={{ marginTop: 12 }}>
+                        <MiniCalendar
+                            year={calMonth.year} month={calMonth.month}
+                            rideDates={rideDates} today={today}
+                            selectedDate={selectedDate} onSelect={setSelectedDate}
+                        />
+                    </View>
 
                     {selectedRide ? (
                         <View style={s.rideDetail}>
@@ -311,22 +373,40 @@ const s = StyleSheet.create({
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 24,
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: 'rgba(245,240,255,0.97)', zIndex: 10,
+        backgroundColor: '#F5F0FF', zIndex: 10,
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     backBtn: { width: 32, height: 32, justifyContent: 'center' },
     backIcon: { fontSize: 24, color: '#BEA3D8' },
-    title: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.45 },
+    title: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5 },
     menuBtn: { width: 32, height: 32, alignItems: 'flex-end', justifyContent: 'center' },
-    menuIcon: { fontSize: 24, color: '#BEA3D8', fontWeight: 'bold' },
+    menuIcon: { fontSize: 22, color: '#BEA3D8', fontWeight: '700' },
 
     scrollContent: { paddingHorizontal: 24 },
+
+    // ── Subscription tabs ─────────────────────────────────────────────────────
+    tabsScroll: { marginBottom: 16 },
+    tabsContent: { paddingHorizontal: 24, gap: 10 },
+    tab: {
+        paddingHorizontal: 16, paddingVertical: 10,
+        borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.35)',
+        backgroundColor: '#FFFFFF', minWidth: 150,
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    },
+    tabActive: {
+        backgroundColor: '#BEA3D8', borderColor: '#BEA3D8',
+    },
+    tabRoute: { fontSize: 13, fontWeight: '700', color: '#1E1B2E', marginBottom: 2 },
+    tabRouteActive: { color: '#FFFFFF' },
+    tabTime: { fontSize: 11, fontWeight: '500', color: '#94A3B8' },
+    tabTimeActive: { color: 'rgba(255,255,255,0.8)' },
 
     // Active card
     activeCard: {
         backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24,
-        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
-        marginBottom: 16, borderLeftWidth: 5, borderLeftColor: '#BEA3D8',
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 20, elevation: 5,
+        marginBottom: 16,
     },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
     routeCol: { flex: 1, gap: 4, paddingRight: 12 },
@@ -348,15 +428,15 @@ const s = StyleSheet.create({
     progressBar: { height: 8, backgroundColor: '#BEA3D8', borderRadius: 9999 },
 
     paymentBadge: { marginTop: 14, backgroundColor: '#F5F0FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-    paymentBadgeText: { fontSize: 12, fontWeight: '600', color: '#7C3AED' },
+    paymentBadgeText: { fontSize: 12, fontWeight: '600', color: '#BEA3D8' },
 
     // Actions
     actionsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
     actionBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    pauseBtn: { backgroundColor: '#EDE9FE' },
+    pauseBtn: { backgroundColor: '#DDD6FE' },
     modifyBtn: { backgroundColor: '#BEA3D8' },
     cancelBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
-    pauseText: { fontSize: 13, fontWeight: '700', color: '#7C3AED' },
+    pauseText:  { fontSize: 13, fontWeight: '700', color: '#5B21B6' },
     modifyText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
     cancelText: { fontSize: 13, fontWeight: '700', color: '#EF4444' },
 
@@ -366,12 +446,24 @@ const s = StyleSheet.create({
         shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.07, shadowRadius: 24, elevation: 5,
         marginBottom: 16,
     },
-    calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-    calendarTitle: { fontSize: 15, fontWeight: '800', color: '#1E1B2E', letterSpacing: -0.3 },
+    calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    calendarTitle: { fontSize: 15, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.3 },
     legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     legendDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#BEA3D8' },
     legendText: { fontSize: 11, fontWeight: '500', color: '#64748B' },
     calDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 16 },
+
+    // Month navigation arrows
+    calNavRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    calNavBtn: {
+        width: 32, height: 32, borderRadius: 16,
+        backgroundColor: '#EDE9FE',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    calNavBtnDisabled: { backgroundColor: '#F8FAFC' },
+    calNavIcon: { fontSize: 20, fontWeight: '700', color: '#7C3AED', lineHeight: 24 },
+    calNavIconDisabled: { color: '#CBD5E1' },
+
     calHint: { fontSize: 12, color: '#94A3B8', textAlign: 'center', paddingTop: 12 },
 
     // Ride detail
