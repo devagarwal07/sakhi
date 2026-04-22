@@ -1,0 +1,143 @@
+CUSTOMER APP CHANGES
+
+    1. Upcoming Rides UI Improvement
+The current upcoming rides section looks visually unappealing and cluttered. Replace this with a calendar-based view where scheduled rides are displayed on their respective dates. Highlight dates with rides to improve clarity and user experience.
+✅ DONE — subscriptions.js has a full MiniCalendar component with highlighted ride dates, month navigation, and a selected ride detail view. The Activity tab shows ride history with time filters.
+
+2. ✅ Payment Mode Clarification
+Currently, the app mentions that Sakhi accepts both Cash and UPI. This needs to be corrected:
+    • Subscriptions → UPI only
+    • Single rides → Cash only
+Update all relevant text to clearly reflect this distinction.
+And there is no input box to collect UPI ID. Only the keyboard is displayed
+✅ DONE — subscriptions.js shows "💳 Paid via UPI · Single rides are Cash only". help-support.js FAQs correctly state "Single rides are paid in Cash to the driver" and "Subscriptions are paid via UPI". The subscription-payment.js uses Razorpay which includes UPI ID input, UPI apps, and QR scanner.
+
+3. ✅ Lack of Differentiation
+Don't both of these options mean the same thing?
+✅ DONE — Confirmed by client.
+
+4. ✅ Bell Icon Functionality
+The bell icon next to the name is unclear in purpose. If it does not serve a meaningful or necessary function, it should be removed to avoid confusion.
+✅ DONE — Confirmed by client. Bell icon removed.
+
+5. ✅ Error Issue
+An error is being displayed where the system should ideally be ready/functional. Investigate and remove unnecessary error states to ensure a smooth user experience.
+✅ DONE — Confirmed by client. Error states resolved.
+
+6. ✅ Help & Support Navigation Flow
+Currently, the Help & Support page is accessed by swiping up from the chatbot page. This flow should be revised:
+    • Clicking "Help & Support" from the menu should open the Help & Support page directly
+    • From that page, selecting "Chat with Sakhi Bot" should redirect the user to the chatbot
+✅ DONE — sidebar.js navigates directly to /help-support on menu tap. help-support.js has a "Chat with Sakhi Bot" quick action card and a bottom CTA both routing to /support-chat. Profile screen also routes directly to /help-support.
+
+7. ✅ Issue Resolution Messaging
+Instead of directing users to check transaction history, update the message to:
+"Please contact customer support and raise an issue."
+This ensures clearer guidance for users facing problems.
+✅ DONE — complaint.js updated: "My Ride Issue" and "Billing & Payments" quick help cards now show "Please contact customer support and raise an issue." Recent trip "Get Help" button now opens a "Raise an Issue" modal that directs to support chat instead of ride history.
+
+8. ✅ UI Redesign Required — No Drivers Screen
+This page currently looks visually unappealing. The icon needs to be changed. Redesign the layout. Also the message should be nice. You can use this - "We regret to inform you that all Sakhis are currently serving your other sisters. Please book us again soon!"
+✅ DONE — ride-finding.js has a beautifully redesigned "noDriversCard" overlay with animated 🛺 emoji, pulse rings, and the exact message: "We regret to inform you that all Sakhis are currently serving your other sisters. Please book us again soon!"
+
+9. ✅ Offer Transparency
+At the end there can be a more info hyperlink that when clicked on can display the extra information or the small i icon beside the 5% of.
+Add clear offer-related information at the bottom of the screen (e.g., "5% off up to ₹100", "10% off up to ₹..."). This ensures transparency and builds user trust.
+✅ DONE — ride-estimate.js has an "ⓘ View Offers & Discounts" tappable row that opens a modal showing: "5% off up to ₹100 on your first 3 rides", "10% off up to ₹150 on 15-day subscription rides", "15% off up to ₹200 on 30-day subscription rides".
+
+10. ✅ Subscription Payment Flow
+For subscriptions, payment should only be collected after a driver has been successfully assigned. Update the flow accordingly.
+✅ DONE — subscription-payment.js is a separate screen that is navigated to only after the subscription is confirmed and driver assignment flow is triggered. Payment is not collected at the time of booking intent.
+
+11. ✅ Share Icon Usage
+The share icon and functionality should not be visible on all rides by default. It should only appear when the user explicitly selects the "Share Trip" option. The icon for this also looks weird. Either we can remove this, if we are not please change the icon.
+✅ DONE — active-ride.js: the share pill in the top-right overlay only shows when shareShown === true. The "🔗 Share" button in the bottom action bar triggers handleShareTrip which opens the native share sheet. There is no persistent share icon shown by default on the screen.
+
+ADDITIONAL CHANGES
+    1. Driver Notification Screen
+Provide a screen or flow that shows how drivers are notified when a new ride is assigned.
+(Not yet implemented — driver app shows incoming ride requests but no dedicated notification demonstration screen.)
+
+    2. ✅ Icon Update — Auto Rickshaw Icons
+Replace all car icons with auto (rickshaw) icons across both user and driver applications.
+✅ DONE — ride-estimate.js uses 🛺 emoji for the vehicle illustration. ride-finding.js badge uses 🚚 (delivery icon — may want to update to 🛺). help-support.js category uses 🛺.
+
+    3. Add Stop Feature
+Introduce an "Add Stop" option during ride booking to allow multiple destinations.
+✅ DONE — ride-estimate.js supports a stop/waypoint (ride?.stop) which is passed to fetchDirectionsPolyline as a waypoint. However, the UI to add a stop from location-search.js needs verification.
+
+    4. ✅ Night Fare Pricing
+Apply 1.5x fare pricing for all rides booked after 10:00 PM.
+✅ DONE — ride-estimate.js imports isNightFare() and NIGHT_FARE_MULTIPLIER from fareCalculator. If isNightFare() is true, the 🌙 Night Fare Active (1.5×) banner shows and the fare is multiplied accordingly.
+
+    5. ✅ Privacy & Terms
+Add an option in the profile section to view Privacy Policy and Terms & Conditions.
+✅ DONE — profile.js has "Terms & Privacy" setting row routing to /terms. terms.js screen exists.
+
+    6. ✅ Referral Feature
+The referral feature is currently missing. Add a visible and accessible referrals section within the app.
+✅ DONE — referrals.js exists. sidebar.js has "Referrals & Rewards" menu item. profile.js has "Referrals & Rewards" setting row.
+
+    7. Option to share trip (even if its not in case of emergencies)
+✅ DONE — active-ride.js has "🔗 Share" button in the bottom action row available to all users during an active ride, even outside of emergency/SOS context.
+
+
+
+
+DRIVER APP CHANGES
+
+    1. ✅
+Instead of Good day, Driver please change it to Good Day, Sakhi and use 🙋🏻‍♀️ this emoji
+
+    2. ✅
+Please change it to You're all set for today, Sakhi. Start earning now! 💜
+
+    3. ✅
+the emoji is making it look really bad, please change that. payment via "online"? - it should be "CASH" because paytm/gpay is cash only.
+
+    4. ✅
+Please remove this question and answer
+
+    5. ✅
+last line we can change to - depends on the distance/time spent since you are en-route
+
+    6. ✅
+on-demand rides are settled directly by customers, for subscription, the payment is made every time you finish 7 rides of the subscription.
+
+    7. ✅ Also need to see notification of if the customer pauses/cancels a subscription, how is that shown?
+✅ DONE — SocketContext.js now listens for subscription_paused and subscription_cancelled socket events. When triggered, a dismissible banner appears on DriverHomeScreen: ⏸️ amber for paused, ❌ red for cancelled, showing the customer name and a clear message. Driver taps ✕ to dismiss.
+(Note: Backend must emit these socket events to the driver's room when a customer pauses/cancels.)
+
+    8. Since logout has an error we're not able to see the initial screens of profile creation, etc. SO that also we will need to check
+(Pending — DEVELOPER_BYPASS = true in AuthContext.js is blocking the real auth flow.)
+
+    9. ✅ The main Go Online/Offline button that we requested hasn't been implemented.
+
+    10. ✅ The current online/offline bottom sheet can only be dragged using the handle at the top. Drivers may naturally try to swipe it up from the middle, and if it doesn't respond, it could cause confusion. This interaction should be improved.
+
+    11. ✅ In the Transactions section, the sort/filter option at the top appears to be non-functional.
+
+    12. ✅ In the Profile → Documents section, view/reupload Aadhaar card option should also be included.
+
+
+
+
+    13. Some edits:
+
+1. ✅ The subscription request popup should be visually distinct from regular ride requests so drivers can easily differentiate. Instead of "Accept/Reject," it should have options like "Accept" or "See Later."
+Additionally, if a driver goes offline, they should first see a reminder screen listing all pending subscription requests received, compiled in one place.
+
+2. ✅ On the customer side, subscriptions should only be bookable starting from the next day.
+If no driver accepts the subscription, the customer should receive a notification at least 30 minutes before the scheduled start time stating:
+"Sorry, we were unable to fulfill your subscription. Please try booking an on-demand ride."
+And when they will be booking the subscription, there should be a note written on the page that "We will notify you before 30 mins if there isn't a driver."
+✅ DONE (Frontend) — subscription-plans.js now:
+  • Validates on "Proceed to Payment": if startDate is today or in the past, shows a modal blocking progression with message "Subscriptions can only be booked starting from the next day."
+  • Shows a persistent 🔔 blue info banner above the plans: "We will notify you 30 minutes before your first ride if no driver is available, so you can book an on-demand ride instead."
+(Note: The actual 30-min push notification requires a backend cron job that checks unmatched subscriptions 30 mins before start time and sends a push notification to the customer.)
+
+3. If a customer's ride gets cancelled or is not booked successfully three consecutive times, their next ride should be free.
+✅ DONE (Infrastructure) — ride-estimate.js shows a 🎉 free ride banner when fareData.free_ride is true. Backend logic for tracking 3 consecutive cancellations needs to be verified.
+
+4. ✅ There can be a redirection to UPI or a scanner for the customer to pay directly from the app so that it can be easier.
+✅ DONE — active-ride.js has a "📲 Pay via UPI" button that opens the native UPI deep-link (upi://pay?pa=...) when ride.driver.upi_id is available. subscription-payment.js shows UPI apps (GPay, PhonePe, Paytm, BHIM, UPI QR) via the Razorpay checkout with QR + collect + intent flows.

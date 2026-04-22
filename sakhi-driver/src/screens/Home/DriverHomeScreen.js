@@ -275,7 +275,7 @@ const oc = StyleSheet.create({
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
   const { driver, updateDriver } = useAuth();
-  const { pendingSubRequests } = useSocket();
+  const { pendingSubRequests, subAlert, clearSubAlert } = useSocket();
   const insets = useSafeAreaInsets();
 
   const [isOnline, setIsOnline] = useState(driver?.is_online ?? false);
@@ -544,6 +544,32 @@ export default function DriverHomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* ── SUBSCRIPTION ALERT BANNER ── */}
+      {subAlert && (
+        <View style={[
+          s.subAlertBanner,
+          subAlert.type === 'cancelled' ? s.subAlertBannerRed : s.subAlertBannerAmber,
+        ]}>
+          <Text style={s.subAlertIcon}>
+            {subAlert.type === 'cancelled' ? '❌' : '⏸️'}
+          </Text>
+          <View style={s.subAlertTextCol}>
+            <Text style={[
+              s.subAlertTitle,
+              subAlert.type === 'cancelled' ? { color: '#991B1B' } : { color: '#92400E' },
+            ]}>
+              {subAlert.type === 'cancelled'
+                ? 'Subscription Cancelled'
+                : 'Subscription Paused'}
+            </Text>
+            <Text style={s.subAlertMsg}>{subAlert.message}</Text>
+          </View>
+          <TouchableOpacity onPress={clearSubAlert} style={s.subAlertClose} activeOpacity={0.7}>
+            <Text style={s.subAlertCloseText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* ── DRAGGABLE BOTTOM SHEET ── */}
       <Animated.View style={[s.sheet, { top: sheetY }]} {...panResponder.panHandlers}>
 
@@ -604,8 +630,8 @@ export default function DriverHomeScreen({ navigation }) {
             />
           ) : (
             <>
-              <Text style={s.statusHeading}>You are Offline</Text>
-              <Text style={s.statusSub}>Go online to receive rides</Text>
+              <Text style={s.statusHeading}>Good Day, Sakhi 🙋🏻‍♀️</Text>
+              <Text style={s.statusSub}>You're all set for today, Sakhi. Start earning now! 💜</Text>
               {/* Stats (offline summary) */}
               <View style={s.statsRow}>
                 <StatCard value={`₹${earnings.today}`} label="Today" />
@@ -768,4 +794,44 @@ const s = StyleSheet.create({
   // Subscription expiry pill variants
   earningsPillExpired: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
   earningsPillWarning: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+
+  // ── Subscription alert banner ───────────────────────────────────────────────
+  subAlertBanner: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 100, // sits just above the bottom nav bar
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    zIndex: 999,
+  },
+  subAlertBannerAmber: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+  },
+  subAlertBannerRed: {
+    backgroundColor: '#FFF1F2',
+    borderWidth: 1.5,
+    borderColor: '#FECDD3',
+  },
+  subAlertIcon: { fontSize: 22, marginTop: 1 },
+  subAlertTextCol: { flex: 1, gap: 3 },
+  subAlertTitle: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+  subAlertMsg: { fontSize: 12, fontWeight: '400', color: '#64748B', lineHeight: 18 },
+  subAlertClose: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: 1,
+  },
+  subAlertCloseText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
 });

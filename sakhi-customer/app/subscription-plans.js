@@ -65,6 +65,29 @@ export default function SubscriptionPlansScreen() {
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]
             });
         }
+
+        // ── Next-day-only validation ────────────────────────────────────────
+        // Subscriptions must start from the next day, not today.
+        if (sub.startDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // Parse startDate (expected format: 'DD MMM YYYY' or ISO string)
+            const selectedDate = new Date(sub.startDate);
+            selectedDate.setHours(0, 0, 0, 0);
+
+            if (selectedDate < tomorrow) {
+                return setModal({
+                    icon: '📅',
+                    title: 'Start Date Must Be Tomorrow or Later',
+                    message: 'Subscriptions can only be booked starting from the next day. Please select tomorrow or a future date.',
+                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                });
+            }
+        }
+
         router.push('/subscription-payment');
     };
 
@@ -107,6 +130,14 @@ export default function SubscriptionPlansScreen() {
                 <View style={styles.pricingNote}>
                     <Text style={styles.pricingNoteText}>
                         ✦ Based on ₹{BASE_RIDE_PRICE}/ride (avg 3 km) · Sakhi Premium included
+                    </Text>
+                </View>
+
+                {/* 30-min Notification Info Banner */}
+                <View style={styles.notifyBanner}>
+                    <Text style={styles.notifyBannerIcon}>🔔</Text>
+                    <Text style={styles.notifyBannerText}>
+                        We will notify you <Text style={styles.notifyBannerBold}>30 minutes before</Text> your first ride if no driver is available, so you can book an on-demand ride instead.
                     </Text>
                 </View>
 
@@ -321,5 +352,22 @@ const styles = StyleSheet.create({
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 8,
     },
     submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+
+    // 30-min notification banner
+    notifyBanner: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+        backgroundColor: '#EFF6FF',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 20,
+    },
+    notifyBannerIcon: { fontSize: 16, marginTop: 1 },
+    notifyBannerText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#1E40AF', lineHeight: 20 },
+    notifyBannerBold: { fontWeight: '700' },
 
 });

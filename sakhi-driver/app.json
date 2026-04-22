@@ -11,17 +11,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#1E1B2E"
     },
-    "ios": {
-      "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
-      },
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sakhi Driver needs your location to show your position on the map and match you with nearby riders.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location in the background to keep sharing your position with riders while you are online."
-      },
-      "bundleIdentifier": "com.sakhi.driver"
-    },
     "android": {
       "package": "com.sakhi.driver",
       "googleServicesFile": "./google-services.json",

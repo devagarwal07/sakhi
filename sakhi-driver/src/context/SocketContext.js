@@ -53,6 +53,10 @@ export function SocketProvider({ children }) {
   // ── Pending snoozed subscription requests ─────────────────────────────
   const [pendingSubRequests, setPendingSubRequests] = useState([]);
 
+  // ── Subscription pause / cancel alerts ───────────────────────────────
+  // { type: 'paused' | 'cancelled', subscriptionId, customerName, message }
+  const [subAlert, setSubAlert] = useState(null);
+
   // ── Connect ────────────────────────────────────────────────────────────
   const connect = useCallback(async () => {
     if (socketRef.current?.connected) return;
@@ -102,6 +106,30 @@ export function SocketProvider({ children }) {
     socket.on('ride:request_cancelled', ({ ride_id }) => {
       setIncomingRide((prev) => (prev?.ride_id === ride_id ? null : prev));
       setPendingSubRequests((prev) => prev.filter((r) => r.ride_id !== ride_id));
+    });
+
+    // ── Subscription paused by customer ──────────────────────────────────
+    socket.on('subscription_paused', ({ subscription_id, customer_name }) => {
+      setSubAlert({
+        type: 'paused',
+        subscriptionId: subscription_id,
+        customerName: customer_name || 'A customer',
+        message: `${customer_name || 'A customer'} has paused their subscription. No rides will be dispatched until they resume.`,
+      });
+    });
+
+    // ── Subscription cancelled by customer ────────────────────────────────
+    socket.on('subscription_cancelled', ({ subscription_id, customer_name }) => {
+      setSubAlert({
+        type: 'cancelled',
+        subscriptionId: subscription_id,
+        customerName: customer_name || 'A customer',
+        message: `${customer_name || 'A customer'} has cancelled their subscription. This route has been removed from your schedule.`,
+      });
+      // Also clean up from pending sub requests if it was there
+      setPendingSubRequests((prev) =>
+        prev.filter((r) => r.subscription_id !== subscription_id)
+      );
     });
 
     // ── Re-register pre-connect listeners ─────────────────────────────────
@@ -197,6 +225,8 @@ export function SocketProvider({ children }) {
     clearIncomingRide: () => setIncomingRide(null),
     pendingSubRequests,
     clearPendingSubRequests,
+    subAlert,
+    clearSubAlert: () => setSubAlert(null),
   };
 
   return (

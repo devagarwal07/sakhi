@@ -27,8 +27,8 @@ export default function HelpSupportScreen() {
     }, []);
 
     const helpCategories = {
-        ride: 'For ride issues, please rate the trip and submit a report from your Ride History.',
-        billing: 'For billing issues, check your Wallet for transaction history or contact us.',
+        ride: 'Please contact customer support and raise an issue. Our team will investigate and assist you shortly.',
+        billing: 'Please contact customer support and raise an issue. Our team will look into your billing concern and respond within 24 hours.',
         safety: 'If you feel unsafe, please use the SOS button or call our safety helpline at 1800-SAKHI.',
         subscription: 'For subscription help, go to the Subscriptions tab to manage your plan.',
     };
@@ -59,8 +59,16 @@ export default function HelpSupportScreen() {
                     <Text style={styles.locationText} numberOfLines={1}>{dropoff}</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7} onPress={() => router.push('/ride-history')}>
-                <Text style={styles.getHelpText}>Get Help</Text>
+            <TouchableOpacity style={styles.getHelpBtn} activeOpacity={0.7} onPress={() => setModal({
+                icon: '📝',
+                title: 'Raise an Issue',
+                message: 'Please contact customer support and raise an issue. Our team will get back to you shortly.',
+                buttons: [
+                    { text: 'Contact Support', onPress: () => { setModal(null); router.push('/support-chat'); } },
+                    { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                ],
+            })}>
+                <Text style={styles.getHelpText}>Raise Issue</Text>
             </TouchableOpacity>
         </View>
     );
