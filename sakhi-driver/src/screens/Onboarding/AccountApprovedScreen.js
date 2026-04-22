@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Platform
+  View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     paddingHorizontal: 24,
     justifyContent: 'center',
-    ...(Platform.OS === 'ios' && { marginTop: 44 }) // Offset for top safe area roughly
   },
   headerContent: {
     flexDirection: 'row',

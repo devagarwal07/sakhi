@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform
+  TextInput, Alert, ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -53,7 +53,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={undefined}>
       {/* Nav - TopAppBar */}
       <View style={styles.topAppBar}>
         <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>

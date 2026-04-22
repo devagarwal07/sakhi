@@ -76,7 +76,6 @@ function ToggleRow({ label, sub, badge, stateKey, value, onToggle }) {
         onValueChange={onToggle}
         trackColor={{ false: '#E5E0EF', true: PURPLE }}
         thumbColor={WHITE}
-        ios_backgroundColor="#E5E0EF"
         style={tr.switch}
       />
     </View>

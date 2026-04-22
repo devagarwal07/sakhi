@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform,
+  TouchableOpacity, KeyboardAvoidingView,
   ActivityIndicator, Pressable,
 } from 'react-native';
 import { useSocket } from '../context/SocketContext';
@@ -114,8 +114,8 @@ export default function ChatModal({ rideId, onClose }) {
   return (
     <KeyboardAvoidingView
       style={c.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior="height"
+      keyboardVerticalOffset={20}
     >
       {/* ── Header ── */}
       <View style={c.header}>
@@ -260,7 +260,7 @@ const c = StyleSheet.create({
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
     paddingHorizontal: 16, paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    paddingBottom: 12,
     borderTopWidth: 1, borderTopColor: BG,
     backgroundColor: WHITE,
   },

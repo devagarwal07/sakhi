@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Linking, Image, Platform,
+  Alert, ActivityIndicator, Linking, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
@@ -538,10 +538,7 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40,
     gap: 12,
-    ...Platform.select({
-      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.06, shadowRadius: 24 },
-      android: { elevation: 12 },
-    }),
+    elevation: 12,
   },
 
   callBtn: {

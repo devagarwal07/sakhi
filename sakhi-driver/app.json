@@ -13,7 +13,6 @@
     },
     "android": {
       "package": "com.sakhi.driver",
-      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
@@ -33,18 +32,7 @@
         "android.permission.VIBRATE"
       ]
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.sakhi.driver",
-      "googleServicesFile": "./GoogleService-Info.plist",
-      "config": {
-        "googleMapsApiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
-      },
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sakhi Driver needs your location to show your position on the map and match you with nearby riders.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location in the background to keep sharing your position with riders while you are online."
-      }
-    },
+
     "plugins": [
       [
         "expo-location",

@@ -1,7 +1,7 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Modal, TextInput, Platform, KeyboardAvoidingView,
+  Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
@@ -75,7 +75,7 @@ function InputModal({ visible, title, fields, initialValues = {}, onSave, onClos
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={m.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={undefined}
       >
         <TouchableOpacity style={m.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={m.sheet}>
@@ -497,10 +497,7 @@ const s = StyleSheet.create({
     backgroundColor: PURPLE,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32 },
-      android: { elevation: 4 },
-    }),
+    elevation: 4,
   },
   saveBtnText: {
     fontSize: 18,

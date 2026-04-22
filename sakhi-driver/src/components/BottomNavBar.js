@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Platform,
+  View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, TrendingUp, Wallet, User } from 'lucide-react-native';
@@ -82,15 +82,7 @@ const s = StyleSheet.create({
     borderTopColor: 'rgba(190,163,216,0.2)',
     paddingTop: 8,
     paddingHorizontal: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: 'rgba(124, 58, 237, 1)',
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-      },
-      android: { elevation: 12 },
-    }),
+    elevation: 12,
   },
   tab: {
     flex: 1,

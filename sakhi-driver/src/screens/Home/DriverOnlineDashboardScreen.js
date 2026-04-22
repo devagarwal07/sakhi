@@ -24,9 +24,9 @@ const BG = '#F7F6F8';
 const DARK = '#0F172A';
 
 const TIER_COLORS = {
-  bronze:   '#CD7F32',
-  silver:   '#64748B',
-  gold:     '#F59E0B',
+  bronze: '#CD7F32',
+  silver: '#64748B',
+  gold: '#F59E0B',
   platinum: '#BEA3D8',
 };
 
@@ -37,7 +37,7 @@ function getTierColor(tier) {
 export default function DriverOnlineDashboardScreen({ navigation }) {
   const { driver } = useAuth();
   const insets = useSafeAreaInsets();
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [earnings, setEarnings] = useState({ today: null, trips: 0, onlineMinutes: 0 });
 
@@ -45,16 +45,16 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
     useCallback(() => {
       client.get('/drivers/earnings/today').then(r => {
         setEarnings({
-          today:          r.data?.today_earnings  ?? null,
-          trips:          r.data?.today_trips     ?? 0,
-          onlineMinutes:  r.data?.online_minutes  ?? 0,
+          today: r.data?.today_earnings ?? null,
+          trips: r.data?.today_trips ?? 0,
+          onlineMinutes: r.data?.online_minutes ?? 0,
         });
-      }).catch(() => {});
+      }).catch(() => { });
     }, [driver])
   );
 
   const handleGoOnline = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
     navigation.navigate('PaymentPlans');
   };
 
@@ -65,8 +65,8 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
       {/* ─── HEADER ─── */}
       <View style={[s.header, { paddingTop: Math.max(insets.top, 24) }]}>
         <View style={s.headerLeft}>
-          <TouchableOpacity 
-            style={s.avatarBorder} 
+          <TouchableOpacity
+            style={s.avatarBorder}
             onPress={() => setSidebarOpen(true)}
             activeOpacity={0.8}
           >
@@ -79,20 +79,20 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
             </View>
           </TouchableOpacity>
           <View style={s.headerTextCol}>
-            <Text style={s.greeting}>Hi, {driver?.first_name || 'Driver'} 👋</Text>
+            <Text style={s.greeting}>Hi, Sakhi </Text>
             <Text style={[s.tier, { color: getTierColor(driver?.tier) }]}>
               {(driver?.tier || 'GOLD').toUpperCase()} TIER DRIVER
             </Text>
           </View>
         </View>
-        
+
         <TouchableOpacity style={s.bellBtn} activeOpacity={0.8} onPress={() => navigation.navigate('Notifications')}>
           <Feather name="bell" size={20} color={PURPLE} />
         </TouchableOpacity>
       </View>
 
       {/* ─── MAIN CONTENT ─── */}
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[s.scrollContent, { paddingBottom: NAV_HEIGHT + 40 }]}
         showsVerticalScrollIndicator={false}
       >
@@ -100,15 +100,15 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         <View style={s.earningsCard}>
           <View style={s.earningsTop}>
             <View style={s.earningsTextCol}>
-            <Text style={s.earningsLabel}>Today's Earnings</Text>
-            {earnings.today === null ? (
-              <View style={s.earningsSkeleton} />
-            ) : (
-              <Text style={s.earningsAmount}>
-                ₹{(earnings.today || 0).toLocaleString('en-IN')}
-              </Text>
-            )}
-          </View>
+              <Text style={s.earningsLabel}>Today's Earnings</Text>
+              {earnings.today === null ? (
+                <View style={s.earningsSkeleton} />
+              ) : (
+                <Text style={s.earningsAmount}>
+                  ₹{(earnings.today || 0).toLocaleString('en-IN')}
+                </Text>
+              )}
+            </View>
             <View style={s.graphPlaceholder}>
               <MaterialCommunityIcons name="chart-bell-curve-cumulative" size={54} color={PURPLE} style={{ opacity: 0.6 }} />
             </View>
@@ -138,8 +138,8 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         {/* Go Online Section */}
         <View style={s.goOnlineSection}>
           <View style={s.goOnlineGlow} />
-          <TouchableOpacity 
-            style={s.goOnlineBtn} 
+          <TouchableOpacity
+            style={s.goOnlineBtn}
             onPress={handleGoOnline}
             activeOpacity={0.8}
           >
@@ -157,21 +157,21 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         <View style={s.quickActionsRow}>
           <TouchableOpacity style={s.qaCard} onPress={() => navigation.navigate('RideHistory')}>
             <View style={s.qaIconWrap}>
-               <Feather name="truck" size={18} color={PURPLE} />
+              <Feather name="truck" size={18} color={PURPLE} />
             </View>
             <Text style={s.qaLabel}>My Rides</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.qaCard} onPress={() => navigation.navigate('MyEarnings')}>
             <View style={s.qaIconWrap}>
-               <MaterialIcons name="account-balance-wallet" size={20} color={PURPLE} />
+              <MaterialIcons name="account-balance-wallet" size={20} color={PURPLE} />
             </View>
             <Text style={s.qaLabel}>Earnings</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.qaCard} onPress={() => navigation.navigate('PaymentPlans')}>
             <View style={s.qaIconWrap}>
-               <Feather name="tag" size={18} color={PURPLE} />
+              <Feather name="tag" size={18} color={PURPLE} />
             </View>
             <Text style={s.qaLabel}>Subscription</Text>
           </TouchableOpacity>
@@ -282,9 +282,9 @@ const s = StyleSheet.create({
   earningsAmount: { fontSize: 32, fontWeight: '700', color: DARK, letterSpacing: -1 },
   earningsSkeleton: { width: 120, height: 36, backgroundColor: '#F1F5F9', borderRadius: 8, marginTop: 4 },
   graphPlaceholder: { width: 96, height: 48, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 },
-  
+
   earningsDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 20 },
-  
+
   earningsStatsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statBox: { gap: 4 },
   statLabel: { fontSize: 12, color: '#64748B', fontWeight: '400' },

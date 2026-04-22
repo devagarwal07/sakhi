@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Platform,
+  View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
@@ -76,15 +76,7 @@ const s = StyleSheet.create({
     alignItems: 'flex-end',
     paddingBottom: 10,
     paddingHorizontal: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: 'rgba(124, 58, 237, 1)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-      },
-      android: { elevation: 4 },
-    }),
+    elevation: 4,
   },
   side: {
     width: 44,

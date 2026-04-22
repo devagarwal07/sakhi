@@ -21,7 +21,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal, View, Text, TouchableOpacity,
-  StyleSheet, Animated, Dimensions, Platform,
+  StyleSheet, Animated, Dimensions,
 } from 'react-native';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -401,7 +401,7 @@ const sp = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 42 : 28,
+    paddingBottom: 28,
     paddingTop: 12,
     shadowColor: 'rgba(124, 58, 237, 1)',
     shadowOffset: { width: 0, height: -8 },

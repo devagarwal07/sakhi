@@ -1,7 +1,7 @@
-﻿import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Clock, ChevronRight, Ticket } from 'lucide-react-native';
@@ -447,15 +447,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 16,
     backgroundColor: 'rgba(245, 240, 255, 0.8)',
-    ...Platform.select({
-      ios: {
-        shadowColor: DEEP,
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
-      },
-      android: { elevation: 4 },
-    }),
+    elevation: 4,
   },
   headerLeft: {
     flexDirection: 'row',

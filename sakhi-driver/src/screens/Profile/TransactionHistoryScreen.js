@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, Platform, ActivityIndicator, RefreshControl, Share,
+  StyleSheet, Modal, ActivityIndicator, RefreshControl, Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
@@ -627,10 +627,7 @@ const s = StyleSheet.create({
     backgroundColor: '#BEA3D8',
     borderRadius: 9999,
     marginLeft: 'auto',
-    ...Platform.select({
-      ios: { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
-      android: { elevation: 5 },
-    }),
+    elevation: 5,
   },
   exportText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', lineHeight: 20 },
 

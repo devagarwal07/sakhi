@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Image, KeyboardAvoidingView,
-  Platform, Modal, FlatList, Pressable, ActivityIndicator,
+  Modal, FlatList, Pressable, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -149,7 +149,7 @@ export default function EditProfileScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        behavior={null}
       >
         {/* ── Header ── */}
         <View style={styles.header}>
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   // ── Bottom Save ──
   bottomFixedWrap: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 20, paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    padding: 20, paddingBottom: 24,
     backgroundColor: BG,
     shadowColor: PURPLE, shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
   },
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   pickerSheet: {
     backgroundColor: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    padding: 24, paddingBottom: 28,
   },
   pickerHandle: { width: 40, height: 4, backgroundColor: '#E2D9F3', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   pickerTitle:  { fontSize: 17, fontWeight: '700', color: DARK, marginBottom: 20, textAlign: 'center' },

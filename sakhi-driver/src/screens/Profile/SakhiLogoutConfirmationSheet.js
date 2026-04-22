@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Animated, Modal, TouchableWithoutFeedback,
-  ActivityIndicator, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TriangleAlert } from 'lucide-react-native';
@@ -155,15 +155,7 @@ const s = StyleSheet.create({
     paddingTop: 12,
     alignItems: 'center',
     gap: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-      },
-      android: { elevation: 20 },
-    }),
+    elevation: 20,
   },
 
   // ── drag handle ────────────────────────────────────────────────────────────
