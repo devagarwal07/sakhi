@@ -1,11 +1,14 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Switch, Platform 
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    Switch, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEmergencyContacts } from '../src/api/endpoints';
+
+const LIVE_SHARING_KEY = 'sakhi_live_sharing_enabled';
 
 export default function SOSSettingsScreen({ isTab = false }) {
     const router = useRouter();
@@ -22,9 +25,15 @@ export default function SOSSettingsScreen({ isTab = false }) {
         vibrate: true,
         playSound: true,
     });
+    const [liveSharingEnabled, setLiveSharingEnabled] = useState(false);
     const [contactCount, setContactCount] = useState(null);
 
     useEffect(() => {
+        // Load live sharing preference
+        AsyncStorage.getItem(LIVE_SHARING_KEY)
+            .then(val => { if (val !== null) setLiveSharingEnabled(val === 'true'); })
+            .catch(() => {});
+
         getEmergencyContacts()
             .then(({ data }) => {
                 const list = data.contacts || data || [];
@@ -32,6 +41,11 @@ export default function SOSSettingsScreen({ isTab = false }) {
             })
             .catch(() => {});
     }, []);
+
+    const toggleLiveSharing = async (value) => {
+        setLiveSharingEnabled(value);
+        await AsyncStorage.setItem(LIVE_SHARING_KEY, String(value)).catch(() => {});
+    };
 
     const toggleSwitch = (key) => {
         setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
@@ -110,6 +124,38 @@ export default function SOSSettingsScreen({ isTab = false }) {
                                     value={preferences.playSound}
                                     style={styles.switchControl}
                                 />
+                            </View>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        {/* Section: Live Trip Sharing */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionHeading}>Live Trip Sharing</Text>
+
+                            <View style={styles.row}>
+                                <View style={styles.rowTextCol}>
+                                    <Text style={styles.rowTitle}>Share trip with contacts</Text>
+                                    <Text style={styles.rowSubtitle}>When ON, a Share Trip button appears during your active ride</Text>
+                                </View>
+                                <Switch
+                                    trackColor={{ false: '#E5E0EF', true: '#BEA3D8' }}
+                                    thumbColor="#FFFFFF"
+                                    ios_backgroundColor="#E5E0EF"
+                                    onValueChange={toggleLiveSharing}
+                                    value={liveSharingEnabled}
+                                    style={styles.switchControl}
+                                />
+                            </View>
+
+                            {/* Info banner */}
+                            <View style={[styles.infoBanner, liveSharingEnabled && styles.infoBannerActive]}>
+                                <Text style={styles.infoBannerIcon}>{liveSharingEnabled ? '📤' : '🔒'}</Text>
+                                <Text style={styles.infoBannerText}>
+                                    {liveSharingEnabled
+                                        ? 'Share Trip button is now active. It will appear on your next ride.'
+                                        : 'Enable to let trusted contacts track your ride in real time.'}
+                                </Text>
                             </View>
                         </View>
 
@@ -316,5 +362,25 @@ const styles = StyleSheet.create({
     },
     testSubText: {
         fontSize: 11, color: '#6B7280', textAlign: 'center',
+    },
+
+    /* Live Trip Sharing Info Banner */
+    infoBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: '#F5F0FF',
+        borderRadius: 10,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(190,163,216,0.3)',
+    },
+    infoBannerActive: {
+        backgroundColor: '#EADDFF',
+        borderColor: '#BEA3D8',
+    },
+    infoBannerIcon: { fontSize: 18 },
+    infoBannerText: {
+        flex: 1, fontSize: 12, fontWeight: '500', color: '#6B7280', lineHeight: 18,
     },
 });

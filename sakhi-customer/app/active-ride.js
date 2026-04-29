@@ -7,15 +7,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmartMapView from '../src/components/SmartMapView';
 
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { cancelRide, callDriver, sendBatteryAlert, shareTrip } from '../src/api/endpoints';
+import { cancelRide, callDriver, sendBatteryAlert, shareTrip, getEmergencyContacts } from '../src/api/endpoints';
 
 import * as Battery from 'expo-battery';
 import * as Sharing from 'expo-sharing';
 import ChatModal from '../src/components/ChatModal';
 import SakhiModal from '../src/components/SakhiModal';
+
+const LIVE_SHARING_KEY = 'sakhi_live_sharing_enabled';
 
 const STATUS_LABELS = {
     assigned: 'Driver Found!',
@@ -45,6 +48,27 @@ export default function ActiveRideScreen() {
     const sheetSlide = useRef(new Animated.Value(300)).current;
     const [modal, setModal] = useState(null);
     const [shareShown, setShareShown] = useState(false);
+    const [liveSharingEnabled, setLiveSharingEnabled] = useState(false);
+    const [contacts, setContacts] = useState([]);
+    const [showContactPrompt, setShowContactPrompt] = useState(false);
+
+    // Load live sharing preference from Safety settings
+    useEffect(() => {
+        AsyncStorage.getItem(LIVE_SHARING_KEY)
+            .then(val => {
+                const enabled = val === 'true';
+                setLiveSharingEnabled(enabled);
+                if (enabled) {
+                    getEmergencyContacts().then(({ data }) => {
+                        const list = data.contacts || data || [];
+                        setContacts(list);
+                        // Auto-show prompt if they have contacts
+                        if (list.length > 0) setShowContactPrompt(true);
+                    }).catch(() => {});
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         // Slide up bottom sheet
@@ -122,17 +146,56 @@ export default function ActiveRideScreen() {
         return () => batterySubscription?.remove();
     }, [ride?.id, ride?.driver?.currentLocation]);
 
-    const handleShareTrip = async () => {
+    // Replaced the OS share sheet with the Contact selection popup
+    const handleShareTrip = () => {
         if (!ride?.rideId) {
-            setModal({
-                icon: '🔗',
-                title: 'Not Available',
-                message: 'Trip sharing is only available during an active ride.',
-                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-            });
+            setModal({ icon: '🔗', title: 'Not Available', message: 'Trip sharing is only available during an active ride.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             return;
         }
+
+        if (contacts.length === 0) {
+            // Fetch on demand if not loaded yet
+            getEmergencyContacts().then(({ data }) => {
+                const list = data.contacts || data || [];
+                setContacts(list);
+                setShowContactPrompt(true);
+            }).catch(() => setShowContactPrompt(true));
+        } else {
+            setShowContactPrompt(true);
+        }
+    };
+
+    const handleShareWithContact = async (contact) => {
         try {
+            setShowContactPrompt(false);
+            const { data } = await shareTrip(ride.rideId);
+            const shareUrl = data?.share_url;
+            if (!shareUrl) throw new Error('No share URL returned');
+            setShareShown(true);
+            
+            // Open SMS app directly with the phone number and link
+            const message = `Track my Sakhi ride live: ${shareUrl}`;
+            const smsUrl = Platform.OS === 'ios' ? `sms:${contact.phone}&body=${encodeURIComponent(message)}` : `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
+            
+            Linking.canOpenURL(smsUrl)
+                .then(supported => {
+                    if (supported) Linking.openURL(smsUrl);
+                    else {
+                        setModal({
+                            icon: '🔗', title: 'Live Trip Link', message: shareUrl, buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                        });
+                    }
+                });
+        } catch (err) {
+            setModal({
+                icon: '⚠️', title: 'Share Failed', message: err.response?.data?.error?.message ?? 'Could not generate share link.', buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        }
+    };
+
+    const handleShareMoreOptions = async () => {
+        try {
+            setShowContactPrompt(false);
             const { data } = await shareTrip(ride.rideId);
             const shareUrl = data?.share_url;
             if (!shareUrl) throw new Error('No share URL returned');
@@ -141,21 +204,9 @@ export default function ActiveRideScreen() {
             if (isAvailable) {
                 await Sharing.shareAsync(shareUrl, { dialogTitle: 'Track my Sakhi ride' });
             } else {
-                setModal({
-                    icon: '🔗',
-                    title: 'Live Trip Link',
-                    message: shareUrl,
-                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                });
+                setModal({ icon: '🔗', title: 'Live Trip Link', message: shareUrl, buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             }
-        } catch (err) {
-            setModal({
-                icon: '⚠️',
-                title: 'Share Failed',
-                message: err.response?.data?.error?.message ?? 'Could not generate share link.',
-                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-            });
-        }
+        } catch (err) {}
     };
 
     const handleCancel = () => {
@@ -222,14 +273,14 @@ export default function ActiveRideScreen() {
                     <Text style={styles.sosPillText}>🆘  SOS</Text>
                 </TouchableOpacity>
 
-                {/* Share pill — only shown after user taps Share Trip */}
-                {shareShown && (
+                {/* Share pill — only shown when live sharing is enabled AND user has tapped Share */}
+                {liveSharingEnabled && shareShown && (
                     <TouchableOpacity
                         style={styles.sharePill}
                         onPress={handleShareTrip}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.sharePillText}>🔗  Share</Text>
+                        <Text style={styles.sharePillText}>📤  Sharing</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -325,9 +376,11 @@ export default function ActiveRideScreen() {
                             <Text style={styles.cancelBtnText}>Cancel</Text>
                         </TouchableOpacity>
                     )}
-                    <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
-                        <Text style={styles.shareBtnText}>🔗 Share</Text>
-                    </TouchableOpacity>
+                    {liveSharingEnabled && (
+                        <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
+                            <Text style={styles.shareBtnText}>📤 Share Trip</Text>
+                        </TouchableOpacity>
+                    )}
                     {ride.driver?.upi_id && ride.paymentMethod === 'cash' && (
                         <TouchableOpacity 
                             style={[styles.shareBtn, { backgroundColor: '#E8F5E9', borderColor: '#22C55E' }]} 
@@ -356,6 +409,59 @@ export default function ActiveRideScreen() {
             >
                 <ChatModal rideId={ride.rideId} onClose={() => setChatOpen(false)} />
             </Modal>
+
+            {/* Custom Contact Selection Modal for Live Sharing */}
+            <Modal
+                visible={showContactPrompt}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowContactPrompt(false)}
+            >
+                <View style={styles.contactModalBackdrop}>
+                    <View style={styles.contactModalCard}>
+                        <View style={styles.contactModalHeader}>
+                            <Text style={styles.contactModalTitle}>Share Live Trip</Text>
+                            <TouchableOpacity onPress={() => setShowContactPrompt(false)} style={styles.contactModalClose}>
+                                <Text style={{ fontSize: 20, color: '#64748B' }}>×</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.contactModalSub}>Select an emergency contact to send your live tracking link.</Text>
+
+                        {contacts.length === 0 ? (
+                            <View style={styles.noContactsBox}>
+                                <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center' }}>No emergency contacts found.</Text>
+                            </View>
+                        ) : (
+                            <ScrollView style={styles.contactList} showsVerticalScrollIndicator={false}>
+                                {contacts.map((c, i) => (
+                                    <TouchableOpacity 
+                                        key={i} 
+                                        style={styles.contactRow}
+                                        activeOpacity={0.7}
+                                        onPress={() => handleShareWithContact(c)}
+                                    >
+                                        <View style={styles.contactAvatar}>
+                                            <Text style={{ fontSize: 16 }}>{c.name ? c.name[0].toUpperCase() : '👤'}</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.contactName}>{c.name}</Text>
+                                            <Text style={styles.contactPhone}>{c.phone}</Text>
+                                        </View>
+                                        <View style={styles.contactSendBtn}>
+                                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#BEA3D8' }}>Send</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+                        
+                        <TouchableOpacity style={styles.moreOptionsBtn} onPress={handleShareMoreOptions}>
+                            <Text style={styles.moreOptionsText}>Share via More Options</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
     );
@@ -455,4 +561,37 @@ const styles = StyleSheet.create({
     pickupMarker: { alignItems: 'center', justifyContent: 'center' },
     dropoffMarker: { alignItems: 'center', justifyContent: 'center' },
     carMarker: { alignItems: 'center', justifyContent: 'center' },
+    
+    // Contact Modal Styles
+    contactModalBackdrop: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(28, 26, 37, 0.55)',
+        justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
+    },
+    contactModalCard: {
+        width: '100%', maxWidth: 360, backgroundColor: '#FFFFFF',
+        borderRadius: 24, padding: 24,
+    },
+    contactModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    contactModalTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5 },
+    contactModalClose: { width: 32, height: 32, alignItems: 'flex-end', justifyContent: 'center' },
+    contactModalSub: { fontSize: 14, color: '#64748B', lineHeight: 20, marginBottom: 20 },
+    noContactsBox: { paddingVertical: 32, alignItems: 'center' },
+    contactList: { maxHeight: 220, marginBottom: 16 },
+    contactRow: { 
+        flexDirection: 'row', alignItems: 'center', gap: 12, 
+        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' 
+    },
+    contactAvatar: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    contactName: { fontSize: 15, fontWeight: '600', color: '#1E1B2E', marginBottom: 2 },
+    contactPhone: { fontSize: 13, color: '#64748B' },
+    contactSendBtn: { backgroundColor: '#F5F0FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    moreOptionsBtn: {
+        width: '100%', height: 48, backgroundColor: '#F5F0FF',
+        borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    },
+    moreOptionsText: { fontSize: 14, fontWeight: '700', color: '#64748B' }
 });

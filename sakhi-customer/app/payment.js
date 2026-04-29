@@ -1,7 +1,7 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Modal, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -34,14 +34,14 @@ export default function PaymentMethodsScreen() {
     };
 
     const handleAddUpi = () => {
-        if (!newUpi.includes('@')) { 
+        if (!newUpi.includes('@')) {
             setModal({
                 icon: '⚠️',
                 title: 'Invalid UPI',
                 message: 'Please enter a valid UPI ID (e.g. name@okaxis).',
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]
             });
-            return; 
+            return;
         }
         setUpiIds(prev => [...prev, newUpi.trim()]);
         setNewUpi('');
@@ -51,13 +51,13 @@ export default function PaymentMethodsScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                
+
                 {/* Header App Bar */}
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                        <Text style={styles.headerIcon}>←</Text>
-                    </TouchableOpacity>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
                         <Text style={styles.headerTitle}>Payment Methods</Text>
                     </View>
                     <View style={styles.iconBtn} />
@@ -68,20 +68,20 @@ export default function PaymentMethodsScreen() {
                     contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                     showsVerticalScrollIndicator={false}
                 >
-                    
+
                     {/* Banner: Info */}
                     <View style={styles.infoBanner}>
                         <Text style={styles.infoIcon}>ⓘ</Text>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.infoBold}>Payment Rules</Text>
-                            <Text style={styles.infoText}>🛺  Single rides  →  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}📅  Subscriptions  →  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
+                            <Text style={styles.infoText}>🛺  On-Demand Rides  →  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}📅  Subscriptions  →  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
                         </View>
                     </View>
 
                     {/* Section: Saved UPI IDs */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>SAVED UPI IDS</Text>
-                        
+
                         {upiIds.map((id) => (
                             <View key={id} style={styles.upiCard}>
                                 <TouchableOpacity style={styles.upiLeft} onPress={() => setSelectedMethod(id)} activeOpacity={0.8}>
@@ -122,7 +122,7 @@ export default function PaymentMethodsScreen() {
                     {/* Section: Cash */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>CASH</Text>
-                        
+
                         {/* Cash Card */}
                         <TouchableOpacity style={[styles.cashCard, selectedMethod === 'cash' && styles.cashCardSelected]} onPress={() => setSelectedMethod('cash')} activeOpacity={0.8}>
                             <View style={styles.cashLeft}>
@@ -199,38 +199,38 @@ export default function PaymentMethodsScreen() {
 }
 
 const styles = StyleSheet.create({
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         height: 64,
-        backgroundColor: '#F5F0FF', 
+        backgroundColor: '#F5F0FF',
         zIndex: 10
     },
-    iconBtn: { 
-        width: 32, 
-        height: 32, 
-        justifyContent: 'center', 
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'transparent'
     },
-    headerIcon: { 
-        fontSize: 24, 
-        color: '#BEA3D8', 
-        fontWeight: 'bold' 
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: 'bold'
     },
-    headerTitle: { 
-        fontSize: 20, 
-        fontWeight: '700', 
-        color: '#1E1B2E', 
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
         letterSpacing: -0.5,
         marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
-    
-    
-    
+
+
+
 
     scrollContent: {
         padding: 24,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     upiID: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },
     primaryBadge: { backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999 },
     primaryBadgeText: { fontSize: 10, fontWeight: '700', color: '#065F46', letterSpacing: -0.5, textTransform: 'uppercase' },
-    
+
     actionBtns: { flexDirection: 'row', gap: 8 },
     actionBtn: { padding: 4 },
     actionIcon: { fontSize: 16, color: '#94A3B8' },

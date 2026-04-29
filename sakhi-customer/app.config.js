@@ -1,4 +1,16 @@
-import 'dotenv/config';
+const { existsSync } = require('fs');
+const { resolve } = require('path');
+
+// Only reference Firebase config files if they actually exist on disk.
+// This prevents "Could not parse Expo config" errors when building in
+// environments where the files haven't been added yet (e.g. Expo Go dev).
+const androidGoogleServices = existsSync(resolve(__dirname, 'google-services.json'))
+  ? './google-services.json'
+  : undefined;
+
+const iosGoogleServices = existsSync(resolve(__dirname, 'GoogleService-Info.plist'))
+  ? './GoogleService-Info.plist'
+  : undefined;
 
 export default {
   expo: {
@@ -14,25 +26,12 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#F5F0FF"
     },
-    ios: {
-      supportsTablet: false,
-      bundleIdentifier: "in.sakhirides.customer",
-      config: {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
-      },
-      infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Sakhi needs your location to find nearby drivers and track your ride.",
-        NSLocationAlwaysUsageDescription: "Sakhi needs your location to share it with emergency contacts during an active ride.",
-        NSCameraUsageDescription: "Sakhi needs camera access for gender verification via selfie.",
-        NSPhotoLibraryUsageDescription: "Sakhi needs photo library access to upload your Aadhaar card images."
-      }
-    },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#F5F0FF"
       },
-      googleServicesFile: "./google-services.json",
+      ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
       config: {
         googleMaps: {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
@@ -52,7 +51,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "in.sakhirides.customer",
-      googleServicesFile: "./GoogleService-Info.plist",
+      ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
       },

@@ -148,7 +148,7 @@ export default function EditProfileScreen() {
             });
         } catch (err) {
             setModal({
-                icon: '❌',
+                icon: '🔄',
                 title: 'Error',
                 message: err?.response?.data?.message || 'Could not save profile. Please try again.',
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]

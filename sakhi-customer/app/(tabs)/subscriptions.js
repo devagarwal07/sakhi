@@ -178,7 +178,7 @@ export default function SubscriptionsDashboard() {
                 { text: isPaused ? 'Resume' : 'Pause', onPress: async () => {
                     setModal(null);
                     try { await toggleSubscriptionPause(sub.id, !isPaused); setIsPaused(!isPaused); }
-                    catch { setTimeout(() => setModal({ icon: '❌', title: 'Error', message: 'Could not update subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500); }
+                    catch { setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: 'Could not update subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500); }
                 }},
             ],
         });
@@ -198,7 +198,7 @@ export default function SubscriptionsDashboard() {
                         await cancelSubscription(sub.id);
                         setTimeout(() => setModal({ icon: '✅', title: 'Subscription Cancelled', message: 'Your plan has been cancelled successfully.', buttons: [{ text: 'OK', onPress: () => { setModal(null); router.replace('/(tabs)/'); } }] }), 500);
                     } catch {
-                        setTimeout(() => setModal({ icon: '❌', title: 'Error', message: 'Could not cancel subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
+                        setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: 'Could not cancel subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
                     }
                 }},
             ],

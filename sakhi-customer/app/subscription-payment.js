@@ -133,7 +133,7 @@ export default function SubscriptionPaymentScreen() {
                 || err?.message
                 || 'Payment initiation failed.';
             setModal({
-                icon: '❌',
+                icon: '🔄',
                 title: 'Payment Failed',
                 message: msg,
                 buttons: [{ text: 'Try Again', onPress: () => setModal(null) }],

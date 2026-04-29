@@ -66,28 +66,11 @@ export default function RideDetailsScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                        <Text style={styles.headerIcon}>←</Text>
-                    </TouchableOpacity>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
                         <Text style={styles.headerTitle}>Ride Details</Text>
                     </View>
-                    <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => setModal({
-                        icon: '🔗',
-                        title: 'Share Ride',
-                        message: `Trip ID: SAKHI-${params?.rideId || Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/${params?.rideId || 'demo'}`,
-                        buttons: [
-                            { text: 'Copy Link', onPress: () => {
-                                setModal({
-                                    icon: '✅',
-                                    title: 'Copied!',
-                                    message: 'Link copied to clipboard.',
-                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                });
-                            }},
-                            { text: 'Close', style: 'cancel', onPress: () => setModal(null) }
-                        ]
-                    })}>
-                        <Text style={styles.headerIcon}>🔗</Text>
-                    </TouchableOpacity>
+                    <View style={styles.iconBtn} />
                 </View>
 
                 {/* Loading State */}
@@ -231,9 +214,33 @@ export default function RideDetailsScreen() {
 
                 {/* Fixed Bottom Action */}
                 <View style={[styles.bottomFixedWrap, { paddingBottom: footerPaddingBottom }]}>
-                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={() => router.push('/location-search')}>
-                        <Text style={styles.actionBtnText}>Book Same Route</Text>
-                    </TouchableOpacity>
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity style={styles.actionBtnPrimary} activeOpacity={0.7} onPress={() => router.push('/location-search')}>
+                            <Text style={styles.actionBtnText}>Book Same Route</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionBtnShare}
+                            activeOpacity={0.7}
+                            onPress={() => setModal({
+                                icon: '📤',
+                                title: 'Share Trip',
+                                message: `Trip ID: SAKHI-${params?.rideId || Date.now().toString().slice(-6)}\nShare link: sakhi.app/trip/${params?.rideId || 'demo'}`,
+                                buttons: [
+                                    { text: 'Copy Link', onPress: () => {
+                                        setModal({
+                                            icon: '✅',
+                                            title: 'Copied!',
+                                            message: 'Link copied to clipboard.',
+                                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                        });
+                                    }},
+                                    { text: 'Close', style: 'cancel', onPress: () => setModal(null) }
+                                ]
+                            })}
+                        >
+                            <Text style={styles.actionBtnShareIcon}>📤</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
             </View>
@@ -412,18 +419,31 @@ const styles = StyleSheet.create({
     bottomFixedWrap: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: 24,
-        paddingTop: 24,
+        paddingTop: 16,
         paddingBottom: 24,
-        justifyContent: 'center', alignItems: 'center',
         backgroundColor: 'rgba(245, 240, 255, 0.9)',
     },
-    actionBtn: {
-        width: '100%', height: 60,
+    actionRow: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'center',
+    },
+    actionBtnPrimary: {
+        flex: 1, height: 56,
         borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 12,
         justifyContent: 'center', alignItems: 'center',
         backgroundColor: '#FFFFFF',
     },
     actionBtnText: {
         fontSize: 16, fontWeight: '700', color: '#BEA3D8',
+    },
+    actionBtnShare: {
+        width: 56, height: 56,
+        borderWidth: 2, borderColor: '#BEA3D8', borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+    },
+    actionBtnShareIcon: {
+        fontSize: 22,
     },
 });

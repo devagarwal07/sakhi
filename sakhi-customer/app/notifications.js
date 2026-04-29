@@ -1,8 +1,8 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Switch, Platform 
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    Switch, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -55,24 +55,24 @@ export default function NotificationsScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                
+
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.headerIcon}>←</Text>
-                    </TouchableOpacity>
+                            <Text style={styles.headerIcon}>←</Text>
+                        </TouchableOpacity>
                         <Text style={styles.headerTitle}>Notifications</Text>
                     </View>
-                    <View style={styles.iconBtn} /> 
+                    <View style={styles.iconBtn} />
                 </View>
 
                 {/* Main Scroll Content */}
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    
+
                     {/* Master Settings Card */}
                     <View style={styles.settingsCard}>
-                        
+
                         {/* Section 1: Ride Notifications */}
                         <View style={styles.section}>
                             <Text style={styles.sectionHeading}>RIDE NOTIFICATIONS</Text>
@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
                             <Text style={styles.sectionHeading}>SUBSCRIPTION</Text>
                             <View style={styles.sectionContent}>
                                 <ToggleRow title="Upcoming ride reminder" subtitle="Alert for scheduled daily commutes" stateKey="upcomingRide" />
-                                <ToggleRow title="Daily reminder" stateKey="dailyReminder" customBadge="30 MINS BEFORE" />
+                                {/*<ToggleRow title="Daily reminder" stateKey="dailyReminder" customBadge="30 MINS BEFORE" />*/}
                                 <ToggleRow title="Subscription expiring soon" subtitle="Notifications to renew your plan" stateKey="subExpiring" />
                             </View>
                         </View>
@@ -146,40 +146,40 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         height: 64,
-        backgroundColor: '#F5F0FF', 
+        backgroundColor: '#F5F0FF',
         zIndex: 10
     },
-    iconBtn: { 
-        width: 32, 
-        height: 32, 
-        justifyContent: 'center', 
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'transparent'
     },
-    headerIcon: { 
-        fontSize: 24, 
-        color: '#BEA3D8', 
-        fontWeight: 'bold' 
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: 'bold'
     },
-    headerTitle: { 
-        fontSize: 20, 
-        fontWeight: '700', 
-        color: '#1E1B2E', 
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
         letterSpacing: -0.5,
         marginLeft: 16
     },
     safeArea: { flex: 1, backgroundColor: '#F5F0FF' },
     container: { flex: 1 },
-    
-    
-    
-    
-    
+
+
+
+
+
 
     scrollContent: {
         paddingHorizontal: 20,
