@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cancelSOS } from '../../api/endpoints';
+import { useTranslation } from 'react-i18next';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED   = '#DC2626';
@@ -29,6 +30,7 @@ const DEMO_CONTACTS = [
  */
 export default function SOSActiveScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [cancelling, setCancelling] = useState(false);
 
   const handleCancel = () => {
@@ -64,7 +66,7 @@ export default function SOSActiveScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.navIconBtn}>
           <Text style={s.navIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={s.navTitle}>Emergency SOS</Text>
+        <Text style={s.navTitle}>{t('sos.emergencySos')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -83,7 +85,7 @@ export default function SOSActiveScreen({ navigation, route }) {
 
         {/* ── Header Text ───────────────────────────────────────────── */}
         <View style={s.headerText}>
-          <Text style={s.title}>SOS Alert Sent</Text>
+          <Text style={s.title}>{t('sos.sosAlertSent')}</Text>
           <Text style={s.subtitle}>
             Your emergency contacts and the Sakhi{'\n'}Safety Team have been notified with{'\n'}your live location.
           </Text>
@@ -95,9 +97,9 @@ export default function SOSActiveScreen({ navigation, route }) {
           {/* Checklist */}
           <View style={s.statusList}>
             {[
-              'Sakhi Safety Team Notified',
-              'Live Location Shared with Contacts',
-              'Trip Details Transmitted',
+              t('sos.sakhiTeamNotified'),
+              t('sos.liveLocationShared'),
+              t('sos.tripDetailsTransmitted'),
             ].map((txt) => (
               <View key={txt} style={s.statusRow}>
                 <View style={s.checkBg}>
@@ -113,7 +115,7 @@ export default function SOSActiveScreen({ navigation, route }) {
 
           {/* Emergency contacts */}
           <View style={s.contactsSection}>
-            <Text style={s.contactsHeading}>YOUR EMERGENCY CONTACTS</Text>
+            <Text style={s.contactsHeading}>{t('sos.yourEmergencyContacts')}</Text>
             {DEMO_CONTACTS.map((c) => (
               <View key={c.id} style={s.contactRow}>
                 <View style={s.contactLeft}>
@@ -143,7 +145,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             activeOpacity={0.85}
           >
             <Text style={s.callIcon}>📞</Text>
-            <Text style={s.callBtnText}>Call Sakhi Safety Team</Text>
+            <Text style={s.callBtnText}>{t('sos.callSakhiTeam')}</Text>
           </TouchableOpacity>
 
           {/* Message Sakhi */}
@@ -153,7 +155,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             activeOpacity={0.85}
           >
             <Text style={s.msgIcon}>💬</Text>
-            <Text style={s.msgBtnText}>Message Sakhi Team</Text>
+            <Text style={s.msgBtnText}>{t('sos.messageSakhiTeam')}</Text>
           </TouchableOpacity>
 
           {/* Emergency authorities */}

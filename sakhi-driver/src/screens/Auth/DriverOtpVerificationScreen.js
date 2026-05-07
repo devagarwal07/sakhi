@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const OTP_LENGTH = 6;
@@ -25,6 +26,7 @@ const KEYPAD = [
 ];
 
 export default function DriverOtpVerificationScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { phone } = route.params ?? {};
   const { login } = useAuth();
 
@@ -102,7 +104,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Verification</Text>
+        <Text style={styles.topBarTitle}>{t('auth.verificationScreen')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -111,17 +113,17 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
 
         {/* Branding / identity */}
         <View style={styles.identity}>
-          <Text style={styles.heading}>Verify Your Number</Text>
+          <Text style={styles.heading}>{t('auth.verifyYourNumber')}</Text>
           <View style={styles.sublineWrap}>
             <Text style={styles.subline}>
-              6-digit SMS code sent to{'\n'}
+              {t('auth.otpSentTo')}{'\n'}
               <Text style={styles.phoneNum}>{formattedPhone}</Text>
             </Text>
           </View>
           {/* SENT VIA SMS badge */}
           <View style={styles.smsBadge}>
             <Text style={styles.smsIcon}>💬</Text>
-            <Text style={styles.smsBadgeText}>SENT VIA SMS</Text>
+            <Text style={styles.smsBadgeText}>{t('auth.sentViaSms')}</Text>
           </View>
         </View>
 
@@ -155,14 +157,14 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
         <View style={styles.resendRow}>
           {timer > 0 ? (
             <Text style={styles.resendTimer}>
-              Resend OTP in{' '}
+              {t('auth.resendOtpIn')}{' '}
               <Text style={styles.resendCountdown}>
                 0:{String(timer).padStart(2, '0')}
               </Text>
             </Text>
           ) : (
             <TouchableOpacity onPress={handleResend}>
-              <Text style={styles.resendLink}>Resend OTP</Text>
+              <Text style={styles.resendLink}>{t('auth.resendOtp')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -202,7 +204,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.ctaText}>Verify & Continue</Text>
+            : <Text style={styles.ctaText}>{t('auth.verifyAndContinue')}</Text>
           }
         </TouchableOpacity>
         <Text style={styles.disclaimer}>

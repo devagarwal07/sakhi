@@ -12,14 +12,15 @@ import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
 import SakhiModal from '../../components/SakhiModal';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const PURPLE  = '#BEA3D8';
-const DEEP    = '#BEA3D8';
-const DARK    = '#1E1B2E';
-const MUTED   = '#6B7280';
-const WHITE   = '#FFFFFF';
-const BG      = '#F5F0FF';
+const PURPLE = '#BEA3D8';
+const DEEP = '#BEA3D8';
+const DARK = '#1E1B2E';
+const MUTED = '#6B7280';
+const WHITE = '#FFFFFF';
+const BG = '#F5F0FF';
 const CARD_SH = { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 20, elevation: 4 };
 
 // ─── Breakdown row ────────────────────────────────────────────────────────────
@@ -32,10 +33,10 @@ function BreakdownRow({ label, value, bold, accent }) {
   );
 }
 const br = StyleSheet.create({
-  row:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  label:  { fontSize: 14, fontWeight: '400', color: MUTED },
-  value:  { fontSize: 14, fontWeight: '600', color: DARK },
-  bold:   { fontWeight: '800', fontSize: 16 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  label: { fontSize: 14, fontWeight: '400', color: MUTED },
+  value: { fontSize: 14, fontWeight: '600', color: DARK },
+  bold: { fontWeight: '800', fontSize: 16 },
   accent: { color: PURPLE },
 });
 
@@ -74,21 +75,21 @@ const pm = StyleSheet.create({
     ...CARD_SH,
   },
   cardActive: { borderColor: 'rgba(190,163,216,0.4)', backgroundColor: BG },
-  row:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  radioOff:   { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#D1C4E9' },
-  radioOn:    { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
-  radioDot:   { width: 10, height: 10, borderRadius: 5, backgroundColor: PURPLE },
-  iconBox:    { width: 38, height: 38, borderRadius: 11, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  radioOff: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#D1C4E9' },
+  radioOn: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: PURPLE },
+  iconBox: { width: 38, height: 38, borderRadius: 11, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
   iconBoxActive: { backgroundColor: '#EADDFF' },
-  iconEmoji:  { fontSize: 18 },
-  textWrap:   { flex: 1 },
-  label:      { fontSize: 15, fontWeight: '500', color: '#64748B' },
-  labelActive:{ fontWeight: '700', color: DARK },
-  badge:      { fontSize: 11, color: MUTED, marginTop: 1 },
+  iconEmoji: { fontSize: 18 },
+  textWrap: { flex: 1 },
+  label: { fontSize: 15, fontWeight: '500', color: '#64748B' },
+  labelActive: { fontWeight: '700', color: DARK },
+  badge: { fontSize: 11, color: MUTED, marginTop: 1 },
 });
 
 // ─── Processing Overlay ───────────────────────────────────────────────────────
-function ProcessingOverlay({ visible, amount }) {
+function ProcessingOverlay({ visible, amount, t }) {
   if (!visible) return null;
   return (
     <View style={ov.backdrop}>
@@ -97,10 +98,10 @@ function ProcessingOverlay({ visible, amount }) {
         <View style={ov.header}>
           <View style={ov.brand}>
             <View style={ov.logoBox}><Text style={ov.logoLetter}>S</Text></View>
-            <Text style={ov.brandName}>Sakhi Pay</Text>
+            <Text style={ov.brandName}>{t('earnings.sakhiPay')}</Text>
           </View>
           <View style={ov.amtCol}>
-            <Text style={ov.amtLabel}>AMOUNT DUE</Text>
+            <Text style={ov.amtLabel}>{t('earnings.amountDue')}</Text>
             <Text style={ov.amtValue}>₹{amount}</Text>
           </View>
         </View>
@@ -112,14 +113,14 @@ function ProcessingOverlay({ visible, amount }) {
           <View style={ov.spinnerRing}>
             <ActivityIndicator size="large" color={PURPLE} />
           </View>
-          <Text style={ov.statusText}>Processing Payment…</Text>
-          <Text style={ov.statusSub}>Please do not close the app or press back.</Text>
+          <Text style={ov.statusText}>{t('earnings.processingPayment')}</Text>
+          <Text style={ov.statusSub}>{t('earnings.doNotClose')}</Text>
         </View>
 
         {/* Footer */}
         <View style={ov.footer}>
           <Text style={ov.shield}>🛡️</Text>
-          <Text style={ov.secured}>SECURED · 256-BIT ENCRYPTION</Text>
+          <Text style={ov.secured}>{t('earnings.securedEncryption')}</Text>
         </View>
       </View>
     </View>
@@ -132,45 +133,46 @@ const ov = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', zIndex: 100,
     paddingHorizontal: 24,
   },
-  card:   { width: '100%', backgroundColor: WHITE, borderRadius: 24, overflow: 'hidden' },
+  card: { width: '100%', backgroundColor: WHITE, borderRadius: 24, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24 },
-  brand:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoBox:{ width: 28, height: 28, borderRadius: 8, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
-  logoLetter:{ fontSize: 14, fontWeight: '900', color: WHITE },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
+  logoLetter: { fontSize: 14, fontWeight: '900', color: WHITE },
   brandName: { fontSize: 15, fontWeight: '700', color: DARK },
   amtCol: { alignItems: 'flex-end' },
-  amtLabel:{ fontSize: 9, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 0.8 },
-  amtValue:{ fontSize: 22, fontWeight: '800', color: DARK, letterSpacing: -0.8 },
+  amtLabel: { fontSize: 9, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 0.8 },
+  amtValue: { fontSize: 22, fontWeight: '800', color: DARK, letterSpacing: -0.8 },
   divider: { height: 1, backgroundColor: BG },
-  body:    { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24 },
+  body: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24 },
   spinnerRing: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: '#EADDFF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   statusText: { fontSize: 18, fontWeight: '700', color: DARK, marginBottom: 8 },
-  statusSub:  { fontSize: 13, color: MUTED, textAlign: 'center', lineHeight: 20 },
-  footer:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BG, paddingVertical: 16 },
-  shield:  { fontSize: 14 },
+  statusSub: { fontSize: 13, color: MUTED, textAlign: 'center', lineHeight: 20 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BG, paddingVertical: 16 },
+  shield: { fontSize: 14 },
   secured: { fontSize: 10, fontWeight: '700', color: MUTED, letterSpacing: 0.8 },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function DailyCommissionPaymentScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { driver } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const period      = route?.params?.period ?? 'daily';
-  const isWeekly    = period === 'weekly';
+  const period = route?.params?.period ?? 'daily';
+  const isWeekly = period === 'weekly';
 
   // ── Official Sakhi commission rates ──────────────────────────────────────
-  const DAILY_RATE  = 35;   // ₹35/day
+  const DAILY_RATE = 35;   // ₹35/day
   const WEEKLY_RATE = 210;  // ₹210 for 7 days (₹30/day, saves ₹35 vs paying daily)
-  const amount      = route?.params?.amount ?? (isWeekly ? WEEKLY_RATE : DAILY_RATE);
-  const screenTitle = isWeekly ? 'Weekly Commission' : 'Daily Commission';
-  const driverName  = driver?.full_name?.split(' ')[0] ?? 'Driver';
+  const amount = route?.params?.amount ?? (isWeekly ? WEEKLY_RATE : DAILY_RATE);
+  const screenTitle = isWeekly ? t('earnings.weeklyCommissionTitle') : t('earnings.dailyCommissionTitle');
+  const driverName = driver?.full_name?.split(' ')[0] ?? t('common.driver');
 
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [rzpHtml, setRzpHtml]               = useState(null);
-  const [showWebView, setShowWebView]       = useState(false);
-  const [modal, setModal]                   = useState(null);
-  const [commissionDue, setCommissionDue]   = useState(amount);   // amount prop is initial/fallback
+  const [rzpHtml, setRzpHtml] = useState(null);
+  const [showWebView, setShowWebView] = useState(false);
+  const [modal, setModal] = useState(null);
+  const [commissionDue, setCommissionDue] = useState(amount);   // amount prop is initial/fallback
   const [commissionEntries, setCommissionEntries] = useState([]);
 
   // ── Fetch actual unpaid commission on mount ────────────────────────────────────────
@@ -187,6 +189,10 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
 
   // ── Build Razorpay checkout HTML ────────────────────────────────────────
   function buildRzpHtml({ key_id, order_id, amount, currency }) {
+    const openingPayment = t('earnings.openingPayment');
+    const commissionDesc = t('earnings.platformCommissionDescription', {
+      period: isWeekly ? t('earnings.weekly') : t('earnings.daily'),
+    });
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -202,7 +208,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
   </style>
 </head>
 <body>
-  <div class="loader"><div class="spinner"></div>Opening payment…</div>
+  <div class="loader"><div class="spinner"></div>${openingPayment}</div>
   <script>
     var options = {
       key:         "${key_id}",
@@ -210,7 +216,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       amount:      "${amount}",
       currency:    "${currency}",
       name:        'Sakhi',
-      description: '${isWeekly ? 'Weekly' : 'Daily'} Platform Commission',
+      description: '${commissionDesc}',
       prefill: { name: '${driverName}' },
       theme: { color: '#BEA3D8' },
       modal: {
@@ -246,23 +252,23 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
     try {
       setPaymentLoading(true);
       const { data } = await client.post('/payments/commission/order', {
-        amount:    commissionDue,          // use live amount from /commission/status
+        amount: commissionDue,          // use live amount from /commission/status
         period,
         driver_id: driver?.id,
       });
       setRzpHtml(buildRzpHtml({
-        key_id:   data.key_id,
+        key_id: data.key_id,
         order_id: data.order_id,
-        amount:   String(data.amount),
+        amount: String(data.amount),
         currency: data.currency || 'INR',
       }));
       setShowWebView(true);
     } catch (err) {
       setModal({
         icon: '⚠️',
-        title: 'Payment Error',
-        message: err.response?.data?.message ?? 'Could not initiate payment. Please try again.',
-        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+        title: t('earnings.paymentErrorTitle'),
+        message: err.response?.data?.message ?? t('earnings.paymentErrorMessage'),
+        buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
       });
     } finally {
       setPaymentLoading(false);
@@ -278,23 +284,23 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
         try {
           // Verify signature on backend
           await client.post('/payments/commission/verify', {
-            razorpay_order_id:   msg.razorpay_order_id,
+            razorpay_order_id: msg.razorpay_order_id,
             razorpay_payment_id: msg.razorpay_payment_id,
-            razorpay_signature:  msg.razorpay_signature,
+            razorpay_signature: msg.razorpay_signature,
             period,
             amount,
           });
           navigation.replace('CommissionPaidConfirmation', {
             amount, period,
             method: 'Razorpay',
-            txnId:  msg.razorpay_payment_id,
+            txnId: msg.razorpay_payment_id,
           });
         } catch {
           setModal({
             icon: '⚠️',
-            title: 'Verification Failed',
-            message: 'Payment received but verification failed. Contact support with your payment ID.',
-            buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+            title: t('earnings.verificationFailedTitle'),
+            message: t('earnings.verificationFailedMessage'),
+            buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
           });
         }
       } else if (msg.type === 'DISMISSED') {
@@ -303,9 +309,9 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
         setShowWebView(false);
         setModal({
           icon: '⚠️',
-          title: 'Payment Failed',
-          message: msg.error ?? 'Something went wrong. Please try again.',
-          buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+          title: t('earnings.paymentFailedTitle'),
+          message: msg.error ?? t('earnings.paymentFailedMessage'),
+          buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
         });
       }
     } catch { /* JSON parse error — ignore */ }
@@ -313,8 +319,8 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
 
   // Breakdown rows
   const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const gst   = Math.round(amount * 0.18);
-  const base  = amount - gst;
+  const gst = Math.round(amount * 0.18);
+  const base = amount - gst;
 
   return (
     <View style={s.root}>
@@ -330,25 +336,29 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       >
         {/* ── Greeting ── */}
         <View style={s.greeting}>
-          <Text style={s.greetingHi}>Good Day, Sakhi 🙋🏻‍♀️</Text>
-          <Text style={s.greetingSub}>Complete your {isWeekly ? 'weekly' : 'daily'} platform fee to go online.</Text>
+          <Text style={s.greetingHi}>{t('home.goodDay')}</Text>
+          <Text style={s.greetingSub}>
+            {t('earnings.platformFeePrompt', { period: isWeekly ? t('earnings.weekly') : t('earnings.daily') })}
+          </Text>
         </View>
 
         {/* ── Order Summary Card ── */}
         <View style={s.summaryCard}>
           {/* Due chip */}
           <View style={s.dueChip}>
-            <Text style={s.dueChipText}>{isWeekly ? 'WEEKLY' : 'DAILY'} COMMISSION DUE</Text>
+            <Text style={s.dueChipText}>
+              {t('earnings.commissionDueLabel', { period: isWeekly ? t('earnings.weekly') : t('earnings.daily') })}
+            </Text>
           </View>
 
           {/* Big amount */}
           <Text style={s.totalBig}>₹{amount}</Text>
-          <Text style={s.totalDate}>Due by {today}</Text>
+          <Text style={s.totalDate}>{t('earnings.dueBy', { date: today })}</Text>
 
           {/* Weekly savings badge */}
           {isWeekly && (
             <View style={s.savingsBadge}>
-              <Text style={s.savingsBadgeText}>💰 Save ₹35 vs paying daily (₹30/day × 7)</Text>
+              <Text style={s.savingsBadgeText}>{t('earnings.weeklySavings')}</Text>
             </View>
           )}
 
@@ -357,41 +367,41 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           {/* Breakdown */}
           {isWeekly ? (
             <>
-              <BreakdownRow label="7-Day Plan (₹30/day)"     value="₹210" />
-              <BreakdownRow label="vs. Daily Plan (₹35/day)" value="₹245" />
-              <BreakdownRow label="Your Savings"             value="-₹35" />
+              <BreakdownRow label={t('earnings.breakdownSevenDay')} value="₹210" />
+              <BreakdownRow label={t('earnings.breakdownDailyCompare')} value="₹245" />
+              <BreakdownRow label={t('earnings.breakdownSavings')} value="-₹35" />
             </>
           ) : (
             <>
-              <BreakdownRow label="Daily platform fee"  value="₹35" />
-              <BreakdownRow label="7-Day plan available" value="₹210" />
+              <BreakdownRow label={t('earnings.breakdownDailyFee')} value="₹35" />
+              <BreakdownRow label={t('earnings.breakdownWeeklyAvailable')} value="₹210" />
             </>
           )}
           <View style={s.divider} />
-          <BreakdownRow label="Total payable" value={`₹${amount}`} bold accent />
+          <BreakdownRow label={t('earnings.totalPayable')} value={`₹${amount}`} bold accent />
         </View>
 
         {/* ── Free Trial Note ── */}
         <View style={s.trialNote}>
           <Text style={s.trialIcon}>🎁</Text>
           <View style={{ flex: 1 }}>
-            <Text style={s.trialTitle}>7-Day Free Trial for New Drivers</Text>
-            <Text style={s.trialSub}>No commission charged for your first 7 days after account setup.</Text>
+            <Text style={s.trialTitle}>{t('earnings.freeTrialTitle')}</Text>
+            <Text style={s.trialSub}>{t('earnings.freeTrialSub')}</Text>
           </View>
         </View>
 
         {/* ── Warning ── */}
         <View style={s.warningRow}>
           <Text style={s.warningIcon}>⚠️</Text>
-          <Text style={s.warningText}>Unpaid commission — you cannot go online until this is cleared.</Text>
+          <Text style={s.warningText}>{t('earnings.unpaidCommissionWarning')}</Text>
         </View>
 
         {/* ── PAY VIA info ── */}
         <View style={s.rzpInfoCard}>
           <Feather name="shield" size={18} color={PURPLE} />
           <View style={{ flex: 1 }}>
-            <Text style={s.rzpInfoTitle}>Pay via Razorpay</Text>
-            <Text style={s.rzpInfoSub}>UPI · Cards · Net Banking · Wallets — all supported</Text>
+            <Text style={s.rzpInfoTitle}>{t('earnings.payViaRazorpay')}</Text>
+            <Text style={s.rzpInfoSub}>{t('earnings.paymentMethods')}</Text>
           </View>
         </View>
 
@@ -402,7 +412,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
         {/* Security badge */}
         <View style={s.secRow}>
           <Text style={s.secIcon}>🔒</Text>
-          <Text style={s.secText}>SECURED BY 256-BIT ENCRYPTION</Text>
+          <Text style={s.secText}>{t('earnings.securedEncryption')}</Text>
         </View>
 
         {/* Pay CTA */}
@@ -414,7 +424,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
         >
           {paymentLoading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.payBtnText}>Pay ₹{amount} via Razorpay ⚡</Text>
+            : <Text style={s.payBtnText}>{t('earnings.payViaRazorpay')} ₹{amount} ⚡</Text>
           }
         </TouchableOpacity>
 
@@ -424,7 +434,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           onPress={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
           activeOpacity={0.7}
         >
-          <Text style={s.payLaterText}>PAY LATER — STAY OFFLINE</Text>
+          <Text style={s.payLaterText}>{t('earnings.payLater')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -432,7 +442,7 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>
         <View style={{ flex: 1, backgroundColor: '#F5F0FF' }}>
           <View style={s.webViewHeader}>
-            <Text style={s.webViewTitle}>Secure Payment</Text>
+            <Text style={s.webViewTitle}>{t('ride.securePayment')}</Text>
             <TouchableOpacity onPress={() => setShowWebView(false)}>
               <Feather name="x" size={22} color="#1E1B2E" />
             </TouchableOpacity>
@@ -468,8 +478,8 @@ const s = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
   // Greeting
-  greeting:    { gap: 4 },
-  greetingHi:  { fontSize: 20, fontWeight: '700', color: DARK, letterSpacing: -0.4 },
+  greeting: { gap: 4 },
+  greetingHi: { fontSize: 20, fontWeight: '700', color: DARK, letterSpacing: -0.4 },
   greetingSub: { fontSize: 13, fontWeight: '400', color: MUTED, lineHeight: 18 },
 
   // Order Summary Card
@@ -484,9 +494,9 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   dueChipText: { fontSize: 9, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 1 },
-  totalBig:   { fontSize: 52, fontWeight: '900', color: DARK, letterSpacing: -2.5, lineHeight: 58, marginBottom: 2 },
-  totalDate:  { fontSize: 12, fontWeight: '400', color: MUTED, marginBottom: 16 },
-  divider:    { height: 1, backgroundColor: '#F0EBF8', marginVertical: 4 },
+  totalBig: { fontSize: 52, fontWeight: '900', color: DARK, letterSpacing: -2.5, lineHeight: 58, marginBottom: 2 },
+  totalDate: { fontSize: 12, fontWeight: '400', color: MUTED, marginBottom: 16 },
+  divider: { height: 1, backgroundColor: '#F0EBF8', marginVertical: 4 },
 
   // Savings badge (weekly plan)
   savingsBadge: {
@@ -510,10 +520,10 @@ const s = StyleSheet.create({
   },
   trialIcon: { fontSize: 20, marginTop: 1 },
   trialTitle: { fontSize: 13, fontWeight: '700', color: '#4C1D95', marginBottom: 3 },
-  trialSub:   { fontSize: 12, fontWeight: '400', color: '#6D28D9', lineHeight: 18 },
+  trialSub: { fontSize: 12, fontWeight: '400', color: '#6D28D9', lineHeight: 18 },
 
   // Warning
-  warningRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFF2F0', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)' },
+  warningRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFF2F0', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)' },
   warningIcon: { fontSize: 16, marginTop: 1 },
   warningText: { fontSize: 13, fontWeight: '600', color: '#B91C1C', flex: 1, lineHeight: 19 },
 
@@ -528,10 +538,10 @@ const s = StyleSheet.create({
     fontSize: 14, fontWeight: '500', color: DARK,
     borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)',
   },
-  verifyBtn:     { backgroundColor: PURPLE, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  verifyBtn: { backgroundColor: PURPLE, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   verifyBtnDone: { backgroundColor: '#059669' },
   verifyBtnText: { fontSize: 13, fontWeight: '700', color: WHITE },
-  savedUpiHint:  { marginTop: 10, paddingVertical: 8, paddingHorizontal: 4 },
+  savedUpiHint: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 4 },
   savedUpiHintText: { fontSize: 12, fontWeight: '600', color: PURPLE },
 
   // Card form
@@ -541,7 +551,7 @@ const s = StyleSheet.create({
     fontSize: 14, fontWeight: '500', color: DARK,
     borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)',
   },
-  cardRow:       { flexDirection: 'row', gap: 10 },
+  cardRow: { flexDirection: 'row', gap: 10 },
   cardInputHalf: { flex: 1 },
 
   // Net banking note
@@ -560,9 +570,9 @@ const s = StyleSheet.create({
     gap: 10,
     borderTopWidth: 1, borderTopColor: 'rgba(190,163,216,0.15)',
   },
-  secRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  secIcon:  { fontSize: 11 },
-  secText:  { fontSize: 10, fontWeight: '600', color: MUTED, letterSpacing: 0.6 },
+  secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  secIcon: { fontSize: 11 },
+  secText: { fontSize: 10, fontWeight: '600', color: MUTED, letterSpacing: 0.6 },
   payBtn: {
     height: 56, borderRadius: 16, backgroundColor: PURPLE,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -571,7 +581,7 @@ const s = StyleSheet.create({
   payBtnDisabled: { opacity: 0.6 },
   payBtnText: { fontSize: 16, fontWeight: '700', color: WHITE },
   payBtnIcon: { fontSize: 16, color: WHITE },
-  payLaterBtn:  { alignItems: 'center', paddingVertical: 2 },
+  payLaterBtn: { alignItems: 'center', paddingVertical: 2 },
   payLaterText: { fontSize: 11, fontWeight: '700', color: PURPLE, textTransform: 'uppercase', letterSpacing: 1 },
 
   // Razorpay info card
@@ -581,7 +591,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(190,163,216,0.3)',
   },
   rzpInfoTitle: { fontSize: 15, fontWeight: '700', color: DARK, marginBottom: 2 },
-  rzpInfoSub:   { fontSize: 12, color: MUTED, lineHeight: 16 },
+  rzpInfoSub: { fontSize: 12, color: MUTED, lineHeight: 16 },
 
   // Razorpay WebView modal header
   webViewHeader: {

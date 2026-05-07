@@ -10,6 +10,7 @@ import client from '../../api/client';
 import { Search, MapPin, Flag, ChevronRight, BarChart2, Calendar } from 'lucide-react-native';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -221,6 +222,7 @@ function OnDemandCard({ ride, onPress }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function RideHistoryScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [rides,        setRides]        = useState(SEED_RIDES);
@@ -350,7 +352,7 @@ export default function RideHistoryScreen({ navigation }) {
     <View style={[s.root, { paddingTop: 0 }]}>
 
       <ScreenHeader
-        title="Ride History"
+        title={t('ride.history')}
         onBack={() => navigation?.goBack()}
         rightSlot={
           <TouchableOpacity
@@ -434,8 +436,8 @@ export default function RideHistoryScreen({ navigation }) {
         ) : displayRides.length === 0 ? (
           <View style={s.emptyWrap}>
             <Text style={s.emptyEmoji}>🛺</Text>
-            <Text style={s.emptyTitle}>No rides found</Text>
-            <Text style={s.emptySub}>Try a different filter or date range.</Text>
+            <Text style={s.emptyTitle}>{t('ride.noRidesFound')}</Text>
+            <Text style={s.emptySub}>{t('ride.tryDifferentFilter')}</Text>
           </View>
         ) : (
           <View style={s.list}>
@@ -452,7 +454,7 @@ export default function RideHistoryScreen({ navigation }) {
           <TouchableOpacity style={s.loadMoreBtn} onPress={onLoadMore} activeOpacity={0.8}>
             {loadingMore
               ? <ActivityIndicator size="small" color={PURPLE} />
-              : <Text style={s.loadMoreText}>Load More Rides</Text>
+              : <Text style={s.loadMoreText}>{t('ride.loadMoreRides')}</Text>
             }
           </TouchableOpacity>
         )}

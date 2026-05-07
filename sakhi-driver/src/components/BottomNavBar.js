@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, TrendingUp, Wallet, User } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 /** Fixed content height of the nav bar (icon + gap + label). */
 export const NAV_HEIGHT = 60;
@@ -18,31 +19,32 @@ const WHITE  = '#FFFFFF';
  * activeTab: 'home' | 'earnings' | 'wallet' | 'account'
  */
 export default function BottomNavBar({ navigation, activeTab = 'home' }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const pb = Math.max(insets.bottom, 8);
 
   const tabs = [
     {
       key:    'home',
-      label:  'Home',
+      label:  t('nav.home'),
       Icon:   Home,
       onPress: () => navigation?.navigate('DriverOnlineDashboard'),
     },
     {
       key:    'earnings',
-      label:  'Earnings',
+      label:  t('nav.earnings'),
       Icon:   TrendingUp,
       onPress: () => navigation?.navigate('MyEarnings'),
     },
     {
       key:    'wallet',
-      label:  'Wallet',
+      label:  t('nav.rides'),
       Icon:   Wallet,
       onPress: () => navigation?.navigate('TransactionHistory'),
     },
     {
       key:    'account',
-      label:  'Profile',
+      label:  t('nav.profile'),
       Icon:   User,
       onPress: () => navigation?.navigate('MyProfile'),
     },

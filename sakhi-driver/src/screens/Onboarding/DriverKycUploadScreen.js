@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const DOCS = [
   { key: 'dl',          label: 'Driving Licence',       sub: 'Front & Back', iconName: 'card-account-details-outline' },
@@ -18,6 +19,7 @@ const DOCS = [
 ];
 
 export default function DriverKycUploadScreen({ navigation }) {
+  const { t } = useTranslation();
   const { updateDriver } = useAuth();
   const [uploads, setUploads] = useState({});
   const [loading, setLoading] = useState(false);

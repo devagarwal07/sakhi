@@ -9,8 +9,10 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function DriverGenderVerificationScreen({ navigation }) {
+  const { t } = useTranslation();
   const { updateDriver } = useAuth();
   const [selfie, setSelfie]   = useState(null);
   const [loading, setLoading] = useState(false);

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -32,6 +33,7 @@ const CARD_SH = {
  * On submit, sends an OTP to the new number then navigates to ChangePhoneOtp.
  */
 export default function ChangePhoneInputScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { driver } = useAuth();
 
@@ -79,7 +81,7 @@ export default function ChangePhoneInputScreen({ navigation, route }) {
         <View style={s.blobTR} />
         <View style={s.blobBL} />
 
-        <ScreenHeader title="Change Phone Number" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('auth.changePhoneNumber')} onBack={() => navigation.goBack()} />
 
         <ScrollView
           contentContainerStyle={[s.scroll, { paddingBottom: Math.max(insets.bottom + 32, 48) }]}

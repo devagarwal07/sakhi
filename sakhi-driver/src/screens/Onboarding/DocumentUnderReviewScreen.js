@@ -7,8 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function DocumentUnderReviewScreen({ navigation }) {
+  const { t } = useTranslation();
   const { checkAuth, driver } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 

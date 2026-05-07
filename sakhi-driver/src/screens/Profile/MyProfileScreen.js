@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Pencil } from 'lucide-react-native';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens — matches sakhi-customer standard palette ─────────────────
 const PURPLE  = '#BEA3D8';   // primary accent (lilac)
@@ -172,6 +173,7 @@ function InitialsAvatar({ name, size = 68 }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function MyProfileScreen({ navigation }) {
   const { driver, checkAuth } = useAuth();
+  const { t } = useTranslation();
 
   const [editField, setEditField]     = useState(null);
   const [editValue, setEditValue]     = useState('');
@@ -224,7 +226,7 @@ export default function MyProfileScreen({ navigation }) {
   return (
     <View style={s.root}>
 
-      <ScreenHeader title="My Profile" onBack={() => navigation?.goBack()} />
+      <ScreenHeader title={t('profile.myProfile')} onBack={() => navigation?.goBack()} />
 
       {/* ── Scrollable body ── */}
       <ScrollView
@@ -267,7 +269,7 @@ export default function MyProfileScreen({ navigation }) {
                 <Text style={s.ratingVal}>{Number(driver?.average_rating ?? 4.8).toFixed(1)}</Text>
                 <View style={s.starIcon} />
                 <View style={s.verifiedPill}>
-                  <Text style={s.verifiedText}>Verified</Text>
+                  <Text style={s.verifiedText}>{t('common.verified')}</Text>
                   <View style={s.verifiedDot} />
                 </View>
               </View>
@@ -280,7 +282,7 @@ export default function MyProfileScreen({ navigation }) {
             onPress={() => navigation?.navigate('EditProfile')}
             activeOpacity={0.8}
           >
-            <Text style={s.editBtnText}>{'Edit\nProfile'}</Text>
+            <Text style={s.editBtnText}>{t('profile.editProfile')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -299,17 +301,17 @@ export default function MyProfileScreen({ navigation }) {
         {/* ════════════════════════════════
             Personal Details
         ═══════════════════════════════ */}
-        <Text style={s.sectionTitle}>Personal Details</Text>
+        <Text style={s.sectionTitle}>{t('profile.personalDetails')}</Text>
         <View style={s.sectionCard}>
-          <DetailRow label="Full Name" value={driver?.name         ?? 'Meena Ramesh'}       onEdit={() => openEdit('name',  driver?.name)}  isFirst />
-          <DetailRow label="Phone"     value={driver?.phone        ?? '+91 98765 43210'}     onEdit={() => navigation.navigate('ChangePhoneInput')} />
-          <DetailRow label="Email"     value={driver?.email        ?? 'meena.r@sakhi.com'}   onEdit={() => openEdit('email', driver?.email)} />
+          <DetailRow label={t('profile.fullName')} value={driver?.name         ?? 'Meena Ramesh'}       onEdit={() => openEdit('name',  driver?.name)}  isFirst />
+          <DetailRow label={t('profile.phone')} value={driver?.phone        ?? '+91 98765 43210'}     onEdit={() => navigation.navigate('ChangePhoneInput')} />
+          <DetailRow label={t('profile.email')} value={driver?.email        ?? 'meena.r@sakhi.com'}   onEdit={() => openEdit('email', driver?.email)} />
         </View>
 
         {/* ════════════════════════════════
             Vehicle Details
         ═══════════════════════════════ */}
-        <Text style={s.sectionTitle}>Vehicle Details</Text>
+        <Text style={s.sectionTitle}>{t('profile.vehicleDetails')}</Text>
         <View style={s.sectionCard}>
           <DetailRow label="Vehicle Type"  value={driver?.vehicle_type  ?? 'Hatchback (4-seater)'}  onEdit={() => openEdit('vehicle_type',  driver?.vehicle_type)}  isFirst />
           <DetailRow label="Reg Number"    value={driver?.vehicle_reg   ?? 'KA 01 MG 4521'}         onEdit={() => openEdit('vehicle_reg',   driver?.vehicle_reg)}   />
@@ -320,29 +322,29 @@ export default function MyProfileScreen({ navigation }) {
         {/* ════════════════════════════════
             Documents
         ═══════════════════════════════ */}
-        <Text style={s.sectionTitle}>Documents</Text>
+        <Text style={s.sectionTitle}>{t('profile.documents')}</Text>
         <View style={s.sectionCard}>
           <DocRow
-            title="Driving Licence"
+            title={t('profile.drivingLicence')}
             expiry={driver?.dl_expiry ?? '14 Oct 2028'}
             badgeState="verified"
             onReUpload={() => navigation?.navigate('MyDocuments')}
             isFirst
           />
           <DocRow
-            title="Vehicle RC"
+            title={t('profile.vehicleRc')}
             expiry={driver?.rc_expiry ?? '22 Jan 2030'}
             badgeState="verified"
             onReUpload={() => navigation?.navigate('MyDocuments')}
           />
           <DocRow
-            title="Insurance"
+            title={t('profile.insurance')}
             expiry={driver?.insurance_expiry ?? '15 Aug 2024'}
             badgeState="expiring"
             onReUpload={() => navigation?.navigate('MyDocuments')}
           />
           <DocRow
-            title="Aadhaar Card"
+            title={t('profile.aadhaarCard')}
             subLabel={driver?.aadhaar_masked ? `XXXX XXXX ${driver.aadhaar_masked}` : 'XXXX XXXX 4521'}
             badgeState="verified"
             onView={() => navigation?.navigate('MyDocuments')}

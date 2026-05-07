@@ -4,11 +4,17 @@ import { NavigationContainer, createNavigationContainerRef } from '@react-naviga
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { I18nextProvider } from 'react-i18next';
+import i18n, { initI18n } from './src/i18n';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SocketProvider } from './src/context/SocketContext';
 import { Colors } from './src/utils/theme';
 import PageLoader from './src/components/PageLoader';
+import {
+  setupForegroundHandler,
+  setupNotificationTapHandler,
+} from './src/services/notificationService';
 
 // ── Screens ──────────────────────────────────────────────────────────────────
 import DriverSplashScreen from './src/screens/Auth/DriverSplashScreen';
@@ -184,7 +190,44 @@ function RootNavigator() {
 // ── App root ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [pageLoading, setPageLoading] = useState(false);
+  const [i18nReady, setI18nReady]     = useState(false);
   const loaderTimer = useRef(null);
+
+  // ── HOOK 1: Initialise i18n ───────────────────────────────────────────────
+  useEffect(() => {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
+  // ── HOOK 2: Notification handlers ─────────────────────────────────────────
+  // Declared unconditionally (Rules of Hooks).
+  // Guard inside the effect — only subscribe after i18n is ready.
+  useEffect(() => {
+    if (!i18nReady) return;
+    const cleanupForeground = setupForegroundHandler();
+    const cleanupTap = setupNotificationTapHandler((data) => {
+      if (!navigationRef.isReady()) return;
+      const type = data?.type;
+      if (type === 'RIDE_ASSIGNED') {
+        navigationRef.navigate('EnRouteToPickup');
+      } else if (type === 'KYC_APPROVED' || type === 'KYC_REJECTED') {
+        navigationRef.navigate('DocumentUnderReview');
+      }
+      // RIDE_REQUEST: socket handles it; FCM tap just brings app to foreground
+    });
+    return () => {
+      cleanupForeground();
+      cleanupTap();
+    };
+  }, [i18nReady]); // re-runs once when i18nReady flips true
+
+  // ── Early return AFTER all hooks — safe per Rules of Hooks ───────────────
+  if (!i18nReady) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#BEA3D8" />
+      </View>
+    );
+  }
 
   const handleNavStateChange = () => {
     // Show loader immediately on any navigation event
@@ -195,21 +238,23 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer ref={navigationRef} onStateChange={handleNavStateChange}>
-          <StatusBar style="dark" />
-          {/* Splash screen sits outside the RootNavigator so it always
-              shows first before checkAuth completes */}
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Splash"    component={DriverSplashScreen} />
-            <Stack.Screen name="RootShell" component={RootNavigator}       />
-          </Stack.Navigator>
-          {/* Global page transition loader */}
-          {pageLoading && <PageLoader />}
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <I18nextProvider i18n={i18n}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationContainer ref={navigationRef} onStateChange={handleNavStateChange}>
+            <StatusBar style="dark" />
+            {/* Splash screen sits outside the RootNavigator so it always
+                shows first before checkAuth completes */}
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Splash"    component={DriverSplashScreen} />
+              <Stack.Screen name="RootShell" component={RootNavigator}       />
+            </Stack.Navigator>
+            {/* Global page transition loader */}
+            {pageLoading && <PageLoader />}
+          </NavigationContainer>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </I18nextProvider>
   );
 }
 

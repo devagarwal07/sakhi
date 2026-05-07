@@ -8,8 +8,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function DocumentReUploadScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { rejections = [] } = route.params ?? {};
   const { updateDriver } = useAuth();
   const [uploads, setUploads] = useState({});

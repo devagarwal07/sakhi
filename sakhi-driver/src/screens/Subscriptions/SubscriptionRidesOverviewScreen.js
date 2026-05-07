@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -23,13 +24,14 @@ const MOCK_UPCOMING_WEEK = [
 ];
 
 export default function SubscriptionRidesOverviewScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [optedIn, setOptedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [rides, setRides] = useState(MOCK_TODAY);
 
   // Example lock state for the banner
-  const isLocked = true; 
+  const isLocked = true;
   const minutesUntilNext = 28;
 
   const handleOptToggle = async (val) => {
@@ -49,18 +51,18 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
       <View style={styles.blurBottomLeft} />
 
       {/* ── Header ── */}
-      <ScreenHeader title="Subscription Rides" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('subscription.ridesTitle')} onBack={() => navigation.goBack()} />
 
       {/* Main Content Area */}
-      <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { }]}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, {}]}
         showsVerticalScrollIndicator={false}
       >
-        
+
         {/* Opt-In Section */}
         <View style={styles.optInCard}>
           <View style={styles.optInRow1}>
-            <Text style={styles.optInTitle}>Opt In to Subscription Rides</Text>
+            <Text style={styles.optInTitle}>{t('subscription.optIn')}</Text>
             <Switch
               value={optedIn}
               onValueChange={handleOptToggle}
@@ -69,7 +71,7 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
               style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
             />
           </View>
-          <Text style={styles.optInSubText}>Priority matching and guaranteed earnings</Text>
+          <Text style={styles.optInSubText}>{t('subscription.priorityMatching')}</Text>
         </View>
 
         {/* Locked Banner Section */}
@@ -77,36 +79,38 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
           <View style={styles.lockedBannerCard}>
             <MaterialIcons name="lock" size={16} color="#EA580C" style={{ marginTop: 2 }} />
             <View style={styles.lockedBannerCol}>
-              <Text style={styles.lockedTextTitle}>Locked — Subscription ride in {minutesUntilNext} mins.</Text>
-              <Text style={styles.lockedTextSub}>On-demand paused.</Text>
+              <Text style={styles.lockedTextTitle}>
+                {t('subscription.lockedInMins', { minutes: minutesUntilNext })}
+              </Text>
+              <Text style={styles.lockedTextSub}>{t('subscription.onDemandPaused')}</Text>
             </View>
           </View>
         )}
 
         {/* Today's Schedule Section */}
-        <Text style={styles.sectionTitle}>TODAY'S SCHEDULE</Text>
-        
+        <Text style={styles.sectionTitle}>{t('subscription.todaysSchedule')}</Text>
+
         <View style={styles.rideList}>
           {rides.map((ride, idx) => (
-            <TouchableOpacity 
-              key={ride.id} 
+            <TouchableOpacity
+              key={ride.id}
               style={[styles.rideCard, idx === 1 && { opacity: 0.9 }]}
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SubscriptionAssignmentDetails', { subscription: ride })}
             >
               <View style={styles.rideMarkerLine} />
-              
+
               <View style={styles.rideCardInner}>
                 <View style={styles.rideCardTopRow}>
                   <Text style={styles.rideTime}>{ride.time}</Text>
                   <View style={styles.upcomingBadge}>
-                    <Text style={styles.upcomingBadgeText}>{ride.status}</Text>
+                    <Text style={styles.upcomingBadgeText}>{t('subscription.statusUpcoming')}</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.rideCardDetails}>
                   <Text style={styles.rideRoute}>{ride.route}</Text>
-                  <Text style={styles.rideRider}>Rider: {ride.rider}</Text>
+                  <Text style={styles.rideRider}>{t('subscription.riderLabel', { name: ride.rider })}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -114,14 +118,14 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
         </View>
 
         {/* Upcoming Week Section */}
-        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>UPCOMING WEEK</Text>
-        
+        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('subscription.upcomingWeek')}</Text>
+
         <View style={styles.weekOverlay}>
           {MOCK_UPCOMING_WEEK.map((day, idx) => (
-            <TouchableOpacity 
-              key={day.id} 
+            <TouchableOpacity
+              key={day.id}
               style={[
-                styles.weekRowItem, 
+                styles.weekRowItem,
                 idx > 0 && { marginTop: 8 }
               ]}
               onPress={() => navigation.navigate('WeeklyCalendarView', { day })}
@@ -131,10 +135,12 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
                 <Text style={styles.weekMonthText}>{day.month}</Text>
                 <Text style={styles.weekDateText}>{day.date}</Text>
               </View>
-              
+
               <View style={styles.weekInfoCol}>
                 <Text style={styles.weekDayTitle}>{day.dayTitle}</Text>
-                <Text style={styles.weekRidesCount}>{day.ridesCount} subscription rides</Text>
+                <Text style={styles.weekRidesCount}>
+                  {t('subscription.subscriptionRidesCount', { count: day.ridesCount })}
+                </Text>
               </View>
 
               <Feather name="chevron-right" size={16} color="#94A3B8" />
@@ -152,7 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F0FF',
     position: 'relative',
   },
-  
+
   // -- Aesthetic Background Blurs --
   blurTopRight: {
     position: 'absolute',

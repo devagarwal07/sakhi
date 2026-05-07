@@ -12,6 +12,7 @@ import { useSocket } from '../../context/SocketContext';
 import { patchRideStatus, callRider } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
+import { useTranslation } from 'react-i18next';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ const MAP_STYLE = [
 export default function EnRouteToPickupScreen({ navigation, route }) {
   const { ride } = route.params ?? {};
   const { emit } = useSocket();
+  const { t } = useTranslation();
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
 
@@ -252,7 +254,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         {/* Status Pill */}
         <View style={s.statusRow}>
           <View style={s.statusPill}>
-            <Text style={s.statusText}>EN ROUTE TO PICKUP</Text>
+            <Text style={s.statusText}>{t('ride.enRouteToPickup')}</Text>
           </View>
         </View>
 
@@ -296,7 +298,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
 
         {/* Primary Action Button */}
         <TouchableOpacity style={s.primaryBtn} onPress={handleArrived} activeOpacity={0.8}>
-          <Text style={s.primaryBtnText}>I've Arrived at Pickup</Text>
+          <Text style={s.primaryBtnText}>{t('ride.arrivedAtPickup')}</Text>
         </TouchableOpacity>
       </View>
 

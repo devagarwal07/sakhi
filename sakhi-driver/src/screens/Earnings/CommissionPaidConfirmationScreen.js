@@ -10,6 +10,7 @@ import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import SakhiModal from '../../components/SakhiModal';
+import { useTranslation } from 'react-i18next';
 
 // ── Receipt Row ───────────────────────────────────────────────────────────────
 function ReceiptRow({ label, value, valuePurple }) {
@@ -23,17 +24,16 @@ function ReceiptRow({ label, value, valuePurple }) {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function CommissionPaidConfirmationScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { updateDriver } = useAuth();
-  const params      = route?.params ?? {};
-  const amount      = params.amount  ?? 350;
-  const period      = params.period  ?? 'weekly';
-  const payMethod   = params.method  ?? 'UPI';
-  const txnId       = params.txnId   ?? 'TXN987654321';
-  const isWeekly    = period === 'weekly';
-  const periodLabel = isWeekly ? '23 Mar – 29 Mar 2026' : 'Today';
-  const infoText    = isWeekly
-    ? 'You\'re all set for this week, Sakhi. Start earning now! 💜'
-    : 'You\'re all set for today, Sakhi. Start earning now! 💜';
+  const params = route?.params ?? {};
+  const amount = params.amount ?? 350;
+  const period = params.period ?? 'weekly';
+  const payMethod = params.method ?? 'UPI';
+  const txnId = params.txnId ?? 'TXN987654321';
+  const isWeekly = period === 'weekly';
+  const periodLabel = isWeekly ? '23 Mar – 29 Mar 2026' : t('earnings.today');
+  const infoText = isWeekly ? t('earnings.allSetWeekly') : t('earnings.allSetToday');
 
   const [modal, setModal] = useState(null);
 
@@ -42,8 +42,8 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
     updateDriver({ is_online: true });
 
     // 2. Fire-and-forget background tasks (don't block navigation)
-    client.patch('/drivers/status', { is_online: true }).catch(() => {});
-    startLocationTracking().catch(() => {});
+    client.patch('/drivers/status', { is_online: true }).catch(() => { });
+    startLocationTracking().catch(() => { });
 
     // 3. Navigate immediately — no waiting
     navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
@@ -52,24 +52,24 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
   const handleDownloadReceipt = () => {
     setModal({
       icon: '📥',
-      title: 'Download Receipt',
-      message: 'Your payment receipt has been saved to Downloads.',
-      buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+      title: t('earnings.downloadReceiptTitle'),
+      message: t('earnings.downloadReceiptSaved'),
+      buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
     });
   };
 
   const handleShareReceipt = async () => {
     try {
       await Share.share({
-        message: `Sakhi Commission Receipt\nAmount: ₹${amount}\nPeriod: ${periodLabel}\nMethod: ${payMethod}\nTxn ID: ${txnId}\n\nVisit sakhi.app for more details.`,
-        title: 'Sakhi Commission Receipt',
+        message: `${t('earnings.shareReceiptTitle')}\n${t('earnings.amountPaid')}: ₹${amount}\n${t('earnings.period')}: ${periodLabel}\n${t('earnings.paymentMethod')}: ${payMethod}\n${t('earnings.transactionId')}: ${txnId}\n\n${t('earnings.receiptVisitSakhi')}`,
+        title: t('earnings.shareReceiptTitle'),
       });
     } catch {
       setModal({
         icon: '✅',
-        title: 'Copied!',
-        message: 'Receipt details copied to clipboard.',
-        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+        title: t('earnings.shareReceiptCopiedTitle'),
+        message: t('earnings.shareReceiptCopied'),
+        buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
       });
     }
   };
@@ -80,7 +80,7 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
       {/* ── HEADER ── */}
       <ScreenHeader
-        title="Payment Confirmed"
+        title={t('earnings.paymentConfirmedTitle')}
         onBack={() => navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] })}
       />
 
@@ -103,12 +103,10 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
           </View>
 
           {/* "Commission Paid!": 24px 800w #1E1B2E, letter-spacing -0.6 */}
-          <Text style={s.heading}>Commission Paid!</Text>
+          <Text style={s.heading}>{t('earnings.commissionPaid')}</Text>
 
           {/* Subtitle: 16px 500w #6B7280, line-height 26 */}
-          <Text style={s.subtitle}>
-            You're all set to go online and accept rides.
-          </Text>
+          <Text style={s.subtitle}>{t('earnings.allSetToGoOnline')}</Text>
         </View>
 
         {/* ── RECEIPT CARD: white, radius 16, padding 24
@@ -117,17 +115,15 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
           {/* Rows: gap 20 */}
           <View style={s.receiptRows}>
             {/* Amount Paid | ₹{amount} purple 18px 700w */}
-            <ReceiptRow label="Amount Paid"    value={`₹${amount}`} valuePurple />
-            {/* Period | date 14px 600w dark */}
-            <ReceiptRow label="Period"         value={periodLabel} />
-            {/* Payment Method | method 14px 600w dark */}
-            <ReceiptRow label="Payment Method" value={payMethod} />
+            <ReceiptRow label={t('earnings.amountPaid')} value={`₹${amount}`} valuePurple />
+            <ReceiptRow label={t('earnings.period')} value={periodLabel} />
+            <ReceiptRow label={t('earnings.paymentMethod')} value={payMethod} />
           </View>
 
           {/* HorizontalBorder: border-top 1px #F0ECFA, padding-top 16, gap 124.89 */}
           <View style={s.horizontalBorder}>
             {/* "Transaction ID": 12px 500w #6B7280 */}
-            <Text style={s.txnLabel}>Transaction ID</Text>
+            <Text style={s.txnLabel}>{t('earnings.transactionId')}</Text>
             {/* TXN value: 12px Liberation Mono 400w #6B7280 */}
             <Text style={s.txnValue}>{txnId}</Text>
           </View>
@@ -141,21 +137,21 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
         {/* ── GO ONLINE BUTTON: #BEA3D8, radius 12, h:56 ── */}
         <TouchableOpacity style={s.goOnlineBtn} onPress={handleGoOnline} activeOpacity={0.85}>
-          <Text style={s.goOnlineBtnText}>Go Online Now</Text>
+          <Text style={s.goOnlineBtnText}>{t('earnings.goOnlineNow')}</Text>
         </TouchableOpacity>
 
         {/* ── Action Buttons: Download & Share ── */}
         <View style={s.actionRow}>
           <TouchableOpacity style={s.actionBtn} onPress={handleDownloadReceipt} activeOpacity={0.7}>
             <Text style={s.actionBtnIcon}>↓</Text>
-            <Text style={s.actionBtnText}>Download Receipt</Text>
+            <Text style={s.actionBtnText}>{t('earnings.downloadReceipt')}</Text>
           </TouchableOpacity>
 
           <View style={s.actionDivider} />
 
           <TouchableOpacity style={s.actionBtn} onPress={handleShareReceipt} activeOpacity={0.7}>
             <Text style={s.actionBtnIcon}>↗</Text>
-            <Text style={s.actionBtnText}>Share Receipt</Text>
+            <Text style={s.actionBtnText}>{t('earnings.shareReceipt')}</Text>
           </TouchableOpacity>
         </View>
 

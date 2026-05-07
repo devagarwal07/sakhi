@@ -8,6 +8,7 @@ import { WebView } from 'react-native-webview';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 const CALLBACK_URL = `${BACKEND_URL}/webhooks/signzy/digilocker-callback`;
@@ -20,6 +21,7 @@ const CALLBACK_URL = `${BACKEND_URL}/webhooks/signzy/digilocker-callback`;
 // 'error'       — something went wrong
 
 export default function DigiLockerConsentScreen({ navigation }) {
+  const { t } = useTranslation();
   const { updateDriver } = useAuth();
   const [phase, setPhase]             = useState('intro');
   const [loadingLabel, setLoadingLabel] = useState('');

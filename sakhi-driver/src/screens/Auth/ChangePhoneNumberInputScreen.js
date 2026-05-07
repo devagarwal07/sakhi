@@ -6,8 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
+import { useTranslation } from 'react-i18next';
 
 export default function ChangePhoneNumberInputScreen({ navigation }) {
+  const { t } = useTranslation();
   const [phone, setPhone]   = useState('');
   const [loading, setLoading] = useState(false);
 

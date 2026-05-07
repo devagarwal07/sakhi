@@ -5,12 +5,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import { useTranslation } from 'react-i18next';
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
 // Dummy schedule structure — real data will come from navigation params or parent
-const DEFAULT_WEEK = DAYS.map((d, i) => ({
+const DEFAULT_WEEK = (days) => days.map((d, i) => ({
   day: d,
   date: new Date(Date.now() + (i - TODAY_IDX) * 86400000).getDate(),
   rides: i < 5 ? [
@@ -20,21 +19,32 @@ const DEFAULT_WEEK = DAYS.map((d, i) => ({
 }));
 
 const STATUS_STYLE = {
-  upcoming:  { bg: `${Colors.primaryContainer}18`, text: Colors.primaryContainer },
-  completed: { bg: '#ECFDF5',                       text: '#059669'               },
-  scheduled: { bg: Colors.surfaceContainer,          text: Colors.onSurfaceVariant },
+  upcoming: { bg: `${Colors.primaryContainer}18`, text: Colors.primaryContainer },
+  completed: { bg: '#ECFDF5', text: '#059669' },
+  scheduled: { bg: Colors.surfaceContainer, text: Colors.onSurfaceVariant },
 };
 
 export default function WeeklyCalendarViewScreen({ navigation, route }) {
-  const week = route.params?.week ?? DEFAULT_WEEK;
+  const { t } = useTranslation();
+  const daysShort = t('subscription.daysShort', { returnObjects: true });
+  const days = Array.isArray(daysShort) && daysShort.length === 7
+    ? daysShort
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const week = route.params?.week ?? DEFAULT_WEEK(days);
   const [selectedDay, setSelectedDay] = useState(TODAY_IDX);
 
-  const dayData = week[selectedDay] ?? DEFAULT_WEEK[selectedDay];
+  const dayData = week[selectedDay] ?? DEFAULT_WEEK(days)[selectedDay];
+
+  const statusLabels = {
+    upcoming: t('subscription.statusUpcoming'),
+    completed: t('subscription.statusCompleted'),
+    scheduled: t('subscription.statusScheduled'),
+  };
 
   return (
     <View style={styles.safe}>
       {/* Header */}
-      <ScreenHeader title="Weekly Calendar" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('subscription.weeklyCalendarTitle')} onBack={() => navigation.goBack()} />
 
       {/* Day selector strip */}
       <ScrollView
@@ -42,10 +52,10 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
         style={styles.dayStrip}
         contentContainerStyle={styles.dayStripContent}
       >
-        {DAYS.map((d, i) => {
-          const dayInfo = week[i] ?? DEFAULT_WEEK[i];
+        {days.map((d, i) => {
+          const dayInfo = week[i] ?? DEFAULT_WEEK(days)[i];
           const isToday = i === TODAY_IDX;
-          const isSel   = i === selectedDay;
+          const isSel = i === selectedDay;
           const hasRides = (dayInfo.rides ?? []).length > 0;
 
           return (
@@ -70,13 +80,15 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
       {/* Rides for selected day */}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>
-          {dayData.day === DAYS[TODAY_IDX] ? "Today's Rides" : `${dayData.day}'s Rides`}
+          {dayData.day === days[TODAY_IDX]
+            ? t('subscription.todaysRides')
+            : t('subscription.ridesForDay', { day: dayData.day })}
         </Text>
 
         {(dayData.rides ?? []).length === 0 ? (
           <View style={styles.emptyDay}>
             <Text style={styles.emptyEmoji}>🏖</Text>
-            <Text style={styles.emptyText}>No rides scheduled this day</Text>
+            <Text style={styles.emptyText}>{t('subscription.noRidesScheduled')}</Text>
           </View>
         ) : (
           dayData.rides.map((ride, i) => {
@@ -88,7 +100,9 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.rideRoute} numberOfLines={1}>{ride.route}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-                  <Text style={[styles.statusText, { color: sc.text }]}>{ride.status}</Text>
+                  <Text style={[styles.statusText, { color: sc.text }]}>
+                    {statusLabels[ride.status] ?? ride.status}
+                  </Text>
                 </View>
               </View>
             );
@@ -98,7 +112,7 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
         {/* Summary strip */}
         <View style={styles.summaryStrip}>
           <Text style={styles.summaryText}>
-            📅  {week.reduce((acc, d) => acc + (d.rides?.length ?? 0), 0)} total rides this week
+            📅  {t('subscription.totalRidesThisWeek', { count: week.reduce((acc, d) => acc + (d.rides?.length ?? 0), 0) })}
           </Text>
         </View>
       </ScrollView>

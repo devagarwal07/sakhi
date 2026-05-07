@@ -9,6 +9,7 @@ import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 import SakhiModal from '../../components/SakhiModal';
+import { useTranslation } from 'react-i18next';
 
 // ─── Icon components (no SVG library needed) ──────────────────────────────────
 
@@ -426,6 +427,7 @@ const ex = StyleSheet.create({
 
 
 export default function TransactionHistoryScreen({ navigation }) {
+  const { t } = useTranslation();
   const [sections,       setSections]       = useState(FALLBACK_SECTIONS);
   const [loading,        setLoading]        = useState(false);
   const [refreshing,     setRefreshing]     = useState(false);
@@ -480,7 +482,7 @@ export default function TransactionHistoryScreen({ navigation }) {
     <View style={[s.safe, { flex: 1 }]}>
 
       <ScreenHeader
-        title="Transactions"
+        title={t('profile.transactions')}
         onBack={() => navigation?.goBack()}
         rightSlot={
           <TouchableOpacity
@@ -557,7 +559,7 @@ export default function TransactionHistoryScreen({ navigation }) {
       {/* ── Modals ── */}
       <PickerModal
         visible={showTypePicker}
-        title="Filter by Type"
+        title={t('profile.filterByType')}
         options={TYPE_FILTERS}
         selected={typeFilter}
         onSelect={setTypeFilter}

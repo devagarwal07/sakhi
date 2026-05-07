@@ -11,6 +11,7 @@ import { useSocket } from '../../context/SocketContext';
 import ScreenHeader from '../../components/ScreenHeader';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 // ── Razorpay Checkout WebView HTML ───────────────────────────────────────────
 function buildRazorpayHtml({ key_id, order_id, amount, currency, name, description, prefill_name, prefill_contact }) {
@@ -99,6 +100,7 @@ const ratingStyles = StyleSheet.create({
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 export default function PaymentDetailsScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { ride } = route.params ?? {};
 
   // Normalise field names — matchingEngine sends drop_address; ride_id or id
@@ -252,7 +254,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
 
   return (
     <View style={styles.safe}>
-      <ScreenHeader title="Payment Details" />
+      <ScreenHeader title={t('profile.paymentDetails')} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 

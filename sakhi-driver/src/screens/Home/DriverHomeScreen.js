@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import * as Location from 'expo-location';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import client from '../../api/client';
@@ -67,19 +68,20 @@ function SubscriptionCountdown({ expiry }) {
   const minsLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
 
   // Urgency scale
+  const { t } = useTranslation();
   let accent, bgColor, label, icon;
   if (msLeft <= 0) {
     accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '🔴';
-    label = 'Subscription expired';
+    label = t('home.subscriptionExpired');
   } else if (daysLeft < 1) {
     accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '⚠️';
-    label = `Expires in ${hoursLeft}h ${minsLeft}m`;
+    label = t('home.expiresIn', { hours: hoursLeft, mins: minsLeft });
   } else if (daysLeft <= 2) {
     accent = '#F59E0B'; bgColor = '#FFFBEB'; icon = '⚠️';
-    label = `${daysLeft}d ${hoursLeft}h remaining`;
+    label = t('home.daysRemaining', { days: daysLeft, hours: hoursLeft });
   } else {
     accent = '#10B981'; bgColor = '#F0FDF4'; icon = '📅';
-    label = `${daysLeft} days remaining`;
+    label = t('home.daysLeft', { days: daysLeft });
   }
 
   const barFill = `${Math.round(progress * 100)}%`;
@@ -90,11 +92,11 @@ function SubscriptionCountdown({ expiry }) {
       <View style={sub.labelRow}>
         <Text style={sub.icon}>{icon}</Text>
         <View style={sub.textStack}>
-          <Text style={sub.caption}>WEEKLY PLAN</Text>
+          <Text style={sub.caption}>{t('home.weeklyPlan')}</Text>
           <Text style={[sub.label, { color: accent }]}>{label}</Text>
         </View>
         <View style={sub.expDateWrap}>
-          <Text style={sub.expDateLbl}>Expires</Text>
+          <Text style={sub.expDateLbl}>{t('home.expires')}</Text>
           <Text style={[sub.expDateVal, { color: accent }]}>
             {expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
           </Text>
@@ -127,6 +129,7 @@ const sub = StyleSheet.create({
 
 // ── Online Status Card ── Sakhi-themed card (purple/lavender) ─────────────────
 function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, subscriptionExpiry }) {
+  const { t } = useTranslation();
   const glowAnim = useRef(new Animated.Value(0.5)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -161,7 +164,7 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
       <View style={oc.topRow}>
         <View style={oc.liveBadge}>
           <View style={oc.liveDot} />
-          <Text style={oc.liveBadgeText}>LIVE NOW</Text>
+          <Text style={oc.liveBadgeText}>{t('home.liveNow')}</Text>
         </View>
         <TouchableOpacity
           style={oc.offlineBtn}
@@ -169,25 +172,25 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
           disabled={statusLoading}
           activeOpacity={0.7}
         >
-          <Text style={oc.offlineBtnText}>{statusLoading ? '···' : 'Go Offline'}</Text>
+          <Text style={oc.offlineBtnText}>{statusLoading ? '···' : t('home.goOffline')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* ── Row 2: Heading + session timer ── */}
       <View style={oc.headingRow}>
         <View>
-          <Text style={oc.headingMain}>You're Online</Text>
-          <Text style={oc.headingSub}>Actively searching for rides</Text>
+          <Text style={oc.headingMain}>{t('home.youreOnline')}</Text>
+          <Text style={oc.headingSub}>{t('home.activelySearching')}</Text>
         </View>
         <View style={oc.sessionPill}>
           <Text style={oc.sessionVal}>{fmtTime(sessionSecs)}</Text>
-          <Text style={oc.sessionLbl}>session</Text>
+          <Text style={oc.sessionLbl}>{t('home.session')}</Text>
         </View>
       </View>
 
       {/* ── Row 3: Earnings display ── */}
       <View style={oc.earningsCard}>
-        <Text style={oc.earningsCaption}>TODAY'S EARNINGS</Text>
+        <Text style={oc.earningsCaption}>{t('home.todaysEarnings')}</Text>
         <View style={oc.earningsRow}>
           <Text style={oc.earningsCurrency}>₹</Text>
           <Text style={oc.earningsAmount}>{earnings.today}</Text>
@@ -198,11 +201,11 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
       <View style={oc.statsRow}>
         <View style={oc.statChip}>
           <Text style={oc.statVal}>{earnings.rides}</Text>
-          <Text style={oc.statLbl}>TRIPS</Text>
+          <Text style={oc.statLbl}>{t('home.trips')}</Text>
         </View>
         <View style={[oc.statChip, oc.statChipAccent]}>
           <Text style={[oc.statVal, oc.statValAccent]}>{Number(earnings.rating).toFixed(1)} ★</Text>
-          <Text style={[oc.statLbl, { color: 'rgba(255,255,255,0.75)' }]}>RATING</Text>
+          <Text style={[oc.statLbl, { color: 'rgba(255,255,255,0.75)' }]}>{t('home.rating')}</Text>
         </View>
       </View>
 
@@ -210,11 +213,11 @@ function OnlineStatusCard({ earnings, onGoOffline, statusLoading, sessionSecs, s
       <View style={oc.pillsRow}>
         <View style={oc.pill}>
           <Feather name="wifi" size={12} color="#059669" />
-          <Text style={oc.pillText}>GPS Connected</Text>
+          <Text style={oc.pillText}>{t('home.gpsConnected')}</Text>
         </View>
         <View style={oc.pill}>
           <Feather name="search" size={12} color="#BEA3D8" />
-          <Text style={oc.pillText}>Searching rides</Text>
+          <Text style={oc.pillText}>{t('home.searchingRides')}</Text>
         </View>
       </View>
 
@@ -274,6 +277,7 @@ const oc = StyleSheet.create({
 
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DriverHomeScreen({ navigation }) {
+  const { t } = useTranslation();
   const { driver, updateDriver } = useAuth();
   const { pendingSubRequests, subAlert, clearSubAlert } = useSocket();
   const insets = useSafeAreaInsets();
@@ -454,7 +458,7 @@ export default function DriverHomeScreen({ navigation }) {
       setIsOnline(false);
       await stopLocationTracking();
     } catch {
-      Alert.alert('Error', 'Could not go offline. Try again.');
+      Alert.alert(t('common.error'), t('home.couldNotGoOffline'));
     } finally {
       setStatusLoading(false);
     }
@@ -481,8 +485,8 @@ export default function DriverHomeScreen({ navigation }) {
       setIsOnline(true);
       await startLocationTracking();
     } catch (err) {
-      const msg = err.response?.data?.error?.message ?? 'Could not go online. Try again.';
-      Alert.alert('Error', msg);
+      const msg = err.response?.data?.error?.message ?? t('home.couldNotGoOnline');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setStatusLoading(false);
     }
@@ -517,7 +521,7 @@ export default function DriverHomeScreen({ navigation }) {
         ) : (
           <View style={s.mapLoading}>
             <ActivityIndicator size="large" color="#5B21B6" />
-            <Text style={s.mapLoadingText}>Getting your location…</Text>
+            <Text style={s.mapLoadingText}>{t('home.gettingLocation')}</Text>
           </View>
         )}
 
@@ -559,8 +563,8 @@ export default function DriverHomeScreen({ navigation }) {
               subAlert.type === 'cancelled' ? { color: '#991B1B' } : { color: '#92400E' },
             ]}>
               {subAlert.type === 'cancelled'
-                ? 'Subscription Cancelled'
-                : 'Subscription Paused'}
+                ? t('home.subscriptionCancelled')
+                : t('home.subscriptionPaused')}
             </Text>
             <Text style={s.subAlertMsg}>{subAlert.message}</Text>
           </View>
@@ -595,7 +599,7 @@ export default function DriverHomeScreen({ navigation }) {
                 : (
                   <>
                     <View style={[s.toggleDot, !isOnline && s.toggleDotOffline]} />
-                    <Text style={!isOnline ? s.toggleTextActive : s.toggleText}>Offline</Text>
+                    <Text style={!isOnline ? s.toggleTextActive : s.toggleText}>{t('home.offline')}</Text>
                   </>
                 )
               }
@@ -612,7 +616,7 @@ export default function DriverHomeScreen({ navigation }) {
                 : (
                   <>
                     <View style={[s.toggleDot, isOnline && s.toggleDotOnline]} />
-                    <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>Online</Text>
+                    <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>{t('home.online')}</Text>
                   </>
                 )
               }
@@ -630,13 +634,13 @@ export default function DriverHomeScreen({ navigation }) {
             />
           ) : (
             <>
-              <Text style={s.statusHeading}>Good Day, Sakhi 🙋🏻‍♀️</Text>
-              <Text style={s.statusSub}>You're all set for today, Sakhi. Start earning now! 💜</Text>
+              <Text style={s.statusHeading}>{t('home.goodDay')}</Text>
+              <Text style={s.statusSub}>{t('home.allSet')}</Text>
               {/* Stats (offline summary) */}
               <View style={s.statsRow}>
-                <StatCard value={`₹${earnings.today}`} label="Today" />
-                <StatCard value={earnings.rides} label="Trips" />
-                <StatCard value={`${earnings.rating}★`} label="Rating" />
+                <StatCard value={`₹${earnings.today}`} label={t('earnings.today')} />
+                <StatCard value={earnings.rides} label={t('earnings.trips')} />
+                <StatCard value={`${earnings.rating}★`} label={t('earnings.rating')} />
               </View>
             </>
           )}
@@ -652,8 +656,8 @@ export default function DriverHomeScreen({ navigation }) {
                 <Feather name="calendar" size={18} color="#FFFFFF" />
               </View>
               <View style={s.upcomingSubTextCol}>
-                <Text style={s.upcomingSubTitle}>Upcoming Subscriptions</Text>
-                <Text style={s.upcomingSubDesc}>You have 2 scheduled rides</Text>
+                <Text style={s.upcomingSubTitle}>{t('home.upcomingSubscriptions')}</Text>
+                <Text style={s.upcomingSubDesc}>{t('home.scheduledRides', { count: 2 })}</Text>
               </View>
               <Feather name="chevron-right" size={20} color="#9CA3AF" />
             </TouchableOpacity>

@@ -8,6 +8,7 @@ import { Plus, Clock, ChevronRight, Ticket } from 'lucide-react-native';
 import client from '../../api/client';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const BG      = '#F5F0FF';
@@ -314,6 +315,7 @@ const empty = StyleSheet.create({
 
 // ─── Main Screen ────────────────────────────────────────────────────────────────
 export default function MyComplaintsScreen({ navigation }) {
+  const { t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [complaints, setComplaints]     = useState(SEED);
@@ -369,7 +371,7 @@ export default function MyComplaintsScreen({ navigation }) {
   return (
     <View style={s.root}>
       <ScreenHeader
-        title="My Complaints"
+        title={t('profile.myComplaints')}
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity style={s.newBtn} onPress={handleNewComplaint} activeOpacity={0.85}>

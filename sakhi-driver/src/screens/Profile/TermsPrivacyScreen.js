@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import ScreenHeader from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Policy Content ───────────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ const TABS = [
 ];
 
 export default function TermsPrivacyScreen({ navigation }) {
+  const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('privacy');
     const scrollRef = useRef(null);
 
@@ -115,7 +117,7 @@ export default function TermsPrivacyScreen({ navigation }) {
 
     return (
         <View style={styles.safeArea}>
-            <ScreenHeader title="Terms & Privacy" onBack={() => navigation?.goBack()} />
+            <ScreenHeader title={t('sidebar.termsPrivacy')} onBack={() => navigation?.goBack()} />
 
             <View style={styles.container}>
                 {/* Tab Switcher */}

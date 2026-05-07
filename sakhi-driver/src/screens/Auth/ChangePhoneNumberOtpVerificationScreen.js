@@ -7,11 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
 export default function ChangePhoneNumberOtpVerificationScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { phone } = route.params ?? {};
   const { updateDriver } = useAuth();
 

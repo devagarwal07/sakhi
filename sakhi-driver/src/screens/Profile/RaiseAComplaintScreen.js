@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -87,6 +88,7 @@ const dd = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function RaiseAComplaintScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   // Pre-select from Help & Support quick-help cards
@@ -170,7 +172,7 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
         <View style={s.blobTR} />
         <View style={s.blobBL} />
 
-        <ScreenHeader title="Support" onBack={() => navigation?.goBack()} />
+        <ScreenHeader title={t('profile.support')} onBack={() => navigation?.goBack()} />
 
         {/* ── Scrollable body ── */}
         <ScrollView

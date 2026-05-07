@@ -78,6 +78,10 @@ export function AuthProvider({ children }) {
       setDriver(MOCK_DRIVER);
       setIsAuthenticated(true);
       setIsLoading(false);
+      // Still register FCM token so push notifications work during dev testing
+      registerForPushAsync().catch((e) =>
+        console.warn('[FCM] token registration failed (dev bypass):', e?.message)
+      );
       return;
     }
     try {

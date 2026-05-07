@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -183,6 +184,7 @@ const cr = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HelpSupportScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -206,7 +208,7 @@ export default function HelpSupportScreen({ navigation }) {
 
   return (
     <View style={s.root}>
-      <ScreenHeader title="Help & Support" onBack={() => navigation?.goBack()} />
+      <ScreenHeader title={t('sidebar.helpSupport')} onBack={() => navigation?.goBack()} />
 
       {/* ── Scroll body ── */}
       <ScrollView

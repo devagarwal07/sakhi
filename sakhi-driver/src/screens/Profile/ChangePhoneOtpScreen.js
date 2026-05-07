@@ -8,6 +8,7 @@ import { Phone, ShieldCheck, MessageSquare, ArrowRight, Delete } from 'lucide-re
 import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -105,6 +106,7 @@ const ob = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ChangePhoneOtpScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const insets           = useSafeAreaInsets();
   const { checkAuth }    = useAuth();
   const currentPhone     = route?.params?.current_phone ?? '+91 98765 43210';
@@ -202,7 +204,7 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
   return (
     <View style={s.root}>
 
-      <ScreenHeader title="Change Phone Number" onBack={() => navigation?.goBack()} />
+      <ScreenHeader title={t('auth.changePhoneNumber')} onBack={() => navigation?.goBack()} />
 
       {/* ── Scrollable content ── */}
       <ScrollView

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 const ICON_MAP = {
   ride_completed:   '🛺',
@@ -35,6 +36,7 @@ function NotifCard({ item }) {
 }
 
 export default function NotificationsScreen({ navigation }) {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
@@ -62,7 +64,7 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <View style={styles.safe}>
-      <ScreenHeader title="Notifications" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('sidebar.notifications')} onBack={() => navigation.goBack()} />
 
       {loading ? (
         <View style={[styles.loader, {}]}><ActivityIndicator size="large" color={Colors.primaryContainer} /></View>

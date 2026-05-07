@@ -8,26 +8,16 @@ import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
-
-// ── Period tabs ──────────────────────────────────────────────────────────────
-const PERIODS = [
-  { label: 'Today',     value: 'today'   },
-  { label: 'This Week', value: 'weekly'  },
-  { label: 'Monthly',   value: 'monthly' },
-  { label: 'All Time',  value: 'all'     },
-  { label: '📅 Custom', value: 'custom'  },
-];
-
-const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+import { useTranslation } from 'react-i18next';
 
 // ── Mini bar chart ───────────────────────────────────────────────────────────
-function BarChart({ bars = [], maxValue = 1 }) {
+function BarChart({ bars = [], maxValue = 1, days = [], bestDayLabel }) {
   const MAX_BAR_H = 96;
   return (
     <View style={chartStyles.wrap}>
       <View style={chartStyles.barsRow}>
-        {DAYS.map((day, i) => {
-          const val   = bars[i] ?? 0;
+        {days.map((day, i) => {
+          const val = bars[i] ?? 0;
           const ratio = maxValue > 0 ? val / maxValue : 0;
           const isMax = val === maxValue && val > 0;
           return (
@@ -51,7 +41,8 @@ function BarChart({ bars = [], maxValue = 1 }) {
       </View>
       {maxValue > 0 && (
         <Text style={chartStyles.bestDay}>
-          Best day this week: <Text style={{ color: Colors.primaryContainer, fontWeight: '800' }}>
+          {bestDayLabel}{' '}
+          <Text style={{ color: Colors.primaryContainer, fontWeight: '800' }}>
             ₹{maxValue}
           </Text>
         </Text>
@@ -81,22 +72,36 @@ const chartStyles = StyleSheet.create({
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 export default function MyEarningsDashboardScreen({ navigation }) {
-  const [period, setPeriod]         = useState('weekly');
-  const [data, setData]             = useState(null);
-  const [loading, setLoading]       = useState(true);
+  const { t } = useTranslation();
+  const [period, setPeriod] = useState('weekly');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [customStart,  setCustomStart]  = useState(null);
-  const [customEnd,    setCustomEnd]    = useState(null);
+  const [customStart, setCustomStart] = useState(null);
+  const [customEnd, setCustomEnd] = useState(null);
 
   const customTabLabel = () => {
-    if (!customStart) return '📅 Custom';
+    if (!customStart) return t('earnings.periodCustom');
     const fmt = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     if (customEnd && customEnd.getTime() !== customStart.getTime()) {
       return `${fmt(customStart)} – ${fmt(customEnd)}`;
     }
     return fmt(customStart);
   };
+
+  const daysShort = t('earnings.daysShort', { returnObjects: true });
+  const chartDays = Array.isArray(daysShort) && daysShort.length === 7
+    ? daysShort
+    : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  const periods = [
+    { label: t('earnings.periodToday'), value: 'today' },
+    { label: t('earnings.periodThisWeek'), value: 'weekly' },
+    { label: t('earnings.periodMonthly'), value: 'monthly' },
+    { label: t('earnings.periodAllTime'), value: 'all' },
+    { label: t('earnings.periodCustom'), value: 'custom' },
+  ];
 
   const fetchEarnings = useCallback(async (p = period, start = customStart, end = customEnd) => {
     try {
@@ -106,62 +111,62 @@ export default function MyEarningsDashboardScreen({ navigation }) {
         // { rides_completed, gross_earnings, net_earnings }
         const { data } = await client.get('/drivers/earnings/today');
         res = {
-          net_earnings:       data.net_earnings      ?? 0,
-          ride_count:         data.rides_completed   ?? 0,
-          average_rating:     0,      // not returned by this endpoint
-          days_online:        1,
-          take_home:          data.net_earnings      ?? 0,
-          platform_fee:       data.gross_earnings - data.net_earnings || 0,
-          daily_earnings:     [],
+          net_earnings: data.net_earnings ?? 0,
+          ride_count: data.rides_completed ?? 0,
+          average_rating: 0,      // not returned by this endpoint
+          days_online: 1,
+          take_home: data.net_earnings ?? 0,
+          platform_fee: data.gross_earnings - data.net_earnings || 0,
+          daily_earnings: [],
           pending_commission: 0,
         };
       } else if (p === 'weekly') {
         // { breakdown: [{ date, gross, commission, net, rides }] }
         const { data } = await client.get('/drivers/earnings/weekly');
         const breakdown = data.breakdown || [];
-        const totals    = breakdown.reduce(
+        const totals = breakdown.reduce(
           (acc, day) => ({
-            net:    acc.net    + day.net,
-            gross:  acc.gross  + day.gross,
-            rides:  acc.rides  + day.rides,
+            net: acc.net + day.net,
+            gross: acc.gross + day.gross,
+            rides: acc.rides + day.rides,
             commission: acc.commission + day.commission,
           }),
           { net: 0, gross: 0, rides: 0, commission: 0 }
         );
         // Build 7-bar array Mon..Sun aligned to current week
-        const today  = new Date();
-        const dow    = (today.getDay() + 6) % 7; // Mon=0
-        const bars   = Array(7).fill(0);
+        const today = new Date();
+        const dow = (today.getDay() + 6) % 7; // Mon=0
+        const bars = Array(7).fill(0);
         breakdown.forEach((d) => {
           const dayDate = new Date(d.date);
-          const diff    = Math.round((today - dayDate) / 86400000);
-          const idx     = dow - diff;
+          const diff = Math.round((today - dayDate) / 86400000);
+          const idx = dow - diff;
           if (idx >= 0 && idx < 7) bars[idx] = d.net;
         });
         res = {
-          net_earnings:       +totals.net.toFixed(2),
-          ride_count:         totals.rides,
-          average_rating:     0,
-          days_online:        breakdown.filter((d) => d.rides > 0).length,
-          take_home:          +totals.net.toFixed(2),
-          platform_fee:       +totals.commission.toFixed(2),
-          daily_earnings:     bars,
+          net_earnings: +totals.net.toFixed(2),
+          ride_count: totals.rides,
+          average_rating: 0,
+          days_online: breakdown.filter((d) => d.rides > 0).length,
+          take_home: +totals.net.toFixed(2),
+          platform_fee: +totals.commission.toFixed(2),
+          daily_earnings: bars,
           pending_commission: 0,
         };
       } else {
         // monthly / all / ledger → /drivers/earnings/ledger
         // { month, ledger, total_active_days, loyalty }
         const { data } = await client.get('/drivers/earnings/ledger');
-        const ledger   = data.ledger || [];
+        const ledger = data.ledger || [];
         const netTotal = ledger.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
         res = {
-          net_earnings:       +netTotal.toFixed(2),
-          ride_count:         ledger.length,
-          average_rating:     0,
-          days_online:        data.total_active_days ?? 0,
-          take_home:          +netTotal.toFixed(2),
-          platform_fee:       0,
-          daily_earnings:     [],
+          net_earnings: +netTotal.toFixed(2),
+          ride_count: ledger.length,
+          average_rating: 0,
+          days_online: data.total_active_days ?? 0,
+          take_home: +netTotal.toFixed(2),
+          platform_fee: 0,
+          daily_earnings: [],
           pending_commission: ledger.filter((l) => !l.paid).reduce((s, r) => s + parseFloat(r.amount || 0), 0),
         };
       }
@@ -180,153 +185,162 @@ export default function MyEarningsDashboardScreen({ navigation }) {
   const onRefresh = () => { setRefreshing(true); fetchEarnings(period); };
 
   // Derived values
-  const netEarnings  = data?.net_earnings ?? 0;
-  const rideCount    = data?.ride_count   ?? 0;
-  const avgRating    = data?.average_rating ?? 0;
-  const daysOnline   = data?.days_online  ?? 0;
-  const onDemand     = data?.on_demand    ?? 0;
+  const netEarnings = data?.net_earnings ?? 0;
+  const rideCount = data?.ride_count ?? 0;
+  const avgRating = data?.average_rating ?? 0;
+  const daysOnline = data?.days_online ?? 0;
+  const onDemand = data?.on_demand ?? 0;
   const subscription = data?.subscription ?? 0;
-  const waitCharges  = data?.wait_charges ?? 0;
-  const commission   = data?.platform_fee ?? 0;
-  const takeHome     = data?.take_home    ?? 0;
-  const dailyBars    = data?.daily_earnings ?? [480, 560, 320, 680, 520, 0, 0];
-  const maxBar       = Math.max(...dailyBars, 1);
-  const pendingComm  = data?.pending_commission ?? 0;
+  const waitCharges = data?.wait_charges ?? 0;
+  const commission = data?.platform_fee ?? 0;
+  const takeHome = data?.take_home ?? 0;
+  const dailyBars = data?.daily_earnings ?? [480, 560, 320, 680, 520, 0, 0];
+  const maxBar = Math.max(...dailyBars, 1);
+  const pendingComm = data?.pending_commission ?? 0;
 
   return (
     <>
-    <View style={styles.safe}>
-      <ScreenHeader title="My Earnings" onBack={() => navigation.goBack()} />
+      <View style={styles.safe}>
+        <ScreenHeader title={t('sidebar.myEarnings')} onBack={() => navigation.goBack()} />
 
-      <View style={[styles.tabsWrap, {}]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsRow}
-        >
-          {PERIODS.map((p) => {
-            const isActive = period === p.value;
-            const lbl = p.value === 'custom' ? customTabLabel() : p.label;
-            return (
-              <TouchableOpacity
-                key={p.value}
-                style={[styles.tab, isActive && styles.tabActive]}
-                onPress={() => {
-                  if (p.value === 'custom') { setShowCalendar(true); return; }
-                  setPeriod(p.value);
-                  setLoading(true);
-                  fetchEarnings(p.value, null, null);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                  {lbl}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <View style={[styles.tabsWrap, {}]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsRow}
+          >
+            {periods.map((p) => {
+              const isActive = period === p.value;
+              const lbl = p.value === 'custom' ? customTabLabel() : p.label;
+              return (
+                <TouchableOpacity
+                  key={p.value}
+                  style={[styles.tab, isActive && styles.tabActive]}
+                  onPress={() => {
+                    if (p.value === 'custom') { setShowCalendar(true); return; }
+                    setPeriod(p.value);
+                    setLoading(true);
+                    fetchEarnings(p.value, null, null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                    {lbl}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {loading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={Colors.primaryContainer} />
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
+          >
+            {/* Hero Card */}
+            <View style={styles.heroCard}>
+              <Text style={styles.heroLabel}>
+                {t('earnings.periodEarnings', {
+                  period: period === 'custom' && customStart
+                    ? customTabLabel()
+                    : (periods.find((p) => p.value === period)?.label ?? ''),
+                })}
+              </Text>
+              <Text style={styles.heroAmount}>₹{netEarnings.toLocaleString('en-IN')}</Text>
+              <View style={styles.heroMeta}>
+                <Text style={styles.metaItem}>{rideCount} {t('earnings.ridesLabel')}</Text>
+                <View style={styles.metaDot} />
+                <Text style={styles.metaItem}>{avgRating.toFixed(1)} ★ {t('earnings.avgLabel')}</Text>
+                <View style={styles.metaDot} />
+                <Text style={styles.metaItem}>{daysOnline} {t('earnings.daysOnlineLabel')}</Text>
+              </View>
+            </View>
+
+            {/* Bar Chart (weekly only) */}
+            {period === 'weekly' && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>{t('earnings.dailyEarnings')}</Text>
+                <BarChart
+                  bars={dailyBars}
+                  maxValue={maxBar}
+                  days={chartDays}
+                  bestDayLabel={t('earnings.bestDayThisWeek')}
+                />
+              </View>
+            )}
+
+            {/* Breakdown */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{t('earnings.breakdown')}</Text>
+              {[
+                { label: t('earnings.onDemandRides'), value: onDemand, sub: `${data?.on_demand_count ?? 0} ${t('earnings.ridesLabel')}`, accent: false },
+                { label: t('earnings.subscriptionRides'), value: subscription, sub: `${data?.subscription_count ?? 0} ${t('earnings.ridesLabel')}`, accent: true },
+                { label: t('earnings.waitingCharges'), value: waitCharges, sub: t('earnings.cumulative'), accent: false },
+              ].map((row) => (
+                <View key={row.label} style={styles.breakRow}>
+                  <View>
+                    <Text style={[styles.breakLabel, row.accent && styles.breakLabelAccent]}>{row.label}</Text>
+                    <Text style={styles.breakSub}>{row.sub}</Text>
+                  </View>
+                  <Text style={[styles.breakValue, row.accent && styles.breakValueAccent]}>
+                    ₹{row.value.toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              ))}
+
+              <View style={styles.divider} />
+              <View style={styles.breakRow}>
+                <Text style={styles.netLabel}>{t('earnings.netEarnings')}</Text>
+                <Text style={styles.netValue}>₹{netEarnings.toLocaleString('en-IN')}</Text>
+              </View>
+            </View>
+
+            {/* Commission summary */}
+            <View style={[styles.card, styles.cardLast]}>
+              <View style={styles.commRow}>
+                <Text style={styles.commLabel}>{t('earnings.platformFee')}</Text>
+                <Text style={styles.commFee}>₹{commission}</Text>
+              </View>
+              <View style={styles.commRow}>
+                <Text style={styles.takeHomeLabel}>{t('earnings.netTakeHome')}</Text>
+                <Text style={styles.takeHomeValue}>₹{takeHome.toLocaleString('en-IN')}</Text>
+              </View>
+              {pendingComm > 0 && (
+                <TouchableOpacity
+                  style={styles.payCommBtn}
+                  onPress={() => navigation.navigate('DailyCommissionPayment', { amount: pendingComm })}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.payCommText}>
+                    ⚠️  {t('earnings.payCommissionDue', { amount: pendingComm })}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </ScrollView>
+        )}
       </View>
 
-      {loading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={Colors.primaryContainer} />
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
-        >
-          {/* Hero Card */}
-          <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>
-              {period === 'custom' && customStart
-                ? customTabLabel()
-                : (PERIODS.find((p) => p.value === period)?.label ?? '')} Earnings
-            </Text>
-            <Text style={styles.heroAmount}>₹{netEarnings.toLocaleString('en-IN')}</Text>
-            <View style={styles.heroMeta}>
-              <Text style={styles.metaItem}>{rideCount} rides</Text>
-              <View style={styles.metaDot} />
-              <Text style={styles.metaItem}>{avgRating.toFixed(1)} ★ avg</Text>
-              <View style={styles.metaDot} />
-              <Text style={styles.metaItem}>{daysOnline} days online</Text>
-            </View>
-          </View>
-
-          {/* Bar Chart (weekly only) */}
-          {period === 'weekly' && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Daily Earnings</Text>
-              <BarChart bars={dailyBars} maxValue={maxBar} />
-            </View>
-          )}
-
-          {/* Breakdown */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Breakdown</Text>
-            {[
-              { label: 'On-Demand Rides',    value: onDemand,     sub: `${data?.on_demand_count ?? 0} rides`, accent: false },
-              { label: 'Subscription Rides', value: subscription, sub: `${data?.subscription_count ?? 0} rides`, accent: true  },
-              { label: 'Waiting Charges',    value: waitCharges,  sub: 'cumulative',                            accent: false },
-            ].map((row) => (
-              <View key={row.label} style={styles.breakRow}>
-                <View>
-                  <Text style={[styles.breakLabel, row.accent && styles.breakLabelAccent]}>{row.label}</Text>
-                  <Text style={styles.breakSub}>{row.sub}</Text>
-                </View>
-                <Text style={[styles.breakValue, row.accent && styles.breakValueAccent]}>
-                  ₹{row.value.toLocaleString('en-IN')}
-                </Text>
-              </View>
-            ))}
-
-            <View style={styles.divider} />
-            <View style={styles.breakRow}>
-              <Text style={styles.netLabel}>Net Earnings</Text>
-              <Text style={styles.netValue}>₹{netEarnings.toLocaleString('en-IN')}</Text>
-            </View>
-          </View>
-
-          {/* Commission summary */}
-          <View style={[styles.card, styles.cardLast]}>
-            <View style={styles.commRow}>
-              <Text style={styles.commLabel}>Platform Fee Deducted</Text>
-              <Text style={styles.commFee}>₹{commission}</Text>
-            </View>
-            <View style={styles.commRow}>
-              <Text style={styles.takeHomeLabel}>Net Take-Home</Text>
-              <Text style={styles.takeHomeValue}>₹{takeHome.toLocaleString('en-IN')}</Text>
-            </View>
-            {pendingComm > 0 && (
-              <TouchableOpacity
-                style={styles.payCommBtn}
-                onPress={() => navigation.navigate('DailyCommissionPayment', { amount: pendingComm })}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.payCommText}>⚠️  Pay ₹{pendingComm} Commission Due</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      )}
-    </View>
-
-    <SakhiDateRangePicker
-      visible={showCalendar}
-      onClose={() => setShowCalendar(false)}
-      initialStart={customStart}
-      initialEnd={customEnd}
-      onApply={(start, end) => {
-        setCustomStart(start);
-        setCustomEnd(end);
-        setPeriod('custom');
-        setShowCalendar(false);
-        setLoading(true);
-        fetchEarnings('custom', start, end);
-      }}
-    />
+      <SakhiDateRangePicker
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        initialStart={customStart}
+        initialEnd={customEnd}
+        onApply={(start, end) => {
+          setCustomStart(start);
+          setCustomEnd(end);
+          setPeriod('custom');
+          setShowCalendar(false);
+          setLoading(true);
+          fetchEarnings('custom', start, end);
+        }}
+      />
     </>
   );
 }

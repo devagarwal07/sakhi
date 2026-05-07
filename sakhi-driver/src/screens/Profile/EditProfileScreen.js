@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
 import SakhiModal from '../../components/SakhiModal';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
@@ -27,6 +28,7 @@ const LANGUAGES = [
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function EditProfileScreen({ navigation }) {
+  const { t } = useTranslation();
   const { driver, checkAuth } = useAuth();
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);

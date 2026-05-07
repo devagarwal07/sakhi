@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerSOS } from '../../api/endpoints';
+import { useTranslation } from 'react-i18next';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED    = '#DC2626';
@@ -24,6 +25,7 @@ const COUNTDOWN_SECS = 5;
  *   location   { latitude, longitude } — driver's current GPS coords
  */
 export default function SOSWarningScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const insets  = useSafeAreaInsets();
   const { location } = route.params ?? {};
 

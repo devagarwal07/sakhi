@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const REWARDS = [
     { icon: '🎉', who: 'You Earn', value: '₹200', desc: 'For every driver who completes 10 rides using your code' },
@@ -19,6 +20,7 @@ const HOW = [
 ];
 
 export default function DriverReferralsScreen({ navigation }) {
+  const { t } = useTranslation();
     const { driver } = useAuth();
     const insets = useSafeAreaInsets();
     const referralCode = driver?.referral_code ?? `DRV${(driver?.phone ?? '').slice(-4).padStart(4, '0')}`;

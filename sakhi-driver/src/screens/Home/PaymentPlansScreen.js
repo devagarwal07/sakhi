@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 const PLANS = [
   {
@@ -27,6 +28,7 @@ const PLANS = [
 ];
 
 export default function PaymentPlansScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { updateDriver } = useAuth();
   const [selected, setSelected]   = useState('weekly');
@@ -43,7 +45,7 @@ export default function PaymentPlansScreen({ navigation }) {
   return (
     <View style={s.root}>
       <StatusBar style="dark" />
-      <ScreenHeader title="Payment Plans" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('home.paymentPlans')} onBack={() => navigation.goBack()} />
 
       {/* ── SCROLLABLE CONTENT ── */}
       <ScrollView

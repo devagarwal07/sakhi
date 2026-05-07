@@ -1,37 +1,43 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Animated, Dimensions, TouchableWithoutFeedback, Image,
+  Animated, Dimensions, TouchableWithoutFeedback, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import MonogramAvatar from './MonogramAvatar';
+import LanguageSwitcher from './LanguageSwitcher';
 
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const SIDEBAR_W = 293;
 
-const MENU_ITEMS = [
-  { id: 'DriverHome',              label: 'Home',               iconName: 'home',                  iconType: 'feather' },
-  { id: 'DailyCommissionPayment',  label: 'Pay Commission',     iconName: 'cash-multiple',         iconType: 'materialCommunity' },
-  { id: 'RideHistory',             label: 'Ride History',       iconName: 'history',               iconType: 'materialCommunity' },
-  { id: 'SubscriptionRides',       label: 'Subscription Rides', iconName: 'rickshaw',              iconType: 'materialCommunity' },
-  { id: 'MyEarnings',              label: 'Earnings',           iconName: 'wallet-outline',        iconType: 'materialCommunity' },
-  { id: 'MyDocuments',             label: 'My Documents',       iconName: 'file-document-outline', iconType: 'materialCommunity' },
-  { id: 'Notifications',           label: 'Notifications',      iconName: 'bell-outline',          iconType: 'materialCommunity', badge: '3' },
-  { id: 'MyProfile',               label: 'My Profile',         iconName: 'account-outline',       iconType: 'materialCommunity' },
-  { id: 'DriverReferrals',         label: 'Referrals & Rewards',iconName: 'gift-outline',          iconType: 'materialCommunity' },
+const MENU_ITEMS_CONFIG = [
+  { id: 'DriverHome',              labelKey: 'sidebar.home',              iconName: 'home',                  iconType: 'feather' },
+  { id: 'DailyCommissionPayment',  labelKey: 'sidebar.payCommission',     iconName: 'cash-multiple',         iconType: 'materialCommunity' },
+  { id: 'RideHistory',             labelKey: 'sidebar.rideHistory',       iconName: 'history',               iconType: 'materialCommunity' },
+  { id: 'SubscriptionRides',       labelKey: 'sidebar.subscriptionRides', iconName: 'rickshaw',              iconType: 'materialCommunity' },
+  { id: 'MyEarnings',              labelKey: 'sidebar.myEarnings',        iconName: 'wallet-outline',        iconType: 'materialCommunity' },
+  { id: 'MyDocuments',             labelKey: 'sidebar.myDocuments',       iconName: 'file-document-outline', iconType: 'materialCommunity' },
+  { id: 'Notifications',           labelKey: 'sidebar.notifications',     iconName: 'bell-outline',          iconType: 'materialCommunity', badge: '3' },
+  { id: 'MyProfile',               labelKey: 'sidebar.myProfile',         iconName: 'account-outline',       iconType: 'materialCommunity' },
+  { id: 'DriverReferrals',         labelKey: 'sidebar.referralsRewards',  iconName: 'gift-outline',          iconType: 'materialCommunity' },
 ];
 
-const SECONDARY_MENU_ITEMS = [
-  { id: 'HelpSupport',          label: 'Help & Support',   iconName: 'help-circle-outline',   iconType: 'materialCommunity' },
-  { id: 'TermsAndPrivacy',      label: 'Terms & Privacy',  iconName: 'shield-check-outline',  iconType: 'materialCommunity' },
-  { id: 'AboutSakhi',          label: 'About Sakhi',      iconName: 'information-outline',   iconType: 'materialCommunity' },
+const SECONDARY_MENU_CONFIG = [
+  { id: 'HelpSupport',          labelKey: 'sidebar.helpSupport',    iconName: 'help-circle-outline',   iconType: 'materialCommunity' },
+  { id: 'TermsAndPrivacy',      labelKey: 'sidebar.termsPrivacy',   iconName: 'shield-check-outline',  iconType: 'materialCommunity' },
+  { id: 'AboutSakhi',           labelKey: 'sidebar.aboutSakhi',     iconName: 'information-outline',   iconType: 'materialCommunity' },
 ];
 
 export default function DriverSidebarMenu({ navigation, onClose, activeRoute = 'Home' }) {
   const { driver } = useAuth();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [showLang, setShowLang] = useState(false);
+
+  const currentLangLabel = i18n.language === 'kn' ? 'ಕನ್ನಡ' : 'EN';
   
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_W)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +73,11 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
     return <MaterialIcons name={name} size={size} color={color} />;
   };
 
+  // Fixed header height estimate — used to compute the scroll area height
+  const headerH  = Math.max(insets.top, 24) + 24 + 72 + 16 + 60; // paddingTop + paddingBottom + avatar + gap + driverInfo
+  const footerH  = Math.max(insets.bottom, 24) + 16 + 56 + 1 + 52 + 16; // paddingBottom + paddingTop + langBtn + divider + logoutBtn + footerBorder
+  const scrollH  = SCREEN_H - headerH - footerH;
+
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
       {/* Overlay Background */}
@@ -76,11 +87,11 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
 
       {/* Sidebar Drawer */}
       <Animated.View style={[
-        styles.sidebar, 
+        styles.sidebar,
         { transform: [{ translateX: slideAnim }] }
       ]}>
-        
-        {/* Header / Profile */}
+
+        {/* Header / Profile — fixed, does NOT scroll */}
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 24) }]}>
           <View style={styles.avatarMainBox}>
             <MonogramAvatar
@@ -93,14 +104,14 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
               <Feather name="check" size={10} color="#fff" />
             </View>
           </View>
-          
+
           <View style={styles.driverInfoBlock}>
             <Text style={styles.driverName}>
               {driver?.name ?? [driver?.first_name, driver?.last_name].filter(Boolean).join(' ') ?? 'Driver'}
             </Text>
-            
+
             <View style={styles.verifiedRow}>
-              <Text style={styles.verifiedText}>Verified Driver</Text>
+              <Text style={styles.verifiedText}>{t('sidebar.verifiedDriver')}</Text>
               <View style={styles.bulletDot} />
               <View style={styles.ratingBox}>
                 <MaterialCommunityIcons name="star-outline" size={12} color="#BEA3D8" />
@@ -109,22 +120,27 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
             </View>
 
             <Text style={styles.vehicleText}>
-              Vehicle: {driver?.vehicle_number ?? 'KA-01-EF-1234'}
+              {t('sidebar.vehicle')}: {driver?.vehicle_number ?? 'KA-01-EF-1234'}
             </Text>
           </View>
         </View>
 
-        {/* Menu Items */}
-        <Animated.ScrollView 
-          style={styles.menuScroll} 
+        {/* Scrollable Menu — explicit height so ScrollView knows its bounds */}
+        <ScrollView
+          style={[styles.menuScroll, { height: scrollH }]}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 16 }}
+          contentContainerStyle={styles.menuContent}
+          bounces={false}
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled
         >
-          {MENU_ITEMS.map((item) => {
+          {MENU_ITEMS_CONFIG.map((item) => {
             const isActive = activeRoute === item.id;
-            const fgColor = isActive ? '#590DA2' : '#475569';
-            const iconBg = isActive ? '#FFFFFF' : '#F5F3FF';
+            const fgColor  = isActive ? '#590DA2' : '#475569';
+            const iconBg   = isActive ? '#FFFFFF'  : '#F5F3FF';
             const iconColor = isActive ? '#590DA2' : '#BEA3D8';
+            const label    = t(item.labelKey);
 
             return (
               <TouchableOpacity
@@ -137,28 +153,28 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
                   {renderIcon(item.iconName, item.iconType, iconColor, isActive ? 18 : 20)}
                 </View>
                 <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
-                  {item.label}
+                  {label}
                 </Text>
-                
+
                 {item.badge && (
                   <View style={styles.badgeWrap}>
                     <Text style={styles.badgeText}>{item.badge}</Text>
                   </View>
                 )}
-                
-                <Feather 
-                  name="chevron-right" 
-                  size={16} 
-                  color={fgColor} 
-                  style={{ opacity: isActive ? 0.5 : 0.3, marginLeft: item.badge ? 8 : 'auto' }} 
+
+                <Feather
+                  name="chevron-right"
+                  size={16}
+                  color={fgColor}
+                  style={{ opacity: isActive ? 0.5 : 0.3, marginLeft: item.badge ? 8 : 'auto' }}
                 />
               </TouchableOpacity>
-            )
+            );
           })}
 
           <View style={styles.divider} />
 
-          {SECONDARY_MENU_ITEMS.map((item) => (
+          {SECONDARY_MENU_CONFIG.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.menuItem}
@@ -169,32 +185,52 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
                 {renderIcon(item.iconName, item.iconType, '#BEA3D8', 20)}
               </View>
               <Text style={styles.menuLabel}>
-                {item.label}
+                {t(item.labelKey)}
               </Text>
-              <Feather 
-                name="chevron-right" 
-                size={16} 
-                color="#475569" 
-                style={{ opacity: 0.3, marginLeft: 'auto' }} 
+              <Feather
+                name="chevron-right"
+                size={16}
+                color="#475569"
+                style={{ opacity: 0.3, marginLeft: 'auto' }}
               />
             </TouchableOpacity>
           ))}
-        </Animated.ScrollView>
+        </ScrollView>
 
-        {/* Footer / Logout */}
+        {/* Footer — fixed at bottom, does NOT scroll */}
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-          <TouchableOpacity 
+          {/* Language selector */}
+          <TouchableOpacity
+            style={styles.langBtn}
+            onPress={() => setShowLang(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.langIconWrap}>
+              <Text style={styles.langIcon}>🌐</Text>
+            </View>
+            <Text style={styles.langBtnText}>{t('sidebar.language')}</Text>
+            <View style={styles.langPill}>
+              <Text style={styles.langPillText}>{currentLangLabel}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.footerDivider} />
+
+          <TouchableOpacity
             style={styles.logoutBtn}
             onPress={() => handleNav('LogoutConfirmation')}
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="logout" size={20} color="#BA1A1A" />
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t('sidebar.logOut')}</Text>
           </TouchableOpacity>
           <View style={styles.footerBorder} />
         </View>
 
       </Animated.View>
+
+      {/* Language Switcher Modal — outside sidebar so it isn't clipped */}
+      <LanguageSwitcher visible={showLang} onClose={() => setShowLang(false)} />
     </View>
   );
 }
@@ -218,7 +254,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 32,
     elevation: 8,
-    overflow: 'hidden',
+    // NO overflow:hidden — was clipping the Modal
+    // flexDirection column is default, no need to set
   },
 
   // -- HEADER --
@@ -301,8 +338,11 @@ const styles = StyleSheet.create({
 
   // -- MENU LIST --
   menuScroll: {
-    flex: 1,
+    // height is set dynamically via inline style
     paddingHorizontal: 8,
+  },
+  menuContent: {
+    paddingVertical: 16,
   },
   menuItem: {
     flexDirection: 'row',
@@ -368,6 +408,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     paddingTop: 16,
     paddingHorizontal: 24,
+  },
+  langBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  langIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F0FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langIcon: { fontSize: 20 },
+  langBtnText: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    color: '#475569',
+  },
+  langPill: {
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(190,163,216,0.4)',
+  },
+  langPillText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 11,
+    color: '#5B21B6',
+  },
+  footerDivider: {
+    height: 1,
+    backgroundColor: '#EDE9FE',
+    marginVertical: 8,
   },
   logoutBtn: {
     flexDirection: 'row',

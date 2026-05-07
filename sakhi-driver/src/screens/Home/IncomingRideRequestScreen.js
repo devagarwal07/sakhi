@@ -10,6 +10,7 @@ import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-ico
 import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -21,7 +22,7 @@ const THEME = {
     accentColor: '#BEA3D8',
     accentDark:  '#7C3AED',
     icon:        'bell-ring',
-    headerTitle: 'New Ride Request',
+    titleKey:    'ride.newRideRequest',
     pulseIconBg: 'rgba(190,163,216,0.2)',
   },
   subscription: {
@@ -30,7 +31,7 @@ const THEME = {
     accentColor: '#D97706',
     accentDark:  '#92400E',
     icon:        'calendar-clock',
-    headerTitle: 'Subscription Request',
+    titleKey:    'ride.subscriptionRequest',
     pulseIconBg: 'rgba(217,119,6,0.15)',
   },
 };
@@ -38,6 +39,7 @@ const THEME = {
 export default function IncomingRideRequestScreen({ navigationRef }) {
   const { incomingRide, acceptRide, rejectRide, clearIncomingRide, snoozeRide } = useSocket();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const bellPulse  = useRef(new Animated.Value(1)).current;
   const slideUp    = useRef(new Animated.Value(SCREEN_H)).current;
@@ -96,7 +98,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
         navigationRef.navigate('EnRouteToPickup', { ride: incomingRide });
       }
     } catch (err) {
-      Alert.alert('Oops', err.message ?? 'Could not accept ride.');
+      Alert.alert('Oops', err.message ?? t('ride.couldNotAccept'));
       setAccepting(false);
     }
   };
@@ -140,7 +142,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
 
   const pickup_coords  = normaliseCoord(incomingRide.pickup_coords);
   const dropoff_coords = normaliseCoord(incomingRide.dropoff_coords);
-  const displayDropAddress = dropoff_address || drop_address || 'Destination';
+  const displayDropAddress = dropoff_address || drop_address || t('ride.destination');
 
   const mapRegion = {
     latitude:      (pickup_coords.latitude  + dropoff_coords.latitude)  / 2,
@@ -180,7 +182,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
           <Feather name="menu" size={24} color={theme.accentColor} />
         </TouchableOpacity>
         <Text style={[s.topAppTitle, { color: isSubscription ? '#92400E' : '#0F172A' }]}>
-          {theme.headerTitle}
+          {t(theme.titleKey)}
         </Text>
         <TouchableOpacity style={s.iconBtn}>
           <MaterialCommunityIcons name="history" size={24} color={theme.accentColor} />
@@ -199,8 +201,8 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               <View style={s.subHeaderLeft}>
                 <MaterialCommunityIcons name="calendar-repeat" size={22} color="#92400E" />
                 <View>
-                  <Text style={s.subHeaderBadge}>📅 SUBSCRIPTION REQUEST</Text>
-                  <Text style={s.subHeaderNote}>Not a regular ride — recurring weekly commitment</Text>
+                  <Text style={s.subHeaderBadge}>{t('ride.subscriptionBadge')}</Text>
+                  <Text style={s.subHeaderNote}>{t('ride.notRegularRide')}</Text>
                 </View>
               </View>
             </View>
@@ -210,7 +212,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
             <View style={s.subBanner}>
               <MaterialCommunityIcons name="repeat" size={14} color="#92400E" />
               <Text style={s.subBannerText}>
-                Recurring ride{schedule_label ? ` · ${schedule_label}` : ''} — This rider books every week
+                {t('ride.recurringRide', { schedule: schedule_label ? ` · ${schedule_label}` : '' })}
               </Text>
             </View>
           )}
@@ -231,12 +233,12 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               </Text>
             </View>
             <Text style={[s.pulseTitle, { color: isSubscription ? '#92400E' : '#1E1B2E' }]}>
-              {isSubscription ? 'Subscription Request' : 'New Ride Request'}
+            {t(isSubscription ? 'ride.subscriptionRequest' : 'ride.newRideRequest')}
             </Text>
             {/* Night fare badge */}
             {is_night_fare && (
               <View style={s.nightBadge}>
-                <Text style={s.nightBadgeText}>🌙 Night Fare (1.5×)</Text>
+                <Text style={s.nightBadgeText}>{t('ride.nightFare')}</Text>
               </View>
             )}
           </View>
@@ -272,11 +274,11 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               </View>
               <View style={s.routeTexts}>
                 <View style={s.routeStop}>
-                  <Text style={s.routeLabel}>PICKUP</Text>
+                  <Text style={s.routeLabel}>{t('ride.pickup')}</Text>
                   <Text style={s.routeAddress} numberOfLines={1}>{pickup_address}</Text>
                 </View>
                 <View style={s.routeStop}>
-                  <Text style={s.routeLabel}>DROP-OFF</Text>
+                  <Text style={s.routeLabel}>{t('ride.dropOff')}</Text>
                   <Text style={s.routeAddress} numberOfLines={1}>{displayDropAddress}</Text>
                 </View>
               </View>
@@ -286,16 +288,16 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
             <View style={s.tripStatsRow}>
               <View style={s.statBox}>
                 <Feather name="git-commit" size={16} color="#1E1B2E" style={{ transform: [{ rotate: '90deg' }] }} />
-                <Text style={s.statText}>{distance_to_pickup_km} km to pickup</Text>
+                <Text style={s.statText}>{t('ride.kmToPickup', { dist: distance_to_pickup_km })}</Text>
               </View>
               <View style={s.statBox}>
                 <Feather name="clock" size={16} color="#1E1B2E" />
-                <Text style={s.statText}>ETA ~{eta_to_pickup_min} min</Text>
+                <Text style={s.statText}>{t('ride.etaMin', { min: eta_to_pickup_min })}</Text>
               </View>
               {distance_km && (
                 <View style={s.statBox}>
                   <Feather name="map" size={16} color="#1E1B2E" />
-                  <Text style={s.statText}>{distance_km} km trip</Text>
+                  <Text style={s.statText}>{t('ride.kmTrip', { dist: distance_km })}</Text>
                 </View>
               )}
             </View>
@@ -308,7 +310,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
             disabled={accepting || snoozing}
             activeOpacity={0.8}
           >
-            <Text style={s.acceptBtnText}>{accepting ? 'Accepting...' : 'Accept'}</Text>
+            <Text style={s.acceptBtnText}>{accepting ? t('common.accepting') : t('common.accept')}</Text>
           </TouchableOpacity>
 
           {/* Secondary: See Later (sub) or Decline (regular) */}
@@ -321,8 +323,8 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
             >
               <MaterialCommunityIcons name="clock-outline" size={16} color="#92400E" />
               <View>
-                <Text style={s.seeLaterBtnText}>{snoozing ? 'Noted...' : 'See Later'}</Text>
-                <Text style={s.seeLaterBtnSub}>Remind me when I go online again</Text>
+                <Text style={s.seeLaterBtnText}>{snoozing ? t('ride.noted') : t('ride.seeLater')}</Text>
+                <Text style={s.seeLaterBtnSub}>{t('ride.seeLaterSub')}</Text>
               </View>
             </TouchableOpacity>
           ) : (
@@ -332,7 +334,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               disabled={accepting}
               activeOpacity={0.7}
             >
-              <Text style={s.declineBtnText}>Decline</Text>
+              <Text style={s.declineBtnText}>{t('common.decline')}</Text>
             </TouchableOpacity>
           )}
 

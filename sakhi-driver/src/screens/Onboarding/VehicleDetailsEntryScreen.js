@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const VEHICLE_TYPES = [
   { id: 'auto',       label: 'Auto' },
@@ -22,6 +23,7 @@ const VEHICLE_COLORS = [
 ];
 
 export default function VehicleDetailsEntryScreen({ navigation }) {
+  const { t } = useTranslation();
   const { updateDriver } = useAuth();
   const [vehicleType, setVehicleType] = useState('auto');
   const [regNumber, setRegNumber]     = useState('');

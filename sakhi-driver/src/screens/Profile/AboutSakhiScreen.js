@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const BG      = '#F5F0FF';
@@ -287,6 +288,7 @@ const leg = StyleSheet.create({
 
 // ─── MAIN SCREEN ───────────────────────────────────────────────────────────────
 export default function AboutSakhiScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const handleRate = () => {
@@ -299,7 +301,7 @@ export default function AboutSakhiScreen({ navigation }) {
     <View style={s.root}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <ScreenHeader title="About Sakhi" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('sidebar.aboutSakhi')} onBack={() => navigation.goBack()} />
 
       {/* ── Scrollable Content ──────────────────────────────────────────────── */}
       <ScrollView

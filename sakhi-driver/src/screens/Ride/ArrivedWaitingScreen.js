@@ -11,6 +11,7 @@ import { useSocket } from '../../context/SocketContext';
 import { patchRideStatus } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
+import { useTranslation } from 'react-i18next';
 
 const FREE_WAIT_SECONDS = 180; // 3 minutes free waiting
 
@@ -21,6 +22,7 @@ const MAP_STYLE = [
 ];
 
 export default function ArrivedWaitingScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { ride } = route.params ?? {};
   const rideId = ride?.ride_id ?? ride?.id;
   const { emit } = useSocket();

@@ -5,8 +5,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function AccountApprovedScreen({ navigation }) {
+  const { t } = useTranslation();
   const { driver } = useAuth();
   const scale = useRef(new Animated.Value(0.5)).current;
   const glow = useRef(new Animated.Value(0)).current;

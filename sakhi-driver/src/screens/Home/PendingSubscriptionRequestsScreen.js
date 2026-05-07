@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -43,6 +44,7 @@ function RequestRow({ item, onAccept }) {
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function PendingSubscriptionRequestsScreen({ onGoOffline, onDismiss }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { pendingSubRequests, clearPendingSubRequests, acceptRide, clearIncomingRide } = useSocket();
 

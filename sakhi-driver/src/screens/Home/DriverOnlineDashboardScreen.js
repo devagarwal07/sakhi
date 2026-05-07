@@ -14,6 +14,7 @@ import { useSocket } from '../../context/SocketContext';
 import client from '../../api/client';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -36,6 +37,7 @@ function getTierColor(tier) {
 
 export default function DriverOnlineDashboardScreen({ navigation }) {
   const { driver } = useAuth();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -79,9 +81,9 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
             </View>
           </TouchableOpacity>
           <View style={s.headerTextCol}>
-            <Text style={s.greeting}>Hi, Sakhi </Text>
+            <Text style={s.greeting}>{t('home.greeting')} </Text>
             <Text style={[s.tier, { color: getTierColor(driver?.tier) }]}>
-              {(driver?.tier || 'GOLD').toUpperCase()} TIER DRIVER
+              {(driver?.tier || 'GOLD').toUpperCase()} {t('home.tierDriver')}
             </Text>
           </View>
         </View>
@@ -100,7 +102,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         <View style={s.earningsCard}>
           <View style={s.earningsTop}>
             <View style={s.earningsTextCol}>
-              <Text style={s.earningsLabel}>Today's Earnings</Text>
+              <Text style={s.earningsLabel}>{t('home.todaysEarnings')}</Text>
               {earnings.today === null ? (
                 <View style={s.earningsSkeleton} />
               ) : (
@@ -118,11 +120,11 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
 
           <View style={s.earningsStatsRow}>
             <View style={s.statBox}>
-              <Text style={s.statLabel}>Completed</Text>
-              <Text style={s.statValue}>{earnings.trips} Rides</Text>
+              <Text style={s.statLabel}>{t('home.completed')}</Text>
+              <Text style={s.statValue}>{earnings.trips} {t('home.ridesCount')}</Text>
             </View>
             <View style={s.statBox}>
-              <Text style={s.statLabel}>Online Time</Text>
+              <Text style={s.statLabel}>{t('home.onlineTime')}</Text>
               <Text style={s.statValue}>
                 {earnings.onlineMinutes > 0
                   ? `${Math.floor(earnings.onlineMinutes / 60)}h ${earnings.onlineMinutes % 60}m`
@@ -130,7 +132,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
               </Text>
             </View>
             <TouchableOpacity style={s.detailsBtn} onPress={() => navigation.navigate('MyEarnings')}>
-              <Text style={s.detailsText}>Details</Text>
+              <Text style={s.detailsText}>{t('home.details')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -144,12 +146,12 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
             activeOpacity={0.8}
           >
             <Feather name="power" size={44} color="#FFF" />
-            <Text style={s.goOnlineText}>GO ONLINE</Text>
+            <Text style={s.goOnlineText}>{t('home.goOnline').toUpperCase()}</Text>
           </TouchableOpacity>
 
           <View style={s.offlineTextCol}>
-            <Text style={s.offlineTitle}>You are currently offline</Text>
-            <Text style={s.offlineSub}>Go online to start receiving ride requests</Text>
+            <Text style={s.offlineTitle}>{t('home.currentlyOffline')}</Text>
+            <Text style={s.offlineSub}>{t('home.goOnlineToReceive')}</Text>
           </View>
         </View>
 
@@ -159,21 +161,21 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
             <View style={s.qaIconWrap}>
               <Feather name="truck" size={18} color={PURPLE} />
             </View>
-            <Text style={s.qaLabel}>My Rides</Text>
+            <Text style={s.qaLabel}>{t('home.myRides')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.qaCard} onPress={() => navigation.navigate('MyEarnings')}>
             <View style={s.qaIconWrap}>
               <MaterialIcons name="account-balance-wallet" size={20} color={PURPLE} />
             </View>
-            <Text style={s.qaLabel}>Earnings</Text>
+            <Text style={s.qaLabel}>{t('nav.earnings')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.qaCard} onPress={() => navigation.navigate('PaymentPlans')}>
             <View style={s.qaIconWrap}>
               <Feather name="tag" size={18} color={PURPLE} />
             </View>
-            <Text style={s.qaLabel}>Subscription</Text>
+            <Text style={s.qaLabel}>{t('home.subscription')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -181,7 +183,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         <View style={s.demandCard}>
           <View style={s.demandHeader}>
             <Feather name="zap" size={14} color="#BEA3D8" />
-            <Text style={s.demandTitle}>Demand Zones Near You</Text>
+            <Text style={s.demandTitle}>{t('home.demandZones')}</Text>
           </View>
           <View style={s.demandZonesRow}>
             <View style={s.demandZone}>
@@ -211,7 +213,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
               <Text style={s.demandBarLabel}>Suburbs</Text>
             </View>
           </View>
-          <Text style={s.demandFooter}>Go online to see live surge zones on the map</Text>
+          <Text style={s.demandFooter}>{t('home.goOnlineSurge')}</Text>
         </View>
 
 

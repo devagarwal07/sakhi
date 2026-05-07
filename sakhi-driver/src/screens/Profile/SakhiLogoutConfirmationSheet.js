@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TriangleAlert } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // ─── Tokens ────────────────────────────────────────────────────────────────────
 const WHITE   = '#FFFFFF';
@@ -29,6 +30,7 @@ const WARN_TEXT = '#C2410C';   // deep orange
 const WARN_ICO  = '#F97316';   // vivid orange
 
 export default function SakhiLogoutConfirmationSheet({ navigation }) {
+  const { t } = useTranslation();
   const { logout, driver } = useAuth();
   const insets = useSafeAreaInsets();
 

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import client from '../../api/client';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -110,6 +111,7 @@ function HelpIcon() {
 }
 
 export default function MyDocumentsScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [docs,             setDocs]             = useState(MOCK_DOCS);
@@ -179,7 +181,7 @@ export default function MyDocumentsScreen({ navigation }) {
     <View style={styles.root}>
       {/* ── Header ── */}
       <ScreenHeader
-        title="Documents"
+        title={t('profile.documents')}
         onBack={() => navigation.goBack()}
         rightSlot={<HelpIcon />}
       />

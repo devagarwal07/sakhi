@@ -13,6 +13,7 @@ import { patchRideStatus } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
+import { useTranslation } from 'react-i18next';
 
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
@@ -28,6 +29,7 @@ export default function TripInProgressScreen({ navigation, route }) {
   const { emit, on, off, incomingRide, acceptRide, rejectRide } = useSocket();
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [myLocation, setMyLocation]       = useState(null);
   const [completing, setCompleting]       = useState(false);
@@ -267,7 +269,7 @@ export default function TripInProgressScreen({ navigation, route }) {
                 {ride?.rider_name || 'Priya S.'}
               </Text>
               <View style={s.tripStatusPill}>
-                <Text style={s.tripStatusText}>TRIP IN PROGRESS</Text>
+                <Text style={s.tripStatusText}>{t('ride.tripInProgress')}</Text>
               </View>
             </View>
           </View>
@@ -283,7 +285,7 @@ export default function TripInProgressScreen({ navigation, route }) {
               <MaterialIcons name="location-on" size={20} color="#BEA3D8" />
             </View>
             <View style={s.destTextBox}>
-              <Text style={s.destLabel}>DESTINATION</Text>
+              <Text style={s.destLabel}>{t('ride.destination')}</Text>
               <Text style={s.destAddress} numberOfLines={1} ellipsizeMode="tail">
                 {ride?.dropoff_address || 'MG Road Metro Station'}
               </Text>
@@ -300,7 +302,7 @@ export default function TripInProgressScreen({ navigation, route }) {
         >
           {completing
             ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={s.primaryBtnText}>Complete Trip</Text>
+            : <Text style={s.primaryBtnText}>{t('ride.completeTrip')}</Text>
           }
         </TouchableOpacity>
 
@@ -359,7 +361,7 @@ export default function TripInProgressScreen({ navigation, route }) {
         <View style={s.nextRideActions}>
           <TouchableOpacity style={s.declineBtn} onPress={handleDeclineNextRide} activeOpacity={0.8}>
             <Feather name="x" size={20} color="#BA1A1A" />
-            <Text style={s.declineBtnText}>Decline</Text>
+            <Text style={s.declineBtnText}>{t('common.decline')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.acceptBtn} onPress={handleAcceptNextRide} activeOpacity={0.85}>
             <Feather name="check" size={20} color="#FFFFFF" />

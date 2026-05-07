@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { verifyDriverDL, verifyDriverRC } from '../../api/endpoints';
+import { useTranslation } from 'react-i18next';
 
 // Verification steps shown to the driver during auto-check
 const STEPS = [
@@ -14,6 +15,7 @@ const STEPS = [
 ];
 
 export default function DriverVerificationLoadingScreen({ navigation }) {
+  const { t } = useTranslation();
   const spin  = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
   const [stepIdx, setStepIdx] = useState(0);

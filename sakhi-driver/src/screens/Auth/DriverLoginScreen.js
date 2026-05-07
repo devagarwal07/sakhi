@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import client from '../../api/client';
 
 const { width } = Dimensions.get('window');
 
 export default function DriverLoginScreen({ navigation }) {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +46,7 @@ export default function DriverLoginScreen({ navigation }) {
       {/* ── Top Bar ── */}
       <View style={styles.topBar}>
         <View style={{ width: 36 }} />
-        <Text style={styles.topBarTitle}>Sakhi Driver</Text>
+        <Text style={styles.topBarTitle}>{t('auth.sakhiDriver')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -68,9 +70,9 @@ export default function DriverLoginScreen({ navigation }) {
 
           {/* ── Header Text ── */}
           <View style={styles.headerText}>
-            <Text style={styles.heading}>Welcome, Sakhi</Text>
+            <Text style={styles.heading}>{t('auth.welcomeSakhi')}</Text>
             <Text style={styles.subheading}>
-              Log in or register to start driving with Sakhi
+              {t('auth.loginRegister')}
             </Text>
           </View>
 
@@ -84,7 +86,7 @@ export default function DriverLoginScreen({ navigation }) {
             <View style={styles.inputDivider} />
             <TextInput
               style={styles.phoneInput}
-              placeholder="Phone number"
+              placeholder={t('auth.phoneNumber')}
               placeholderTextColor="rgba(123,116,135,0.5)"
               keyboardType="phone-pad"
               maxLength={10}
@@ -104,23 +106,23 @@ export default function DriverLoginScreen({ navigation }) {
           >
             {loading
               ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.ctaText}>Send OTP via SMS  ›</Text>
+              : <Text style={styles.ctaText}>{t('auth.sendOtp')}</Text>
             }
           </TouchableOpacity>
 
           {/* ── Divider ── */}
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>VERIFICATION</Text>
+            <Text style={styles.dividerLabel}>{t('auth.verification')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* ── Footer ── */}
           <Text style={styles.footer}>
             By continuing, you agree to our{' '}
-            <Text style={styles.footerLink}>Terms of Service</Text>
+            <Text style={styles.footerLink}>{t('auth.termsOfService')}</Text>
             {' & '}
-            <Text style={styles.footerLink}>Privacy Policy</Text>
+            <Text style={styles.footerLink}>{t('auth.privacyPolicy')}</Text>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

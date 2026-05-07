@@ -8,10 +8,12 @@ import {
   Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
 export default function DriverSplashScreen({ navigation }) {
+  const { t } = useTranslation();
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const contentScale   = useRef(new Animated.Value(0.92)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;

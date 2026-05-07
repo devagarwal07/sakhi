@@ -12,6 +12,7 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import {
   ArrowLeft, Pencil, Trash2, Plus, PiggyBank, Smartphone, Building2, Info,
 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 // ─── Brand colours (local shorthand) ─────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -141,6 +142,7 @@ const BANK_FIELDS = [
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PaymentDetailsScreen({ navigation }) {
+  const { t } = useTranslation();
   const [upiList,  setUpiList]  = useState(SEED_UPI);
   const [bankList, setBankList] = useState(SEED_BANK);
   const [saving,   setSaving]   = useState(false);
@@ -223,7 +225,7 @@ export default function PaymentDetailsScreen({ navigation }) {
   return (
     <View style={s.safe}>
 
-      <ScreenHeader title="Payment Details" onBack={() => navigation?.goBack()} />
+      <ScreenHeader title={t('profile.paymentDetails')} onBack={() => navigation?.goBack()} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { }]}
