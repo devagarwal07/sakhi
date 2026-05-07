@@ -21,7 +21,7 @@ async function getRideForSocket(rideId, userId, role) {
   return ride;
 }
 
-// ── Battery-low SMS via Exotel ────────────────────────────────────────────────
+// ── Battery-low SMS via MSG91 ─────────────────────────────────────────────────
 async function notifyEmergencyContacts(userId, name, lat, lng) {
   const { data: contacts } = await supabase
     .from('emergency_contacts')
@@ -33,23 +33,18 @@ async function notifyEmergencyContacts(userId, name, lat, lng) {
   const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
   const smsText = `SAKHI ALERT: ${name || 'User'}'s phone battery is critically low. Last known location: ${mapsUrl}`;
 
-  const sid   = process.env.EXOTEL_SID;
-  const key   = process.env.EXOTEL_API_KEY;
-  const token = process.env.EXOTEL_API_TOKEN;
-  const exotelUrl = `https://${key}:${token}@api.in.exotel.com/v1/Accounts/${sid}/Sms/send`;
-
   for (const contact of contacts) {
     try {
-      const mobile = contact.phone.startsWith('+') ? contact.phone : `+91${contact.phone.replace(/^0/, '')}`;
-      const params = new URLSearchParams({
-        From: process.env.EXOTEL_SENDER_ID || 'SAKHI',
-        To:   mobile,
-        Body: smsText,
-      });
-      await axios.post(exotelUrl, params.toString(), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 5000,
-      });
+      await axios.post(
+        'https://api.msg91.com/api/v5/sms',
+        {
+          sender:  'SAKHI',
+          route:   '4',
+          mobiles: contact.phone,
+          message: smsText,
+        },
+        { headers: { authkey: process.env.MSG91_AUTH_KEY }, timeout: 5000 }
+      );
     } catch (err) {
       logger.warn('rideSocket.notifyEmergencyContacts — SMS failed', {
         phone: contact.phone,

@@ -78,6 +78,15 @@ async function shutdown(signal) {
   // 1. Stop accepting new HTTP connections
   server.closeIdleConnections?.(); // Node ≥ 18.2
 
+  // 1a. Close Redis
+  try {
+    const redis = require('./src/config/redis');
+    await redis.quit();
+    logger.info('shutdown — Redis disconnected');
+  } catch (err) {
+    logger.warn('shutdown — Redis disconnect error', { error: err.message });
+  }
+
   // 2. Stop cron workers
   try {
     if (subScheduler.stopScheduler)   subScheduler.stopScheduler();

@@ -7,7 +7,7 @@ The current upcoming rides section looks visually unappealing and cluttered. Rep
 2. ✅ Payment Mode Clarification
 Currently, the app mentions that Sakhi accepts both Cash and UPI. This needs to be corrected:
     • Subscriptions → UPI only
-    • Single rides → Cash only
+    • On-Demand Rides  rides → Cash only
 Update all relevant text to clearly reflect this distinction.
 And there is no input box to collect UPI ID. Only the keyboard is displayed
 ✅ DONE — subscriptions.js shows "💳 Paid via UPI · Single rides are Cash only". help-support.js FAQs correctly state "Single rides are paid in Cash to the driver" and "Subscriptions are paid via UPI". The subscription-payment.js uses Razorpay which includes UPI ID input, UPI apps, and QR scanner.

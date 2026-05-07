@@ -10,21 +10,12 @@ let _io = null;
 
 function setIO(io) { _io = io; }
 
-// ── Exotel SMS helper ─────────────────────────────────────────────────────────
+// ── MSG91 SMS helper ──────────────────────────────────────────────────────────
 async function sendSms(phone, message) {
-  const sid   = process.env.EXOTEL_SID;
-  const key   = process.env.EXOTEL_API_KEY;
-  const token = process.env.EXOTEL_API_TOKEN;
-  const mobile = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
-  const params = new URLSearchParams({
-    From:  process.env.EXOTEL_SENDER_ID || 'SAKHI',
-    To:    mobile,
-    Body:  message,
-  });
   return axios.post(
-    `https://${key}:${token}@api.in.exotel.com/v1/Accounts/${sid}/Sms/send`,
-    params.toString(),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 6000 }
+    'https://api.msg91.com/api/v5/sms',
+    { sender: 'SAKHI', route: '4', mobiles: phone, message },
+    { headers: { authkey: process.env.MSG91_AUTH_KEY }, timeout: 6000 }
   );
 }
 
