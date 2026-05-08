@@ -1,55 +1,182 @@
 /*
-  Amplify Face Liveness UI — verified class name overrides.
-  Class names confirmed from @aws-amplify/ui-react-liveness/dist/styles.css
+  Sakhi Face Liveness — Custom UI Theme
+  Overrides the AWS Amplify default styling to match Sakhi's app design.
 */
 
+/* ── Google Font ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── CSS Tokens ──────────────────────────────────────────── */
+:root {
+    --sakhi-purple:      #9B59B6;
+    --sakhi-purple-dark: #7D3C98;
+    --sakhi-bg:          #0a0a0a;
+    --sakhi-surface:     #161616;
+    --sakhi-border:      #2a2a2a;
+    --sakhi-text:        #f0f0f0;
+    --sakhi-muted:       #888;
+    --sakhi-radius:      14px;
+
+    /* Override Amplify design tokens */
+    --amplify-colors-brand-primary-60:  var(--sakhi-purple);
+    --amplify-colors-brand-primary-80:  var(--sakhi-purple-dark);
+    --amplify-colors-brand-primary-100: var(--sakhi-purple-dark);
+    --amplify-colors-background-primary: var(--sakhi-bg);
+    --amplify-colors-background-secondary: var(--sakhi-surface);
+    --amplify-colors-font-primary:      var(--sakhi-text);
+    --amplify-fonts-default-static:     'Inter', system-ui, sans-serif;
+}
+
 /* ── Page reset ──────────────────────────────────────────── */
-html,
-body,
-#root {
+html, body, #root {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #000;
+    background: var(--sakhi-bg);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--sakhi-text);
 }
 
-/* ── MAIN FIX: Hide the hint text that overlaps the toast ───
-   .amplify-liveness-hint--mobile renders "Position your face
-   within the frame" inside the overlay. It carries a huge
-   margin-top (--amplify-space-xxxl ≈ 48px) which causes it to
-   collide with the toast text on small phone screens.
-   The toast ("Hold still, scanning...") already guides the user,
-   so we simply hide the redundant hint. */
+/* ── START SCREEN ────────────────────────────────────────── */
+/* The entire start screen wrapper */
+[data-amplify-liveness-start-screen],
+.amplify-liveness-start-screen,
+.amplify-flex[data-testid="liveness-detector"] > .amplify-flex:first-child {
+    background: var(--sakhi-bg) !important;
+    padding: 0 !important;
+}
+
+/* Start screen content card */
+.amplify-liveness-start-screen__content,
+.amplify-card {
+    background: var(--sakhi-surface) !important;
+    border: 1px solid var(--sakhi-border) !important;
+    border-radius: var(--sakhi-radius) !important;
+    padding: 24px !important;
+    color: var(--sakhi-text) !important;
+    box-shadow: 0 4px 24px rgba(155,89,182,0.12) !important;
+}
+
+/* ── BEGIN BUTTON ────────────────────────────────────────── */
+.amplify-button--primary {
+    background: linear-gradient(135deg, var(--sakhi-purple), var(--sakhi-purple-dark)) !important;
+    border: none !important;
+    border-radius: var(--sakhi-radius) !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    letter-spacing: 0.3px !important;
+    padding: 14px 24px !important;
+    width: 100% !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(155,89,182,0.35) !important;
+    transition: opacity 0.2s !important;
+}
+.amplify-button--primary:hover,
+.amplify-button--primary:active {
+    opacity: 0.88 !important;
+}
+
+/* ── ALL TEXT ─────────────────────────────────────────────── */
+.amplify-text,
+.amplify-heading,
+.amplify-label,
+p, span, h1, h2, h3 {
+    color: var(--sakhi-text) !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+/* ── CAMERA MODULE ────────────────────────────────────────── */
+.amplify-liveness-camera-module {
+    background: #000 !important;
+    border-radius: 0 !important;
+}
+
+/* ── OVAL / FACE BOUNDARY ─────────────────────────────────── */
+.amplify-liveness-oval-canvas {
+    /* The oval is drawn on canvas — colour is controlled by the SDK */
+}
+
+/* ── INSTRUCTION TOASTS ───────────────────────────────────── */
+/* Toast container */
+.amplify-liveness-toast__container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    padding: 0 8px !important;
+}
+
+/* Toast pill */
+.amplify-liveness-toast {
+    background: rgba(22, 22, 22, 0.92) !important;
+    border: 1px solid var(--sakhi-border) !important;
+    border-radius: 999px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    padding: 8px 20px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.2px !important;
+    color: var(--sakhi-text) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4) !important;
+}
+
+.amplify-liveness-toast--large {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    padding: 10px 22px !important;
+    background: rgba(155, 89, 182, 0.2) !important;
+    border-color: rgba(155, 89, 182, 0.4) !important;
+}
+
+/* ── HINT TEXT (redundant on small screens) ───────────────── */
 .amplify-liveness-hint--mobile,
 .amplify-liveness-hint__text {
     display: none !important;
 }
 
-/* ── Toast: ensure single clean column layout ───────────── */
-.amplify-liveness-toast__container {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 8px !important;
-    width: 100%;
-    padding: 0 8px;
-}
-
-/* ── Large toast text ("Hold still, scanning...") ───────── */
-.amplify-liveness-toast--large {
-    font-size: 1.3rem !important;
-    line-height: 1.25 !important;
-    padding: 6px 10px !important;
-}
-
-/* ── Progress / match indicator ─────────────────────────── */
+/* ── PROGRESS / MATCH INDICATOR ──────────────────────────── */
 .amplify-liveness-match-indicator {
-    width: min(75%, 220px);
-    margin-top: 6px;
+    width: min(75%, 220px) !important;
+    margin-top: 6px !important;
 }
 
-/* ── Bottom overlay padding (safe area) ─────────────────── */
+/* Progress bar track */
+.amplify-liveness-match-indicator__track {
+    background: var(--sakhi-border) !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+}
+
+/* Progress bar fill */
+.amplify-liveness-match-indicator__fill {
+    background: linear-gradient(90deg, var(--sakhi-purple), var(--sakhi-purple-dark)) !important;
+    border-radius: 999px !important;
+    transition: width 0.3s ease !important;
+}
+
+/* ── PHOTOSENSITIVITY WARNING ─────────────────────────────── */
+/* Rebranded — hide AWS boilerplate, keep the warning */
+.amplify-liveness-photosensitivity {
+    background: var(--sakhi-surface) !important;
+    border-color: var(--sakhi-border) !important;
+    border-radius: var(--sakhi-radius) !important;
+    padding: 12px 16px !important;
+}
+
+.amplify-liveness-photosensitivity__icon {
+    color: var(--sakhi-purple) !important;
+}
+
+/* ── OVERLAY SAFE AREA ────────────────────────────────────── */
 .amplify-liveness-overlay {
     padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+
+/* ── CHECKMARK / SUCCESS STATE ────────────────────────────── */
+.amplify-icon {
+    color: var(--sakhi-purple) !important;
 }
