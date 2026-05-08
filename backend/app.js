@@ -5,19 +5,26 @@ const dotenv = require('dotenv');
 dotenv.config({ path: '.env.local' });
 dotenv.config();  // also load .env so production deployments work
 
-const express    = require('express');
-const helmet     = require('helmet');
-const cors       = require('cors');
-const rateLimit  = require('express-rate-limit');
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const path = require('path');
 
-const errorHandler    = require('./src/middleware/errorHandler');
-const requestLogger   = require('./src/middleware/requestLogger');
-const logger          = require('./src/utils/logger');
+const errorHandler = require('./src/middleware/errorHandler');
+const requestLogger = require('./src/middleware/requestLogger');
+const logger = require('./src/utils/logger');
 
 const app = express();
 
 // ─── Security Headers ────────────────────────────────────────────────────────
-app.use(helmet());
+app.use((req, res, next) => {
+  // The Rekognition liveness web component uses browser APIs that are often
+  // blocked by strict CSP/COEP defaults. Keep API routes protected by Helmet,
+  // but allow the WebView liveness page to run.
+  if (req.path.startsWith('/liveness')) return next();
+  return helmet()(req, res, next);
+});
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 // In production, ALLOWED_ORIGINS must be set (comma-separated).
@@ -36,9 +43,9 @@ app.use(
       logger.warn('CORS blocked', { origin });
       cb(new Error('Not allowed by CORS'));
     },
-    methods:          ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders:   ['Content-Type', 'Authorization'],
-    credentials:      false,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
   })
 );
 
@@ -93,16 +100,16 @@ app.use(globalLimiter);
 
 // ─── Health Check (Enhanced) ──────────────────────────────────────────────────
 const { version } = require('./package.json');
-const START_TIME  = Date.now();
+const START_TIME = Date.now();
 
 app.get('/health', async (_req, res) => {
   const health = {
-    status:          'ok',
-    supabase:        'connected',
-    fcm:             'ready',
-    uptime_seconds:  Math.floor((Date.now() - START_TIME) / 1000),
-    version:         version || '1.0.0',
-    timestamp:       new Date().toISOString(),
+    status: 'ok',
+    supabase: 'connected',
+    fcm: 'ready',
+    uptime_seconds: Math.floor((Date.now() - START_TIME) / 1000),
+    version: version || '1.0.0',
+    timestamp: new Date().toISOString(),
   };
 
   // Supabase connectivity check
@@ -111,16 +118,16 @@ app.get('/health', async (_req, res) => {
     if (error) { health.supabase = 'error'; health.status = 'degraded'; }
   } catch {
     health.supabase = 'error';
-    health.status   = 'degraded';
+    health.status = 'degraded';
   }
 
   // FCM init check
   try {
     const admin = require('firebase-admin');
-    health.fcm  = admin.apps.length ? 'ready' : 'not_initialized';
+    health.fcm = admin.apps.length ? 'ready' : 'not_initialized';
     if (health.fcm === 'not_initialized') health.status = 'degraded';
   } catch {
-    health.fcm    = 'error';
+    health.fcm = 'error';
     health.status = 'degraded';
   }
 
@@ -128,19 +135,22 @@ app.get('/health', async (_req, res) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/auth',               require('./src/routes/auth'));
-app.use('/auth/verify',        require('./src/routes/verification'));
-app.use('/auth/change-phone',  require('./src/routes/changePhone'));
-app.use('/users',              require('./src/routes/users'));
-app.use('/rides',              require('./src/routes/rides'));
-app.use('/drivers',            require('./src/routes/drivers'));
-app.use('/subscriptions',      require('./src/routes/subscriptions'));
-app.use('/payments',           require('./src/routes/payments'));
-app.use('/safety',             require('./src/routes/safety'));
-app.use('/support',            require('./src/routes/support'));
-app.use('/notifications',      require('./src/routes/notifications'));
-app.use('/webhooks',           require('./src/routes/webhooks'));
-app.use('/admin',              require('./src/routes/admin'));
+app.use('/auth', require('./src/routes/auth'));
+app.use('/auth/verify', require('./src/routes/verification'));
+app.use('/auth/change-phone', require('./src/routes/changePhone'));
+app.use('/users', require('./src/routes/users'));
+app.use('/rides', require('./src/routes/rides'));
+app.use('/drivers', require('./src/routes/drivers'));
+app.use('/subscriptions', require('./src/routes/subscriptions'));
+app.use('/payments', require('./src/routes/payments'));
+app.use('/safety', require('./src/routes/safety'));
+app.use('/support', require('./src/routes/support'));
+app.use('/notifications', require('./src/routes/notifications'));
+app.use('/webhooks', require('./src/routes/webhooks'));
+app.use('/admin', require('./src/routes/admin'));
+
+// ─── Liveness Web (served to mobile WebView) ───────────────────────────────
+app.use('/liveness', express.static(path.join(__dirname, 'public', 'liveness')));
 
 // ─── Public — live trip tracking (no auth) ────────────────────────────────────
 const safetyController = require('./src/controllers/safetyController');

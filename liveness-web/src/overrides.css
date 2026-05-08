@@ -1,0 +1,55 @@
+/*
+  Amplify Face Liveness UI — verified class name overrides.
+  Class names confirmed from @aws-amplify/ui-react-liveness/dist/styles.css
+*/
+
+/* ── Page reset ──────────────────────────────────────────── */
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+}
+
+/* ── MAIN FIX: Hide the hint text that overlaps the toast ───
+   .amplify-liveness-hint--mobile renders "Position your face
+   within the frame" inside the overlay. It carries a huge
+   margin-top (--amplify-space-xxxl ≈ 48px) which causes it to
+   collide with the toast text on small phone screens.
+   The toast ("Hold still, scanning...") already guides the user,
+   so we simply hide the redundant hint. */
+.amplify-liveness-hint--mobile,
+.amplify-liveness-hint__text {
+    display: none !important;
+}
+
+/* ── Toast: ensure single clean column layout ───────────── */
+.amplify-liveness-toast__container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100%;
+    padding: 0 8px;
+}
+
+/* ── Large toast text ("Hold still, scanning...") ───────── */
+.amplify-liveness-toast--large {
+    font-size: 1.3rem !important;
+    line-height: 1.25 !important;
+    padding: 6px 10px !important;
+}
+
+/* ── Progress / match indicator ─────────────────────────── */
+.amplify-liveness-match-indicator {
+    width: min(75%, 220px);
+    margin-top: 6px;
+}
+
+/* ── Bottom overlay padding (safe area) ─────────────────── */
+.amplify-liveness-overlay {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}

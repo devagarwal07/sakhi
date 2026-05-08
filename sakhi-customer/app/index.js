@@ -18,14 +18,18 @@ export default function Index() {
         return <Redirect href="/(auth)/login" />;
     }
 
-    // Route based on KYC status
+    // Customer onboarding: face-liveness only.
     const status = user?.verification_status;
-    if (!status || status === 'not_submitted' || status === 'rejected') {
-        return <Redirect href="/(kyc)/intro" />;
+    const faceReviewRequired = !!user?.face_review_required;
+
+    if (status === 'approved') {
+        return <Redirect href="/(tabs)" />;
     }
-    if (status === 'pending') {
+
+    // "pending" is the DB default for riders; only show this screen when manual review is required.
+    if (faceReviewRequired) {
         return <Redirect href="/(kyc)/pending" />;
     }
 
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/(kyc)/face" />;
 }

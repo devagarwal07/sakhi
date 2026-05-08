@@ -102,6 +102,15 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
+### 2.1 Face Liveness Web (required for customer onboarding)
+The customer app runs AWS Rekognition Face Liveness inside a WebView that loads a small web bundle served by the backend at `/liveness`.
+
+Build it once (or in CI) so `backend/public/liveness/` exists:
+```bash
+# from repo root (sakhi/)
+npm run prep:liveness
+```
+
 ### 3. Customer App
 ```bash
 cd sakhi-customer
@@ -143,6 +152,15 @@ npx expo start --port 8082
 | `SIGNZY_API_KEY` | Signzy KYC API key |
 | `PORT` | Server port (default `3000`) |
 | `NODE_ENV` | `development` or `production` |
+
+#### Face Liveness (Rekognition)
+| Variable | Description |
+|---|---|
+| `FACE_LIVENESS_ROLE_ARN` | IAM Role ARN used for STS credentials for the WebView liveness client |
+| `FACE_LIVENESS_STS_DURATION_SECONDS` | STS credential lifetime (min 900, max 3600; default 900) |
+| `FACE_LIVENESS_MIN_CONFIDENCE` | Minimum liveness confidence (0..100; default 95) |
+| `FACE_GENDER_MIN_CONFIDENCE` | Minimum gender confidence (0..100; default 90) |
+| `FACE_VERIFICATION_MAX_ATTEMPTS` | Retry attempts before manual review (default 3) |
 
 ### Apps `.env`
 

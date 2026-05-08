@@ -1,4 +1,13 @@
 {
+  "name": "sakhi",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "install:backend": "npm --prefix backend install",
+    "install:liveness": "npm --prefix liveness-web install",
+    "build:liveness": "npm --prefix liveness-web run build",
+    "prep:liveness": "npm run install:liveness && npm run build:liveness"
+  },
   "dependencies": {
     "babel-preset-expo": "~54.0.10",
     "expo-linking": "~8.0.11",

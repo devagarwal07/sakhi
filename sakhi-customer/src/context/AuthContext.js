@@ -9,14 +9,14 @@ import { registerForPushAsync } from '../services/notificationService';
 // ── DEV BYPASS ─────────────────────────────────────────────────────────────
 // Set to `true` to skip OTP & auth entirely during local development.
 // ⚠️  MUST be `false` before any production build.
-const DEVELOPER_BYPASS = true;
+const DEVELOPER_BYPASS = false;
 
 const MOCK_USER = {
     _id: 'dev-user-001',
     name: 'Dev Tester',
     phone: '+919999999999',
     email: 'dev@sakhi.app',
-    verification_status: 'verified',
+    verification_status: 'pending',
 };
 // ───────────────────────────────────────────────────────────────────────────
 

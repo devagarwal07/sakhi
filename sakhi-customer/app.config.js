@@ -85,6 +85,12 @@ export default {
         {
           "photosPermission": "Sakhi needs access to your photos to upload Aadhaar card images."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sakhi needs camera access for face verification."
+        }
       ]
     ],
     experiments: {

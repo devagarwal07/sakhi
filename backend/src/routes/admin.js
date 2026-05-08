@@ -2,13 +2,13 @@
 
 const { Router } = require('express');
 const { z } = require('zod');
-const crypto         = require('crypto');
+const crypto = require('crypto');
 const authMiddleware = require('../middleware/authMiddleware');
-const roleGuard      = require('../middleware/roleGuard');
-const supabase       = require('../config/supabase');
-const fcmService     = require('../services/fcmService');
-const smsService     = require('../services/smsService');
-const logger         = require('../utils/logger');
+const roleGuard = require('../middleware/roleGuard');
+const supabase = require('../config/supabase');
+const fcmService = require('../services/fcmService');
+const smsService = require('../services/smsService');
+const logger = require('../utils/logger');
 const { adminLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
@@ -20,12 +20,12 @@ router.use(adminLimiter, authMiddleware, roleGuard('admin'));
 const reasonSchema = z.object({ reason: z.string().min(1) });
 
 const createDriverSchema = z.object({
-  name:           z.string().min(2).max(80),
-  phone:          z.string().regex(/^[6-9]\d{9}$/, 'Invalid 10-digit mobile number'),
-  vehicle_type:   z.enum(['auto', 'cab', 'mini']).optional().default('auto'),
+  name: z.string().min(2).max(80),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid 10-digit mobile number'),
+  vehicle_type: z.enum(['auto', 'cab', 'mini']).optional().default('auto'),
   vehicle_reg_no: z.string().min(4).max(20).optional(),
-  vehicle_model:  z.string().max(50).optional(),
-  note:           z.string().max(500).optional(), // ops notes
+  vehicle_model: z.string().max(50).optional(),
+  note: z.string().max(500).optional(), // ops notes
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -72,15 +72,15 @@ router.post('/drivers', async (req, res, next) => {
         phone,
         vehicle_type,
         vehicle_reg_no: vehicle_reg_no || null,
-        vehicle_model:  vehicle_model  || null,
-        kyc_status:          'manual_review',
+        vehicle_model: vehicle_model || null,
+        kyc_status: 'manual_review',
         verification_status: 'pending',
-        is_active:           false,
-        gender_verified:     false,
-        onboarding_method:   'admin_assisted',
-        onboarding_note:     note || null,
+        is_active: false,
+        gender_verified: false,
+        onboarding_method: 'admin_assisted',
+        onboarding_note: note || null,
         onboarding_admin_id: req.user?.id || null,
-        temp_pin:            tempPin, // driver uses this to complete signup
+        temp_pin: tempPin, // driver uses this to complete signup
       })
       .select('id, name, phone')
       .single();
@@ -101,8 +101,8 @@ router.post('/drivers', async (req, res, next) => {
     return res.status(201).json({
       message: 'Driver pre-registered successfully. A temporary PIN has been sent via SMS.',
       driver: {
-        id:    driverRow.id,
-        name:  driverRow.name,
+        id: driverRow.id,
+        name: driverRow.name,
         phone: driverRow.phone,
       },
       temp_pin: tempPin, // also return to ops agent for verbal confirmation
@@ -182,7 +182,7 @@ router.patch('/drivers/:id/reject', async (req, res, next) => {
 router.post('/drivers/:id/verify-dl', async (req, res, next) => {
   try {
     const surepassService = require('../services/surepassService');
-    const { id }          = req.params;
+    const { id } = req.params;
 
     // Fetch stored driver fields
     const { data: rows, error: fetchErr } = await supabase
@@ -194,44 +194,44 @@ router.post('/drivers/:id/verify-dl', async (req, res, next) => {
     const driver = rows?.[0];
     if (!driver) return res.status(404).json({ error: { code: 'DRIVER_NOT_FOUND', message: 'Driver not found.', details: {} } });
 
-    const dlNumber = req.body?.dl_number  || driver.dl_number || driver.dl_number_from_digilocker;
-    const dob      = req.body?.dob        || driver.dob       || driver.aadhaar_dob;
-    const fullName = req.body?.full_name  || driver.name;
+    const dlNumber = req.body?.dl_number || driver.dl_number || driver.dl_number_from_digilocker;
+    const dob = req.body?.dob || driver.dob || driver.aadhaar_dob;
+    const fullName = req.body?.full_name || driver.name;
 
     if (!dlNumber) return res.status(422).json({ error: { code: 'MISSING_DL_NUMBER', message: 'No DL number on record for this driver.', details: {} } });
 
-    const payload  = await surepassService.verifyDL(dlNumber, { fullName, dob });
+    const payload = await surepassService.verifyDL(dlNumber, { fullName, dob });
     const persisted = await surepassService.persistDLVerification(id, payload);
 
-    const d        = payload?.data || {};
+    const d = payload?.data || {};
     const verified = payload?.success === true;
     const dlStatus = verified ? (d.doe && new Date(d.doe) < new Date() ? 'expired' : 'verified') : 'rejected';
 
     // Notify driver (non-fatal)
     await fcmService.sendToUser(id, 'driver', {
       title: verified ? 'Driving Licence Verified ✅' : 'DL Verification Failed',
-      body:  verified
+      body: verified
         ? 'Your Driving Licence has been verified successfully.'
         : 'DL verification failed. Please ensure your licence number is correct.',
       data: { type: 'DL_VERIFICATION_RESULT', verified: String(verified) },
-    }).catch(() => {});
+    }).catch(() => { });
 
     logger.info('admin — DL verification triggered (Surepass)', {
       driverId: id, dlNumber, verified, adminId: req.user.userId,
     });
 
     return res.status(200).json({
-      driver_id:      id,
-      dl_number:      d.license_number   || dlNumber,
+      driver_id: id,
+      dl_number: d.license_number || dlNumber,
       verified,
-      dl_status:      dlStatus,
-      name:           d.name             || null,
-      doe:            d.doe              || null,
-      doi:            d.doi              || null,
+      dl_status: dlStatus,
+      name: d.name || null,
+      doe: d.doe || null,
+      doi: d.doi || null,
       vehicle_classes: d.vehicle_classes || [],
-      gender:         d.gender           || null,
-      state:          d.state            || null,
-      ola_name:       d.ola_name         || null,
+      gender: d.gender || null,
+      state: d.state || null,
+      ola_name: d.ola_name || null,
       persisted,
     });
   } catch (err) {
@@ -259,7 +259,7 @@ router.post('/drivers/:id/verify-dl', async (req, res, next) => {
 router.post('/drivers/:id/verify-rc', async (req, res, next) => {
   try {
     const rcService = require('../services/rcService');
-    const { id }    = req.params;
+    const { id } = req.params;
 
     // Fetch stored vehicle_reg_no as fallback
     const { data: rows, error: fetchErr } = await supabase
@@ -274,7 +274,7 @@ router.post('/drivers/:id/verify-rc', async (req, res, next) => {
     }
 
     const rcNumber = req.body?.rc_number || driver.vehicle_reg_no;
-    const enrich   = !!req.body?.enrich;
+    const enrich = !!req.body?.enrich;
 
     if (!rcNumber) {
       return res.status(422).json({
@@ -282,37 +282,37 @@ router.post('/drivers/:id/verify-rc', async (req, res, next) => {
       });
     }
 
-    const payload  = await rcService.verifyRC(rcNumber, enrich);
+    const payload = await rcService.verifyRC(rcNumber, enrich);
     const persisted = await rcService.persistRCVerification(id, payload);
 
-    const d        = payload?.data || {};
+    const d = payload?.data || {};
     const verified = payload?.success === true;
     const rcStatus = verified ? (d.blacklist_status ? 'blacklisted' : 'verified') : 'rejected';
 
     // Notify driver of result (non-fatal)
     await fcmService.sendToUser(id, 'driver', {
       title: verified ? 'RC Verified ✅' : 'RC Verification Failed',
-      body:  verified
+      body: verified
         ? 'Your vehicle Registration Certificate has been verified successfully.'
         : 'RC verification failed. Please ensure your vehicle registration number is correct.',
       data: { type: 'RC_VERIFICATION_RESULT', verified: String(verified) },
-    }).catch(() => {});
+    }).catch(() => { });
 
     logger.info('admin — RC verification triggered', {
       driverId: id, rcNumber, verified, enrich, adminId: req.user.userId,
     });
 
     return res.status(200).json({
-      driver_id:         id,
-      rc_number:         d.rc_number         || rcNumber,
+      driver_id: id,
+      rc_number: d.rc_number || rcNumber,
       verified,
-      rc_status:         rcStatus,
-      maker_model:       d.maker_model        || null,
-      fuel_type:         d.fuel_type          || null,
-      insurance_upto:    d.insurance_upto     || null,
-      fit_upto:          d.fit_up_to          || null,
-      blacklist_status:  d.blacklist_status   || '',
-      response_metadata: d.response_metadata  || {},
+      rc_status: rcStatus,
+      maker_model: d.maker_model || null,
+      fuel_type: d.fuel_type || null,
+      insurance_upto: d.insurance_upto || null,
+      fit_upto: d.fit_up_to || null,
+      blacklist_status: d.blacklist_status || '',
+      response_metadata: d.response_metadata || {},
       persisted,
     });
   } catch (err) {
@@ -330,6 +330,45 @@ router.post('/drivers/:id/verify-rc', async (req, res, next) => {
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
+ * PATCH /admin/users/:id/face-reset
+ * Resets face-liveness onboarding state so the rider can retry capture.
+ * Clears attempts + manual review flag + clears the last session/result fields.
+ */
+router.patch('/users/:id/face-reset', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        face_review_required: false,
+        face_verification_attempts: 0,
+        face_liveness_session_id: null,
+        face_liveness_confidence: null,
+        face_gender: null,
+        face_gender_confidence: null,
+        face_reference_photo_url: null,
+        face_decision_reason: null,
+        face_reviewed_by: null,
+        face_reviewed_at: null,
+        verification_status: 'pending',
+        verification_method: 'face_liveness',
+        gender_verified: false,
+      })
+      .eq('id', id)
+      .select('id, name, phone, verification_status, verification_method, face_review_required, face_verification_attempts')
+      .single();
+
+    if (error) return next(error);
+
+    logger.info('admin — user face verification reset', { userId: id, adminId: req.user.userId });
+    return res.status(200).json({ success: true, user: data });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * PATCH /admin/users/:id/verify
  */
 router.patch('/users/:id/verify', async (req, res, next) => {
@@ -338,7 +377,14 @@ router.patch('/users/:id/verify', async (req, res, next) => {
 
     const { error } = await supabase
       .from('users')
-      .update({ gender_verified: true, verification_status: 'approved' })
+      .update({
+        gender_verified: true,
+        verification_status: 'approved',
+        face_review_required: false,
+        face_reviewed_by: req.user.userId,
+        face_reviewed_at: new Date().toISOString(),
+        face_decision_reason: 'manual_approved',
+      })
       .eq('id', id);
 
     if (error) return next(error);
@@ -366,7 +412,13 @@ router.patch('/users/:id/reject', async (req, res, next) => {
 
     const { error } = await supabase
       .from('users')
-      .update({ verification_status: 'rejected' })
+      .update({
+        verification_status: 'rejected',
+        face_review_required: false,
+        face_reviewed_by: req.user.userId,
+        face_reviewed_at: new Date().toISOString(),
+        face_decision_reason: `manual_rejected:${reason}`,
+      })
       .eq('id', id);
 
     if (error) return next(error);
@@ -387,15 +439,54 @@ router.patch('/users/:id/reject', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /admin/users/face-review
+ * Lists riders who have exhausted retries and require manual review.
+ * Query params: page, limit, search
+ */
+router.get('/users/face-review', async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const from = (page - 1) * limit;
+
+    let query = supabase
+      .from('users')
+      .select(
+        'id, name, phone, verification_status, verification_method, face_review_required, face_reference_photo_url, face_liveness_confidence, face_gender, face_gender_confidence, face_verification_attempts, created_at',
+        { count: 'exact' }
+      )
+      .eq('face_review_required', true)
+      .order('created_at', { ascending: false });
+
+    if (req.query.search) {
+      query = query.or(`name.ilike.%${req.query.search}%,phone.ilike.%${req.query.search}%`);
+    }
+
+    const { data, count, error } = await query.range(from, from + limit - 1);
+    if (error) return next(error);
+
+    return res.status(200).json({
+      users: data || [],
+      total: count || 0,
+      page,
+      limit,
+      total_pages: Math.ceil((count || 0) / limit) || 1,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // ────────────────────────────────────────────────────────────────────────────
 // NOTIFICATIONS — BROADCAST
 // ────────────────────────────────────────────────────────────────────────────
 
 const broadcastSchema = z.object({
   target: z.enum(['all_riders', 'all_drivers', 'all']),
-  title:  z.string().min(1).max(200),
-  body:   z.string().min(1).max(500),
-  data:   z.record(z.string()).optional(),
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(500),
+  data: z.record(z.string()).optional(),
 });
 
 /**
@@ -426,9 +517,9 @@ router.post('/notifications/broadcast', async (req, res, next) => {
  */
 router.get('/drivers', async (req, res, next) => {
   try {
-    const page   = Math.max(1, parseInt(req.query.page  || '1', 10));
-    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
-    const from   = (page - 1) * limit;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const from = (page - 1) * limit;
 
     let query = supabase
       .from('drivers')
@@ -438,7 +529,7 @@ router.get('/drivers', async (req, res, next) => {
       );
 
     if (req.query.verification_status) query = query.eq('verification_status', req.query.verification_status);
-    if (req.query.status === 'online')  query = query.eq('is_online', true);
+    if (req.query.status === 'online') query = query.eq('is_online', true);
     if (req.query.status === 'offline') query = query.eq('is_online', false);
     if (req.query.search) {
       query = query.or(`name.ilike.%${req.query.search}%,phone.ilike.%${req.query.search}%,vehicle_reg_no.ilike.%${req.query.search}%`);
@@ -451,8 +542,8 @@ router.get('/drivers', async (req, res, next) => {
     if (error) return next(error);
 
     return res.status(200).json({
-      drivers:     data || [],
-      total:       count || 0,
+      drivers: data || [],
+      total: count || 0,
       page,
       limit,
       total_pages: Math.ceil((count || 0) / limit) || 1,
@@ -466,9 +557,9 @@ router.get('/drivers', async (req, res, next) => {
  */
 router.get('/users', async (req, res, next) => {
   try {
-    const page   = Math.max(1, parseInt(req.query.page  || '1', 10));
-    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
-    const from   = (page - 1) * limit;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const from = (page - 1) * limit;
 
     let query = supabase
       .from('users')
@@ -489,8 +580,8 @@ router.get('/users', async (req, res, next) => {
     if (error) return next(error);
 
     return res.status(200).json({
-      users:       data || [],
-      total:       count || 0,
+      users: data || [],
+      total: count || 0,
       page,
       limit,
       total_pages: Math.ceil((count || 0) / limit) || 1,
@@ -628,28 +719,28 @@ router.post('/debug/test-sms', async (req, res, next) => {
     logger.info('admin — test-sms completed', { phone, type, result });
 
     return res.status(200).json({
-      success:                true,
-      provider:               'msg91',
+      success: true,
+      provider: 'msg91',
       type,
       phone,
-      message_sent:           type === 'otp' ? '(OTP — generated internally)' : testMessage,
+      message_sent: type === 'otp' ? '(OTP — generated internally)' : testMessage,
       credentials_configured: credentialsConfigured,
-      auth_key_hint:          authKeyHint,
-      template_id:            process.env.MSG91_TEMPLATE_ID || null,
-      msg91_response:         result,
-      tested_at:              new Date().toISOString(),
-      tested_by:              req.user?.userId ?? req.user?.id ?? 'admin',
+      auth_key_hint: authKeyHint,
+      template_id: process.env.MSG91_TEMPLATE_ID || null,
+      msg91_response: result,
+      tested_at: new Date().toISOString(),
+      tested_by: req.user?.userId ?? req.user?.id ?? 'admin',
     });
   } catch (err) {
     logger.error('admin — test-sms error', { error: err.message });
     // Return structured error so MSG91 support can read it
     return res.status(500).json({
-      success:          false,
-      provider:         'msg91',
-      error_message:    err.message,
-      msg91_response:   err.response?.data || null,
-      http_status:      err.response?.status || 500,
-      tested_at:        new Date().toISOString(),
+      success: false,
+      provider: 'msg91',
+      error_message: err.message,
+      msg91_response: err.response?.data || null,
+      http_status: err.response?.status || 500,
+      tested_at: new Date().toISOString(),
     });
   }
 });

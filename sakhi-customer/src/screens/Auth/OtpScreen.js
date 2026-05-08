@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { VERIFICATION_STATUSES } from '../../utils/constants';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 
 const OTP_LENGTH = 6;
@@ -91,17 +90,9 @@ export default function OtpScreen() {
 
         setLoading(true);
         try {
-            const user = await login(phone, code);
-            if (
-                user.verification_status === VERIFICATION_STATUSES.NOT_SUBMITTED ||
-                user.verification_status === VERIFICATION_STATUSES.REJECTED
-            ) {
-                router.replace('/(kyc)/intro');
-            } else if (user.verification_status === VERIFICATION_STATUSES.PENDING) {
-                router.replace('/(kyc)/pending');
-            } else {
-                router.replace('/(tabs)');
-            }
+            await login(phone, code);
+            // Route through the root guard so onboarding logic stays in one place.
+            router.replace('/');
         } catch (err) {
             shake();
             const msg = err?.response?.data?.message || 'Invalid OTP. Please try again.';

@@ -5,6 +5,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleGuard = require('../middleware/roleGuard');
 const { uploadAadhaar, uploadSelfie } = require('../middleware/upload');
 const verificationService = require('../services/verificationService');
+const faceLivenessService = require('../services/faceLivenessService');
+const faceLivenessCredentialsService = require('../services/faceLivenessCredentialsService');
 
 const router = Router();
 
@@ -67,5 +69,54 @@ router.post(
     }
   }
 );
+
+/**
+ * POST /auth/verify/face-liveness/session
+ * Creates a Rekognition Face Liveness SessionId.
+ */
+router.post('/face-liveness/session', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const result = await faceLivenessService.createSession(req.user.userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * GET /auth/verify/face-liveness/credentials
+ * Issues short-lived AWS credentials for the web liveness client.
+ */
+router.get('/face-liveness/credentials', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const credentials = await faceLivenessCredentialsService.getStreamingCredentials(req.user.userId);
+    return res.status(200).json({ credentials });
+  } catch (err) {
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/verify/face-liveness/result
+ * Body: { session_id }
+ */
+router.post('/face-liveness/result', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const sessionId = req.body?.session_id;
+    const result = await faceLivenessService.completeSession(req.user.userId, sessionId);
+    return res.status(200).json(result);
+  } catch (err) {
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
+    return next(err);
+  }
+});
 
 module.exports = router;

@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
+import { API_BASE_URL } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -66,8 +67,12 @@ export default function LoginScreen() {
             await requestOtp(formattedPhone);
             router.push({ pathname: '/(auth)/otp', params: { phone: formattedPhone } });
         } catch (err) {
-            const msg = err?.response?.data?.message || 'Failed to send OTP. Please try again.';
-            Alert.alert('Error', msg);
+            const msg =
+                err?.response?.data?.error?.message ||
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to send OTP. Please try again.';
+            Alert.alert('Error', `${msg}\n\nAPI: ${API_BASE_URL}`);
         } finally {
             setLoading(false);
         }

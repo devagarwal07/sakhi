@@ -16,6 +16,11 @@ export const uploadFaceSelfie = (formData) =>
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 
+// Face Liveness (Rekognition)
+export const createFaceLivenessSession = () => apiClient.post('/auth/verify/face-liveness/session');
+export const getFaceLivenessResult = (session_id) =>
+    apiClient.post('/auth/verify/face-liveness/result', { session_id });
+
 // ── Users ─────────────────────────────────────────────────────────────────
 export const getProfile = () => apiClient.get('/users/profile');
 export const updateProfile = (data) =>
@@ -34,8 +39,8 @@ export const estimateFare = (pickup, dropoff, stop = null) =>
         params: {
             pickup_lat: pickup.latitude,
             pickup_lng: pickup.longitude,
-            drop_lat:   dropoff.latitude,
-            drop_lng:   dropoff.longitude,
+            drop_lat: dropoff.latitude,
+            drop_lng: dropoff.longitude,
             ...(stop ? { stop_lat: stop.latitude, stop_lng: stop.longitude } : {}),
         },
     });
@@ -50,7 +55,7 @@ export const getChatHistory = (rideId) => apiClient.get(`/rides/${rideId}/chat`)
 export const shareTrip = (rideId) => apiClient.post(`/safety/share-trip/${rideId}`);
 
 // ── Ride Payments ──────────────────────────────────────────────────────────
-export const createRidePaymentOrder  = (rideId) => apiClient.post(`/rides/${rideId}/payment/order`);
+export const createRidePaymentOrder = (rideId) => apiClient.post(`/rides/${rideId}/payment/order`);
 export const verifyRidePayment = (rideId, data) => apiClient.post(`/rides/${rideId}/payment/verify`, data);
 
 // ── Safety ─────────────────────────────────────────────────────────────────────────────
@@ -74,8 +79,8 @@ export const deleteEmergencyContact = (id) => apiClient.delete(`/safety/emergenc
 export const sendBatteryAlert = ({ lat, lng } = {}, batteryLevel = 0) =>
     apiClient.post('/safety/battery-alert', {
         level: Math.round(batteryLevel),
-        lat:   lat ?? 0,
-        lng:   lng ?? 0,
+        lat: lat ?? 0,
+        lng: lng ?? 0,
     });
 
 

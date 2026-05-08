@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -12,15 +11,18 @@ const FCM_TOKEN_KEY = 'customer_fcm_token';
 // development builds / production builds where native modules are available.
 const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
-// Configure foreground notification display (skipped silently in Expo Go)
-if (!IS_EXPO_GO) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
+let _notificationsModule = null;
+async function getNotifications() {
+  if (IS_EXPO_GO) return null;
+  if (_notificationsModule) return _notificationsModule;
+  try {
+    // Lazy import to avoid Expo Go runtime crash.
+    _notificationsModule = await import('expo-notifications');
+    return _notificationsModule;
+  } catch (e) {
+    console.warn('[FCM] expo-notifications unavailable:', e?.message || e);
+    return null;
+  }
 }
 
 /**
@@ -33,6 +35,18 @@ export async function registerForPushAsync() {
     console.log('[FCM] Skipped in Expo Go — use a dev/production build to test push notifications.');
     return null;
   }
+
+  const Notifications = await getNotifications();
+  if (!Notifications) return null;
+
+  // Configure foreground notification display
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
 
   if (!Device.isDevice) {
     console.warn('[FCM] Push not supported on simulator');
@@ -72,7 +86,7 @@ export async function registerForPushAsync() {
     }
 
     await updateCustomerFcmToken(fcmToken);
-    await SecureStore.setItemAsync(FCM_TOKEN_KEY, fcmToken).catch(() => {});
+    await SecureStore.setItemAsync(FCM_TOKEN_KEY, fcmToken).catch(() => { });
     console.log('[FCM] Customer FCM token registered');
     return fcmToken;
   } catch (err) {
@@ -82,7 +96,10 @@ export async function registerForPushAsync() {
 }
 
 export function setupForegroundHandler() {
-  if (IS_EXPO_GO || !Notifications) return () => {};
+  // This project currently calls only registerForPushAsync().
+  // Keep this as a safe no-op unless notifications are explicitly loaded.
+  if (IS_EXPO_GO || !_notificationsModule) return () => { };
+  const Notifications = _notificationsModule;
 
   const subscription = Notifications.addNotificationReceivedListener((notification) => {
     const { title, body } = notification.request.content;
@@ -92,7 +109,8 @@ export function setupForegroundHandler() {
 }
 
 export function setupNotificationTapHandler(onTap) {
-  if (IS_EXPO_GO || !Notifications) return () => {};
+  if (IS_EXPO_GO || !_notificationsModule) return () => { };
+  const Notifications = _notificationsModule;
 
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data || {};

@@ -2,9 +2,11 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
 
 export default function VerificationPendingScreen() {
     const router = useRouter();
+    const { checkAuth } = useAuth();
     const insets = useSafeAreaInsets();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -38,44 +40,33 @@ export default function VerificationPendingScreen() {
             >
                 {/* Animated Icon Group */}
                 <View style={styles.iconSection}>
-                    {/* Glow effect */}
-                    <Animated.View
-                        style={[styles.iconGlow, { transform: [{ scale: pulseAnim }] }]}
-                    />
-                    {/* Icon circle */}
+                    <Animated.View style={[styles.iconGlow, { transform: [{ scale: pulseAnim }] }]} />
                     <View style={styles.iconCircle}>
-                        <Text style={styles.checkIcon}>✓</Text>
+                        <Text style={styles.checkIcon}>⏳</Text>
                     </View>
                 </View>
 
                 {/* Typography Stack */}
                 <View style={styles.textStack}>
-                    <Text style={styles.title}>
-                        Verification{'\n'}Successful!
-                    </Text>
+                    <Text style={styles.title}>Verification{"\n"}Under Review</Text>
                     <Text style={styles.subtitle}>
-                        Your identity has been verified. You're all set to start your safe journey with Sakhi.
+                        We couldn't auto-verify your face with high confidence. Our team will review it shortly.
                     </Text>
                 </View>
 
-                {/* Celebratory Illustration */}
+                {/* Illustration */}
                 <View style={styles.illustrationSection}>
                     <View style={styles.illustrationCard}>
-                        {/* Gradient overlay */}
                         <View style={styles.illustrationGradient} />
-
-                        {/* Placeholder person silhouette */}
                         <View style={styles.personPlaceholder}>
                             <Text style={styles.personIcon}>👩</Text>
                         </View>
                     </View>
 
-                    {/* Decorative accent — top right circle */}
                     <View style={styles.accentCircle}>
                         <Text style={styles.accentIcon}>✿</Text>
                     </View>
 
-                    {/* Decorative accent — bottom left rotated square */}
                     <View style={styles.accentSquare}>
                         <Text style={styles.accentHeart}>♥</Text>
                     </View>
@@ -86,14 +77,17 @@ export default function VerificationPendingScreen() {
             <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
                 <TouchableOpacity
                     style={styles.ctaButton}
-                    onPress={() => router.replace('/(tabs)')}
+                    onPress={async () => {
+                        await checkAuth();
+                        router.replace('/');
+                    }}
                     activeOpacity={0.88}
                 >
-                    <Text style={styles.ctaButtonText}>Complete Profile Setup</Text>
+                    <Text style={styles.ctaButtonText}>Refresh Status</Text>
                     <Text style={styles.ctaArrow}> →</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.secondaryText}>Step 1 of 2 Complete</Text>
+                <Text style={styles.secondaryText}>We’ll notify you once approved.</Text>
             </View>
         </View>
     );
@@ -111,7 +105,6 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
     },
 
-    // Animated icon group — 96×96
     iconSection: {
         width: 96,
         height: 96,
@@ -145,7 +138,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
 
-    // Typography stack
     textStack: {
         paddingHorizontal: 32,
         alignItems: 'center',
@@ -168,7 +160,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
     },
 
-    // Celebratory illustration
     illustrationSection: {
         paddingHorizontal: 55,
         paddingTop: 32,
@@ -201,7 +192,6 @@ const styles = StyleSheet.create({
         fontSize: 120,
     },
 
-    // Decorative accent — top right purple circle 48×48
     accentCircle: {
         position: 'absolute',
         right: 32,
@@ -223,7 +213,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
 
-    // Decorative accent — bottom left rotated square 32×32
     accentSquare: {
         position: 'absolute',
         left: 32,
@@ -246,7 +235,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
 
-    // Footer
     footer: {
         paddingHorizontal: 24,
         paddingTop: 24,
@@ -280,7 +268,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
-    // Secondary text — opacity 0.6
     secondaryText: {
         fontSize: 14,
         fontWeight: '500',
