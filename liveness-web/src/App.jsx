@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { FaceLivenessDetectorCore } from '@aws-amplify/ui-react-liveness';
 
 function parseQuery() {
@@ -62,6 +62,14 @@ const SAKHI_TOKEN = (() => {
 export default function App() {
     const { sessionId, region } = useMemo(parseQuery, []);
     const [fatalError, setFatalError] = useState('');
+    const [status, setStatus] = useState('React mounted');
+
+    // Post debug info to native immediately on mount
+    useEffect(() => {
+        const info = `sid=${sessionId?.slice(0,8)} reg=${region} tok=${!!SAKHI_TOKEN}`;
+        setStatus(info);
+        postToNative({ type: 'debug', message: info });
+    }, []);
 
     const credentialProvider = async () => {
         const resp = await fetch('/auth/verify/face-liveness/credentials', {
@@ -110,6 +118,14 @@ __SAKHI_SESSION__ : ${JSON.stringify(typeof window !== 'undefined' ? window.__SA
 
     return (
         <div style={{ position: 'relative', minHeight: '100vh', background: '#000' }}>
+            {/* Persistent debug bar — always visible on top of Amplify UI */}
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
+                background: '#222', color: '#0f0', fontFamily: 'monospace',
+                fontSize: 10, padding: '2px 6px', opacity: 0.9,
+            }}>
+                {status}
+            </div>
             <FaceLivenessDetectorCore
                 sessionId={sessionId}
                 region={region}
