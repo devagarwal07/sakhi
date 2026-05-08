@@ -87,30 +87,35 @@ export default function App() {
 
     if (!sessionId || !region) {
         return (
-            <div style={{ padding: 16, fontFamily: 'system-ui' }}>
-                <h3 style={{ margin: '8px 0' }}>Missing parameters</h3>
-                <div>Required: sessionId, region</div>
+            <div style={{ padding: 16, fontFamily: 'monospace', background: '#1a1a1a', color: '#fff', minHeight: '100vh' }}>
+                <h3 style={{ color: '#ff6b6b', margin: '8px 0' }}>⚠ Session params missing</h3>
+                <pre style={{ color: '#ffcc00', whiteSpace: 'pre-wrap', fontSize: 12 }}>
+{`sessionId : ${JSON.stringify(sessionId)}
+region    : ${JSON.stringify(region)}
+hasToken  : ${!!SAKHI_TOKEN}
+__SAKHI_SESSION__ : ${JSON.stringify(typeof window !== 'undefined' ? window.__SAKHI_SESSION__ : 'N/A')}`}
+                </pre>
             </div>
         );
     }
 
     if (fatalError) {
         return (
-            <div style={{ padding: 16, fontFamily: 'system-ui' }}>
-                <h3 style={{ margin: '8px 0' }}>Liveness error</h3>
-                <pre style={{ whiteSpace: 'pre-wrap' }}>{fatalError}</pre>
+            <div style={{ padding: 16, fontFamily: 'monospace', background: '#1a1a1a', color: '#fff', minHeight: '100vh' }}>
+                <h3 style={{ color: '#ff6b6b', margin: '8px 0' }}>⚠ Liveness error</h3>
+                <pre style={{ whiteSpace: 'pre-wrap', color: '#ffcc00', fontSize: 12 }}>{fatalError}</pre>
             </div>
         );
     }
 
     return (
-        <div style={{ position: 'relative', minHeight: '100vh' }}>
+        <div style={{ position: 'relative', minHeight: '100vh', background: '#000' }}>
             <FaceLivenessDetectorCore
                 sessionId={sessionId}
                 region={region}
                 config={{ credentialProvider }}
                 disableStartScreen={false}
-                onAnalysisComplete={() => {
+                onAnalysisComplete={async () => {
                     postToNative({ type: 'analysis_complete', sessionId });
                 }}
                 onError={(err) => {

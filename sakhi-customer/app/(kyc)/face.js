@@ -361,12 +361,20 @@ export default function FaceVerificationScreen() {
             {!!webSession && (
                 <View style={StyleSheet.absoluteFill}>
                     <WebView
-                        source={{
-                            // Inline bundled HTML — no network load for UI.
-                            // baseUrl sets origin so relative API calls resolve to the backend.
-                            html: livenessHtml,
-                            baseUrl: LIVENESS_BASE_URL,
-                        }}
+                        source={(() => {
+                            // Inject session data directly into the HTML so it's available
+                            // before ANY script in the bundle executes. Much more reliable than
+                            // injectedJavaScriptBeforeContentLoaded for source={{ html }}.
+                            const sessionScript = `<script>window.__SAKHI_SESSION__=${JSON.stringify({
+                                sessionId: webSession?.sessionId || '',
+                                region:    webSession?.region    || '',
+                                token:     webToken || '',
+                            })};</script>`;
+                            return {
+                                html: livenessHtml.replace('</head>', sessionScript + '</head>'),
+                                baseUrl: LIVENESS_BASE_URL,
+                            };
+                        })()}
                         ref={webviewRef}
                         style={{ flex: 1, backgroundColor: '#000000' }}
                         originWhitelist={['*']}
