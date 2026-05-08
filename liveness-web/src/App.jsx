@@ -42,17 +42,29 @@ function formatUnknownError(err) {
     }
 }
 
+// Read the auth token from the URL hash (#token=...).
+// This is more reliable than injectedJavaScriptBeforeContentLoaded
+// because it's always available before any JS runs.
+const SAKHI_TOKEN = (() => {
+    try {
+        const hash = window.location.hash.slice(1); // remove leading #
+        const params = new URLSearchParams(hash);
+        return params.get('token') || '';
+    } catch {
+        return '';
+    }
+})();
+
 export default function App() {
     const { sessionId, region } = useMemo(parseQuery, []);
     const [fatalError, setFatalError] = useState('');
 
     const credentialProvider = async () => {
-        const token = window.__SAKHI_TOKEN;
         const resp = await fetch('/auth/verify/face-liveness/credentials', {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                ...(SAKHI_TOKEN ? { Authorization: `Bearer ${SAKHI_TOKEN}` } : {}),
             },
         });
 

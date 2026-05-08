@@ -363,7 +363,7 @@ export default function FaceVerificationScreen() {
                         source={{
                             uri: `${LIVENESS_BASE_URL.replace(/\/$/, '')}/liveness/?sessionId=${encodeURIComponent(
                                 webSession.sessionId
-                            )}&region=${encodeURIComponent(webSession.region)}&_t=${webSession.ts}`,
+                            )}&region=${encodeURIComponent(webSession.region)}&_t=${webSession.ts}#token=${encodeURIComponent(webToken || '')}`,
                             headers: {
                                 // Bypass ngrok's browser-warning interstitial page
                                 'ngrok-skip-browser-warning': 'true',
@@ -388,7 +388,6 @@ export default function FaceVerificationScreen() {
                                 try {
                                     Object.defineProperty(window, 'isSecureContext', { get: function() { return true; }, configurable: true });
                                 } catch(e) {}
-                                window.__SAKHI_TOKEN = ${JSON.stringify(webToken || '')};
                             })();
                             true;
                         `}
