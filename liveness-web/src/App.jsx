@@ -2,9 +2,6 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { FaceLivenessDetectorCore } from '@aws-amplify/ui-react-liveness';
 
 function parseQuery() {
-    // When loaded inline in React Native WebView, params come from a global
-    // injected via injectedJavaScriptBeforeContentLoaded. Fall back to URL
-    // search params when the page is served from the backend (browser/dev).
     const g = window.__SAKHI_SESSION__ || {};
     const params = new URLSearchParams(window.location.search);
     return {
@@ -15,7 +12,6 @@ function parseQuery() {
 
 function postToNative(payload) {
     try {
-        // React Native WebView bridge
         window.ReactNativeWebView?.postMessage(JSON.stringify(payload));
     } catch {
         // no-op
@@ -25,29 +21,16 @@ function postToNative(payload) {
 function formatUnknownError(err) {
     if (!err) return 'Unknown error';
     if (typeof err === 'string') return err;
-    if (err instanceof Error) {
-        return [err.name, err.message, err.stack].filter(Boolean).join('\n');
+    // LivenessError: { state: ErrorState, error: Error }
+    if (err && typeof err === 'object' && err.state) {
+        const inner = err.error?.message || String(err.error || '');
+        return `${err.state}${inner ? ': ' + inner : ''}`;
     }
-    try {
-        const seen = new WeakSet();
-        return JSON.stringify(
-            err,
-            (_key, value) => {
-                if (typeof value === 'object' && value !== null) {
-                    if (seen.has(value)) return '[Circular]';
-                    seen.add(value);
-                }
-                return value;
-            },
-            2
-        );
-    } catch {
-        return String(err);
-    }
+    if (err instanceof Error) return err.message || String(err);
+    try { return JSON.stringify(err, null, 2); } catch { return String(err); }
 }
 
-// Read the auth token — prefer the injected global (React Native inline mode),
-// fall back to URL hash (#token=...) for server-served mode.
+// Auth token: prefer injected global (React Native inline mode), fall back to URL hash
 const SAKHI_TOKEN = (() => {
     try {
         if (window.__SAKHI_SESSION__?.token) return window.__SAKHI_SESSION__.token;
@@ -62,11 +45,11 @@ const SAKHI_TOKEN = (() => {
 export default function App() {
     const { sessionId, region } = useMemo(parseQuery, []);
     const [fatalError, setFatalError] = useState('');
-    const [status, setStatus] = useState('React mounted');
 
     useEffect(() => {
-        // Signal to the native app that React has mounted — hides the loading overlay
+        // Signal to native that React has mounted — hides the native loading overlay
         postToNative({ type: 'react_mounted' });
+        postToNative({ type: 'debug', message: `sid=${sessionId?.slice(0,8)} reg=${region} tok=${!!SAKHI_TOKEN}` });
     }, []);
 
     const credentialProvider = async () => {
@@ -99,7 +82,7 @@ export default function App() {
 {`sessionId : ${JSON.stringify(sessionId)}
 region    : ${JSON.stringify(region)}
 hasToken  : ${!!SAKHI_TOKEN}
-__SAKHI_SESSION__ : ${JSON.stringify(typeof window !== 'undefined' ? window.__SAKHI_SESSION__ : 'N/A')}`}
+__SESSION__: ${JSON.stringify(window.__SAKHI_SESSION__)}`}
                 </pre>
             </div>
         );
@@ -109,21 +92,13 @@ __SAKHI_SESSION__ : ${JSON.stringify(typeof window !== 'undefined' ? window.__SA
         return (
             <div style={{ padding: 16, fontFamily: 'monospace', background: '#1a1a1a', color: '#fff', minHeight: '100vh' }}>
                 <h3 style={{ color: '#ff6b6b', margin: '8px 0' }}>⚠ Liveness error</h3>
-                <pre style={{ whiteSpace: 'pre-wrap', color: '#ffcc00', fontSize: 12 }}>{fatalError}</pre>
+                <pre style={{ whiteSpace: 'pre-wrap', color: '#ffcc00', fontSize: 13 }}>{fatalError}</pre>
             </div>
         );
     }
 
     return (
         <div style={{ position: 'relative', minHeight: '100vh', background: '#000' }}>
-            {/* Persistent debug bar — always visible on top of Amplify UI */}
-            <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
-                background: '#222', color: '#0f0', fontFamily: 'monospace',
-                fontSize: 10, padding: '2px 6px', opacity: 0.9,
-            }}>
-                {status}
-            </div>
             <FaceLivenessDetectorCore
                 sessionId={sessionId}
                 region={region}
