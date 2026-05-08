@@ -547,4 +547,112 @@ router.post('/leaderboard/weekly/recompute', async (req, res, next) => {
   } catch (err) { return next(err); }
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// DEBUG — SMS SMOKE TEST
+// ────────────────────────────────────────────────────────────────────────────
+
+const testSmsSchema = z.object({
+  phone: z
+    .string()
+    .regex(/^\+?[6-9]\d{9}$/, 'Must be a valid 10-digit Indian mobile (with or without +91 prefix)')
+    .transform((p) => (p.startsWith('+') ? p : `+91${p}`)),
+  type: z.enum(['otp', 'sms', 'bulk']).default('otp'),
+  // optional: custom message for type=sms/bulk
+  message: z.string().max(320).optional(),
+});
+
+/**
+ * POST /admin/debug/test-sms
+ *
+ * Fires a real MSG91 SMS for smoke-testing the SMS integration.
+ * Safe to share with MSG91 support as a "demo API" — protected by admin auth.
+ *
+ * Body:
+ *   { "phone": "9876543210", "type": "otp" | "sms" | "bulk", "message": "..." }
+ *
+ * type = "otp"   → triggers otpService.sendOTP  (uses MSG91 OTP template)
+ * type = "sms"   → triggers smsService.sendSMS  (uses MSG91 Flow template)
+ * type = "bulk"  → triggers smsService.sendBulkSMS with [phone] as the list
+ *
+ * Response includes:
+ *   - provider: "msg91"
+ *   - type used
+ *   - phone called
+ *   - raw MSG91 API response
+ *   - credentials_configured flag (won't expose actual key values)
+ *   - timestamp
+ */
+router.post('/debug/test-sms', async (req, res, next) => {
+  try {
+    const parsed = testSmsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parsed.error.flatten(),
+      });
+    }
+
+    const { phone, type, message } = parsed.data;
+
+    // Credentials health check — return useful diagnostics without leaking values
+    const credentialsConfigured = !!(
+      process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID
+    );
+    const authKeyHint = process.env.MSG91_AUTH_KEY
+      ? `${process.env.MSG91_AUTH_KEY.slice(0, 6)}...` // first 6 chars only
+      : null;
+
+    logger.info('admin — test-sms triggered', {
+      phone,
+      type,
+      adminId: req.user?.userId ?? req.user?.id,
+    });
+
+    let result;
+    const testMessage = message || `[Sakhi Test] SMS delivery verification. Type: ${type}. Time: ${new Date().toISOString()}`;
+
+    if (type === 'otp') {
+      // Uses otpService — stores OTP in Redis/Supabase AND fires MSG91 OTP API
+      const { sendOTP } = require('../services/otpService');
+      await sendOTP(phone);
+      result = { dispatched: true, note: 'OTP generated, stored, and sent via MSG91 OTP API. Check the phone for the 6-digit code.' };
+
+    } else if (type === 'sms') {
+      result = await require('../services/smsService').sendSMS(phone, testMessage);
+
+    } else if (type === 'bulk') {
+      // Single-number bulk — same code path as real bulk but with one recipient
+      result = await require('../services/smsService').sendBulkSMS([phone], testMessage);
+    }
+
+    logger.info('admin — test-sms completed', { phone, type, result });
+
+    return res.status(200).json({
+      success:                true,
+      provider:               'msg91',
+      type,
+      phone,
+      message_sent:           type === 'otp' ? '(OTP — generated internally)' : testMessage,
+      credentials_configured: credentialsConfigured,
+      auth_key_hint:          authKeyHint,
+      template_id:            process.env.MSG91_TEMPLATE_ID || null,
+      msg91_response:         result,
+      tested_at:              new Date().toISOString(),
+      tested_by:              req.user?.userId ?? req.user?.id ?? 'admin',
+    });
+  } catch (err) {
+    logger.error('admin — test-sms error', { error: err.message });
+    // Return structured error so MSG91 support can read it
+    return res.status(500).json({
+      success:          false,
+      provider:         'msg91',
+      error_message:    err.message,
+      msg91_response:   err.response?.data || null,
+      http_status:      err.response?.status || 500,
+      tested_at:        new Date().toISOString(),
+    });
+  }
+});
+
 module.exports = router;
+
