@@ -71,7 +71,14 @@ export default function App() {
             throw new Error('Invalid credentials payload');
         }
 
-        return json.credentials;
+        const creds = json.credentials;
+        return {
+            accessKeyId:     creds.accessKeyId,
+            secretAccessKey: creds.secretAccessKey,
+            sessionToken:    creds.sessionToken,
+            // JSON serialization turns the Date into a string — convert it back
+            expiration: creds.expiration ? new Date(creds.expiration) : undefined,
+        };
     };
 
     if (!sessionId || !region) {
