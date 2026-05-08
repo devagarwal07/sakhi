@@ -12,7 +12,6 @@ import { Zap, ImageIcon, Lock, Play } from 'lucide-react-native';
 import { createFaceLivenessSession, getFaceLivenessResult } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
 import { API_BASE_URL, LIVENESS_BASE_URL, STORAGE_KEYS } from '../../src/utils/constants';
-import livenessHtml from '../../src/liveness/livenessHtml.js';
 import SakhiModal from '../../src/components/SakhiModal';
 
 export default function FaceVerificationScreen() {
@@ -22,8 +21,9 @@ export default function FaceVerificationScreen() {
     const [loading, setLoading] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
     const [modal, setModal] = useState(null);
-    const [webSession, setWebSession] = useState(null); // { sessionId, region }
+    const [webSession, setWebSession] = useState(null);
     const [webToken, setWebToken] = useState(null);
+    const [webReady, setWebReady] = useState(false); // true once liveness React app has mounted
     const cameraRef = useRef(null);
     const webviewRef = useRef(null);
     const scanLineAnim = useRef(new Animated.Value(0)).current;
@@ -122,6 +122,23 @@ export default function FaceVerificationScreen() {
     const startLiveness = async () => {
         setLoading(true);
         try {
+            // Liveness WebView needs a secure origin for camera APIs on most devices.
+            // If you don't set EXPO_PUBLIC_LIVENESS_URL (https), WebView may render blank.
+            if (
+                Platform.OS !== 'web' &&
+                typeof LIVENESS_BASE_URL === 'string' &&
+                LIVENESS_BASE_URL.startsWith('http://')
+            ) {
+                setModal({
+                    icon: '⚠️',
+                    title: 'Liveness setup required',
+                    message:
+                        'Face liveness needs an HTTPS base URL for camera access in the WebView. Set EXPO_PUBLIC_LIVENESS_URL to an https URL (ngrok/https reverse proxy) and try again.',
+                    buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                });
+                return;
+            }
+
             const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
             if (!token) {
                 setModal({
@@ -135,6 +152,7 @@ export default function FaceVerificationScreen() {
 
             const { data } = await createFaceLivenessSession();
             setWebToken(token);
+            setWebReady(false);
             setWebSession({ sessionId: data.session_id, region: data.region, ts: Date.now() });
         } catch (err) {
             const code = err?.response?.data?.error?.code;
@@ -249,132 +267,149 @@ export default function FaceVerificationScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Camera background */}
-            <CameraView
-                ref={cameraRef}
-                style={StyleSheet.absoluteFill}
-                facing="front"
-            />
-
-            {/* Dark overlay */}
-            <View style={styles.darkOverlay} />
-
-            {/* Top Navigation */}
-            <View style={[styles.topNav, { paddingTop: topNavPaddingTop }]}>
-                <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
-                </Pressable>
-                <Text style={styles.navTitle}>Identity Verification</Text>
-                <Text style={styles.stepBadge}>Step 2 of 2</Text>
-            </View>
-
-            {/* Main Scanning Area */}
-            <View style={[styles.scanArea, { top: scanAreaTop, bottom: scanAreaBottom }]}>
-                {/* Face guide frame */}
-                <View style={[styles.faceFrame, { width: frameWidth, height: frameHeight }]}>
-                    {/* Oval dashed frame */}
-                    <View style={[styles.ovalDashed, { width: frameWidth, height: frameHeight, borderRadius: ovalBorderRadius }]} />
-
-                    {/* Scanning line */}
-                    <Animated.View
-                        style={[
-                            styles.scanLine,
-                            { transform: [{ translateY: scanTranslateY }] },
-                        ]}
+            {/*
+                IMPORTANT: Do not keep the Expo CameraView mounted while the WebView liveness
+                flow is active — both will compete for the front camera and WebView can go blank.
+            */}
+            {!webSession && (
+                <>
+                    {/* Camera background */}
+                    <CameraView
+                        ref={cameraRef}
+                        style={StyleSheet.absoluteFill}
+                        facing="front"
                     />
 
-                    {/* Corner indicators */}
-                    <View style={styles.cornersWrapper}>
-                        <View style={[styles.corner, styles.cornerTL]} />
-                        <View style={[styles.corner, styles.cornerTR]} />
-                        <View style={[styles.corner, styles.cornerBL]} />
-                        <View style={[styles.corner, styles.cornerBR]} />
+                    {/* Dark overlay */}
+                    <View style={styles.darkOverlay} />
+
+                    {/* Top Navigation */}
+                    <View style={[styles.topNav, { paddingTop: topNavPaddingTop }]}>
+                        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
+                            <Text style={styles.backIcon}>←</Text>
+                        </Pressable>
+                        <Text style={styles.navTitle}>Identity Verification</Text>
+                        <Text style={styles.stepBadge}>Step 2 of 2</Text>
                     </View>
-                </View>
 
-                {/* Instruction text */}
-                <View style={styles.instructionBlock}>
-                    <Text style={styles.instructionTitle}>Hold still, scanning...</Text>
-                    <Text style={styles.instructionSub}>Position your face within the frame</Text>
-                </View>
-            </View>
+                    {/* Main Scanning Area */}
+                    <View style={[styles.scanArea, { top: scanAreaTop, bottom: scanAreaBottom }]}>
+                        {/* Face guide frame */}
+                        <View style={[styles.faceFrame, { width: frameWidth, height: frameHeight }]}>
+                            {/* Oval dashed frame */}
+                            <View style={[styles.ovalDashed, { width: frameWidth, height: frameHeight, borderRadius: ovalBorderRadius }]} />
 
-            {/* Bottom Controls */}
-            <View style={[styles.bottomControls, { paddingBottom: bottomControlsPaddingBottom }]}>
-                {/* Progress Indicator */}
-                <View style={styles.progressSection}>
-                    <View style={styles.progressLabelRow}>
-                        {/* <Text style={styles.progressLabel}>SCANNING PROGRESS</Text> */}
-                        <Text style={styles.progressPercent}>{scanProgress}%</Text>
-                    </View>
-                    <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${scanProgress}%` }]} />
-                    </View>
-                </View>
+                            {/* Scanning line */}
+                            <Animated.View
+                                style={[
+                                    styles.scanLine,
+                                    { transform: [{ translateY: scanTranslateY }] },
+                                ]}
+                            />
 
-                {/* Shutter & Controls Row */}
-                <View style={styles.controlsRow}>
-                    {/* Flash button */}
-                    <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
-                        icon: '💡',
-                        title: 'Flash',
-                        message: 'Flash is not available on the front camera.',
-                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                    })}>
-                        <Zap size={22} color="#fff" strokeWidth={2} />
-                    </TouchableOpacity>
-
-                    {/* Large Shutter Button */}
-                    <TouchableOpacity
-                        style={styles.shutterOuter}
-                        onPress={startLiveness}
-                        disabled={loading}
-                        activeOpacity={0.9}
-                    >
-                        <View style={styles.shutterInner}>
-                            {loading ? (
-                                <ActivityIndicator color="#0F172A" size="small" />
-                            ) : (
-                                <Play size={22} color="#0F172A" fill="#0F172A" strokeWidth={0} />
-                            )}
+                            {/* Corner indicators */}
+                            <View style={styles.cornersWrapper}>
+                                <View style={[styles.corner, styles.cornerTL]} />
+                                <View style={[styles.corner, styles.cornerTR]} />
+                                <View style={[styles.corner, styles.cornerBL]} />
+                                <View style={[styles.corner, styles.cornerBR]} />
+                            </View>
                         </View>
-                    </TouchableOpacity>
 
-                    {/* Gallery button */}
-                    <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
-                        icon: '⚠️',
-                        title: 'Upload from Gallery',
-                        message: 'For security, KYC selfies must be taken live with your camera.',
-                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                    })}>
-                        <ImageIcon size={22} color="#fff" strokeWidth={2} />
-                    </TouchableOpacity>
-                </View>
+                        {/* Instruction text */}
+                        <View style={styles.instructionBlock}>
+                            <Text style={styles.instructionTitle}>Hold still, scanning...</Text>
+                            <Text style={styles.instructionSub}>Position your face within the frame</Text>
+                        </View>
+                    </View>
 
-                {/* Security Badge */}
-                <View style={styles.securityBadge}>
-                    <Lock size={11} color="#BEA3D8" strokeWidth={2.5} />
-                    <Text style={styles.securityText}>SECURE VERIFICATION BY SAKHI SAFETY</Text>
-                </View>
-            </View>
+                    {/* Bottom Controls */}
+                    <View style={[styles.bottomControls, { paddingBottom: bottomControlsPaddingBottom }]}>
+                        {/* Progress Indicator */}
+                        <View style={styles.progressSection}>
+                            <View style={styles.progressLabelRow}>
+                                {/* <Text style={styles.progressLabel}>SCANNING PROGRESS</Text> */}
+                                <Text style={styles.progressPercent}>{scanProgress}%</Text>
+                            </View>
+                            <View style={styles.progressTrack}>
+                                <View style={[styles.progressFill, { width: `${scanProgress}%` }]} />
+                            </View>
+                        </View>
+
+                        {/* Shutter & Controls Row */}
+                        <View style={styles.controlsRow}>
+                            {/* Flash button */}
+                            <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
+                                icon: '💡',
+                                title: 'Flash',
+                                message: 'Flash is not available on the front camera.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            })}>
+                                <Zap size={22} color="#fff" strokeWidth={2} />
+                            </TouchableOpacity>
+
+                            {/* Large Shutter Button */}
+                            <TouchableOpacity
+                                style={styles.shutterOuter}
+                                onPress={startLiveness}
+                                disabled={loading}
+                                activeOpacity={0.9}
+                            >
+                                <View style={styles.shutterInner}>
+                                    {loading ? (
+                                        <ActivityIndicator color="#0F172A" size="small" />
+                                    ) : (
+                                        <Play size={22} color="#0F172A" fill="#0F172A" strokeWidth={0} />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* Gallery button */}
+                            <TouchableOpacity style={styles.sideBtn} onPress={() => setModal({
+                                icon: '⚠️',
+                                title: 'Upload from Gallery',
+                                message: 'For security, KYC selfies must be taken live with your camera.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            })}>
+                                <ImageIcon size={22} color="#fff" strokeWidth={2} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Security Badge */}
+                        <View style={styles.securityBadge}>
+                            <Lock size={11} color="#BEA3D8" strokeWidth={2.5} />
+                            <Text style={styles.securityText}>SECURE VERIFICATION BY SAKHI SAFETY</Text>
+                        </View>
+                    </View>
+                </>
+            )}
 
             {!!webSession && (
                 <View style={StyleSheet.absoluteFill}>
+                    {/* Native loading overlay — shown while liveness bundle downloads + ML models init */}
+                    {!webReady && (
+                        <View style={{
+                            ...StyleSheet.absoluteFillObject,
+                            backgroundColor: '#0d0d0d',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 16,
+                            zIndex: 1,
+                        }}>
+                            <ActivityIndicator size="large" color="#9B59B6" />
+                            <Text style={{ color: '#ccc', fontSize: 14, fontFamily: 'System', textAlign: 'center' }}>
+                                Starting face scan…{`\n`}
+                                <Text style={{ color: '#777', fontSize: 11 }}>This may take a few seconds</Text>
+                            </Text>
+                        </View>
+                    )}
                     <WebView
-                        source={(() => {
-                            // Inject session data directly into the HTML so it's available
-                            // before ANY script in the bundle executes. Much more reliable than
-                            // injectedJavaScriptBeforeContentLoaded for source={{ html }}.
-                            const sessionScript = `<script>window.__SAKHI_SESSION__=${JSON.stringify({
-                                sessionId: webSession?.sessionId || '',
-                                region:    webSession?.region    || '',
-                                token:     webToken || '',
-                            })};</script>`;
-                            return {
-                                html: livenessHtml.replace('</head>', sessionScript + '</head>'),
-                                baseUrl: LIVENESS_BASE_URL,
-                            };
-                        })()}
+                        source={{
+                            uri: `${LIVENESS_BASE_URL.replace(/\/$/, '')}/liveness/?sessionId=${encodeURIComponent(
+                                webSession.sessionId
+                            )}&region=${encodeURIComponent(webSession.region)}#token=${encodeURIComponent(webToken || '')}`,
+                            headers: { 'ngrok-skip-browser-warning': 'true' },
+                        }}
                         ref={webviewRef}
                         style={{ flex: 1, backgroundColor: '#000000' }}
                         originWhitelist={['*']}
@@ -422,9 +457,6 @@ export default function FaceVerificationScreen() {
                         injectedJavaScript={`
                             (function applyLivenessFix() {
                                 var css = [
-                                    // Hide the hint text that collides with the toast
-                                    '.amplify-liveness-hint--mobile { display: none !important; }',
-                                    '.amplify-liveness-hint__text { display: none !important; }',
                                     // Push the toast container (progress bar area) down so it
                                     // doesn't overlap with the large scanning toast text
                                     '.amplify-liveness-toast__container { margin-top: 32px !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }',
@@ -444,8 +476,6 @@ export default function FaceVerificationScreen() {
                                     (function() {
                                         if (document.getElementById('sakhi-liveness-fix')) return;
                                         var css = [
-                                            '.amplify-liveness-hint--mobile { display: none !important; }',
-                                            '.amplify-liveness-hint__text { display: none !important; }',
                                             '.amplify-liveness-toast__container { margin-top: 32px !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }',
                                             '.amplify-liveness-match-indicator { margin-top: 8px !important; }',
                                         ].join('\\n');
@@ -461,8 +491,12 @@ export default function FaceVerificationScreen() {
                         onMessage={(event) => {
                             try {
                                 const msg = JSON.parse(event.nativeEvent.data);
-                                if (msg?.type === 'analysis_complete') {
+                                if (msg?.type === 'react_mounted') {
+                                    setWebReady(true); // hide the native loading overlay
+                                } else if (msg?.type === 'analysis_complete') {
                                     completeLiveness(msg.sessionId || webSession.sessionId);
+                                } else if (msg?.type === 'debug') {
+                                    console.warn('[Liveness]', msg?.message);
                                 } else if (msg?.type === 'error') {
                                     const message =
                                         typeof msg.message === 'string'

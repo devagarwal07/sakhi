@@ -64,11 +64,9 @@ export default function App() {
     const [fatalError, setFatalError] = useState('');
     const [status, setStatus] = useState('React mounted');
 
-    // Post debug info to native immediately on mount
     useEffect(() => {
-        const info = `sid=${sessionId?.slice(0,8)} reg=${region} tok=${!!SAKHI_TOKEN}`;
-        setStatus(info);
-        postToNative({ type: 'debug', message: info });
+        // Signal to the native app that React has mounted — hides the loading overlay
+        postToNative({ type: 'react_mounted' });
     }, []);
 
     const credentialProvider = async () => {
