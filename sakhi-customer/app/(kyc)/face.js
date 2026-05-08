@@ -370,6 +370,7 @@ export default function FaceVerificationScreen() {
                             },
                         }}
                         ref={webviewRef}
+                        style={{ flex: 1, backgroundColor: '#000000' }}
                         originWhitelist={['*']}
                         javaScriptEnabled
                         domStorageEnabled
@@ -379,6 +380,16 @@ export default function FaceVerificationScreen() {
                         androidLayerType="hardware"
                         cacheEnabled={false}
                         setSupportMultipleWindows={false}
+                        renderLoading={() => (
+                            <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+                                <ActivityIndicator size="large" color="#9B59B6" />
+                            </View>
+                        )}
+                        startInLoadingState={true}
+                        onHttpError={(syntheticEvent) => {
+                            const { nativeEvent } = syntheticEvent;
+                            console.warn('WebView HTTP error', nativeEvent.statusCode, nativeEvent.url);
+                        }}
                         onPermissionRequest={(event) => {
                             try { event.grant(event.resources); } catch { }
                         }}
