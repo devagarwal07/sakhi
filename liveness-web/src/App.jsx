@@ -2,10 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { FaceLivenessDetectorCore } from '@aws-amplify/ui-react-liveness';
 
 function parseQuery() {
+    // When loaded inline in React Native WebView, params come from a global
+    // injected via injectedJavaScriptBeforeContentLoaded. Fall back to URL
+    // search params when the page is served from the backend (browser/dev).
+    const g = window.__SAKHI_SESSION__ || {};
     const params = new URLSearchParams(window.location.search);
     return {
-        sessionId: params.get('sessionId') || params.get('session_id') || '',
-        region: params.get('region') || '',
+        sessionId: g.sessionId || params.get('sessionId') || params.get('session_id') || '',
+        region:    g.region    || params.get('region')    || '',
     };
 }
 
@@ -42,12 +46,12 @@ function formatUnknownError(err) {
     }
 }
 
-// Read the auth token from the URL hash (#token=...).
-// This is more reliable than injectedJavaScriptBeforeContentLoaded
-// because it's always available before any JS runs.
+// Read the auth token — prefer the injected global (React Native inline mode),
+// fall back to URL hash (#token=...) for server-served mode.
 const SAKHI_TOKEN = (() => {
     try {
-        const hash = window.location.hash.slice(1); // remove leading #
+        if (window.__SAKHI_SESSION__?.token) return window.__SAKHI_SESSION__.token;
+        const hash = window.location.hash.slice(1);
         const params = new URLSearchParams(hash);
         return params.get('token') || '';
     } catch {

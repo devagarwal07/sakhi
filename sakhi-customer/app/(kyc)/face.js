@@ -12,6 +12,7 @@ import { Zap, ImageIcon, Lock, Play } from 'lucide-react-native';
 import { createFaceLivenessSession, getFaceLivenessResult } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
 import { API_BASE_URL, LIVENESS_BASE_URL, STORAGE_KEYS } from '../../src/utils/constants';
+import livenessHtml from '../../src/liveness/livenessHtml.js';
 import SakhiModal from '../../src/components/SakhiModal';
 
 export default function FaceVerificationScreen() {
@@ -361,13 +362,10 @@ export default function FaceVerificationScreen() {
                 <View style={StyleSheet.absoluteFill}>
                     <WebView
                         source={{
-                            uri: `${LIVENESS_BASE_URL.replace(/\/$/, '')}/liveness/?sessionId=${encodeURIComponent(
-                                webSession.sessionId
-                            )}&region=${encodeURIComponent(webSession.region)}&_t=${webSession.ts}#token=${encodeURIComponent(webToken || '')}`,
-                            headers: {
-                                // Bypass ngrok's browser-warning interstitial page
-                                'ngrok-skip-browser-warning': 'true',
-                            },
+                            // Inline bundled HTML — no network load for UI.
+                            // baseUrl sets origin so relative API calls resolve to the backend.
+                            html: livenessHtml,
+                            baseUrl: LIVENESS_BASE_URL,
                         }}
                         ref={webviewRef}
                         style={{ flex: 1, backgroundColor: '#000000' }}
@@ -393,11 +391,21 @@ export default function FaceVerificationScreen() {
                         onPermissionRequest={(event) => {
                             try { event.grant(event.resources); } catch { }
                         }}
-                        // Patch isSecureContext BEFORE page loads (camera needs secure context)
+                        // Inject session params + isSecureContext patch BEFORE inline script executes
                         injectedJavaScriptBeforeContentLoaded={`
                             (function() {
                                 try {
-                                    Object.defineProperty(window, 'isSecureContext', { get: function() { return true; }, configurable: true });
+                                    // Expose session info to the liveness React app
+                                    window.__SAKHI_SESSION__ = {
+                                        sessionId: ${JSON.stringify(webSession?.sessionId || '')},
+                                        region:    ${JSON.stringify(webSession?.region    || '')},
+                                        token:     ${JSON.stringify(webToken || '')},
+                                    };
+                                    // Ensure camera APIs are available (secure context)
+                                    Object.defineProperty(window, 'isSecureContext', {
+                                        get: function() { return true; },
+                                        configurable: true,
+                                    });
                                 } catch(e) {}
                             })();
                             true;
