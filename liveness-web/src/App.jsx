@@ -104,6 +104,13 @@ __SESSION__: ${JSON.stringify(window.__SAKHI_SESSION__)}`}
                 region={region}
                 config={{ credentialProvider }}
                 disableStartScreen={false}
+                videoConstraints={{
+                    // Use 'user' (not exact) so Android WebView can fall back
+                    // when it can't enumerate devices before permission is granted
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                }}
                 onAnalysisComplete={async () => {
                     postToNative({ type: 'analysis_complete', sessionId });
                 }}

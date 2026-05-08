@@ -434,7 +434,7 @@ export default function FaceVerificationScreen() {
                         onPermissionRequest={(event) => {
                             try { event.grant(event.resources); } catch { }
                         }}
-                        // Inject session params + isSecureContext patch BEFORE inline script executes
+                        // Inject session params + isSecureContext patch + getUserMedia fix BEFORE scripts
                         injectedJavaScriptBeforeContentLoaded={`
                             (function() {
                                 try {
@@ -444,11 +444,44 @@ export default function FaceVerificationScreen() {
                                         region:    ${JSON.stringify(webSession?.region    || '')},
                                         token:     ${JSON.stringify(webToken || '')},
                                     };
-                                    // Ensure camera APIs are available (secure context)
+                                    // Ensure camera APIs are available (secure context patch)
                                     Object.defineProperty(window, 'isSecureContext', {
                                         get: function() { return true; },
                                         configurable: true,
                                     });
+                                    // Fix 'Default camera not found' on Android WebView:
+                                    // Amplify uses facingMode:{exact:'user'} which fails when
+                                    // the WebView can't enumerate devices before permission grant.
+                                    var origGetUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+                                        ? navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+                                        : null;
+                                    if (origGetUserMedia && navigator.mediaDevices) {
+                                        navigator.mediaDevices.getUserMedia = function(constraints) {
+                                            if (constraints && constraints.video && constraints.video.facingMode) {
+                                                var fm = constraints.video.facingMode;
+                                                // Relax exact:{user} -> 'user' so WebView can fall back
+                                                if (fm && typeof fm === 'object' && fm.exact) {
+                                                    constraints = Object.assign({}, constraints, {
+                                                        video: Object.assign({}, constraints.video, {
+                                                            facingMode: fm.exact
+                                                        })
+                                                    });
+                                                }
+                                            }
+                                            return origGetUserMedia(constraints).catch(function(err) {
+                                                // If still fails, try with no facingMode constraint
+                                                if (err.name === 'NotFoundError' || err.name === 'OverconstrainedError') {
+                                                    var relaxed = Object.assign({}, constraints, {
+                                                        video: { facingMode: 'user' }
+                                                    });
+                                                    return origGetUserMedia(relaxed).catch(function() {
+                                                        return origGetUserMedia({ video: true });
+                                                    });
+                                                }
+                                                throw err;
+                                            });
+                                        };
+                                    }
                                 } catch(e) {}
                             })();
                             true;
