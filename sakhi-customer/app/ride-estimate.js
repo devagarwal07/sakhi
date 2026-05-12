@@ -12,30 +12,30 @@ import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
 
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
 async function fetchDirectionsPolyline(origin, destination, waypoint) {
-    const waypointParam = waypoint
-        ? `&waypoints=${waypoint.latitude},${waypoint.longitude}`
-        : '';
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving${waypointParam}&key=${GOOGLE_MAPS_KEY}`;
-    const res = await fetch(url);
+    // Mappls Route Advanced API — same encoded polyline format as Google
+    // Docs: https://github.com/mappls-api/mappls-rest-apis/blob/main/docs/custom/route-adv-api.md
+    const start = `${origin.longitude},${origin.latitude}`;
+    const dest  = `${destination.longitude},${destination.latitude}`;
+    const via   = waypoint ? `&viaPoints=${waypoint.longitude},${waypoint.latitude}` : '';
+    const url   = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/route_adv/driving/${start};${dest}?geometries=polyline&overview=full${via}`;
+    const res  = await fetch(url);
     const data = await res.json();
-    if (data.routes && data.routes.length > 0) {
-        // Flatten across all legs (pickup → stop → dropoff)
-        const points = data.routes[0].legs.flatMap((leg) =>
-            leg.steps.flatMap((step) => decodePolyline(step.polyline.points))
-        );
-        const totalDistM = data.routes[0].legs.reduce((s, l) => s + l.distance.value, 0);
-        const totalDurS  = data.routes[0].legs.reduce((s, l) => s + l.duration.value, 0);
-        const distance = `${(totalDistM / 1000).toFixed(1)} km`;
-        const duration = `${Math.round(totalDurS / 60)} mins`;
+    const route = data?.routes?.[0];
+    if (route) {
+        const points   = decodePolyline(route.geometry);
+        const distM    = route.legs?.reduce((s, l) => s + (l.distance || 0), 0) ?? 0;
+        const durS     = route.legs?.reduce((s, l) => s + (l.duration || 0), 0) ?? 0;
+        const distance = `${(distM / 1000).toFixed(1)} km`;
+        const duration = `${Math.round(durS / 60)} mins`;
         return { points, distance, duration };
     }
     return { points: [], distance: null, duration: null };
 }
 
-// Decode Google encoded polyline
+// Decode encoded polyline (compatible with both Google & Mappls formats)
 function decodePolyline(encoded) {
     const poly = [];
     let index = 0, lat = 0, lng = 0;
@@ -58,6 +58,7 @@ function decodePolyline(encoded) {
     }
     return poly;
 }
+
 
 const { width } = Dimensions.get('window');
 

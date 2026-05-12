@@ -10,6 +10,26 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { getRideHistory } from '../src/api/endpoints';
 
+const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
+
+// ── Mappls helpers ────────────────────────────────────────────────────────────
+// Fetch an OAuth token from Mappls (needed for Atlas / Search APIs)
+let _mapplsToken = null;
+let _tokenExpiry = 0;
+async function getMapplsToken() {
+  if (_mapplsToken && Date.now() < _tokenExpiry) return _mapplsToken;
+  const res = await fetch(
+    `https://outpost.mappls.com/api/security/oauth/token?grant_type=client_credentials` +
+    `&client_id=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_ID}` +
+    `&client_secret=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_SECRET}`,
+    { method: 'POST' }
+  );
+  const json = await res.json();
+  _mapplsToken = json.access_token;
+  _tokenExpiry = Date.now() + (json.expires_in - 60) * 1000;
+  return _mapplsToken;
+}
+
 
 export default function LocationSearchScreen() {
     const router = useRouter();
@@ -77,14 +97,26 @@ export default function LocationSearchScreen() {
         setSearching(true);
         searchTimer.current = setTimeout(async () => {
             try {
+                const token = await getMapplsToken();
                 const lat = ride?.pickup?.latitude;
                 const lng = ride?.pickup?.longitude;
-                const locationParam = (lat && lng) ? `&location=${lat},${lng}&radius=50000` : '';
+                const biasParam = (lat && lng) ? `&location=${lat},${lng}` : '';
+                // Mappls Place Search / Autocomplete
                 const response = await fetch(
-                    `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}&sessiontoken=${Date.now()}&components=country:in${locationParam}`
+                    `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(text)}&access_token=${token}&region=IND${biasParam}`
                 );
                 const data = await response.json();
-                setResults(data.predictions || []);
+                // Normalise to same shape our UI expects
+                const raw = data?.suggestedLocations || [];
+                setResults(raw.map(p => ({
+                    place_id: p.eLoc,
+                    structured_formatting: {
+                        main_text:      p.placeName  || p.keywords || text,
+                        secondary_text: p.placeAddress || p.addressTokens?.city || '',
+                    },
+                    _lat: p.latitude,
+                    _lng: p.longitude,
+                })));
             } catch {
                 setResults([]);
             } finally {
@@ -97,29 +129,25 @@ export default function LocationSearchScreen() {
         Keyboard.dismiss();
         try {
             let coords;
-            if (place.lat && place.lng) {
+            // If result came from our Mappls search, coords are inline
+            if (place._lat && place._lng) {
+                coords = { latitude: parseFloat(place._lat), longitude: parseFloat(place._lng) };
+            } else if (place.lat && place.lng) {
+                // Recent destinations already have coords
                 coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lng) };
             } else if (place.place_id && !place.place_id.startsWith('recent')) {
-                const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
+                // Fallback: use Mappls eLoc place details to get coords
+                const token = await getMapplsToken();
+                const response = await fetch(
+                    `https://atlas.mappls.com/api/places/geocode?eLoc=${place.place_id}&access_token=${token}`
+                );
                 const data = await response.json();
-                if (data.result?.geometry?.location) {
-                    coords = {
-                        latitude:  data.result.geometry.location.lat,
-                        longitude: data.result.geometry.location.lng,
-                    };
+                const loc = data?.results?.[0];
+                if (loc) {
+                    coords = { latitude: parseFloat(loc.latitude), longitude: parseFloat(loc.longitude) };
                 }
             }
             const newAddress = place.structured_formatting?.main_text || place.description || place.main;
-            if (!coords && newAddress) {
-                const textSearch = await fetch(`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(newAddress)}&inputtype=textquery&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY}`);
-                const textData = await textSearch.json();
-                if (textData.candidates?.length > 0) {
-                    coords = {
-                        latitude:  textData.candidates[0].geometry.location.lat,
-                        longitude: textData.candidates[0].geometry.location.lng,
-                    };
-                }
-            }
             if (!coords || !coords.latitude) throw new Error('Could not compute valid coordinates for this location.');
 
             if (activeInput === 'pickup') {

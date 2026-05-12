@@ -4,7 +4,7 @@ import {
     Dimensions, Alert, Animated, PanResponder, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { StatusBar } from 'react-native';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
@@ -14,20 +14,19 @@ import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses, getRideHistory } from '../../api/endpoints';
 
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
 async function reverseGeocode(latitude, longitude) {
     try {
+        // Mappls Reverse Geocode API
         const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_KEY}`
+            `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/rev_geocode?lat=${latitude}&lng=${longitude}`
         );
         const data = await res.json();
-        if (data.results && data.results.length > 0) {
-            // Use the formatted_address of the first (most precise) result
-            return data.results[0].formatted_address;
-        }
-    } catch (_) {}
-    return 'Current Location';
+        return data?.results?.address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    } catch {
+        return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    }
 }
 
 const { width } = Dimensions.get('window');
@@ -163,7 +162,7 @@ export default function HomeScreen() {
                 <MapView
                     ref={mapRef}
                     style={StyleSheet.absoluteFill}
-                    provider={PROVIDER_GOOGLE}
+                    provider={undefined}
                     showsUserLocation={false}
                     showsMyLocationButton={false}
                     initialRegion={{

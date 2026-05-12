@@ -2,8 +2,8 @@
  * SmartMapView (sakhi-customer)
  *
  * Auto-switches map renderer:
- *   - Expo Go  → GoogleMapWebView (Maps JS API via WebView)
- *   - Native   → react-native-maps PROVIDER_GOOGLE
+ *   - Expo Go  → MapplsMapWebView (Mappls Web SDK via WebView)
+ *   - Native   → react-native-maps PROVIDER_GOOGLE (unchanged)
  *
  * Unified prop API:
  *   style, center, zoom, markers, polylines,
@@ -17,14 +17,14 @@ import Constants from 'expo-constants';
 
 const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
-let GoogleMapWebView = null;
+let MapplsMapWebView = null;
 let RNMapView       = null;
 let Marker          = null;
 let Polyline        = null;
 let PROVIDER_GOOGLE = null;
 
 if (IS_EXPO_GO) {
-    GoogleMapWebView = require('./GoogleMapWebView').default;
+    MapplsMapWebView = require('./MapplsMapWebView').default;
 } else {
     const maps = require('react-native-maps');
     RNMapView       = maps.default;
@@ -64,7 +64,7 @@ const SmartMapView = forwardRef(function SmartMapView(
 ) {
     if (IS_EXPO_GO) {
         return (
-            <GoogleMapWebView
+            <MapplsMapWebView
                 style={style}
                 center={center}
                 zoom={zoom}

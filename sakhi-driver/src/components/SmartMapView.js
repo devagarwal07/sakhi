@@ -4,8 +4,8 @@
  * ┌─────────────────────────────────┬──────────────────────────────────────────┐
  * │ Environment                     │ Renderer                                 │
  * ├─────────────────────────────────┼──────────────────────────────────────────┤
- * │ Expo Go (storeClient)           │ GoogleMapWebView (WebView JS API)        │
- * │ Native build / EAS / bare RN    │ react-native-maps PROVIDER_GOOGLE        │
+ * │ Expo Go (storeClient)           │ MapplsMapWebView (Mappls Web SDK via WebView)     │
+ * │ Native build / EAS / bare RN    │ react-native-maps PROVIDER_GOOGLE (unchanged)    │
  * └─────────────────────────────────┴──────────────────────────────────────────┘
  *
  * Unified prop API (works with both renderers):
@@ -35,14 +35,14 @@ const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 // We use inline requires so bundlers don't choke on native-only modules
 // when running in Expo Go.
 
-let GoogleMapWebView = null;
+let MapplsMapWebView = null;
 let RNMapView       = null;
 let Marker          = null;
 let Polyline        = null;
 let PROVIDER_GOOGLE = null;
 
 if (IS_EXPO_GO) {
-  GoogleMapWebView = require('./GoogleMapWebView').default;
+  MapplsMapWebView = require('./MapplsMapWebView').default;
 } else {
   const maps = require('react-native-maps');
   RNMapView       = maps.default;
@@ -82,10 +82,10 @@ const SmartMapView = forwardRef(function SmartMapView(
   },
   ref           // forwarded ref → connected to native MapView only
 ) {
-  // ── Expo Go path: render WebView-based Google Maps ─────────────────────
+  // ── Expo Go path: render WebView-based Mappls map ──
   if (IS_EXPO_GO) {
     return (
-      <GoogleMapWebView
+      <MapplsMapWebView
         style={style}
         center={center}
         zoom={zoom}
