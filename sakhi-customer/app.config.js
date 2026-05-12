@@ -92,10 +92,10 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "9664af70-e889-40d2-9b8a-de3dc0acd8f3"
+        projectId: "1a722a17-8f46-42ac-b695-2eb21da2d324"
       },
       router: {}
     },
-    owner: "shubh_up301"
+    owner: "devaga1"
   }
 };
