@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.sakhi.driver",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1E1B2E"

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "REPLACE_ME_project_number",
-    "project_id": "bamboo-basis-479814-c9",
-    "storage_bucket": "bamboo-basis-479814-c9.appspot.com"
+    "project_number": "16214232231",
+    "project_id": "sakhi-22949",
+    "storage_bucket": "sakhi-22949.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "REPLACE_ME_mobilesdk_app_id",
+        "mobilesdk_app_id": "1:16214232231:android:c2ec36528c2d5fd4621f82",
         "android_client_info": {
           "package_name": "com.sakhi.driver"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_ME_android_api_key"
+          "current_key": "AIzaSyACxIcF9FkWXMXUQYxq9ZH4DpLMjRb0gnM"
         }
       ],
       "services": {
