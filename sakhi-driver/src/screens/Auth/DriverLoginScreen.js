@@ -30,13 +30,29 @@ export default function DriverLoginScreen({ navigation }) {
     if (!isValid) return;
     try {
       setLoading(true);
-      await client.post('/auth/send-otp', { phone: `+91${phone}`, role: 'driver' });
-      navigation.navigate('DriverOtp', { phone: `+91${phone}` });
+      const fullPhone = `+91${phone}`;
+      console.log('[Login] Sending OTP to', fullPhone, 'via', process.env.EXPO_PUBLIC_API_URL);
+      await client.post('/auth/send-otp', { phone: fullPhone, role: 'driver' });
+      navigation.navigate('DriverOtp', { phone: fullPhone });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not send OTP. Try again.');
+      const msg = err.response?.data?.message
+        ?? err.response?.data?.error?.message
+        ?? err.message
+        ?? 'Could not send OTP. Try again.';
+      console.error('[Login] sendOTP error:', err.message, err.response?.data);
+      Alert.alert('Error', `${msg}\n\nAPI: ${process.env.EXPO_PUBLIC_API_URL ?? 'not set'}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Dev bypass — skip SMS OTP entirely during development
+  const handleDevBypass = () => {
+    if (!isValid) { Alert.alert('Enter a 10-digit number first'); return; }
+    navigation.navigate('DriverOtp', {
+      phone: `+91${phone}`,
+      devBypass: process.env.EXPO_PUBLIC_OTP_BYPASS ?? '123456',
+    });
   };
 
   return (
@@ -109,6 +125,17 @@ export default function DriverLoginScreen({ navigation }) {
               : <Text style={styles.ctaText}>{t('auth.sendOtp')}</Text>
             }
           </TouchableOpacity>
+
+          {/* ── Dev bypass (only in development) ── */}
+          {process.env.EXPO_PUBLIC_OTP_BYPASS ? (
+            <TouchableOpacity
+              style={styles.devBtn}
+              onPress={handleDevBypass}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.devBtnText}>⚡ Dev: Skip OTP (use {process.env.EXPO_PUBLIC_OTP_BYPASS})</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {/* ── Divider ── */}
           <View style={styles.dividerRow}>
@@ -310,5 +337,22 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#BEA3D8',
     textDecorationLine: 'underline',
+  },
+
+  // ── Dev bypass button ─────────────────────────────────────────────────────
+  devBtn: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,200,0,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,180,0,0.4)',
+    alignItems: 'center',
+  },
+  devBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92600A',
   },
 });

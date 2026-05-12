@@ -468,21 +468,36 @@ async function persistDLVerification(driverId, dlResult) {
 //   5. DL Verification
 //   6. Store Signzy request tracking IDs
 // ──────────────────────────────────────────────────────────────────────────────
-async function submitKYC(driverId, files) {
+async function submitKYC(driverId, files, body = {}) {
   const getUrl = (field) => files?.[field]?.[0]?.location || null;
 
-  const docUrls = {
-    dl_url:            getUrl('dl'),
-    rc_url:            getUrl('rc'),
-    insurance_url:     getUrl('insurance'),
-    aadhaar_url:       getUrl('aadhaar'),
-    profile_photo_url: getUrl('profile_photo'),
+  const dlFrontUrl = getUrl('dl');
+  const dlBackUrl  = getUrl('dl_back');
+
+  // Also accept personal details from form body
+  const driverName = body?.driver_name?.trim() || null;
+  const dlNumber   = body?.dl_number?.trim().toUpperCase() || null;
+
+  if (!dlFrontUrl || !dlBackUrl) {
+    throw Object.assign(
+      new Error('Both DL front and back photos are required.'),
+      { code: 'MISSING_DOCUMENTS', status: 422 }
+    );
+  }
+
+  const updates = {
+    dl_url:             dlFrontUrl,
+    dl_back_url:        dlBackUrl,
+    kyc_status:         'pending',
+    onboarding_status:  'kyc_submitted',
+    kyc_submitted_at:   new Date().toISOString(),
+    ...(driverName && { name:      driverName }),
+    ...(dlNumber   && { dl_number: dlNumber }),
   };
 
-  // ── 1. Save S3 URLs, mark KYC pending ──────────────────────────────────────
   const { error: updateErr } = await supabase
     .from('drivers')
-    .update({ ...docUrls, kyc_status: 'pending' })
+    .update(updates)
     .eq('id', driverId);
 
   if (updateErr) {
@@ -490,124 +505,10 @@ async function submitKYC(driverId, files) {
     throw Object.assign(new Error('Failed to save KYC documents'), { code: 'DB_ERROR', status: 500 });
   }
 
-  // Fetch driver profile for KYC fields
-  const { data: driverRows } = await supabase
-    .from('drivers')
-    .select('name, phone, dob, dl_number, dl_number_from_digilocker, dl_issue_date, pan')
-    .eq('id', driverId)
-    .limit(1);
-  const driver = driverRows?.[0] ?? {};
-
-  // ── 2. Convert doc S3 URLs to base64 for CKYC imageDetails ─────────────────
-  const [aadhaarBase64, dlBase64, photoBase64] = await Promise.all([
-    urlToBase64(docUrls.aadhaar_url),
-    urlToBase64(docUrls.dl_url),
-    urlToBase64(docUrls.profile_photo_url),
-  ]);
-
-  // Build the imageDetails array for CKYC Fetch+Analyze
-  // Each entry maps a driver document to its CKYC image code
-  const imageDetails = [];
-  let seq = 1;
-  const pushImage = (base64, imageCode) => {
-    if (!base64) return;
-    // Extract MIME type and raw base64 data
-    const match = base64.match(/^data:([^;]+);base64,(.+)$/);
-    const imageType = match ? match[1].split('/')[1] : 'jpg';
-    const imageData = match ? match[2] : base64;
-    imageDetails.push({
-      sequenceNo: String(seq++),
-      imageType,
-      imageCode,
-      globalFlag:  '1',
-      branchCode:  '101',
-      imageData,   // raw base64 without the data:... prefix
-    });
-  };
-
-  pushImage(photoBase64,   CKYC_IMAGE_CODE.PHOTOGRAPH);
-  pushImage(aadhaarBase64, CKYC_IMAGE_CODE.AADHAAR);
-  pushImage(dlBase64,      CKYC_IMAGE_CODE.DL);
-
-  // Parse driver name into parts for CKYC API
-  const nameParts  = (driver.name || '').trim().split(/\s+/);
-  const firstName  = nameParts[0] || '';
-  const lastName   = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-  const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
-
-  // ── 3–6. Run Signzy v3 Studio pipeline (non-fatal — docs already saved) ───
-  const signzyMeta = {};
-  try {
-    // CKYC Search — primary by PAN, fallback by DL number and mobile
-    const ckycSearchRes = await ckycSearch({
-      pan:      driver.pan,
-      dlNumber: driver.dl_number,
-      mobile:   driver.phone,
-    }).catch((err) => {
-      logger.warn('kycService.submitKYC — CKYC search failed', { error: err.message });
-      return null;
-    });
-
-    signzyMeta.ckyc_search = ckycSearchRes;
-
-    // result may be array (dual PAN) — take the individual account (no constitutionType)
-    const resultEntry = Array.isArray(ckycSearchRes?.result)
-      ? ckycSearchRes.result.find((r) => !r.constitutionType) ?? ckycSearchRes.result[0]
-      : ckycSearchRes?.result;
-    const ckycNumber = resultEntry?.ckycNumber;
-
-    // CKYC Fetch + Analyze (only if CKYC number found)
-    if (ckycNumber) {
-      const ckycFetchRes = await ckycFetchAndAnalyze({
-        ckycNumber,
-        dobISO:     driver.dob,
-        firstName,
-        middleName,
-        lastName,
-        fullName:   driver.name,
-        pan:        driver.pan,
-        imageDetails,
-      }).catch((err) => {
-        logger.warn('kycService.submitKYC — CKYC fetch failed', { error: err.message });
-        return null;
-      });
-      signzyMeta.ckyc_fetch = ckycFetchRes;
-    }
-
-    // DL Verification — only needs DL number + DOB (no base64)
-    // Falls back to dl_number_from_digilocker if dl_number is not set.
-    const dlNum = driver.dl_number || driver.dl_number_from_digilocker;
-    if (dlNum && driver.dob) {
-      const dlRes = await verifyDrivingLicence(
-        dlNum,
-        driver.dob,          // YYYY-MM-DD from DB — auto-converted inside
-        driver.dl_issue_date // optional, YYYY-MM-DD
-      ).catch((err) => {
-        logger.warn('kycService.submitKYC — DL verification failed', { error: err.message });
-        return null;
-      });
-      signzyMeta.dl_verification = dlRes;
-      // Persist result to DB immediately (non-fatal)
-      if (dlRes) {
-        await persistDLVerification(driverId, dlRes).catch((err) => {
-          logger.warn('kycService.submitKYC — DL persist failed', { error: err.message });
-        });
-      }
-    }
-
-    // Store a tracking reference
-    const signzyRequestId = ckycSearchRes?.requestId || ckycSearchRes?.id || `sakhi-${driverId}-${Date.now()}`;
-    await supabase.from('drivers').update({ signzy_request_id: signzyRequestId }).eq('id', driverId);
-    signzyMeta.request_id = signzyRequestId;
-
-  } catch (err) {
-    logger.error('kycService.submitKYC — Signzy pipeline error', { error: err?.response?.data || err.message });
-    // Non-fatal — docs are saved, pipeline can be retried via admin
-  }
-
-  logger.info('kycService.submitKYC — submitted', { driverId, signzyMeta });
-  return { kyc_status: 'pending', signzy_meta: signzyMeta };
+  logger.info('kycService.submitKYC — submitted for manual review', { driverId, dlNumber });
+  return { kyc_status: 'pending', onboarding_status: 'kyc_submitted' };
 }
+
 
 // ──────────────────────────────────────────────────────────────────────────────
 // resubmitKYC — only allowed if rejected or manual_review

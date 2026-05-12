@@ -13,6 +13,7 @@ import client, {
   getAccessToken,
 } from '../api/client';
 import { registerForPushAsync } from '../services/notificationService';
+import { DEV_BYPASS_AUTH } from '../utils/constants';
 
 
 /** Map GET /drivers/profile (flat) and verify-otp `driver` to app driver shape */
@@ -20,36 +21,35 @@ function normalizeDriver(raw) {
   if (!raw) return null;
   const d = raw.driver ?? raw;
   if (!d || !d.id) return null;
-  const onboarding_status =
-    d.verification_status === 'approved' ? 'approved'
-      : d.verification_status === 'rejected' ? 'rejected'
-        : d.onboarding_status ?? 'pending';
+  // Use the DB onboarding_status directly as the source of truth.
+  // 'approved' is only set when an admin explicitly approves the driver.
+  const onboarding_status = d.onboarding_status ?? 'pending';
   return { ...d, onboarding_status };
 }
 
 // ---------------------------------------------------------------------------
-// DEV BYPASS — set to `true` to skip OTP & auth during local UI testing.
-// ⚠️  MUST be `false` before any production / TestFlight build.
+// DEV BYPASS — for local UI testing only.
+// Prefer backend OTP bypass (`OTP_BYPASS_CODE`) when you want a fixed OTP.
 // ---------------------------------------------------------------------------
-const DEVELOPER_BYPASS = true;
+const DEVELOPER_BYPASS = DEV_BYPASS_AUTH;
 
 const MOCK_DRIVER = {
-  id:                 'dev-driver-001',
-  name:               'Dev Driver',
-  phone:              '+919999999999',
-  email:              'dev@sakhi.app',
-  onboarding_status:  'approved',        // lands straight in main stack
-  verification_status:'approved',
-  kyc_status:         'verified',
-  aadhaar_status:     'verified',
+  id: 'dev-driver-001',
+  name: 'Dev Driver',
+  phone: '+919999999999',
+  email: 'dev@sakhi.app',
+  onboarding_status: 'approved',        // lands straight in main stack
+  verification_status: 'approved',
+  kyc_status: 'verified',
+  aadhaar_status: 'verified',
   driving_licence_status: 'verified',
-  vehicle_rc_status:  'verified',
-  vehicle_type:       'auto',
-  vehicle_reg_no:     'UP20AB1234',
-  avg_rating:         4.8,
-  total_rides:        42,
-  is_active:          true,
-  is_online:          false,
+  vehicle_rc_status: 'verified',
+  vehicle_type: 'auto',
+  vehicle_reg_no: 'UP20AB1234',
+  avg_rating: 4.8,
+  total_rides: 42,
+  is_active: true,
+  is_online: false,
 };
 // ---------------------------------------------------------------------------
 
@@ -68,8 +68,8 @@ export function useAuth() {
 // Provider
 // ---------------------------------------------------------------------------
 export function AuthProvider({ children }) {
-  const [driver, setDriver]               = useState(null);
-  const [isLoading, setIsLoading]         = useState(true);
+  const [driver, setDriver] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // ─── checkAuth ────────────────────────────────────────────────────────────

@@ -62,7 +62,7 @@ export async function registerForPushAsync() {
 
     // Register with backend
     await updateDriverFcmToken(fcmToken);
-    await SecureStore.setItemAsync(FCM_TOKEN_KEY, fcmToken).catch(() => {});
+    await SecureStore.setItemAsync(FCM_TOKEN_KEY, fcmToken).catch(() => { });
     console.log('[FCM] Driver FCM token registered');
     return fcmToken;
   } catch (err) {
@@ -95,4 +95,18 @@ export function setupNotificationTapHandler(onTap) {
     if (onTap) onTap(data);
   });
   return () => subscription.remove();
+}
+
+/**
+ * Fetch the notification payload that launched/opened the app (cold start).
+ * Returns `null` if the app wasn't opened via a notification.
+ */
+export async function getInitialNotificationDataAsync() {
+  try {
+    const response = await Notifications.getLastNotificationResponseAsync();
+    return response?.notification?.request?.content?.data ?? null;
+  } catch (e) {
+    console.warn('[FCM] getInitialNotificationDataAsync error:', e?.message || e);
+    return null;
+  }
 }

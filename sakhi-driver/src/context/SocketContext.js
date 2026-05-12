@@ -8,7 +8,8 @@ import React, {
 } from 'react';
 import { DeviceEventEmitter } from 'react-native';
 import { io } from 'socket.io-client';
-import { getAccessToken } from '../api/client';
+import apiClient, { getAccessToken } from '../api/client';
+import { getRideDetails } from '../api/endpoints';
 import { useAuth } from './AuthContext';
 
 // ---------------------------------------------------------------------------
@@ -27,8 +28,12 @@ export function useSocket() {
 // ---------------------------------------------------------------------------
 export function SocketProvider({ children }) {
   const { isAuthenticated, driver } = useAuth();
-  const socketRef  = useRef(null);
+  const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
+
+  // If a notification tap arrives before AuthContext finishes restoring tokens,
+  // queue it and replay once authenticated.
+  const pendingPushRideRef = useRef(null);
 
   // ── Generic event listeners (for useSocketEvent hook) ─────────────────────
   const listenersRef = useRef({}); // { [eventName]: Set<handler> }
@@ -56,6 +61,60 @@ export function SocketProvider({ children }) {
   // ── Subscription pause / cancel alerts ───────────────────────────────
   // { type: 'paused' | 'cancelled', subscriptionId, customerName, message }
   const [subAlert, setSubAlert] = useState(null);
+
+  function normalizeNumber(value) {
+    if (value == null) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function mapPushToIncomingRide(payload) {
+    const rideId = payload?.ride_id ?? payload?.rideId ?? payload?.id;
+    const pickupLat = normalizeNumber(payload?.pickup_lat ?? payload?.pickupLat);
+    const pickupLng = normalizeNumber(payload?.pickup_lng ?? payload?.pickupLng);
+
+    const pickup_coords = (pickupLat != null && pickupLng != null)
+      ? { lat: pickupLat, lng: pickupLng }
+      : null;
+
+    const estimatedFare = normalizeNumber(payload?.estimated_fare ?? payload?.fare);
+    const distanceKm = normalizeNumber(payload?.distance_km ?? payload?.distanceKm);
+
+    return {
+      ride_id: rideId,
+      pickup_address: payload?.pickup_address ?? payload?.pickupAddress,
+      drop_address: payload?.drop_address ?? payload?.dropAddress,
+      pickup_coords,
+      // Push payload currently doesn't include drop coords; keep map centered on pickup.
+      dropoff_coords: pickup_coords,
+      estimated_fare: estimatedFare,
+      fare: estimatedFare,
+      distance_km: distanceKm,
+      rider_name: payload?.rider_name ?? payload?.riderName,
+      ride_type: payload?.ride_type ?? payload?.rideType,
+    };
+  }
+
+  function mapRideDetailsToIncomingRide(ride, fallbackPayload) {
+    if (!ride) return mapPushToIncomingRide(fallbackPayload);
+    const pickupLat = normalizeNumber(ride.pickup_lat);
+    const pickupLng = normalizeNumber(ride.pickup_lng);
+    const dropLat = normalizeNumber(ride.drop_lat);
+    const dropLng = normalizeNumber(ride.drop_lng);
+
+    return {
+      ride_id: ride.id,
+      pickup_address: ride.pickup_address,
+      drop_address: ride.drop_address,
+      pickup_coords: (pickupLat != null && pickupLng != null) ? { lat: pickupLat, lng: pickupLng } : null,
+      dropoff_coords: (dropLat != null && dropLng != null) ? { lat: dropLat, lng: dropLng } : null,
+      estimated_fare: normalizeNumber(ride.estimated_fare),
+      fare: normalizeNumber(ride.estimated_fare),
+      distance_km: normalizeNumber(ride.distance_km),
+      rider_name: ride?.users?.name ?? fallbackPayload?.rider_name ?? null,
+      ride_type: ride?.ride_type ?? fallbackPayload?.ride_type,
+    };
+  }
 
   // ── Connect ────────────────────────────────────────────────────────────
   const connect = useCallback(async () => {
@@ -155,18 +214,46 @@ export function SocketProvider({ children }) {
   }, []);
 
   const acceptRide = useCallback((ride_id) => {
-    return new Promise((resolve, reject) => {
-      if (!socketRef.current) return reject(new Error('Not connected'));
-      socketRef.current.emit('ride:accept', { ride_id }, (ack) => {
-        if (ack?.success) resolve(ack);
-        else reject(new Error(ack?.message ?? 'Accept failed'));
-      });
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (socketRef.current) {
+          socketRef.current.emit('ride:accept', { ride_id }, (ack) => {
+            if (ack?.success) {
+              setIncomingRide(null);
+              resolve(ack);
+            } else {
+              reject(new Error(ack?.message ?? ack?.error ?? 'Accept failed'));
+            }
+          });
+          return;
+        }
+
+        await apiClient.post(`/rides/${ride_id}/accept`);
+        setIncomingRide(null);
+        resolve({ success: true, via: 'rest' });
+      } catch (e) {
+        reject(e);
+      }
     });
   }, []);
 
   const rejectRide = useCallback((ride_id) => {
-    socketRef.current?.emit('ride:reject', { ride_id });
-    setIncomingRide(null);
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (socketRef.current) {
+          socketRef.current.emit('ride:reject', { ride_id });
+          setIncomingRide(null);
+          resolve({ success: true, via: 'socket' });
+          return;
+        }
+
+        await apiClient.post(`/rides/${ride_id}/reject`);
+        setIncomingRide(null);
+        resolve({ success: true, via: 'rest' });
+      } catch (e) {
+        reject(e);
+      }
+    });
   }, []);
 
   // ── Snooze subscription request ──────────────────────────────────────────
@@ -198,6 +285,52 @@ export function SocketProvider({ children }) {
       disconnect();
     }
   }, [isAuthenticated, driver?.is_online]);
+
+  // Push tap bridge: App.js emits PUSH_RIDE_REQUEST on notification taps.
+  useEffect(() => {
+    const processPushRide = async (payload = {}) => {
+      const rideId = payload?.ride_id ?? payload?.rideId ?? payload?.id;
+      if (!rideId) return;
+
+      // Show overlay immediately from push payload.
+      setIncomingRide(mapPushToIncomingRide(payload));
+
+      // Best effort: (re)connect for real-time updates.
+      if (driver?.is_online) {
+        try { await connect(); } catch (_) { }
+      }
+
+      // Enrich with full ride details (coords, addresses, rider name).
+      try {
+        const response = await getRideDetails(rideId);
+        const ride = response?.data;
+        setIncomingRide((prev) => {
+          if (prev?.ride_id && String(prev.ride_id) !== String(rideId)) return prev;
+          return mapRideDetailsToIncomingRide(ride, payload);
+        });
+      } catch (_) {
+        // ignore: best-effort enrichment
+      }
+    };
+
+    const sub = DeviceEventEmitter.addListener('PUSH_RIDE_REQUEST', (payload = {}) => {
+      if (!isAuthenticated) {
+        pendingPushRideRef.current = payload;
+        return;
+      }
+      processPushRide(payload);
+    });
+
+    return () => sub.remove();
+  }, [connect, driver?.is_online, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!pendingPushRideRef.current) return;
+    const payload = pendingPushRideRef.current;
+    pendingPushRideRef.current = null;
+    DeviceEventEmitter.emit('PUSH_RIDE_REQUEST', payload);
+  }, [isAuthenticated]);
 
   // ── Auto-logout on expired session ────────────────────────────────────
   useEffect(() => {

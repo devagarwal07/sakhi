@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -27,12 +28,64 @@ const KEYPAD = [
 
 export default function DriverOtpVerificationScreen({ route, navigation }) {
   const { t } = useTranslation();
-  const { phone } = route.params ?? {};
+  const { phone, devBypass } = route.params ?? {};
   const { login } = useAuth();
 
   const [otp, setOtp] = useState([]);   // array of digit strings
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(RESEND_SECS);
+
+  // Auto-fill bypass code when navigated from dev bypass button
+  useEffect(() => {
+    if (devBypass && devBypass.length === OTP_LENGTH) {
+      const digits = devBypass.split('');
+      setOtp(digits);
+      // Small delay so UI renders first
+      setTimeout(() => handleVerify(devBypass), 300);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Back confirmation — shown on both header back & hardware back ──────────
+  const handleBack = useCallback(() => {
+    // If currently loading (verification in progress), block back entirely
+    if (loading) return true;
+
+    Alert.alert(
+      '⚠️ Verification Incomplete',
+      'You have not verified your OTP yet. What would you like to do?',
+      [
+        {
+          text: 'Try Again',
+          style: 'default',
+          onPress: () => {
+            // Stay on screen, clear whatever was entered
+            setOtp([]);
+          },
+        },
+        {
+          text: 'Change Number',
+          style: 'destructive',
+          onPress: () => {
+            // Use canGoBack() guard — goBack() crashes when OTP is the
+            // root screen (nothing behind it in the stack).
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('DriverLogin');
+            }
+          },
+        },
+      ],
+      { cancelable: false },
+    );
+    return true; // prevent default back action
+  }, [loading, navigation]);
+
+  // Intercept Android hardware back button
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', handleBack);
+    return () => sub.remove();
+  }, [handleBack]);
 
   // Countdown timer
   useEffect(() => {
@@ -74,16 +127,19 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
     if (code.length < OTP_LENGTH) return;
     try {
       setLoading(true);
+      console.log('[OTP] Verifying', phone, 'with code', code);
       const result = await login(phone, code);
       if (!result.success) {
         Alert.alert('Invalid OTP', result.message ?? 'Please try again.');
         setOtp([]);
         return;
       }
-      // RootNavigator will route to Onboarding or Main automatically
-      navigation.reset({ index: 0, routes: [{ name: 'RootShell' }] });
-    } catch {
-      Alert.alert('Error', 'Verification failed. Please try again.');
+      // ✅ No navigation.reset() needed here.
+      // login() updates isAuthenticated in AuthContext → RootNavigator
+      // automatically swaps AuthStack → OnboardingStack or MainStack.
+    } catch (err) {
+      console.error('[OTP] verify error:', err.message, err.response?.data);
+      Alert.alert('Error', err.message ?? 'Verification failed. Please try again.');
       setOtp([]);
     } finally {
       setLoading(false);
@@ -101,7 +157,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
 
       {/* ── Top App Bar ── */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>{t('auth.verificationScreen')}</Text>

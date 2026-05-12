@@ -5,16 +5,27 @@ const multer       = require('multer');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleGuard    = require('../middleware/roleGuard');
 const { uploadDriverDocs, uploadSelfie } = require('../middleware/upload');
-const kycService      = require('../services/kycService');
-const rcService       = require('../services/rcService');
-const surepassService = require('../services/surepassService');
-const driverController = require('../controllers/driverController');
+const kycService                 = require('../services/kycService');
+const rcService                  = require('../services/rcService');
+const surepassService            = require('../services/surepassService');
+const driverController           = require('../controllers/driverController');
+const driverFaceLivenessService  = require('../services/driverFaceLivenessService');
 const { apiLimiter } = require('../middleware/rateLimiter');
 
 const uploadComplaint = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: 5 * 1024 * 1024 },
 });
+
+// memoryStorage multer for face-liveness — Rekognition needs raw bytes
+const uploadSelfieMem = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) return cb(null, true);
+    cb(Object.assign(new Error('Only image files are allowed'), { code: 'INVALID_FILE_TYPE' }));
+  },
+}).single('selfie');
 
 const router = Router();
 router.use(apiLimiter);
@@ -34,9 +45,10 @@ function multerErrorHandler(upload) {
 
 // ── KYC (document upload) ─────────────────────────────────────────────────────
 router.post('/kyc/upload',    authMiddleware, roleGuard('driver'), multerErrorHandler(uploadDriverDocs), async (req, res, next) => {
-  try { return res.status(200).json(await kycService.submitKYC(req.user.userId, req.files)); }
+  try { return res.status(200).json(await kycService.submitKYC(req.user.userId, req.files, req.body)); }
   catch (err) { return err.code && err.status ? res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } }) : next(err); }
 });
+
 
 router.post('/kyc/re-upload', authMiddleware, roleGuard('driver'), multerErrorHandler(uploadDriverDocs), async (req, res, next) => {
   try { return res.status(200).json(await kycService.resubmitKYC(req.user.userId, req.files)); }
@@ -431,9 +443,123 @@ router.post('/profile/phone/verify-otp', authMiddleware, roleGuard('driver'), dr
 router.post('/vehicle',           authMiddleware, roleGuard('driver'), driverController.submitVehicleDetails);
 router.post('/verify-identity',   authMiddleware, roleGuard('driver'), multerErrorHandler(uploadSelfie), driverController.submitSelfieVerification);
 
+/**
+ * POST /drivers/face-liveness
+ * multipart/form-data — field: selfie  (JPEG or PNG, ≤5 MB)
+ *
+ * Runs AWS Rekognition DetectFaces on the selfie to:
+ *   - Detect a single clear face (liveness proxy)
+ *   - Predict gender with confidence
+ *   - Save the image to S3 as selfie_url and profile_photo_url on approval
+ *
+ * Response: { status, reason?, gender?, gender_confidence?, selfie_url?, attempts_used?, retry_remaining? }
+ *   status: 'approved' | 'rejected' | 'retry' | 'manual_review'
+ */
+router.post(
+  '/face-liveness',
+  authMiddleware,
+  roleGuard('driver'),
+  (req, res, next) => uploadSelfieMem(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE')   return res.status(422).json({ error: { code: 'FILE_TOO_LARGE',    message: 'Selfie exceeds 5 MB limit.',         details: {} } });
+    if (err.code === 'INVALID_FILE_TYPE') return res.status(422).json({ error: { code: 'INVALID_FILE_TYPE', message: 'Only image files are accepted.',       details: {} } });
+    return next(err);
+  }),
+  async (req, res, next) => {
+    try {
+      const driverId   = req.user.userId;
+      const fileBuffer = req.file?.buffer;
+      const mimeType   = req.file?.mimetype ?? 'image/jpeg';
+
+      if (!fileBuffer) {
+        return res.status(422).json({
+          error: { code: 'MISSING_FILE', message: 'Selfie image is required.', details: {} },
+        });
+      }
+
+      const result = await driverFaceLivenessService.verifyDriverSelfie(driverId, fileBuffer, mimeType);
+      return res.status(200).json(result);
+    } catch (err) {
+      if (err.code && err.status) {
+        return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+      }
+      return next(err);
+    }
+  }
+);
+
+/**
+ * POST /drivers/face-photo
+ * Body: { image: '<base64 string>' }   (JPEG/PNG, ≤ 5 MB)
+ *
+ * JSON-based alternative to /face-liveness — no multipart needed.
+ * Decodes base64, runs DetectFaces via driverFaceLivenessService, returns same shape.
+ */
+router.post('/face-photo', authMiddleware, roleGuard('driver'), async (req, res, next) => {
+  try {
+    const driverId = req.user.userId;
+    const image    = req.body?.image;
+
+    if (!image || typeof image !== 'string') {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'image (base64) is required', details: {} } });
+    }
+
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+
+    if (fileBuffer.length < 1000) {
+      return res.status(422).json({ error: { code: 'IMAGE_TOO_SMALL', message: 'Image too small or corrupted.', details: {} } });
+    }
+
+    const result = await driverFaceLivenessService.verifyDriverSelfie(driverId, fileBuffer, 'image/jpeg');
+    return res.status(200).json(result);
+  } catch (err) {
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /drivers/face-analyze
+ * Body: { image_base64: string }   (JPEG base64, ≤ 1 MB recommended)
+ *
+ * Real-time frame analysis for the liveness state-machine.
+ * Called every ~600 ms during guided verification.
+ * Stateless — no DB writes.
+ */
+router.post(
+  '/face-analyze',
+  authMiddleware,
+  roleGuard('driver'),
+  async (req, res, next) => {
+    try {
+      const { image_base64 } = req.body || {};
+      if (!image_base64 || typeof image_base64 !== 'string') {
+        return res.status(422).json({ error: { code: 'MISSING_IMAGE', message: 'image_base64 is required', details: {} } });
+      }
+
+      const imageBuffer = Buffer.from(image_base64, 'base64');
+      if (imageBuffer.length < 1000) {
+        return res.status(422).json({ error: { code: 'IMAGE_TOO_SMALL', message: 'Image too small or corrupted', details: {} } });
+      }
+
+      const result = await driverFaceLivenessService.analyzeFrame(imageBuffer);
+      return res.status(200).json(result);
+    } catch (err) {
+      if (err.code && err.status) {
+        return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+      }
+      return next(err);
+    }
+  }
+);
+
 // ── Complaints ────────────────────────────────────────────────────────────────────
 router.get('/complaints',         authMiddleware, roleGuard('driver'), driverController.listDriverComplaints);
 router.post('/complaints',        authMiddleware, roleGuard('driver'), uploadComplaint.single('screenshot'), driverController.submitDriverComplaint);
+
 
 // ── Settings ────────────────────────────────────────────────────────────────────
 router.patch('/notification-settings', authMiddleware, roleGuard('driver'), driverController.updateNotificationSettings);

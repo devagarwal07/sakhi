@@ -1,440 +1,406 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image,
-  Alert, ActivityIndicator, ScrollView,
+  Alert, ActivityIndicator, ScrollView, TextInput,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { useTranslation } from 'react-i18next';
 
-const DOCS = [
-  { key: 'dl',          label: 'Driving Licence',       sub: 'Front & Back', iconName: 'card-account-details-outline' },
-  { key: 'vehicle_rc',  label: 'Vehicle RC',            iconName: 'car' },
-  { key: 'insurance',   label: 'Insurance Certificate', iconName: 'shield-check-outline' },
-  { key: 'aadhaar',     label: 'Aadhaar Card',          iconName: 'card-account-details-outline' },
-  { key: 'profile',     label: 'Profile Photo',         iconName: 'account-outline' },
+const PURPLE = '#9B70D4';
+const LIGHT  = '#F5F0FF';
+
+const VEHICLE_TYPES = [
+  { id: 'auto',      label: 'Auto Rickshaw' },
+  { id: 'erickshaw', label: 'E-Rickshaw' },
+  { id: 'minivan',   label: 'Mini Van' },
+  { id: 'cab',       label: 'Cab' },
 ];
 
-export default function DriverKycUploadScreen({ navigation }) {
-  const { t } = useTranslation();
-  const { updateDriver } = useAuth();
-  const [uploads, setUploads] = useState({});
-  const [loading, setLoading] = useState(false);
+const VEHICLE_COLORS = [
+  { id: 'Yellow', hex: '#FACC15' },
+  { id: 'White',  hex: '#FFFFFF' },
+  { id: 'Black',  hex: '#1F2937' },
+  { id: 'Silver', hex: '#CBD5E1' },
+  { id: 'Blue',   hex: '#3B82F6' },
+];
 
-  const allUploaded = DOCS.every((d) => uploads[d.key]);
-  const completedCount = Object.keys(uploads).length;
-  const pct = Math.round((completedCount / DOCS.length) * 100);
-
-  const pickImage = async (key) => {
+// ── Reusable photo picker card ─────────────────────────────────────────────────
+function PhotoPicker({ label, sublabel, icon, value, onChange }) {
+  const pick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Photo library access is needed to upload documents.');
+      Alert.alert('Permission Required', 'Allow photo library access to upload documents.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 0.9,
+      quality: 0.85,
     });
-    if (!result.canceled) {
-      setUploads((prev) => ({ ...prev, [key]: result.assets[0] }));
-    }
+    if (!result.canceled && result.assets?.length > 0) onChange(result.assets[0]);
   };
 
+  return (
+    <TouchableOpacity style={[s.photoBox, value && s.photoBoxFilled]} onPress={pick} activeOpacity={0.85}>
+      {value ? (
+        <>
+          <Image source={{ uri: value.uri }} style={s.photoPreview} />
+          <View style={s.photoOverlay}>
+            <MaterialCommunityIcons name="pencil" size={16} color="#fff" />
+            <Text style={s.photoOverlayTxt}>Change</Text>
+          </View>
+        </>
+      ) : (
+        <View style={s.photoPlaceholder}>
+          <View style={s.photoIconBg}>
+            <MaterialCommunityIcons name={icon} size={26} color={PURPLE} />
+          </View>
+          <Text style={s.photoLabel}>{label}</Text>
+          <Text style={s.photoSub}>{sublabel}</Text>
+          <View style={s.uploadChip}>
+            <Feather name="upload" size={11} color={PURPLE} />
+            <Text style={s.uploadChipTxt}>Upload</Text>
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// ── Main screen ────────────────────────────────────────────────────────────────
+export default function DriverKycUploadScreen({ navigation }) {
+  const { updateDriver } = useAuth();
+
+  // Photos
+  const [dlFront, setDlFront] = useState(null);
+  const [dlBack,  setDlBack]  = useState(null);
+
+  // Personal
+  const [driverName, setDriverName] = useState('');
+  const [dlNumber,   setDlNumber]   = useState('');
+
+  // Vehicle
+  const [vehicleType, setVehicleType] = useState('auto');
+  const [regNumber,   setRegNumber]   = useState('');
+  const [modelName,   setModelName]   = useState('');
+  const [colour,      setColour]      = useState('Yellow');
+  const [typeOpen,    setTypeOpen]    = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const canSubmit =
+    dlFront && dlBack &&
+    driverName.trim().length >= 2 &&
+    dlNumber.trim().length  >= 6 &&
+    vehicleType &&
+    regNumber.trim().length >= 4 &&
+    modelName.trim().length >= 2;
+
   const handleSubmit = async () => {
+    if (!canSubmit) {
+      Alert.alert('Incomplete', 'Please fill all fields and upload both sides of your DL.');
+      return;
+    }
     try {
       setLoading(true);
-      const form = new FormData();
-      DOCS.forEach(({ key }) => {
-        const asset = uploads[key];
-        form.append(key, {
-          uri:  asset.uri,
-          type: 'image/jpeg',
-          name: `${key}.jpg`,
-        });
-      });
-      await client.post('/drivers/kyc/upload', form, {
+
+      // 1 — Upload DL photos + personal details
+      const kycForm = new FormData();
+      kycForm.append('dl',          { uri: dlFront.uri, type: 'image/jpeg', name: 'dl_front.jpg' });
+      kycForm.append('dl_back',     { uri: dlBack.uri,  type: 'image/jpeg', name: 'dl_back.jpg' });
+      kycForm.append('driver_name', driverName.trim());
+      kycForm.append('dl_number',   dlNumber.trim().toUpperCase());
+
+      await client.post('/drivers/kyc/upload', kycForm, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
       });
+
+      // 2 — Save vehicle details
+      await client.post('/drivers/vehicle', {
+        vehicle_type:        vehicleType,
+        registration_number: regNumber.toUpperCase().trim(),
+        colour,
+        model_name:          modelName.trim(),
+      });
+
       updateDriver({ onboarding_status: 'kyc_submitted' });
-      navigation.navigate('VehicleDetailsEntry');
+      navigation.navigate('DocumentUnderReview');
     } catch (err) {
-      Alert.alert('Upload Error', err.response?.data?.message ?? 'Please try again.');
+      Alert.alert('Submission Failed', err?.response?.data?.message ?? 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const currentTypeLabel = VEHICLE_TYPES.find(v => v.id === vehicleType)?.label ?? 'Select Type';
+
   return (
-    <View style={styles.container}>
-      {/* Nav - TopAppBar */}
-      <View style={styles.topAppBar}>
-        <SafeAreaView edges={['top']} style={styles.safeAreaHeader}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Feather name="arrow-left" size={24} color="#BEA3D8" />
-            </TouchableOpacity>
-            <View style={styles.titleContainer}>
-              <Text style={styles.headerTitle}>KYC Verification</Text>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+
+      {/* ── Top bar ── */}
+      <SafeAreaView edges={['top']} style={s.topBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Feather name="arrow-left" size={22} color={PURPLE} />
+        </TouchableOpacity>
+        <Text style={s.topTitle}>Documents & Details</Text>
+        <View style={{ width: 36 }} />
+      </SafeAreaView>
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+
+        {/* ── Section 1: Driving Licence Photos ── */}
+        <View style={s.section}>
+          <View style={s.sectionHead}>
+            <MaterialCommunityIcons name="card-account-details-outline" size={18} color={PURPLE} />
+            <Text style={s.sectionTitle}>Driving Licence</Text>
+          </View>
+          <Text style={s.sectionSub}>Upload clear photos of both sides of your licence</Text>
+
+          <View style={s.photoRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.photoSideLabel}>FRONT SIDE</Text>
+              <PhotoPicker
+                label="DL Front"
+                sublabel="Front photo"
+                icon="card-account-details"
+                value={dlFront}
+                onChange={setDlFront}
+              />
             </View>
-            <View style={{ width: 40 }} />
-          </View>
-        </SafeAreaView>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.mainCanvas}>
-          
-          {/* Progress Bar Section */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressTextRow}>
-              <Text style={styles.progressStepLabel}>STEP 4 OF 5</Text>
-              <Text style={styles.progressPctLabel}>{pct}% Complete</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${pct}%` }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.photoSideLabel}>BACK SIDE</Text>
+              <PhotoPicker
+                label="DL Back"
+                sublabel="Back photo"
+                icon="card-account-details-outline"
+                value={dlBack}
+                onChange={setDlBack}
+              />
             </View>
           </View>
-
-          {/* Section - Header Titles */}
-          <View style={styles.headerTitles}>
-            <Text style={styles.headline}>Upload Your Documents</Text>
-            <Text style={styles.subline}>Required for verification and account activation</Text>
-          </View>
-
-          {/* Section - Document List Card */}
-          <View style={styles.docsCard}>
-            {DOCS.map((doc, idx) => {
-              const uploaded = !!uploads[doc.key];
-              return (
-                <View key={doc.key}>
-                  <View style={styles.row}>
-                    
-                    <View style={styles.rowLeft}>
-                      <View style={styles.iconBg}>
-                        <MaterialCommunityIcons name={doc.iconName} size={20} color="#BEA3D8" />
-                      </View>
-                      <View style={styles.rowTextCol}>
-                        <Text style={styles.rowLabel}>{doc.label}</Text>
-                        {doc.sub && <Text style={styles.rowSub}>{doc.sub}</Text>}
-                      </View>
-                    </View>
-
-                    <View style={styles.rowRight}>
-                      {uploaded ? (
-                        <View style={styles.uploadedState}>
-                          <View style={styles.uploadedCheckRow}>
-                            <MaterialCommunityIcons name="check-circle" size={14} color="#059669" />
-                            <Text style={styles.uploadedText}>Uploaded</Text>
-                            <Feather name="check" size={12} color="#059669" />
-                          </View>
-                          <TouchableOpacity onPress={() => pickImage(doc.key)}>
-                            <Text style={styles.reuploadText}>Re-upload</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(doc.key)}>
-                          <Text style={styles.uploadBtnText}>Upload</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-
-                  </View>
-                  {idx < DOCS.length - 1 && <View style={styles.divider} />}
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Section - Info Box */}
-          <View style={styles.infoBox}>
-            <MaterialCommunityIcons name="clock-outline" size={16} color="#BEA3D8" style={{ marginTop: 2 }} />
-            <Text style={styles.infoText}>
-              Clean documents are auto-approved. Flagged ones go to manual review.
-            </Text>
-          </View>
-
         </View>
+
+        {/* ── Section 2: Personal Details ── */}
+        <View style={s.section}>
+          <View style={s.sectionHead}>
+            <MaterialCommunityIcons name="account-outline" size={18} color={PURPLE} />
+            <Text style={s.sectionTitle}>Personal Details</Text>
+          </View>
+          <Text style={s.sectionSub}>Details must match your driving licence</Text>
+
+          <View style={s.card}>
+            <View style={s.inputGroup}>
+              <Text style={s.inputLabel}>FULL NAME (AS ON DL)</Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  style={s.input}
+                  value={driverName}
+                  onChangeText={setDriverName}
+                  placeholder="e.g. Priya Sharma"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={[s.inputGroup, { marginBottom: 0 }]}>
+              <Text style={s.inputLabel}>DL NUMBER</Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  style={s.input}
+                  value={dlNumber}
+                  onChangeText={t => setDlNumber(t.toUpperCase())}
+                  placeholder="e.g. KA0520110012345"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="characters"
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Section 3: Vehicle Details ── */}
+        <View style={[s.section, { marginBottom: 140 }]}>
+          <View style={s.sectionHead}>
+            <MaterialCommunityIcons name="car-outline" size={18} color={PURPLE} />
+            <Text style={s.sectionTitle}>Vehicle Details</Text>
+          </View>
+          <Text style={s.sectionSub}>Provide accurate vehicle information</Text>
+
+          <View style={s.card}>
+
+            {/* Vehicle type dropdown */}
+            <View style={[s.inputGroup, { zIndex: 10 }]}>
+              <Text style={s.inputLabel}>VEHICLE TYPE</Text>
+              <TouchableOpacity style={s.dropdownBtn} onPress={() => setTypeOpen(o => !o)}>
+                <Text style={s.dropdownTxt}>{currentTypeLabel}</Text>
+                <Feather name={typeOpen ? 'chevron-up' : 'chevron-down'} size={18} color={PURPLE} />
+              </TouchableOpacity>
+              {typeOpen && (
+                <View style={s.dropdownList}>
+                  {VEHICLE_TYPES.map(vt => (
+                    <TouchableOpacity
+                      key={vt.id}
+                      style={s.dropdownItem}
+                      onPress={() => { setVehicleType(vt.id); setTypeOpen(false); }}
+                    >
+                      <Text style={[s.dropdownItemTxt, vehicleType === vt.id && s.dropdownItemActive]}>
+                        {vt.label}
+                      </Text>
+                      {vehicleType === vt.id && <Feather name="check" size={14} color={PURPLE} />}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Registration number */}
+            <View style={[s.inputGroup, { zIndex: 1 }]}>
+              <Text style={s.inputLabel}>REGISTRATION NUMBER</Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  style={s.input}
+                  value={regNumber}
+                  onChangeText={t => setRegNumber(t.toUpperCase())}
+                  placeholder="KA 05 AB 1234"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="characters"
+                />
+              </View>
+            </View>
+
+            {/* Model name */}
+            <View style={[s.inputGroup, { zIndex: 1 }]}>
+              <Text style={s.inputLabel}>VEHICLE MODEL</Text>
+              <View style={s.inputWrap}>
+                <TextInput
+                  style={s.input}
+                  value={modelName}
+                  onChangeText={setModelName}
+                  placeholder="e.g. Bajaj RE, Mahindra Treo"
+                  placeholderTextColor="#94A3B8"
+                />
+              </View>
+            </View>
+
+            {/* Colour */}
+            <View style={[s.inputGroup, { marginBottom: 0, zIndex: 1 }]}>
+              <Text style={s.inputLabel}>VEHICLE COLOUR</Text>
+              <View style={s.colorRow}>
+                {VEHICLE_COLORS.map(c => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[s.colorRing, colour === c.id && s.colorRingActive]}
+                    onPress={() => setColour(c.id)}
+                  >
+                    <View style={[s.colorDot, { backgroundColor: c.hex }, c.hex === '#FFFFFF' && s.colorDotBorder]} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+          </View>
+        </View>
+
       </ScrollView>
 
-      {/* Bottom Action Footer */}
-      <View style={styles.bottomFooter}>
-        <SafeAreaView edges={['bottom']} style={{ width: '100%', alignItems: 'center' }}>
-          <TouchableOpacity
-            style={[styles.submitBtn, (!allUploaded || loading) && styles.submitBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={!allUploaded || loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitBtnText}>Submit for Verification</Text>
-            )}
-          </TouchableOpacity>
-        </SafeAreaView>
-      </View>
-    </View>
+      {/* ── Fixed footer ── */}
+      <SafeAreaView edges={['bottom']} style={s.footer}>
+        <TouchableOpacity
+          style={[s.submitBtn, (!canSubmit || loading) && s.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={!canSubmit || loading}
+          activeOpacity={0.88}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={s.submitBtnTxt}>Submit for Review</Text>
+                <Feather name="send" size={15} color="#fff" style={{ marginLeft: 8 }} />
+              </View>
+            )
+          }
+        </TouchableOpacity>
+        <Text style={s.footerNote}>📋 Our team reviews documents within 24 hours</Text>
+      </SafeAreaView>
+
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F0FF',
+const s = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: LIGHT },
+
+  topBar:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 10, backgroundColor: LIGHT },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#EDE9FA', alignItems: 'center', justifyContent: 'center' },
+  topTitle:{ fontSize: 17, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.4 },
+
+  scroll: { paddingHorizontal: 20, paddingTop: 8 },
+
+  section:      { marginBottom: 24 },
+  sectionHead:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1E1B2E' },
+  sectionSub:   { fontSize: 12, color: '#6B7280', marginBottom: 12 },
+
+  photoRow:      { flexDirection: 'row', gap: 12 },
+  photoSideLabel:{ fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+
+  photoBox: {
+    borderRadius: 14, overflow: 'hidden',
+    borderWidth: 2, borderColor: '#E2D9F3', borderStyle: 'dashed',
+    backgroundColor: '#fff', minHeight: 130,
   },
-  topAppBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(245, 240, 255, 0.95)',
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.08,
-    shadowRadius: 32,
-    elevation: 4,
-    zIndex: 10,
+  photoBoxFilled: { borderStyle: 'solid', borderColor: `${PURPLE}66` },
+  photoPreview:   { width: '100%', height: 130, resizeMode: 'cover' },
+  photoOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(155,112,212,0.88)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 7,
   },
-  safeAreaHeader: {
-    width: '100%',
+  photoOverlayTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  photoPlaceholder:{ alignItems: 'center', justifyContent: 'center', paddingVertical: 18, paddingHorizontal: 12, gap: 5 },
+  photoIconBg:     { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F0EBF8', alignItems: 'center', justifyContent: 'center' },
+  photoLabel:      { fontSize: 12, fontWeight: '700', color: '#1E1B2E', textAlign: 'center' },
+  photoSub:        { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
+  uploadChip:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EDE9FA', borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginTop: 4 },
+  uploadChipTxt:   { fontSize: 11, fontWeight: '600', color: PURPLE },
+
+  card: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 20, gap: 20,
+    shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 20, elevation: 4,
   },
-  headerContent: {
-    height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  headerTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 18,
-    lineHeight: 28,
-    color: '#1E1B2E',
-    letterSpacing: -0.45,
-    marginLeft: 4,
-  },
-  scroll: {
-    flexGrow: 1,
-    paddingBottom: 160,
-  },
-  mainCanvas: {
-    paddingHorizontal: 24,
-    paddingTop: 140, // Needs space for Header + Padding (96 per design, depending on safe area)
-    paddingBottom: 128,
-    gap: 32,
-    alignItems: 'center',
-    width: '100%',
-  },
-  progressSection: {
-    width: '100%',
-    gap: 12,
-  },
-  progressTextRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'center',
-  },
-  progressStepLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#BEA3D8',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  progressPctLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  progressTrack: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#EDE9FA',
-    borderRadius: 9999,
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: '#BEA3D8',
-    borderRadius: 9999,
-  },
-  headerTitles: {
-    width: '100%',
-    gap: 7,
-  },
-  headline: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 30,
-    color: '#1E1B2E',
-    letterSpacing: -0.6,
-  },
-  subline: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 14,
-    lineHeight: 23,
-    color: '#6B7280',
-  },
-  docsCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.08,
-    shadowRadius: 32,
-    elevation: 4,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    minHeight: 80,
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    flex: 1,
-  },
-  iconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 9999,
-    backgroundColor: '#F5F0FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rowTextCol: {
-    flexShrink: 1,
-  },
-  rowLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#1E1B2E',
-  },
-  rowSub: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 10,
-    lineHeight: 15,
-    color: '#6B7280',
-  },
-  rowRight: {
-    marginLeft: 16,
-  },
-  uploadBtn: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 9999,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  uploadBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 12,
-    lineHeight: 16,
-    color: '#BEA3D8',
-  },
-  uploadedState: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  uploadedCheckRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  uploadedText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#059669',
-  },
-  reuploadText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 10,
-    color: '#6B7280',
-    textDecorationLine: 'underline',
-  },
-  divider: {
-    width: '88%',
-    alignSelf: 'center',
-    height: 1,
-    backgroundColor: '#F5F0FF',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#EDE9FE',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    width: '100%',
-  },
-  infoText: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    lineHeight: 20,
-    color: '#6B7280',
-  },
-  bottomFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  submitBtn: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#BEA3D8',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 4,
-  },
-  submitBtnDisabled: {
-    opacity: 0.4,
-  },
-  submitBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
+
+  inputGroup:  { gap: 7 },
+  inputLabel:  { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' },
+  inputWrap:   { backgroundColor: LIGHT, borderRadius: 12, paddingHorizontal: 14, height: 48, justifyContent: 'center' },
+  input:       { fontSize: 15, fontWeight: '500', color: '#1E1B2E', padding: 0 },
+
+  dropdownBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: LIGHT, borderRadius: 12, paddingHorizontal: 14, height: 48 },
+  dropdownTxt:      { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
+  dropdownList:     { position: 'absolute', top: 56, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10, zIndex: 100 },
+  dropdownItem:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 13 },
+  dropdownItemTxt:  { fontSize: 15, color: '#374151', fontWeight: '500' },
+  dropdownItemActive:{ color: PURPLE, fontWeight: '700' },
+
+  colorRow:       { flexDirection: 'row', gap: 12 },
+  colorRing:      { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  colorRingActive:{ borderColor: PURPLE },
+  colorDot:       { width: 28, height: 28, borderRadius: 14 },
+  colorDotBorder: { borderWidth: 1, borderColor: '#E2E8F0' },
+
+  footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 12 },
+  submitBtn:      { height: 56, backgroundColor: PURPLE, borderRadius: 14, alignItems: 'center', justifyContent: 'center', shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8 },
+  submitBtnDisabled: { opacity: 0.45 },
+  submitBtnTxt:   { fontSize: 16, fontWeight: '700', color: '#fff' },
+  footerNote:     { fontSize: 11, color: '#94A3B8', textAlign: 'center', marginTop: 8, marginBottom: 4 },
 });

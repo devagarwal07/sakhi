@@ -57,22 +57,25 @@ module.exports.uploadSelfie = createS3Upload((req, _file, cb) => {
   cb(null, `verifications/${req.user.userId}/selfie.jpg`);
 }).single('selfie');
 
-// ── uploadDriverDocs — fields: dl, rc, insurance, aadhaar, profile_photo ─────
+// ── uploadDriverDocs — fields: dl, dl_back, driver_name, dl_number ────────────
 module.exports.uploadDriverDocs = createS3Upload((req, file, cb) => {
   const driverId = req.user.userId;
   const nameMap = {
-    dl: 'dl.jpg',
-    rc: 'rc.jpg',
-    insurance: 'insurance.jpg',
-    aadhaar: 'aadhaar.jpg',
+    dl:            'dl_front.jpg',
+    dl_back:       'dl_back.jpg',
+    rc:            'rc.jpg',
+    insurance:     'insurance.jpg',
+    aadhaar:       'aadhaar.jpg',
     profile_photo: 'profile.jpg',
   };
   const fileName = nameMap[file.fieldname] || `${file.fieldname}.jpg`;
   cb(null, `drivers/${driverId}/kyc/${fileName}`);
 }).fields([
-  { name: 'dl', maxCount: 1 },
-  { name: 'rc', maxCount: 1 },
-  { name: 'insurance', maxCount: 1 },
-  { name: 'aadhaar', maxCount: 1 },
+  { name: 'dl',            maxCount: 1 },
+  { name: 'dl_back',       maxCount: 1 },
+  { name: 'rc',            maxCount: 1 },
+  { name: 'insurance',     maxCount: 1 },
+  { name: 'aadhaar',       maxCount: 1 },
   { name: 'profile_photo', maxCount: 1 },
 ]);
+
