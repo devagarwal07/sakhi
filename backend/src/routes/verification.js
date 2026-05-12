@@ -119,4 +119,25 @@ router.post('/face-liveness/result', authMiddleware, roleGuard('rider'), async (
   }
 });
 
+/**
+ * POST /auth/verify/face-photo
+ * Body: { image: '<base64 string>' }
+ * No streaming — single photo → DetectFaces → gender decision.
+ */
+router.post('/face-photo', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const image = req.body?.image;
+    if (!image || typeof image !== 'string') {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'image (base64) is required', details: {} } });
+    }
+    const result = await faceLivenessService.verifyFacePhoto(req.user.userId, image);
+    return res.status(200).json(result);
+  } catch (err) {
+    if (err.code && err.status) {
+      return res.status(err.status).json({ error: { code: err.code, message: err.message, details: {} } });
+    }
+    return next(err);
+  }
+});
+
 module.exports = router;

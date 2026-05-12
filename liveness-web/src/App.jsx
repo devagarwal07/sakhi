@@ -219,7 +219,7 @@ hasToken  : ${!!SAKHI_TOKEN}`}
                 sessionId={sessionId}
                 region={region}
                 config={{ credentialProvider }}
-                disableStartScreen={false}
+                disableStartScreen={true}
                 displayText={DISPLAY_TEXT}
                 components={{ StartScreen: SakhiStartScreen }}
                 videoConstraints={{

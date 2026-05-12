@@ -371,4 +371,173 @@ async function completeSession(userId, sessionId) {
     };
 }
 
-module.exports = { createSession, completeSession };
+/**
+ * verifyFacePhoto
+ * Photo-only gender check — no streaming challenge.
+ * Takes a base64 JPEG/PNG, calls DetectFaces, checks gender,
+ * then updates the user's verification status accordingly.
+ *
+ * Returns: { status: 'approved' | 'rejected' | 'retry' | 'manual_review', ... }
+ */
+async function verifyFacePhoto(userId, imageBase64) {
+    const maxAttempts = envInt('FACE_VERIFICATION_MAX_ATTEMPTS', 5);
+    const minGender   = envNumber('FACE_GENDER_MIN_CONFIDENCE', 90);
+
+    const { verificationStatus, attempts, faceDecisionReason } = await getUserFaceState(userId);
+
+    if (verificationStatus === 'approved') {
+        throw Object.assign(new Error('User is already verified'), { code: 'ALREADY_VERIFIED', status: 409 });
+    }
+
+    if (verificationStatus === 'rejected' && faceDecisionReason === 'rejected_not_eligible') {
+        throw Object.assign(new Error('User is not eligible'), { code: 'NOT_ELIGIBLE', status: 403 });
+    }
+
+    if (attempts >= maxAttempts) {
+        await supabase
+            .from('users')
+            .update({ face_review_required: true, verification_status: 'pending', verification_method: 'face_photo' })
+            .eq('id', userId);
+        throw Object.assign(
+            new Error(`Max attempts (${maxAttempts}) reached; manual review required`),
+            { code: 'MANUAL_REVIEW_REQUIRED', status: 403 }
+        );
+    }
+
+    // Decode base64 → Buffer
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const imageBytes = Buffer.from(base64Data, 'base64');
+
+    const attemptNo = attempts + 1;
+
+    // Persist attempt increment immediately
+    await supabase
+        .from('users')
+        .update({
+            face_verification_attempts: attemptNo,
+            verification_method: 'face_photo',
+            verification_status: 'pending',
+            gender_verified: false,
+            face_decision_reason: null,
+        })
+        .eq('id', userId);
+
+    // ── Upload reference photo to S3 ──────────────────────────────────────
+    let referencePhotoUrl = null;
+    try {
+        const key = `verifications/${userId}/face_photo_${Date.now()}.jpg`;
+        await s3.send(new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: key,
+            Body: imageBytes,
+            ContentType: 'image/jpeg',
+        }));
+        referencePhotoUrl = s3PublicUrlForKey(key);
+    } catch (err) {
+        logger.error('verifyFacePhoto — S3 upload failed (non-fatal)', { error: err.message });
+    }
+
+    // ── AWS DetectFaces ───────────────────────────────────────────────────
+    let gender = 'unknown';
+    let genderConfidence = 0;
+    let faceCount = 0;
+
+    try {
+        const detect = await rekognition.send(
+            new DetectFacesCommand({
+                Image: { Bytes: imageBytes },
+                Attributes: ['ALL'],
+            })
+        );
+        faceCount = detect?.FaceDetails?.length ?? 0;
+        const g = detect?.FaceDetails?.[0]?.Gender;
+        gender = mapRekognitionGender(g?.Value);
+        genderConfidence = Number(g?.Confidence ?? 0);
+    } catch (err) {
+        logger.error('verifyFacePhoto — DetectFaces error', { error: err.message });
+        throw Object.assign(new Error('Failed to analyse image. Please try again.'), { code: 'REKOGNITION_ERROR', status: 502 });
+    }
+
+    // No face detected
+    if (faceCount === 0) {
+        await supabase.from('users').update({
+            face_decision_reason: 'no_face_detected',
+            face_reference_photo_url: referencePhotoUrl,
+        }).eq('id', userId);
+        return {
+            status: 'retry',
+            reason: 'no_face_detected',
+            attempts_used: attemptNo,
+            max_attempts: maxAttempts,
+        };
+    }
+
+    // Multiple faces
+    if (faceCount > 1) {
+        await supabase.from('users').update({
+            face_decision_reason: 'multiple_faces',
+            face_reference_photo_url: referencePhotoUrl,
+        }).eq('id', userId);
+        return {
+            status: 'retry',
+            reason: 'multiple_faces',
+            attempts_used: attemptNo,
+            max_attempts: maxAttempts,
+        };
+    }
+
+    const isFemaleHigh = gender === 'F' && genderConfidence >= minGender;
+    const isMaleHigh   = gender === 'M' && genderConfidence >= minGender;
+
+    if (isFemaleHigh) {
+        await supabase.from('users').update({
+            gender_verified: true,
+            verification_status: 'approved',
+            verification_method: 'face_photo',
+            face_review_required: false,
+            face_gender: gender,
+            face_gender_confidence: genderConfidence,
+            face_reference_photo_url: referencePhotoUrl,
+            face_decision_reason: 'approved_female',
+        }).eq('id', userId);
+        return { status: 'approved', gender, gender_confidence: genderConfidence };
+    }
+
+    if (isMaleHigh) {
+        await supabase.from('users').update({
+            gender_verified: false,
+            verification_status: 'rejected',
+            verification_method: 'face_photo',
+            face_review_required: false,
+            face_gender: gender,
+            face_gender_confidence: genderConfidence,
+            face_reference_photo_url: referencePhotoUrl,
+            face_decision_reason: 'rejected_not_eligible',
+        }).eq('id', userId);
+        return { status: 'rejected', reason: 'not_eligible', gender, gender_confidence: genderConfidence };
+    }
+
+    // Low-confidence gender → retry
+    const shouldRetry = attemptNo < maxAttempts;
+    await supabase.from('users').update({
+        gender_verified: false,
+        verification_status: 'pending',
+        verification_method: 'face_photo',
+        face_review_required: !shouldRetry,
+        face_gender: gender,
+        face_gender_confidence: genderConfidence,
+        face_reference_photo_url: referencePhotoUrl,
+        face_decision_reason: 'gender_low_confidence',
+    }).eq('id', userId);
+
+    return {
+        status: shouldRetry ? 'retry' : 'manual_review',
+        reason: 'gender_low_confidence',
+        gender,
+        gender_confidence: genderConfidence,
+        attempts_used: attemptNo,
+        max_attempts: maxAttempts,
+    };
+}
+
+module.exports = { createSession, completeSession, verifyFacePhoto };
