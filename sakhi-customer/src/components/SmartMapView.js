@@ -3,7 +3,7 @@
  *
  * Auto-switches map renderer:
  *   - Expo Go  → MapplsMapWebView (Mappls Web SDK via WebView)
- *   - Native   → react-native-maps PROVIDER_GOOGLE (unchanged)
+ *   - Native   → react-native-maps (default provider — no Google Maps)
  *
  * Unified prop API:
  *   style, center, zoom, markers, polylines,
@@ -18,19 +18,19 @@ import Constants from 'expo-constants';
 const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
 let MapplsMapWebView = null;
-let RNMapView       = null;
-let Marker          = null;
-let Polyline        = null;
-let PROVIDER_GOOGLE = null;
+let RNMapView        = null;
+let Marker           = null;
+let Polyline         = null;
 
 if (IS_EXPO_GO) {
     MapplsMapWebView = require('./MapplsMapWebView').default;
 } else {
     const maps = require('react-native-maps');
-    RNMapView       = maps.default;
-    Marker          = maps.Marker;
-    Polyline        = maps.Polyline;
-    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+    RNMapView  = maps.default;
+    Marker     = maps.Marker;
+    Polyline   = maps.Polyline;
+    // provider={undefined} → react-native-maps uses the platform default
+    // (Apple Maps on iOS, OpenStreetMap-backed on Android) — no Google Maps.
 }
 
 const MAP_STYLE = [
@@ -87,7 +87,7 @@ const SmartMapView = forwardRef(function SmartMapView(
         <RNMapView
             ref={ref}
             style={style}
-            provider={PROVIDER_GOOGLE}
+            provider={undefined}
             customMapStyle={MAP_STYLE}
             region={region}
             scrollEnabled={scrollEnabled}

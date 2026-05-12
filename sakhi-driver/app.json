@@ -13,12 +13,6 @@
     },
     "android": {
       "package": "com.sakhi.driver",
-      "googleServicesFile": "./google-services.json",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAvOfPRY8DgCwVuiD26FH_gFe50Rg1rfBg"
-        }
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1E1B2E"

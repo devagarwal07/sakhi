@@ -88,6 +88,17 @@ export function AuthProvider({ children }) {
         const { data } = await verifyOtp(phone, otp);
         const { accessToken, refreshToken, user: userData } = data;
 
+        // SecureStore requires string values. If tokens are missing/invalid, fail fast
+        // with a clear error rather than throwing the SecureStore type error.
+        if (typeof accessToken !== 'string' || accessToken.length === 0) {
+            console.error('[Auth] Invalid accessToken from /auth/verify-otp:', data);
+            throw new Error('Login failed: invalid access token from server');
+        }
+        if (typeof refreshToken !== 'string' || refreshToken.length === 0) {
+            console.error('[Auth] Invalid refreshToken from /auth/verify-otp:', data);
+            throw new Error('Login failed: invalid refresh token from server');
+        }
+
         await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
         await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
 

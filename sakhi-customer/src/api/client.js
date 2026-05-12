@@ -72,6 +72,14 @@ apiClient.interceptors.response.use(
                 });
 
                 const { accessToken, refreshToken: newRefresh } = response.data;
+                if (typeof accessToken !== 'string' || accessToken.length === 0) {
+                    console.error('[Auth] Invalid accessToken from /auth/refresh-token:', response.data);
+                    throw new Error('Session refresh failed: invalid access token from server');
+                }
+                if (typeof newRefresh !== 'string' || newRefresh.length === 0) {
+                    console.error('[Auth] Invalid refreshToken from /auth/refresh-token:', response.data);
+                    throw new Error('Session refresh failed: invalid refresh token from server');
+                }
                 await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
                 await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefresh);
 

@@ -4,6 +4,8 @@ const { resolve } = require('path');
 // Only reference Firebase config files if they actually exist on disk.
 // This prevents "Could not parse Expo config" errors when building in
 // environments where the files haven't been added yet (e.g. Expo Go dev).
+// NOTE: google-services.json is kept for Firebase Cloud Messaging (FCM) only.
+//       All Google Maps SDKs have been removed from this app.
 const androidGoogleServices = existsSync(resolve(__dirname, 'google-services.json'))
   ? './google-services.json'
   : undefined;
@@ -32,11 +34,6 @@ export default {
         backgroundColor: "#F5F0FF"
       },
       ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
-      config: {
-        googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
-        }
-      },
       package: "in.sakhirides.customer",
       permissions: [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -52,9 +49,6 @@ export default {
       supportsTablet: false,
       bundleIdentifier: "in.sakhirides.customer",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
-      config: {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
-      },
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "Sakhi needs your location to find nearby drivers and track your ride.",
         NSLocationAlwaysUsageDescription: "Sakhi needs your location to share it with emergency contacts during an active ride.",

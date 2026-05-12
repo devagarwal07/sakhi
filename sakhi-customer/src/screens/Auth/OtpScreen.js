@@ -19,6 +19,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
+import { API_BASE_URL } from '../../utils/constants';
 
 const OTP_LENGTH = 6;
 const { width } = Dimensions.get('window');
@@ -26,7 +27,9 @@ const { width } = Dimensions.get('window');
 export default function OtpScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { phone } = useLocalSearchParams();
+    const params = useLocalSearchParams();
+    const phone = Array.isArray(params.phone) ? params.phone[0] : params.phone;
+    const devBypass = Array.isArray(params.devBypass) ? params.devBypass[0] : params.devBypass;
     const { login, requestOtp } = useAuth();
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
     const [loading, setLoading] = useState(false);
@@ -35,6 +38,12 @@ export default function OtpScreen() {
     const [focusedIndex, setFocusedIndex] = useState(0);
     const inputRefs = useRef([]);
     const shakeAnim = useRef(new Animated.Value(0)).current;
+
+    const getOtpCode = (digits = otp) => {
+        const normalized = (digits ?? []).map((d) => String(d ?? '').trim());
+        const isComplete = normalized.length === OTP_LENGTH && normalized.every((d) => /^\d$/.test(d));
+        return { code: normalized.join(''), isComplete, digits: normalized };
+    };
 
     const headerPaddingTop = Platform.OS === 'ios'
         ? Math.max(insets.top + 12, 56)
@@ -48,6 +57,19 @@ export default function OtpScreen() {
         return () => clearInterval(interval);
     }, []);
 
+    // Auto-fill bypass code when navigated from dev bypass button
+    useEffect(() => {
+        if (devBypass && String(devBypass).length === OTP_LENGTH) {
+            const digits = String(devBypass).split('');
+            setOtp(digits);
+            // Small delay so UI renders first
+            setTimeout(() => {
+                handleVerify(digits.join(''));
+            }, 300);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const shake = () => {
         Animated.sequence([
             Animated.timing(shakeAnim, { toValue: 12, duration: 80, useNativeDriver: true }),
@@ -58,15 +80,27 @@ export default function OtpScreen() {
     };
 
     const handleOtpChange = (value, index) => {
+        // Keep only the last digit typed (prevents spaces / non-digits)
+        const digit = String(value ?? '').replace(/\D/g, '').slice(-1);
+
         const updated = [...otp];
-        updated[index] = value;
+        updated[index] = digit;
         setOtp(updated);
-        if (value && index < OTP_LENGTH - 1) {
+
+        if (digit && index < OTP_LENGTH - 1) {
             inputRefs.current[index + 1]?.focus();
         }
-        // Dismiss keyboard when all digits are filled
-        if (value && index === OTP_LENGTH - 1) {
+
+        // Dismiss keyboard when last digit is entered
+        if (digit && index === OTP_LENGTH - 1) {
             Keyboard.dismiss();
+        }
+
+        // Auto-submit when all digits are present (avoids race where user taps Verify
+        // before the last onChangeText has fully propagated)
+        const { code, isComplete } = getOtpCode(updated);
+        if (isComplete) {
+            setTimeout(() => handleVerify(code), 50);
         }
     };
 
@@ -79,11 +113,20 @@ export default function OtpScreen() {
         }
     };
 
-    const handleVerify = async () => {
-        const code = otp.join('');
-        if (code.length !== OTP_LENGTH) {
+    const handleVerify = async (overrideCode) => {
+        const { code, isComplete, digits } = overrideCode
+            ? { code: String(overrideCode).trim(), isComplete: String(overrideCode).trim().length === OTP_LENGTH, digits: null }
+            : getOtpCode(otp);
+
+        if (!isComplete) {
             shake();
             Alert.alert('Incomplete OTP', 'Please enter the full 6-digit code.');
+
+            // Focus the first missing digit box for faster correction
+            if (digits) {
+                const firstEmpty = digits.findIndex((d) => !/^\d$/.test(d));
+                if (firstEmpty >= 0) inputRefs.current[firstEmpty]?.focus();
+            }
             return;
         }
 
@@ -94,13 +137,30 @@ export default function OtpScreen() {
             router.replace('/');
         } catch (err) {
             shake();
-            const msg = err?.response?.data?.message || 'Invalid OTP. Please try again.';
-            Alert.alert('Verification Failed', msg);
+            const msg =
+                err?.response?.data?.error?.message ||
+                err?.response?.data?.message ||
+                err?.message ||
+                'Invalid OTP. Please try again.';
+            Alert.alert('Verification Failed', `${msg}\n\nAPI: ${API_BASE_URL}`);
             setOtp(Array(OTP_LENGTH).fill(''));
             inputRefs.current[0]?.focus();
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDevBypass = () => {
+        const code = process.env.EXPO_PUBLIC_OTP_BYPASS ?? '123456';
+        if (String(code).length !== OTP_LENGTH) {
+            Alert.alert('Dev bypass misconfigured', 'EXPO_PUBLIC_OTP_BYPASS must be 6 digits.');
+            return;
+        }
+        const digits = String(code).split('');
+        setOtp(digits);
+        setTimeout(() => {
+            handleVerify(digits.join(''));
+        }, 200);
     };
     const handleResend = async () => {
         if (resendTimer > 0 || resendLoading) return;
@@ -202,6 +262,14 @@ export default function OtpScreen() {
                         </Pressable>
                     )}
                 </View>
+
+                {process.env.EXPO_PUBLIC_OTP_BYPASS ? (
+                    <Pressable onPress={handleDevBypass} disabled={loading}>
+                        <Text style={styles.resendLink}>
+                            ⚡ Dev: Skip OTP (use {process.env.EXPO_PUBLIC_OTP_BYPASS})
+                        </Text>
+                    </Pressable>
+                ) : null}
             </View>
 
             {/* Footer — sticky CTA */}

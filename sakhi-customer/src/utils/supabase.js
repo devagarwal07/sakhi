@@ -6,10 +6,11 @@ import 'react-native-url-polyfill/auto';
 const ExpoSecureStoreAdapter = {
     getItem: (key) => SecureStore.getItemAsync(key),
     setItem: (key, value) => {
-        SecureStore.setItemAsync(key, value);
+        const strValue = typeof value === 'string' ? value : JSON.stringify(value);
+        return SecureStore.setItemAsync(key, strValue);
     },
     removeItem: (key) => {
-        SecureStore.deleteItemAsync(key);
+        return SecureStore.deleteItemAsync(key);
     },
 };
 

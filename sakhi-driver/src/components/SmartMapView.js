@@ -4,8 +4,8 @@
  * ┌─────────────────────────────────┬──────────────────────────────────────────┐
  * │ Environment                     │ Renderer                                 │
  * ├─────────────────────────────────┼──────────────────────────────────────────┤
- * │ Expo Go (storeClient)           │ MapplsMapWebView (Mappls Web SDK via WebView)     │
- * │ Native build / EAS / bare RN    │ react-native-maps PROVIDER_GOOGLE (unchanged)    │
+ * │ Expo Go (storeClient)           │ MapplsMapWebView (Mappls Web SDK via WebView)         │
+ * │ Native build / EAS / bare RN    │ react-native-maps (default provider — no Google Maps) │
  * └─────────────────────────────────┴──────────────────────────────────────────┘
  *
  * Unified prop API (works with both renderers):
@@ -36,19 +36,18 @@ const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 // when running in Expo Go.
 
 let MapplsMapWebView = null;
-let RNMapView       = null;
-let Marker          = null;
-let Polyline        = null;
-let PROVIDER_GOOGLE = null;
+let RNMapView        = null;
+let Marker           = null;
+let Polyline         = null;
 
 if (IS_EXPO_GO) {
   MapplsMapWebView = require('./MapplsMapWebView').default;
 } else {
   const maps = require('react-native-maps');
-  RNMapView       = maps.default;
-  Marker          = maps.Marker;
-  Polyline        = maps.Polyline;
-  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+  RNMapView  = maps.default;
+  Marker     = maps.Marker;
+  Polyline   = maps.Polyline;
+  // provider={undefined} → platform default (Apple Maps / OSM) — no Google Maps.
 }
 
 // ── Custom map style (desaturated lavender theme) ───────────────────────────
@@ -98,7 +97,7 @@ const SmartMapView = forwardRef(function SmartMapView(
     );
   }
 
-  // ── Native build path: render react-native-maps with PROVIDER_GOOGLE ───
+  // ── Native build path: react-native-maps with default provider (no Google Maps) ───
   const latDelta = zoomToLatDelta(zoom);
   const region   = center
     ? { latitude: center.latitude, longitude: center.longitude, latitudeDelta: latDelta, longitudeDelta: latDelta }
@@ -108,7 +107,7 @@ const SmartMapView = forwardRef(function SmartMapView(
     <RNMapView
       ref={ref}
       style={style}
-      provider={PROVIDER_GOOGLE}
+      provider={undefined}
       customMapStyle={MAP_STYLE}
       region={region}
       scrollEnabled={scrollEnabled}
