@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:16214232231:android:0a0ea2230437c075621f82",
         "android_client_info": {
-          "package_name": "com.sakhi.customer"
+          "package_name": "in.sakhirides.customer"
         }
       },
       "oauth_client": [],
