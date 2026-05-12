@@ -20,6 +20,8 @@ export const uploadFaceSelfie = (formData) =>
 export const createFaceLivenessSession = () => apiClient.post('/auth/verify/face-liveness/session');
 export const getFaceLivenessResult = (session_id) =>
     apiClient.post('/auth/verify/face-liveness/result', { session_id });
+export const verifyFacePhoto = (image) =>
+    apiClient.post('/auth/verify/face-photo', { image });
 
 // ── Users ─────────────────────────────────────────────────────────────────
 export const getProfile = () => apiClient.get('/users/profile');

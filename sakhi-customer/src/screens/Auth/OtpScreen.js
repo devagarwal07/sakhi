@@ -3,7 +3,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     View,
     Text,
-    Image,
     StyleSheet,
     TextInput,
     TouchableOpacity,
@@ -159,7 +158,7 @@ export default function OtpScreen() {
 
                 {/* OTP Inputs Grid — 6 boxes, 48×56, gap 10 */}
                 <Animated.View
-                    style={[styles.otpRow, { transform: [{ translateX: shakeAnim }] }]}
+                    style={[styles.otpRow, { transform: [{ translateX: 8 }, { translateX: shakeAnim }] }]}
                 >
                     {otp.map((digit, i) => {
                         const isFocused = focusedIndex === i;
@@ -202,17 +201,6 @@ export default function OtpScreen() {
                             }
                         </Pressable>
                     )}
-                </View>
-
-                {/* Lock illustration */}
-                <View style={styles.illustrationSection}>
-                    <View style={styles.illustrationCircle}>
-                        <Image
-                            source={require('../../../assets/lock-icon.jpeg')}
-                            style={styles.lockIcon}
-                            resizeMode="contain"
-                        />
-                    </View>
                 </View>
             </View>
 
@@ -401,25 +389,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#C0A6D6',
-    },
-
-    // Lock illustration — 128px circle, opacity 0.4
-    illustrationSection: {
-        marginTop: 64,
-        alignItems: 'center',
-    },
-    illustrationCircle: {
-        width: 128,
-        height: 128,
-        borderRadius: 9999,
-        backgroundColor: 'rgba(190,163,216,0.08)',
-        opacity: 0.6,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    lockIcon: {
-        width: 48,
-        height: 48,
     },
 
     // Footer — sticky CTA
