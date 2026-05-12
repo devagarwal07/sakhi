@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const EventEmitter = require('events');
 const supabase = require('../config/supabase');
@@ -501,16 +501,35 @@ class MatchingEngine extends EventEmitter {
 
     this._emitToDriver(driver.id, 'ride_request', requestPayload);
 
-    fcmService.sendToUser(driver.id, 'driver', {
+    fcmService.sendRideRequest(driver.id, {
       title: driver.is_pre_dispatch
-        ? `Next Ride Ready (${driver.eta_to_finish_min} min away)`
+        ? 'Next Ride Ready (' + driver.eta_to_finish_min + ' min away)'
         : 'New Ride Request',
-      body: `Pickup: ${ride.pickup_address}`,
+      body: (ride.pickup_address ?? '') + ' to ' + (ride.drop_address ?? 'Destination') + ' - Rs.' + (ride.estimated_fare ?? ''),
       data: {
-        type: 'RIDE_REQUEST',
-        ...Object.fromEntries(Object.entries(requestPayload).map(([k, v]) => [k, String(v)])),
+        type:                  'RIDE_REQUEST',
+        ride_id:               String(rideId),
+        pickup_address:        String(ride.pickup_address  ?? ''),
+        drop_address:          String(ride.drop_address    ?? ''),
+        dropoff_address:       String(ride.drop_address    ?? ''),
+        fare:                  String(ride.estimated_fare  ?? ''),
+        estimated_fare:        String(ride.estimated_fare  ?? ''),
+        rider_name:            String(ride.rider_name      ?? ''),
+        rider_rating:          String(ride.rider_rating    ?? '4.5'),
+        rider_photo:           String(ride.rider_photo     ?? ''),
+        pickup_lat:            String(ride.pickup_lat      ?? ''),
+        pickup_lng:            String(ride.pickup_lng      ?? ''),
+        drop_lat:              String(ride.drop_lat        ?? ''),
+        drop_lng:              String(ride.drop_lng        ?? ''),
+        distance_km:           String(ride.distance_km     ?? ''),
+        distance_to_pickup_km: String(parseFloat((driver.distance_meters / 1000).toFixed(1))),
+        eta_to_pickup_min:     String(driver.total_wait_min ?? Math.round((driver.distance_meters / 1000 / 20) * 60)),
+        is_pre_dispatch:       String(driver.is_pre_dispatch ?? false),
+        eta_to_finish_min:     String(driver.eta_to_finish_min ?? 0),
+        total_wait_min:        String(driver.total_wait_min    ?? 0),
+        timeout_seconds:       '30',
       },
-    }).catch((err) => logger.warn('MatchingEngine — FCM to driver failed', { error: err.message }));
+    }).catch((err) => logger.warn('MatchingEngine - FCM to driver failed', { error: err.message }));
 
     const timeoutHandle = setTimeout(() => {
       this._handleDriverTimeout(rideId, driver.id);

@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * FCM Push Notification Service — Production implementation.
@@ -211,5 +211,82 @@ async function sendAdminBroadcast(target, { title, body, data = {} }) {
   logger.info('fcmService.sendAdminBroadcast — complete', { target, ...result });
   return { sent_count: result.success_count, ...result };
 }
+// ──────────────────────────────────────────────────────────────────────────────
+// FUNCTION: sendRideRequest
+// Dedicated ride-request push with HEADS_UP / full-screen priority.
+// Targets the 'ride_requests' Android channel (MAX importance) so the
+// notification appears like Rapido/Uber even when the driver is off-app.
+// ──────────────────────────────────────────────────────────────────────────────
+async function sendRideRequest(driverId, { title, body, data = {} }) {
+  try {
+    const { data: rows } = await supabase
+      .from('drivers')
+      .select('fcm_token')
+      .eq('id', driverId)
+      .limit(1);
 
-module.exports = { sendToUser, sendToMultiple, sendAdminBroadcast };
+    const token = rows?.[0]?.fcm_token;
+    if (!token) {
+      logger.warn('fcmService.sendRideRequest - no FCM token', { driverId });
+      return { sent: false, reason: 'no_token' };
+    }
+
+    const messaging = getMessaging();
+    if (!messaging) return { sent: false, reason: 'not_initialized' };
+
+    const stringData = Object.fromEntries(
+      Object.entries({ type: 'RIDE_REQUEST', ...data }).map(([k, v]) => [k, String(v)])
+    );
+
+    const message = {
+      token,
+      notification: { title, body },
+      data: stringData,
+
+      // Android: MAX importance + HEADS_UP on the dedicated ride_requests channel
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'ride_requests',
+          priority: 'max',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          visibility: 'public',
+        },
+      },
+
+      // iOS: time-sensitive interruption level for immediate delivery
+      apns: {
+        headers: { 'apns-priority': '10' },
+        payload: {
+          aps: {
+            alert: { title, body },
+            sound: 'default',
+            badge: 1,
+            'content-available': 1,
+            'interruption-level': 'time-sensitive',
+          },
+        },
+      },
+    };
+
+    const messageId = await messaging.send(message);
+    await _logNotification(driverId, 'RIDE_REQUEST', title, body);
+    logger.info('fcmService.sendRideRequest - sent', { driverId, messageId });
+    return { sent: true, message_id: messageId };
+
+  } catch (err) {
+    if (
+      err.code === 'messaging/registration-token-not-registered' ||
+      err.code === 'messaging/invalid-registration-token'
+    ) {
+      await _clearToken(driverId, 'driver');
+      logger.warn('fcmService.sendRideRequest - cleared invalid token', { driverId });
+    } else {
+      logger.error('fcmService.sendRideRequest - error', { driverId, error: err.message });
+    }
+    return { sent: false, reason: err.message };
+  }
+}
+
+module.exports = { sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };

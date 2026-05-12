@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   createContext,
   useContext,
   useRef,
@@ -69,29 +69,44 @@ export function SocketProvider({ children }) {
   }
 
   function mapPushToIncomingRide(payload) {
-    const rideId = payload?.ride_id ?? payload?.rideId ?? payload?.id;
+    const rideId    = payload?.ride_id ?? payload?.rideId ?? payload?.id;
     const pickupLat = normalizeNumber(payload?.pickup_lat ?? payload?.pickupLat);
     const pickupLng = normalizeNumber(payload?.pickup_lng ?? payload?.pickupLng);
+    const dropLat   = normalizeNumber(payload?.drop_lat ?? payload?.dropLat ?? payload?.dropoff_lat);
+    const dropLng   = normalizeNumber(payload?.drop_lng ?? payload?.dropLng ?? payload?.dropoff_lng);
 
-    const pickup_coords = (pickupLat != null && pickupLng != null)
+    const pickup_coords  = (pickupLat != null && pickupLng != null)
       ? { lat: pickupLat, lng: pickupLng }
       : null;
+    const dropoff_coords = (dropLat != null && dropLng != null)
+      ? { lat: dropLat, lng: dropLng }
+      : pickup_coords;
 
-    const estimatedFare = normalizeNumber(payload?.estimated_fare ?? payload?.fare);
-    const distanceKm = normalizeNumber(payload?.distance_km ?? payload?.distanceKm);
+    const estimatedFare      = normalizeNumber(payload?.fare ?? payload?.estimated_fare ?? payload?.estimatedFare);
+    const distanceKm         = normalizeNumber(payload?.distance_km ?? payload?.distanceKm);
+    const distanceToPickupKm = normalizeNumber(payload?.distance_to_pickup_km ?? payload?.distanceToPickupKm);
+    const etaToPickupMin     = normalizeNumber(payload?.eta_to_pickup_min ?? payload?.etaToPickupMin);
+    const riderRating        = normalizeNumber(payload?.rider_rating ?? payload?.riderRating);
+    const dropAddress        = payload?.drop_address ?? payload?.dropAddress
+                           ?? payload?.dropoff_address ?? payload?.dropoffAddress;
 
     return {
-      ride_id: rideId,
-      pickup_address: payload?.pickup_address ?? payload?.pickupAddress,
-      drop_address: payload?.drop_address ?? payload?.dropAddress,
+      ride_id:               rideId,
+      pickup_address:        payload?.pickup_address ?? payload?.pickupAddress,
+      dropoff_address:       dropAddress,
+      drop_address:          dropAddress,
       pickup_coords,
-      // Push payload currently doesn't include drop coords; keep map centered on pickup.
-      dropoff_coords: pickup_coords,
-      estimated_fare: estimatedFare,
-      fare: estimatedFare,
-      distance_km: distanceKm,
-      rider_name: payload?.rider_name ?? payload?.riderName,
-      ride_type: payload?.ride_type ?? payload?.rideType,
+      dropoff_coords,
+      estimated_fare:        estimatedFare,
+      fare:                  estimatedFare,
+      distance_km:           distanceKm,
+      distance_to_pickup_km: distanceToPickupKm ?? 0,
+      eta_to_pickup_min:     etaToPickupMin ?? 0,
+      rider_name:            payload?.rider_name ?? payload?.riderName,
+      rider_photo:           payload?.rider_photo ?? payload?.riderPhoto ?? null,
+      rider_rating:          riderRating ?? 4.5,
+      ride_type:             payload?.ride_type ?? payload?.rideType,
+      is_pre_dispatch:       payload?.is_pre_dispatch === 'true' || payload?.is_pre_dispatch === true,
     };
   }
 
@@ -103,16 +118,21 @@ export function SocketProvider({ children }) {
     const dropLng = normalizeNumber(ride.drop_lng);
 
     return {
-      ride_id: ride.id,
-      pickup_address: ride.pickup_address,
-      drop_address: ride.drop_address,
-      pickup_coords: (pickupLat != null && pickupLng != null) ? { lat: pickupLat, lng: pickupLng } : null,
-      dropoff_coords: (dropLat != null && dropLng != null) ? { lat: dropLat, lng: dropLng } : null,
-      estimated_fare: normalizeNumber(ride.estimated_fare),
-      fare: normalizeNumber(ride.estimated_fare),
-      distance_km: normalizeNumber(ride.distance_km),
-      rider_name: ride?.users?.name ?? fallbackPayload?.rider_name ?? null,
-      ride_type: ride?.ride_type ?? fallbackPayload?.ride_type,
+      ride_id:               ride.id,
+      pickup_address:        ride.pickup_address,
+      dropoff_address:       ride.drop_address,
+      drop_address:          ride.drop_address,
+      pickup_coords:         (pickupLat != null && pickupLng != null) ? { lat: pickupLat, lng: pickupLng } : null,
+      dropoff_coords:        (dropLat != null && dropLng != null) ? { lat: dropLat, lng: dropLng } : null,
+      estimated_fare:        normalizeNumber(ride.estimated_fare),
+      fare:                  normalizeNumber(ride.estimated_fare),
+      distance_km:           normalizeNumber(ride.distance_km),
+      distance_to_pickup_km: normalizeNumber(fallbackPayload?.distance_to_pickup_km) ?? 0,
+      eta_to_pickup_min:     normalizeNumber(fallbackPayload?.eta_to_pickup_min) ?? 0,
+      rider_name:            ride?.users?.name ?? fallbackPayload?.rider_name ?? null,
+      rider_photo:           ride?.users?.profile_photo_url ?? fallbackPayload?.rider_photo ?? null,
+      rider_rating:          normalizeNumber(ride?.users?.rating ?? fallbackPayload?.rider_rating) ?? 4.5,
+      ride_type:             ride?.ride_type ?? fallbackPayload?.ride_type,
     };
   }
 
