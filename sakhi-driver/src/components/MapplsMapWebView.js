@@ -2,7 +2,7 @@
  * MapplsMapWebView
  *
  * Renders a Mappls (MapmyIndia) map via the Mappls Web SDK inside a WebView.
- * Drop-in replacement for GoogleMapWebView — same prop API.
+ * Primary map renderer for both Expo Go and native builds (no Google Maps).
  *
  * Credentials (set in .env.local):
  *   EXPO_PUBLIC_MAPPLS_API_KEY        — REST API key  (used in SDK url)
