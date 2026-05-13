@@ -342,66 +342,95 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
           </Text>
         </View>
 
-        {/* ── Order Summary Card ── */}
+        {/* ── Commission Card ── */}
         <View style={s.summaryCard}>
-          {/* Due chip */}
-          <View style={s.dueChip}>
-            <Text style={s.dueChipText}>
-              {t('earnings.commissionDueLabel', { period: isWeekly ? t('earnings.weekly') : t('earnings.daily') })}
+          {/* Row 1: Label + Status Chip */}
+          <View style={s.row1}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.commLabel}>
+                {isWeekly ? 'WEEKLY COMMISSION\nDUE' : 'DAILY COMMISSION\nDUE'}
+              </Text>
+            </View>
+            <View style={s.dueChip}>
+              <Text style={s.dueChipText}>
+                {`DUE BY ${today.toUpperCase()}`}
+              </Text>
+            </View>
+          </View>
+
+          {/* Center Amount */}
+          <View style={s.centerAmount}>
+            <Text style={s.totalBig}>₹{amount}</Text>
+            <Text style={s.totalDate}>
+              {isWeekly ? `7 days × ₹${WEEKLY_RATE / 7}/day` : `1 day × ₹${DAILY_RATE}/day`}
             </Text>
           </View>
 
-          {/* Big amount */}
-          <Text style={s.totalBig}>₹{amount}</Text>
-          <Text style={s.totalDate}>{t('earnings.dueBy', { date: today })}</Text>
-
-          {/* Weekly savings badge */}
-          {isWeekly && (
-            <View style={s.savingsBadge}>
-              <Text style={s.savingsBadgeText}>{t('earnings.weeklySavings')}</Text>
+          {/* Warning/Status Rows */}
+          <View style={s.statusSection}>
+            {/* Warning row */}
+            <View style={s.warningRow}>
+              <Text style={s.warningIcon}>⚠️</Text>
+              <Text style={s.warningText}>
+                Unpaid — You cannot go online until paid
+              </Text>
             </View>
-          )}
-
-          <View style={s.divider} />
-
-          {/* Breakdown */}
-          {isWeekly ? (
-            <>
-              <BreakdownRow label={t('earnings.breakdownSevenDay')} value="₹210" />
-              <BreakdownRow label={t('earnings.breakdownDailyCompare')} value="₹245" />
-              <BreakdownRow label={t('earnings.breakdownSavings')} value="-₹35" />
-            </>
-          ) : (
-            <>
-              <BreakdownRow label={t('earnings.breakdownDailyFee')} value="₹35" />
-              <BreakdownRow label={t('earnings.breakdownWeeklyAvailable')} value="₹210" />
-            </>
-          )}
-          <View style={s.divider} />
-          <BreakdownRow label={t('earnings.totalPayable')} value={`₹${amount}`} bold accent />
-        </View>
-
-        {/* ── Free Trial Note ── */}
-        <View style={s.trialNote}>
-          <Text style={s.trialIcon}>🎁</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={s.trialTitle}>{t('earnings.freeTrialTitle')}</Text>
-            <Text style={s.trialSub}>{t('earnings.freeTrialSub')}</Text>
+            {/* Info row */}
+            <View style={s.infoRow}>
+              <Feather name="info" size={15} color={PURPLE} />
+              <Text style={s.infoRowText}>{t('earnings.dueBy', { date: today })}</Text>
+            </View>
           </View>
         </View>
 
-        {/* ── Warning ── */}
-        <View style={s.warningRow}>
-          <Text style={s.warningIcon}>⚠️</Text>
-          <Text style={s.warningText}>{t('earnings.unpaidCommissionWarning')}</Text>
-        </View>
+        {/* ── Payment Methods Section ── */}
+        <View style={s.payMethodsSection}>
+          <Text style={s.payMethodsHeading}>PAYMENT METHODS</Text>
 
-        {/* ── PAY VIA info ── */}
-        <View style={s.rzpInfoCard}>
-          <Feather name="shield" size={18} color={PURPLE} />
-          <View style={{ flex: 1 }}>
-            <Text style={s.rzpInfoTitle}>{t('earnings.payViaRazorpay')}</Text>
-            <Text style={s.rzpInfoSub}>{t('earnings.paymentMethods')}</Text>
+          <View style={s.payMethodsList}>
+            {/* UPI Row (Expanded) */}
+            <View style={s.upiCard}>
+              <View style={s.pmRow}>
+                <View style={s.pmIconBox}>
+                  <Feather name="smartphone" size={18} color={PURPLE} />
+                </View>
+                <Text style={s.pmLabelActive}>UPI / Google Pay / PhonePe</Text>
+                <View style={s.radioOn}>
+                  <View style={s.radioDotInner} />
+                </View>
+              </View>
+              {/* UPI Input */}
+              <View style={s.upiInputRow}>
+                <View style={s.upiInputWrap}>
+                  <Text style={s.upiPlaceholder}>Enter UPI ID (e.g. meena@okaxis)</Text>
+                </View>
+                <TouchableOpacity style={s.verifyBtn} activeOpacity={0.8}>
+                  <Text style={s.verifyBtnText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Card Row */}
+            <View style={s.cardRow}>
+              <View style={s.pmRow}>
+                <View style={s.pmIconBox}>
+                  <Feather name="credit-card" size={18} color={MUTED} />
+                </View>
+                <Text style={s.pmLabel}>Credit / Debit Card</Text>
+                <View style={s.radioOff} />
+              </View>
+            </View>
+
+            {/* Net Banking Row */}
+            <View style={s.netBankRow}>
+              <View style={s.pmRow}>
+                <View style={s.pmIconBox}>
+                  <Feather name="globe" size={18} color={MUTED} />
+                </View>
+                <Text style={s.pmLabel}>Net Banking</Text>
+                <View style={s.radioOff} />
+              </View>
+            </View>
           </View>
         </View>
 
@@ -475,123 +504,142 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, gap: 16 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 8, gap: 24 },
 
   // Greeting
   greeting: { gap: 4 },
-  greetingHi: { fontSize: 20, fontWeight: '700', color: DARK, letterSpacing: -0.4 },
-  greetingSub: { fontSize: 13, fontWeight: '400', color: MUTED, lineHeight: 18 },
+  greetingHi: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5, lineHeight: 28 },
+  greetingSub: { fontSize: 14, fontWeight: '400', color: MUTED, lineHeight: 18 },
 
-  // Order Summary Card
+  // Commission Card
   summaryCard: {
-    backgroundColor: WHITE, borderRadius: 20,
-    paddingVertical: 24, paddingHorizontal: 20, gap: 0,
-    ...CARD_SH,
+    backgroundColor: WHITE, borderRadius: 12,
+    padding: 24, gap: 24,
+    borderLeftWidth: 4, borderLeftColor: PURPLE,
+    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
+  },
+  row1: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+  },
+  commLabel: {
+    fontSize: 12, fontWeight: '700', color: MUTED,
+    letterSpacing: 0.6, textTransform: 'uppercase', lineHeight: 16,
   },
   dueChip: {
-    alignSelf: 'flex-start', borderWidth: 1, borderColor: '#D1C4E9',
-    borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 4,
-    marginBottom: 12,
+    backgroundColor: '#FFDCC6',
+    borderWidth: 1, borderColor: 'rgba(161, 81, 0, 0.3)',
+    borderRadius: 9999, paddingHorizontal: 15, paddingVertical: 7,
   },
-  dueChipText: { fontSize: 9, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 1 },
-  totalBig: { fontSize: 52, fontWeight: '900', color: DARK, letterSpacing: -2.5, lineHeight: 58, marginBottom: 2 },
-  totalDate: { fontSize: 12, fontWeight: '400', color: MUTED, marginBottom: 16 },
-  divider: { height: 1, backgroundColor: '#F0EBF8', marginVertical: 4 },
-
-  // Savings badge (weekly plan)
-  savingsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#ECFDF5',
-    borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
+  dueChipText: { fontSize: 10, fontWeight: '700', color: '#FFB784', lineHeight: 15 },
+  centerAmount: { alignItems: 'center', paddingVertical: 8, gap: 8 },
+  totalBig: { fontSize: 48, fontWeight: '800', color: PURPLE, letterSpacing: -2.4, lineHeight: 48, textAlign: 'center' },
+  totalDate: { fontSize: 14, fontWeight: '500', color: MUTED, textAlign: 'center', lineHeight: 20 },
+  // Status section inside card
+  statusSection: {
+    borderTopWidth: 1, borderTopColor: '#F6F1FF',
+    paddingTop: 16, gap: 12,
   },
-  savingsBadgeText: { fontSize: 12, fontWeight: '700', color: '#059669' },
-
-  // Free trial note
-  trialNote: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    backgroundColor: '#EDE9FE', borderRadius: 14,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderWidth: 1, borderColor: 'rgba(124,58,237,0.15)',
+  warningRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(255, 218, 214, 0.1)', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 8,
   },
-  trialIcon: { fontSize: 20, marginTop: 1 },
-  trialTitle: { fontSize: 13, fontWeight: '700', color: '#4C1D95', marginBottom: 3 },
-  trialSub: { fontSize: 12, fontWeight: '400', color: '#6D28D9', lineHeight: 18 },
-
-  // Warning
-  warningRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFF2F0', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)' },
-  warningIcon: { fontSize: 16, marginTop: 1 },
-  warningText: { fontSize: 13, fontWeight: '600', color: '#B91C1C', flex: 1, lineHeight: 19 },
-
-  // Section label
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 1.2 },
-
-  // UPI input row
-  upiInputRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
-  upiInput: {
-    flex: 1, backgroundColor: WHITE,
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, fontWeight: '500', color: DARK,
-    borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)',
+  warningIcon: { fontSize: 16 },
+  warningText: { fontSize: 12, fontWeight: '600', color: '#BA1A1A', flex: 1, lineHeight: 16 },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(190, 163, 216, 0.1)', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 8,
   },
-  verifyBtn: { backgroundColor: PURPLE, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  verifyBtnDone: { backgroundColor: '#059669' },
-  verifyBtnText: { fontSize: 13, fontWeight: '700', color: WHITE },
-  savedUpiHint: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 4 },
-  savedUpiHintText: { fontSize: 12, fontWeight: '600', color: PURPLE },
+  infoRowText: { fontSize: 12, fontWeight: '500', color: '#4A4455', lineHeight: 16 },
 
-  // Card form
-  cardFormWrap: { marginTop: 14, gap: 10 },
-  cardInput: {
-    backgroundColor: WHITE, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, fontWeight: '500', color: DARK,
-    borderWidth: 1, borderColor: 'rgba(190,163,216,0.25)',
+  // Payment Methods Section
+  payMethodsSection: { gap: 16 },
+  payMethodsHeading: {
+    fontSize: 14, fontWeight: '700', color: '#1E1B2E',
+    letterSpacing: 1.4, textTransform: 'uppercase',
+    opacity: 0.6, paddingHorizontal: 4, lineHeight: 20,
   },
-  cardRow: { flexDirection: 'row', gap: 10 },
-  cardInputHalf: { flex: 1 },
+  payMethodsList: { gap: 12 },
+  // UPI expanded card
+  upiCard: {
+    backgroundColor: WHITE, borderRadius: 12, padding: 16, gap: 16,
+    borderWidth: 2, borderColor: PURPLE,
+    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+  },
+  pmRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  pmIconBox: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: '#F5F0FF',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pmLabelActive: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1C1A25', lineHeight: 20 },
+  pmLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: '#4A4455', lineHeight: 20 },
+  radioOn: {
+    width: 20, height: 20, borderRadius: 9999,
+    borderWidth: 4, borderColor: PURPLE,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  radioDotInner: { width: 8, height: 8, borderRadius: 9999, backgroundColor: PURPLE },
+  radioOff: {
+    width: 20, height: 20, borderRadius: 9999,
+    borderWidth: 2, borderColor: '#CCC3D8',
+  },
+  upiInputRow: { flexDirection: 'row', gap: 8 },
+  upiInputWrap: {
+    flex: 1, backgroundColor: '#F6F1FF', borderRadius: 8,
+    paddingHorizontal: 16, paddingVertical: 9, justifyContent: 'center',
+  },
+  upiPlaceholder: { fontSize: 14, fontWeight: '400', color: '#9CA3AF', lineHeight: 17 },
+  verifyBtn: {
+    backgroundColor: 'rgba(190, 163, 216, 0.1)', borderRadius: 8,
+    paddingHorizontal: 16, paddingVertical: 10, justifyContent: 'center',
+  },
+  verifyBtnText: { fontSize: 12, fontWeight: '700', color: PURPLE, lineHeight: 16 },
+  // Card / Net Banking rows
+  cardRow: {
+    backgroundColor: WHITE, borderRadius: 12, padding: 16,
+    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04, shadowRadius: 20, elevation: 2,
+  },
+  netBankRow: {
+    backgroundColor: WHITE, borderRadius: 12, padding: 16,
+    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04, shadowRadius: 20, elevation: 2,
+  },
 
-  // Net banking note
-  netBankingNote: { marginTop: 12, backgroundColor: WHITE, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(190,163,216,0.2)' },
-  netBankingNoteText: { fontSize: 12, color: MUTED, lineHeight: 18 },
-
-  // Policy note
-  policyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#EDE9FE', borderRadius: 14, padding: 16 },
-  policyIcon: { fontSize: 16, color: PURPLE, marginTop: 1 },
-  policyText: { flex: 1, fontSize: 12, color: MUTED, lineHeight: 18 },
-
-  // Footer
+  // Footer — Figma: rgba(255,255,255,0.9) + blur
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: BG, paddingHorizontal: 20, paddingTop: 14,
-    gap: 10,
-    borderTopWidth: 1, borderTopColor: 'rgba(190,163,216,0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24,
+    gap: 16,
   },
   secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   secIcon: { fontSize: 11 },
   secText: { fontSize: 10, fontWeight: '600', color: MUTED, letterSpacing: 0.6 },
+  // Figma: border-radius 12px, box-shadow 0px 16px 32px rgba(124,58,237,0.2)
   payBtn: {
-    height: 56, borderRadius: 16, backgroundColor: PURPLE,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    shadowColor: DEEP, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 16, elevation: 6,
+    height: 56, borderRadius: 12, backgroundColor: PURPLE,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
   },
   payBtnDisabled: { opacity: 0.6 },
-  payBtnText: { fontSize: 16, fontWeight: '700', color: WHITE },
-  payBtnIcon: { fontSize: 16, color: WHITE },
+  payBtnText: { fontSize: 16, fontWeight: '700', color: WHITE, lineHeight: 24 },
+  payBtnIcon: { fontSize: 13, color: WHITE },
+  // Figma: 14px / 600 / #6B7280
   payLaterBtn: { alignItems: 'center', paddingVertical: 2 },
-  payLaterText: { fontSize: 11, fontWeight: '700', color: PURPLE, textTransform: 'uppercase', letterSpacing: 1 },
-
-  // Razorpay info card
-  rzpInfoCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#EDE9FE', borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: 'rgba(190,163,216,0.3)',
-  },
-  rzpInfoTitle: { fontSize: 15, fontWeight: '700', color: DARK, marginBottom: 2 },
-  rzpInfoSub: { fontSize: 12, color: MUTED, lineHeight: 16 },
+  payLaterText: { fontSize: 14, fontWeight: '600', color: MUTED, lineHeight: 20 },
 
   // Razorpay WebView modal header
   webViewHeader: {

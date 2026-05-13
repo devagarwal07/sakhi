@@ -14,8 +14,15 @@
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sakhi-backend-pwej.onrender.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bygvapypvrseiwqvwcaj.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "PASTE_NEW_ANON_KEY_HERE",
+        "EXPO_PUBLIC_RAZORPAY_KEY": "rzp_test_SYE3kLJZ16sUyz"
+      },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },

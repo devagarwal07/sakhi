@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "20554dd9-c3b9-4dd6-9355-c11350a376fd"
+      }
+    },
+    "android": {
+      "package": "com.shubh_up301.sakhi"
+    }
+  }
+}

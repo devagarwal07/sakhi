@@ -265,7 +265,7 @@ export default function HomeScreen() {
                                 router.push('/location-search');
                             }}
                         >
-                            <Text style={styles.pillTabEmoji}>🛺</Text>
+
                             <Text style={[
                                 styles.pillTabText,
                                 activeTab === 'book' ? styles.pillTabTextActive : styles.pillTabTextOutlineBook,
@@ -285,7 +285,7 @@ export default function HomeScreen() {
                                 router.push('/subscription-ride');
                             }}
                         >
-                            <Text style={styles.pillTabEmoji}>📅</Text>
+
                             <Text style={[
                                 styles.pillTabText,
                                 activeTab === 'subscribe' ? styles.pillTabTextActiveSub : styles.pillTabTextOutlineSub,
