@@ -1,14 +1,12 @@
 /**
- * SmartMapView — Auto-switches map renderer based on runtime environment.
+ * SmartMapView — Always renders Mappls maps via WebView.
  *
- * ┌─────────────────────────────────┬──────────────────────────────────────────┐
- * │ Environment                     │ Renderer                                 │
- * ├─────────────────────────────────┼──────────────────────────────────────────┤
- * │ Expo Go (storeClient)           │ MapplsMapWebView (Mappls Web SDK via WebView)         │
- * │ Native build / EAS / bare RN    │ react-native-maps (default provider — no Google Maps) │
- * └─────────────────────────────────┴──────────────────────────────────────────┘
+ * Uses the Mappls Web SDK (via react-native-webview) in ALL environments:
+ *   - Expo Go (storeClient)
+ *   - EAS preview builds (APK)
+ *   - EAS production builds (AAB)
  *
- * Unified prop API (works with both renderers):
+ * Unified prop API:
  *   style            - container style
  *   center           - { latitude, longitude }
  *   zoom             - number (default 15)
@@ -17,55 +15,18 @@
  *   scrollEnabled    - bool (default true)
  *   zoomEnabled      - bool (default true)
  *   pointerEvents    - passed to container View
- *
- * Native-only extras (ignored in WebView mode):
- *   mapRef           - ref forwarded to MapView for animateToRegion() etc.
- *   showsTraffic     - bool
- *   children         - arbitrary MapView children (Marker, Polyline, etc.)
+ *   showsTraffic     - bool (ignored — no Google Maps)
+ *   children         - ignored (WebView-based, no native children)
  */
 
 import React, { forwardRef } from 'react';
-import { View, StyleSheet } from 'react-native';
-import Constants from 'expo-constants';
+import MapplsMapWebView from './MapplsMapWebView';
 
-// Detect Expo Go at module load time — this never changes during a session
-const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
-
-// ── Lazy-import the correct renderer ────────────────────────────────────────
-// We use inline requires so bundlers don't choke on native-only modules
-// when running in Expo Go.
-
-let MapplsMapWebView = null;
-let RNMapView        = null;
-let Marker           = null;
-let Polyline         = null;
-
-if (IS_EXPO_GO) {
-  MapplsMapWebView = require('./MapplsMapWebView').default;
-} else {
-  const maps = require('react-native-maps');
-  RNMapView  = maps.default;
-  Marker     = maps.Marker;
-  Polyline   = maps.Polyline;
-  // provider={undefined} → platform default (Apple Maps / OSM) — no Google Maps.
-}
-
-// ── Custom map style (desaturated lavender theme) ───────────────────────────
-const MAP_STYLE = [
-  { featureType: 'all',      stylers: [{ saturation: -70 }] },
-  { featureType: 'road',     stylers: [{ color: '#e8e1f5' }] },
-  { featureType: 'water',    stylers: [{ color: '#c8bef0' }] },
-  { featureType: 'poi',      stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit',  stylers: [{ visibility: 'off' }] },
-];
-
-// ── Zoom level → lat/lng delta conversion (for native MapView region) ────────
-function zoomToLatDelta(zoom = 15) {
-  // Approximate: latDelta doubles for every zoom level decrease
-  return 0.005 * Math.pow(2, 15 - zoom);
-}
+// Always false — we no longer use Expo Go detection for map switching
+const IS_EXPO_GO = false;
 
 // ── SmartMapView ─────────────────────────────────────────────────────────────
+// forwardRef is kept for API compatibility — the ref is not used in WebView mode
 const SmartMapView = forwardRef(function SmartMapView(
   {
     style,
@@ -79,92 +40,23 @@ const SmartMapView = forwardRef(function SmartMapView(
     showsTraffic  = false,
     children,
   },
-  ref           // forwarded ref → connected to native MapView only
+  _ref  // ref ignored in WebView mode — kept for API compatibility
 ) {
-  // ── Expo Go path: render WebView-based Mappls map ──
-  if (IS_EXPO_GO) {
-    return (
-      <MapplsMapWebView
-        style={style}
-        center={center}
-        zoom={zoom}
-        markers={markers}
-        polylines={polylines}
-        scrollEnabled={scrollEnabled}
-        zoomEnabled={zoomEnabled}
-        pointerEvents={pointerEvents}
-      />
-    );
-  }
-
-  // ── Native build path: react-native-maps with default provider (no Google Maps) ───
-  const latDelta = zoomToLatDelta(zoom);
-  const region   = center
-    ? { latitude: center.latitude, longitude: center.longitude, latitudeDelta: latDelta, longitudeDelta: latDelta }
-    : undefined;
-
   return (
-    <RNMapView
-      ref={ref}
+    <MapplsMapWebView
       style={style}
-      provider={undefined}
-      customMapStyle={MAP_STYLE}
-      region={region}
+      center={center}
+      zoom={zoom}
+      markers={markers}
+      polylines={polylines}
       scrollEnabled={scrollEnabled}
       zoomEnabled={zoomEnabled}
-      showsUserLocation={false}
-      showsMyLocationButton={false}
-      showsCompass={false}
-      showsTraffic={showsTraffic}
       pointerEvents={pointerEvents}
-    >
-      {/* Render normalised markers */}
-      {markers.map((m) => (
-        <Marker
-          key={m.id}
-          coordinate={{ latitude: m.latitude, longitude: m.longitude }}
-          anchor={{ x: 0.5, y: 0.5 }}
-        >
-          <View style={[
-            nativeStyles.markerDot,
-            { backgroundColor: m.color || '#BEA3D8' },
-            m.pulse && nativeStyles.markerPulse,
-          ]} />
-        </Marker>
-      ))}
-
-      {/* Render normalised polylines */}
-      {polylines.map((p, i) => (
-        <Polyline
-          key={i}
-          coordinates={p.coords}
-          strokeColor={p.color || '#BEA3D8'}
-          strokeWidth={p.width || 5}
-          lineDashPattern={p.dashed ? [10, 8] : undefined}
-        />
-      ))}
-
-      {/* Pass-through children (custom Marker/Polyline JSX from screen) */}
-      {children}
-    </RNMapView>
+    />
   );
 });
 
 export default SmartMapView;
 
-// ── Expose IS_EXPO_GO so screens can conditionally render non-map UI ─────────
+// ── Expose IS_EXPO_GO for any screens that conditionally render based on it ───
 export { IS_EXPO_GO };
-
-const nativeStyles = StyleSheet.create({
-  markerDot: {
-    width: 16, height: 16, borderRadius: 8,
-    borderWidth: 2.5, borderColor: '#FFFFFF',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
-  },
-  markerPulse: {
-    // In native builds, pulse is a simple visual hint via border color
-    borderColor: 'rgba(255,255,255,0.6)',
-    opacity: 0.9,
-  },
-});

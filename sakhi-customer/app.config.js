@@ -36,7 +36,7 @@ export default {
       ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
       config: {
         googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY || "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
         }
       },
       package: "in.sakhirides.customer",
