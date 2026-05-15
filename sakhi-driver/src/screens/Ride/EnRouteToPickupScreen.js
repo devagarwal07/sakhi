@@ -13,6 +13,7 @@ import { patchRideStatus, callRider } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
+import { startLocationTracking } from '../../services/locationTask';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -46,6 +47,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
     if (!rideId) return;
     (async () => {
       try {
+        await startLocationTracking('Navigation Active', 'Navigating to Pickup: ' + (ride?.pickup_address || ''));
         await patchRideStatus(rideId, 'driver_en_route');
       } catch {
         // Already transitioned or race — user can still try "I've arrived"

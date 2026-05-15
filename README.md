@@ -144,7 +144,8 @@ npx expo start --port 8082
 | `GOOGLE_MAPS_KEY` | Google Maps API key |
 | `EXOTEL_SID` | Exotel account SID |
 | `EXOTEL_TOKEN` | Exotel auth token |
-| `EXOTEL_APP_ID` | Exotel app ID |
+| `EXOTEL_CALLER_ID` | Exotel caller id / Exophone (virtual number used for masking) |
+| `EXOTEL_APP_ID` | Legacy alias for `EXOTEL_CALLER_ID` (kept for backwards compatibility) |
 | `RAZORPAY_KEY_ID` | Razorpay key |
 | `RAZORPAY_KEY_SECRET` | Razorpay secret |
 | `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook HMAC |

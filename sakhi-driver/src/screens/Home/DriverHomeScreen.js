@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Dimensions, Alert, ActivityIndicator,
-  PanResponder, Animated,
+  PanResponder, Animated, Modal,
   StatusBar as RNStatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Location from 'expo-location';
 
@@ -362,16 +363,52 @@ export default function DriverHomeScreen({ navigation }) {
     })
   ).current;
 
-  // ── Location permission + initial position ────────────────────────────────
+  // ── Location permission & Prominent Disclosure ─────────────────────────────
+  const [showDisclosure, setShowDisclosure] = useState(false);
+
   useEffect(() => {
     (async () => {
+      // Check if disclosure was already accepted
+      const { status } = await Location.getForegroundPermissionsAsync();
+      const hasAccepted = await AsyncStorage.getItem('location_disclosure_accepted');
+      
+      if (status !== 'granted' && !hasAccepted) {
+        // Show prominent disclosure first
+        setShowDisclosure(true);
+        return;
+      }
+      
+      // Already granted or accepted disclosure previously, proceed with request
+      requestAndStartLocation();
+    })();
+  }, []);
+
+  const requestAndStartLocation = async () => {
+    try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
+      
       setLocGranted(true);
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-    })();
-  }, []);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAcceptDisclosure = async () => {
+    await AsyncStorage.setItem('location_disclosure_accepted', 'true');
+    setShowDisclosure(false);
+    requestAndStartLocation();
+  };
+
+  const handleDeclineDisclosure = () => {
+    setShowDisclosure(false);
+    Alert.alert(
+      t('common.error', 'Permission Denied'), 
+      t('home.locationRequiredMsg', 'The Sakhi Driver app requires location access to assign rides to you. Please enable it in settings.')
+    );
+  };
 
   // ── Keep location updated ──────────────────────────────────────────────────
   useEffect(() => {
@@ -390,6 +427,9 @@ export default function DriverHomeScreen({ navigation }) {
   // ── Sync online state whenever AuthContext changes ─────────────────────────
   useEffect(() => {
     setIsOnline(driver?.is_online ?? false);
+    if (driver?.is_online) {
+      startLocationTracking('Sakhi Driver', 'Searching for nearby rides...');
+    }
   }, [driver?.is_online]);
 
   // ── Session timer ───────────────────────────────────────────────────────────
@@ -688,6 +728,29 @@ export default function DriverHomeScreen({ navigation }) {
           onDismiss={() => setShowPendingSubModal(false)}
         />
       )}
+
+      {/* ── PROMINENT DISCLOSURE MODAL ── */}
+      <Modal visible={showDisclosure} transparent animationType="fade">
+        <View style={s.disclosureOverlay}>
+          <View style={s.disclosureCard}>
+            <View style={s.disclosureIconBg}>
+              <Feather name="map-pin" size={24} color="#BEA3D8" />
+            </View>
+            <Text style={s.disclosureTitle}>Use your location</Text>
+            <Text style={s.disclosureText}>
+              Sakhi Driver collects location data to enable assigning nearby ride requests and to track your trips for accurate earnings even when the app is closed or not in use.
+            </Text>
+            <View style={s.disclosureActions}>
+              <TouchableOpacity style={s.disclosureBtnSecondary} onPress={handleDeclineDisclosure}>
+                <Text style={s.disclosureBtnSecondaryText}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.disclosureBtnPrimary} onPress={handleAcceptDisclosure}>
+                <Text style={s.disclosureBtnPrimaryText}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -798,6 +861,18 @@ const s = StyleSheet.create({
   // Subscription expiry pill variants
   earningsPillExpired: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
   earningsPillWarning: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+
+  // Prominent Disclosure
+  disclosureOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  disclosureCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  disclosureIconBg: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#F5F0FF', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  disclosureTitle: { fontSize: 20, fontWeight: '800', color: '#1E1B2E', marginBottom: 12, textAlign: 'center' },
+  disclosureText: { fontSize: 14, fontWeight: '500', color: '#64748B', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  disclosureActions: { flexDirection: 'row', gap: 12, width: '100%' },
+  disclosureBtnSecondary: { flex: 1, height: 52, borderRadius: 14, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' },
+  disclosureBtnSecondaryText: { fontSize: 15, fontWeight: '700', color: '#64748B' },
+  disclosureBtnPrimary: { flex: 1, height: 52, borderRadius: 14, backgroundColor: '#BEA3D8', justifyContent: 'center', alignItems: 'center' },
+  disclosureBtnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 
   // ── Subscription alert banner ───────────────────────────────────────────────
   subAlertBanner: {

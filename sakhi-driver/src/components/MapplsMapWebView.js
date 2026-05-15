@@ -2,7 +2,7 @@
  * MapplsMapWebView
  *
  * Renders a Mappls (MapmyIndia) map via the Mappls Web SDK inside a WebView.
- * Primary map renderer for both Expo Go and native builds (no Google Maps).
+ * Primary map renderer when running inside Expo Go.
  *
  * Credentials (set in .env.local):
  *   EXPO_PUBLIC_MAPPLS_API_KEY        — REST API key  (used in SDK url)
@@ -19,7 +19,7 @@
  *   zoomEnabled      - bool (default true)
  *   pointerEvents    - passed to container View
  */
-import React, { useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -27,26 +27,15 @@ const API_KEY       = process.env.EXPO_PUBLIC_MAPPLS_API_KEY       ?? '';
 const CLIENT_ID     = process.env.EXPO_PUBLIC_MAPPLS_CLIENT_ID     ?? '';
 const CLIENT_SECRET = process.env.EXPO_PUBLIC_MAPPLS_CLIENT_SECRET ?? '';
 
-// ── Build Mappls Web SDK HTML ──────────────────────────────────────────────────
-function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnabled, zoomEnabled }) {
-  const lat = center?.latitude  ?? 28.6139;
-  const lng = center?.longitude ?? 77.2090;
+// Fallback to Bengaluru city centre if GPS hasn't resolved yet
+// This prevents the "blue ocean" at 0,0 problem
+const DEFAULT_LAT = 12.9716;
+const DEFAULT_LNG = 77.5946;
 
-  const markersJson   = JSON.stringify(markers.map(m => ({
-    lat:   m.latitude,
-    lng:   m.longitude,
-    color: m.color || '#BEA3D8',
-    label: m.label || '',
-    pulse: !!m.pulse,
-  })));
-
-  const polylinesJson = JSON.stringify(polylines.map(p => ({
-    coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
-    color:  p.color  ?? '#BEA3D8',
-    width:  p.width  ?? 5,
-    dashed: !!p.dashed,
-  })));
-
+// ── Build the initial Mappls Web SDK HTML ─────────────────────────────────────
+// The map is initialised at a sensible fallback (Bengaluru) on first load.
+// After GPS resolves, we push updates via postMessage — no full reload needed.
+function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -54,9 +43,8 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
     user-scalable=${scrollEnabled !== false ? 'yes' : 'no'}">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body, #map { width:100%; height:100%; }
+    html, body, #map { width:100%; height:100%; background:#e8e4f0; }
 
-    /* Custom marker */
     .cm-wrap {
       position: relative;
       width: 28px; height: 28px;
@@ -77,7 +65,6 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
       padding: 1px 4px; border-radius: 3px;
       white-space: nowrap; z-index: 3;
     }
-    /* Pulse ring */
     .cm-pulse {
       position: absolute; width: 32px; height: 32px; border-radius: 50%;
       opacity: 0; z-index: 1;
@@ -92,23 +79,24 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
 <body>
   <div id="map"></div>
   <script>
-    /* ── Custom HTML marker helper ───────────────────────────────────────── */
+    var map = null;
+    var markerObjects = {};   // id -> mappls.Marker instance
+    var polylineObjects = []; // array of mappls.Polyline instances
+
+    /* ── Custom HTML marker helper ─────────────────────────────────────── */
     function createMarkerEl(opts) {
       var wrap = document.createElement('div');
       wrap.className = 'cm-wrap';
-
       if (opts.pulse) {
         var ring = document.createElement('div');
         ring.className = 'cm-pulse';
         ring.style.background = opts.color;
         wrap.appendChild(ring);
       }
-
       var dot = document.createElement('div');
       dot.className = 'cm-dot';
       dot.style.background = opts.color;
       wrap.appendChild(dot);
-
       if (opts.label) {
         var lbl = document.createElement('div');
         lbl.className = 'cm-label';
@@ -118,43 +106,74 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
       return wrap;
     }
 
-    /* ── Map init (called after SDK ready) ──────────────────────────────── */
+    /* ── Update markers (called on postMessage updates) ─────────────────── */
+    function updateMarkers(markers) {
+      if (!map) return;
+      // Remove old markers
+      Object.values(markerObjects).forEach(function(m) { m.remove(); });
+      markerObjects = {};
+      // Add new markers
+      markers.forEach(function(m) {
+        var el = createMarkerEl(m);
+        markerObjects[m.id || m.label] = new mappls.Marker({
+          map: map,
+          position: { lat: m.lat, lng: m.lng },
+          element: el,
+        });
+      });
+    }
+
+    /* ── Update polylines (called on postMessage updates) ───────────────── */
+    function updatePolylines(polylines) {
+      if (!map) return;
+      polylineObjects.forEach(function(p) { try { p.remove(); } catch(e) {} });
+      polylineObjects = [];
+      polylines.forEach(function(p) {
+        if (!p.coords || !p.coords.length) return;
+        var lnglat = p.coords.map(function(c) { return [c.lng, c.lat]; });
+        polylineObjects.push(new mappls.Polyline({
+          map: map,
+          path: lnglat,
+          strokeColor: p.color,
+          strokeWidth: p.width,
+          strokeOpacity: p.dashed ? 0.6 : 1,
+          strokeDashstyle: p.dashed ? 'dot' : 'solid',
+        }));
+      });
+    }
+
+    /* ── React Native → WebView message handler ─────────────────────────── */
+    document.addEventListener('message', function(event) { handleMsg(event.data); });
+    window.addEventListener('message', function(event) { handleMsg(event.data); });
+
+    function handleMsg(raw) {
+      try {
+        var msg = JSON.parse(raw);
+        if (!map) return;
+        if (msg.type === 'SET_CENTER') {
+          map.setCenter([msg.lng, msg.lat]);
+          if (msg.zoom) map.setZoom(msg.zoom);
+          if (msg.markers) updateMarkers(msg.markers);
+          if (msg.polylines) updatePolylines(msg.polylines);
+        }
+      } catch(e) {}
+    }
+
+    /* ── Map init (called by Mappls SDK callback) ───────────────────────── */
     function initMap() {
-      var map = new mappls.Map('map', {
-        center:  [${lng}, ${lat}],
-        zoom:    ${zoom ?? 15},
-        search:  false,
+      map = new mappls.Map('map', {
+        center:      [${DEFAULT_LNG}, ${DEFAULT_LAT}],
+        zoom:        ${zoom ?? 15},
+        search:      false,
         zoomControl: ${zoomEnabled !== false},
         scrollZoom:  ${scrollEnabled !== false},
         dragPan:     ${scrollEnabled !== false},
       });
-
       map.on('load', function () {
-        /* ── Markers ─────────────────────────────────────────────────── */
-        var markers = ${markersJson};
-        markers.forEach(function(m) {
-          var el = createMarkerEl(m);
-          new mappls.Marker({
-            map:      map,
-            position: { lat: m.lat, lng: m.lng },
-            element:  el,
-          });
-        });
-
-        /* ── Polylines ───────────────────────────────────────────────── */
-        var polylines = ${polylinesJson};
-        polylines.forEach(function(p) {
-          if (!p.coords || !p.coords.length) return;
-          var lnglat = p.coords.map(function(c) { return [c.lng, c.lat]; });
-          new mappls.Polyline({
-            map:     map,
-            path:    lnglat,
-            strokeColor:   p.color,
-            strokeWidth:   p.width,
-            strokeOpacity: p.dashed ? 0.6 : 1,
-            strokeDashstyle: p.dashed ? 'dot' : 'solid',
-          });
-        });
+        // Signal React Native that the map is ready to receive postMessage updates
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
+        }
       });
     }
 
@@ -181,25 +200,87 @@ export default function MapplsMapWebView({
   zoomEnabled   = true,
   pointerEvents,
 }) {
+  const webViewRef  = useRef(null);
+  const mapReady    = useRef(false);
+  const pendingMsg  = useRef(null);
+
+  // Build HTML only once — no dependency on center/markers
+  // so the WebView never reloads on prop changes
   const html = useMemo(
-    () => buildMapHtml({ center, zoom, markers, polylines, scrollEnabled, zoomEnabled }),
+    () => buildMapHtml({ zoom, scrollEnabled, zoomEnabled }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      center?.latitude, center?.longitude, zoom,
-      JSON.stringify(markers), JSON.stringify(polylines),
-      scrollEnabled, zoomEnabled,
-    ]
+    [] // intentionally empty — static HTML, updates via postMessage
   );
+
+  // Sends the current center + markers to the already-loaded map via postMessage
+  const sendUpdate = (lat, lng, mkrs, plns) => {
+    if (!webViewRef.current) return;
+    const msg = JSON.stringify({
+      type:      'SET_CENTER',
+      lat,
+      lng,
+      zoom,
+      markers:   mkrs.map(m => ({
+        id:    m.id,
+        lat:   m.latitude,
+        lng:   m.longitude,
+        color: m.color || '#BEA3D8',
+        label: m.label || '',
+        pulse: !!m.pulse,
+      })),
+      polylines: plns.map(p => ({
+        coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
+        color:  p.color  ?? '#BEA3D8',
+        width:  p.width  ?? 5,
+        dashed: !!p.dashed,
+      })),
+    });
+    webViewRef.current.postMessage(msg);
+  };
+
+  // Push a center update whenever props change — if map isn't ready yet,
+  // store it as pending and send it when MAP_READY fires
+  useEffect(() => {
+    const lat = center?.latitude  ?? DEFAULT_LAT;
+    const lng = center?.longitude ?? DEFAULT_LNG;
+
+    if (mapReady.current) {
+      sendUpdate(lat, lng, markers, polylines);
+    } else {
+      pendingMsg.current = { lat, lng, markers, polylines };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines)]);
+
+  // Handle messages from the WebView (e.g. MAP_READY)
+  const onMessage = (event) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg.type === 'MAP_READY') {
+        mapReady.current = true;
+        const lat = center?.latitude  ?? DEFAULT_LAT;
+        const lng = center?.longitude ?? DEFAULT_LNG;
+        // Send any pending update that arrived before map was ready
+        const { lat: pl, lng: plng, markers: pm, polylines: pp } = pendingMsg.current ?? {};
+        sendUpdate(pl ?? lat, plng ?? lng, pm ?? markers, pp ?? polylines);
+        pendingMsg.current = null;
+      }
+    } catch (_) {}
+  };
 
   return (
     <View style={[styles.container, style]} pointerEvents={pointerEvents}>
       <WebView
+        ref={webViewRef}
         source={{ html }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
         originWhitelist={['*']}
+        mixedContentMode="always"
+        allowsInlineMediaPlayback
         startInLoadingState
+        onMessage={onMessage}
         renderLoading={() => (
           <View style={styles.loader}>
             <ActivityIndicator size="small" color="#BEA3D8" />
@@ -213,7 +294,7 @@ export default function MapplsMapWebView({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
-  webview:   { flex: 1, backgroundColor: '#DDD8EE' },
+  webview:   { flex: 1, backgroundColor: '#e8e4f0' },
   loader:    {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center', justifyContent: 'center',

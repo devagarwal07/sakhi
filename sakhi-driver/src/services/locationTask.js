@@ -44,19 +44,23 @@ export async function requestLocationPermissions() {
 }
 
 /**
- * Start background location tracking.
+ * Start background location tracking with a dynamic notification message.
  */
-export async function startLocationTracking() {
+export async function startLocationTracking(title = 'Sakhi Driver', body = 'Sharing location while online') {
   const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
-  if (running) return;
+  if (running) {
+    // Stop and restart to update the notification text
+    await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+  }
   await Location.startLocationUpdatesAsync(LOCATION_TASK, {
     accuracy: Location.Accuracy.High,
     timeInterval: 10000,       // every 10 seconds
     distanceInterval: 30,      // or every 30 metres
     showsBackgroundLocationIndicator: true,
     foregroundService: {
-      notificationTitle: 'Sakhi Driver',
-      notificationBody: 'Sharing location while online',
+      notificationTitle: title,
+      notificationBody: body,
+      notificationColor: '#BEA3D8',
     },
   });
 }

@@ -10,10 +10,24 @@ const router = Router();
 
 // ── Rate limiters ──────────────────────────────────────────────────────────────
 
-/** 5 requests per 10 minutes per IP — for send-otp */
+// Test/dev phone numbers that are NEVER rate-limited
+const DEV_BYPASS_PHONES = new Set([
+  '+919876543210',
+  '+919876543211',
+  '+919876543212',
+]);
+
+/** Skip rate-limiting entirely for known test driver numbers */
+const skipIfDevPhone = (req, res, next) => {
+  const phone = req.body?.phone ?? '';
+  if (DEV_BYPASS_PHONES.has(phone)) return next();
+  return next('route'); // fall through to rate-limited handler below
+};
+
+/** 50 requests per 10 minutes per IP — relaxed for demo/dev */
 const sendOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: 50,
   keyGenerator: (req) => req.ip,
   standardHeaders: true,
   legacyHeaders: false,
@@ -27,10 +41,10 @@ const sendOtpLimiter = rateLimit({
     }),
 });
 
-/** 10 attempts per 10 minutes keyed by phone — for verify-otp */
+/** 50 attempts per 10 minutes keyed by phone — relaxed for demo/dev */
 const verifyOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: 50,
   keyGenerator: (req) => req.body?.phone || req.ip,
   standardHeaders: true,
   legacyHeaders: false,
@@ -46,10 +60,18 @@ const verifyOtpLimiter = rateLimit({
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
 
-/** POST /auth/send-otp */
+/** POST /auth/send-otp
+ *  - Test phones → skip rate limiter entirely
+ *  - All others  → 50 req / 10 min limit
+ */
+router.post('/send-otp', skipIfDevPhone, authController.sendOtp);
 router.post('/send-otp', sendOtpLimiter, authController.sendOtp);
 
-/** POST /auth/verify-otp */
+/** POST /auth/verify-otp
+ *  - Test phones → skip rate limiter entirely
+ *  - All others  → 50 req / 10 min limit
+ */
+router.post('/verify-otp', skipIfDevPhone, authController.verifyOtp);
 router.post('/verify-otp', verifyOtpLimiter, authController.verifyOtp);
 
 /** POST /auth/refresh-token */

@@ -36,31 +36,37 @@ async function initiateCall(rideId, callerId, callerRole, direction) {
     supabase.from('drivers').select('phone').eq('id', ride.driver_id).limit(1),
   ]);
 
-  const riderPhone  = riders?.[0]?.phone;
+  const riderPhone = riders?.[0]?.phone;
   const driverPhone = drivers?.[0]?.phone;
 
   if (!riderPhone || !driverPhone) throw new AppError('Phone numbers not available.', 409, 'PHONE_UNAVAILABLE');
 
-  const fromPhone = direction === 'rider_to_driver' ? riderPhone  : driverPhone;
-  const toPhone   = direction === 'rider_to_driver' ? driverPhone : riderPhone;
+  const fromPhone = direction === 'rider_to_driver' ? riderPhone : driverPhone;
+  const toPhone = direction === 'rider_to_driver' ? driverPhone : riderPhone;
 
-  const sid        = process.env.EXOTEL_SID;
-  const token      = process.env.EXOTEL_TOKEN;
-  const callerId_  = process.env.EXOTEL_CALLER_ID;
+  const sid = process.env.EXOTEL_SID;
+  const token = process.env.EXOTEL_TOKEN;
+  // Historically this repo documented EXOTEL_APP_ID, but the Exotel Connect API
+  // needs a CallerId (your Exophone / virtual number). Support both names.
+  const callerId_ = process.env.EXOTEL_CALLER_ID || process.env.EXOTEL_APP_ID;
 
   if (!sid || !token || !callerId_) {
     throw new AppError('Calling service is not configured.', 503, 'CALLING_NOT_CONFIGURED');
   }
 
   try {
+    const baseUrl = process.env.BASE_URL;
+    const params = new URLSearchParams({
+      From: fromPhone,
+      To: toPhone,
+      CallerId: callerId_,
+    });
+    // Optional: Exotel status callbacks (safe even if you don't use it)
+    if (baseUrl) params.set('StatusCallback', `${baseUrl}/webhooks/exotel`);
+
     const { data: exotelRes } = await axios.post(
       `https://${sid}:${token}@api.exotel.com/v1/Accounts/${sid}/Calls/connect.json`,
-      new URLSearchParams({
-        From:           fromPhone,
-        To:             toPhone,
-        CallerId:       callerId_,
-        StatusCallback: `${process.env.BASE_URL}/webhooks/exotel`,
-      }),
+      params,
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10_000 }
     );
 
@@ -68,8 +74,8 @@ async function initiateCall(rideId, callerId, callerRole, direction) {
 
     return {
       virtual_number: callerId_,
-      call_sid:       exotelRes?.Call?.Sid,
-      message:        'Call connecting...',
+      call_sid: exotelRes?.Call?.Sid,
+      message: 'Call connecting...',
     };
   } catch (err) {
     logger.error('callingService.initiateCall — Exotel error', { error: err?.response?.data || err.message });

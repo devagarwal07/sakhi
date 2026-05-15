@@ -46,14 +46,7 @@ export default function DriverLoginScreen({ navigation }) {
     }
   };
 
-  // Dev bypass — skip SMS OTP entirely during development
-  const handleDevBypass = () => {
-    if (!isValid) { Alert.alert('Enter a 10-digit number first'); return; }
-    navigation.navigate('DriverOtp', {
-      phone: `+91${phone}`,
-      devBypass: process.env.EXPO_PUBLIC_OTP_BYPASS ?? '123456',
-    });
-  };
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -126,16 +119,7 @@ export default function DriverLoginScreen({ navigation }) {
             }
           </TouchableOpacity>
 
-          {/* ── Dev bypass (only in development) ── */}
-          {process.env.EXPO_PUBLIC_OTP_BYPASS ? (
-            <TouchableOpacity
-              style={styles.devBtn}
-              onPress={handleDevBypass}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.devBtnText}>⚡ Dev: Skip OTP (use {process.env.EXPO_PUBLIC_OTP_BYPASS})</Text>
-            </TouchableOpacity>
-          ) : null}
+
 
           {/* ── Divider ── */}
           <View style={styles.dividerRow}>
@@ -339,20 +323,5 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  // ── Dev bypass button ─────────────────────────────────────────────────────
-  devBtn: {
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,200,0,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,180,0,0.4)',
-    alignItems: 'center',
-  },
-  devBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92600A',
-  },
+
 });

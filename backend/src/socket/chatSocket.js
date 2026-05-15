@@ -66,12 +66,13 @@ async function validateRideAccess(rideId, userId, role) {
 function registerChatEvents(socket) {
   socket.on('chat:send', async (data) => {
     try {
-      const { ride_id, message } = data || {};
+      const { ride_id, rideId, message } = data || {};
+      const normalizedRideId = ride_id || rideId;
       const { userId, role } = socket.data.user;
 
-      if (!ride_id || !message?.trim()) return;
+      if (!normalizedRideId || !message?.trim()) return;
 
-      const ride = await validateRideAccess(ride_id, userId, role);
+      const ride = await validateRideAccess(normalizedRideId, userId, role);
       if (!ride) return socket.emit('chat:error', { code: 'FORBIDDEN', message: 'You are not on this ride.' });
 
       const { message_en, message_kn } = await translateMessage(message.trim());
@@ -79,8 +80,8 @@ function registerChatEvents(socket) {
       const { data: inserted } = await supabase
         .from('ride_chat_messages')
         .insert({
-          ride_id,
-          sender_id:   userId,
+          ride_id: normalizedRideId,
+          sender_id: userId,
           sender_role: role,
           message_en,
           message_kn,
@@ -95,7 +96,7 @@ function registerChatEvents(socket) {
         sent_at: inserted?.sent_at || new Date().toISOString(),
       };
 
-      socket.to(`ride:${ride_id}`).emit('chat:message', payload);
+      socket.to(`ride:${normalizedRideId}`).emit('chat:message', payload);
       socket.emit('chat:message', payload); // echo to sender
     } catch (err) {
       logger.error('chatSocket.chat:send — error', { error: err.message });

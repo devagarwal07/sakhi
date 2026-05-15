@@ -9,12 +9,12 @@ import { useAuth } from '../context/AuthContext';
 import client from '../api/client';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
-const PURPLE  = '#BEA3D8';
-const DEEP    = '#BEA3D8';
-const DARK    = '#1E1B2E';
-const MUTED   = '#94A3B8';
-const WHITE   = '#FFFFFF';
-const BG      = '#F5F0FF';
+const PURPLE = '#BEA3D8';
+const DEEP = '#BEA3D8';
+const DARK = '#1E1B2E';
+const MUTED = '#94A3B8';
+const WHITE = '#FFFFFF';
+const BG = '#F5F0FF';
 
 // Quick-reply chips for the driver (different from customer's chips)
 const DRIVER_QUICK_REPLIES = [
@@ -34,26 +34,77 @@ const DRIVER_QUICK_REPLIES = [
  *   onClose (fn)     — callback to dismiss the modal
  */
 export default function ChatModal({ rideId, onClose }) {
-  const { driver }      = useAuth();
-  const { on, off, emit } = useSocket();
+  const { driver } = useAuth();
+  const { on, off, emit, joinRideRoom } = useSocket();
 
   const [messages, setMessages] = useState([]);
-  const [text,     setText]     = useState('');
-  const [loading,  setLoading]  = useState(true);
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
   const listRef = useRef(null);
+
+  const mapToUiMessage = (m) => {
+    if (!m) return null;
+    if (m.sender_role) {
+      return {
+        id: m.id != null ? String(m.id) : undefined,
+        sender_role: m.sender_role,
+        message_en: m.message_en ?? null,
+        message_kn: m.message_kn ?? null,
+        sent_at: m.sent_at ?? new Date().toISOString(),
+      };
+    }
+    return {
+      id: m.id != null ? String(m.id) : undefined,
+      sender_role: m.sender === 'driver' ? 'driver' : (m.sender === 'customer' ? 'rider' : null),
+      message_en: m.text ?? null,
+      message_kn: null,
+      sent_at: m.timestamp ?? new Date().toISOString(),
+    };
+  };
+
+  const getDisplayText = (m) => (m?.message_kn || m?.message_en || '');
+
+  useEffect(() => {
+    if (!rideId) return;
+    joinRideRoom?.(rideId).catch(() => { });
+  }, [rideId, joinRideRoom]);
 
   // ── Load chat history on mount ──────────────────────────────────────────────
   useEffect(() => {
     if (!rideId) { setLoading(false); return; }
     client.get(`/rides/${rideId}/chat`)
-      .then(({ data }) => setMessages(data.messages || []))
-      .catch(() => {})
+      .then(({ data }) => {
+        const list = (data.messages || []).map(mapToUiMessage).filter(Boolean);
+        setMessages(list);
+      })
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [rideId]);
 
   // ── Listen for incoming messages from customer ──────────────────────────────
   useEffect(() => {
-    const handleIncoming = (msg) => setMessages((prev) => [...prev, msg]);
+    const handleIncoming = (msg) => {
+      const incoming = mapToUiMessage(msg);
+      if (!incoming) return;
+
+      setMessages((prev) => {
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0; i--) {
+          const candidate = next[i];
+          if (
+            candidate?.id?.startsWith?.('local_') &&
+            candidate.sender_role === incoming.sender_role &&
+            getDisplayText(candidate) === getDisplayText(incoming)
+          ) {
+            next[i] = { ...incoming, id: candidate.id };
+            return next;
+          }
+          if (!candidate?.id?.startsWith?.('local_')) break;
+        }
+        next.push(incoming);
+        return next;
+      });
+    };
     on('chat:message', handleIncoming);
     return () => off('chat:message', handleIncoming);
   }, [on, off]);
@@ -70,19 +121,19 @@ export default function ChatModal({ rideId, onClose }) {
     const trimmed = (overrideText ?? text).trim();
     if (!trimmed || !rideId) return;
 
-    // Optimistic append
-    const msg = {
-      id:        `local_${Date.now()}`,
-      sender:    'driver',
-      sender_id: driver?.id,
-      text:      trimmed,
-      timestamp: new Date().toISOString(),
+    // Optimistic append in backend-compatible shape
+    const optimistic = {
+      id: `local_${Date.now()}`,
+      sender_role: 'driver',
+      message_en: trimmed,
+      message_kn: null,
+      sent_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => [...prev, optimistic]);
     setText('');
 
     // Emit via socket
-    emit('chat:send', { rideId, message: trimmed });
+    emit('chat:send', { ride_id: rideId, message: trimmed });
   };
 
   const formatTime = (ts) => {
@@ -92,7 +143,7 @@ export default function ChatModal({ rideId, onClose }) {
 
   // ── Render bubble ───────────────────────────────────────────────────────────
   const renderMessage = ({ item }) => {
-    const isOwn = item.sender === 'driver';
+    const isOwn = item.sender_role === 'driver';
     return (
       <View style={[c.msgRow, isOwn && c.msgRowOwn]}>
         {!isOwn && (
@@ -101,9 +152,9 @@ export default function ChatModal({ rideId, onClose }) {
           </View>
         )}
         <View style={[c.bubble, isOwn ? c.ownBubble : c.customerBubble]}>
-          <Text style={[c.msgText, isOwn && c.ownMsgText]}>{item.text}</Text>
+          <Text style={[c.msgText, isOwn && c.ownMsgText]}>{getDisplayText(item)}</Text>
           <Text style={[c.timestamp, isOwn && c.ownTimestamp]}>
-            {formatTime(item.timestamp)}
+            {formatTime(item.sent_at)}
           </Text>
         </View>
       </View>
@@ -206,9 +257,9 @@ const c = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14,
     borderBottomWidth: 1, borderBottomColor: BG,
   },
-  headerInfo:    { flex: 1 },
-  headerTitle:   { fontSize: 16, fontWeight: '700', color: DARK },
-  headerSubtitle:{ fontSize: 11, color: MUTED, marginTop: 2 },
+  headerInfo: { flex: 1 },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: DARK },
+  headerSubtitle: { fontSize: 11, color: MUTED, marginTop: 2 },
   closeBtn: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: BG,
@@ -217,14 +268,14 @@ const c = StyleSheet.create({
   closeBtnText: { fontSize: 14, color: MUTED, fontWeight: '600' },
 
   // Messages
-  loadingContainer:{ flex: 1, alignItems: 'center', justifyContent: 'center' },
-  messageList:     { padding: 16, gap: 12, flexGrow: 1 },
-  emptyState:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40, gap: 8 },
-  emptyEmoji:      { fontSize: 36 },
-  emptyText:       { fontSize: 13, color: MUTED },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  messageList: { padding: 16, gap: 12, flexGrow: 1 },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40, gap: 8 },
+  emptyEmoji: { fontSize: 36 },
+  emptyText: { fontSize: 13, color: MUTED },
 
   // Bubbles
-  msgRow:    { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '80%' },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '80%' },
   msgRowOwn: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
   customerAvatar: {
     width: 28, height: 28, borderRadius: 14,
@@ -235,11 +286,11 @@ const c = StyleSheet.create({
     borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%',
   },
   customerBubble: { backgroundColor: BG, borderBottomLeftRadius: 4 },
-  ownBubble:      { backgroundColor: PURPLE, borderBottomRightRadius: 4 },
-  msgText:        { fontSize: 14, color: DARK, lineHeight: 20 },
-  ownMsgText:     { color: WHITE },
-  timestamp:      { fontSize: 10, color: MUTED, marginTop: 4 },
-  ownTimestamp:   { color: 'rgba(255,255,255,0.65)', textAlign: 'right' },
+  ownBubble: { backgroundColor: PURPLE, borderBottomRightRadius: 4 },
+  msgText: { fontSize: 14, color: DARK, lineHeight: 20 },
+  ownMsgText: { color: WHITE },
+  timestamp: { fontSize: 10, color: MUTED, marginTop: 4 },
+  ownTimestamp: { color: 'rgba(255,255,255,0.65)', textAlign: 'right' },
 
   // Quick replies
   quickRepliesWrap: {
@@ -283,5 +334,5 @@ const c = StyleSheet.create({
     elevation: 4,
   },
   sendBtnDisabled: { backgroundColor: 'rgba(190,163,216,0.40)', elevation: 0 },
-  sendBtnIcon:     { fontSize: 16, color: WHITE, marginLeft: 2 },
+  sendBtnIcon: { fontSize: 16, color: WHITE, marginLeft: 2 },
 });

@@ -19,7 +19,7 @@ import { KEYBOARD_BEHAVIOR } from '../utils/androidUtils';
  */
 export default function ChatModal({ rideId, onClose }) {
     const { user } = useAuth();
-    const { on, off, emit } = useSocket();
+    const { on, off, emit, joinRideRoom } = useSocket();
     const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
@@ -27,12 +27,43 @@ export default function ChatModal({ rideId, onClose }) {
     const listRef = useRef(null);
     const keyboardVerticalOffset = Math.max(insets.top + 56, 56);
 
+    const mapToUiMessage = (m) => {
+        if (!m) return null;
+        // Backend schema: { id, sender_role, message_en, message_kn, sent_at }
+        if (m.sender_role) {
+            return {
+                id: m.id != null ? String(m.id) : undefined,
+                sender_role: m.sender_role,
+                message_en: m.message_en ?? null,
+                message_kn: m.message_kn ?? null,
+                sent_at: m.sent_at ?? new Date().toISOString(),
+            };
+        }
+        // Legacy/optimistic shape fallback
+        return {
+            id: m.id != null ? String(m.id) : undefined,
+            sender_role: m.sender === 'customer' ? 'rider' : (m.sender === 'driver' ? 'driver' : null),
+            message_en: m.text ?? null,
+            message_kn: null,
+            sent_at: m.timestamp ?? new Date().toISOString(),
+        };
+    };
+
+    const getDisplayText = (m) => (m?.message_kn || m?.message_en || '');
+
+    // Ensure we are joined to the ride room (so we receive chat broadcasts)
+    useEffect(() => {
+        if (!rideId) return;
+        joinRideRoom?.(rideId).catch(() => { });
+    }, [rideId, joinRideRoom]);
+
     // Load chat history on mount
     useEffect(() => {
         if (!rideId) { setLoading(false); return; }
         getChatHistory(rideId)
             .then(({ data }) => {
-                setMessages(data.messages || []);
+                const list = (data.messages || []).map(mapToUiMessage).filter(Boolean);
+                setMessages(list);
             })
             .catch(() => { })
             .finally(() => setLoading(false));
@@ -41,7 +72,27 @@ export default function ChatModal({ rideId, onClose }) {
     // Listen for incoming messages
     useEffect(() => {
         const handleIncoming = (msg) => {
-            setMessages((prev) => [...prev, msg]);
+            const incoming = mapToUiMessage(msg);
+            if (!incoming) return;
+            setMessages((prev) => {
+                const next = [...prev];
+                // If we optimistically added the same message, replace it.
+                for (let i = next.length - 1; i >= 0; i--) {
+                    const candidate = next[i];
+                    if (
+                        candidate?.id?.startsWith?.('local_') &&
+                        candidate.sender_role === incoming.sender_role &&
+                        getDisplayText(candidate) === getDisplayText(incoming)
+                    ) {
+                        next[i] = { ...incoming, id: candidate.id };
+                        return next;
+                    }
+                    // Stop early once we cross into non-local messages
+                    if (!candidate?.id?.startsWith?.('local_')) break;
+                }
+                next.push(incoming);
+                return next;
+            });
         };
         on('chat:message', handleIncoming);
         return () => off('chat:message', handleIncoming);
@@ -58,19 +109,19 @@ export default function ChatModal({ rideId, onClose }) {
         const trimmed = text.trim();
         if (!trimmed || !rideId) return;
 
-        // Optimistically append
-        const msg = {
+        // Optimistically append in backend-compatible shape
+        const optimistic = {
             id: `local_${Date.now()}`,
-            sender: 'customer',
-            sender_id: user?.id,
-            text: trimmed,
-            timestamp: new Date().toISOString(),
+            sender_role: 'rider',
+            message_en: trimmed,
+            message_kn: null,
+            sent_at: new Date().toISOString(),
         };
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => [...prev, optimistic]);
         setText('');
 
         // Emit via socket
-        emit('chat:send', { rideId, message: trimmed });
+        emit('chat:send', { ride_id: rideId, message: trimmed });
     };
 
     const formatTime = (ts) => {
@@ -80,7 +131,7 @@ export default function ChatModal({ rideId, onClose }) {
     };
 
     const renderMessage = ({ item }) => {
-        const isOwn = item.sender === 'customer';
+        const isOwn = item.sender_role === 'rider';
         return (
             <View style={[styles.msgRow, isOwn && styles.msgRowOwn]}>
                 {!isOwn && (
@@ -89,9 +140,9 @@ export default function ChatModal({ rideId, onClose }) {
                     </View>
                 )}
                 <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.driverBubble]}>
-                    <Text style={[styles.msgText, isOwn && styles.ownMsgText]}>{item.text}</Text>
+                    <Text style={[styles.msgText, isOwn && styles.ownMsgText]}>{getDisplayText(item)}</Text>
                     <Text style={[styles.timestamp, isOwn && styles.ownTimestamp]}>
-                        {formatTime(item.timestamp)}
+                        {formatTime(item.sent_at)}
                     </Text>
                 </View>
             </View>

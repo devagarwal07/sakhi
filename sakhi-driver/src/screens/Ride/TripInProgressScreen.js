@@ -14,6 +14,7 @@ import ChatModal from '../../components/ChatModal';
 import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
+import { startLocationTracking } from '../../services/locationTask';
 
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
@@ -115,6 +116,7 @@ export default function TripInProgressScreen({ navigation, route }) {
     let locSubscription;
     (async () => {
       try {
+        await startLocationTracking('Ride in Progress', 'Navigating to Drop-off: ' + (ride?.dropoff_address || ''));
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
         locSubscription = await Location.watchPositionAsync(

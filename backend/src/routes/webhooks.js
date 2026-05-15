@@ -1,15 +1,43 @@
 'use strict';
 
-const crypto     = require('crypto');
+const crypto = require('crypto');
+const querystring = require('querystring');
 const { Router } = require('express');
 const kycService = require('../services/kycService');
-const logger     = require('../utils/logger');
+const logger = require('../utils/logger');
 const { webhookLimiter } = require('../middleware/rateLimiter');
 
 const router = Router();
 
 // All webhook routes: 100 req/min per IP
 router.use(webhookLimiter);
+
+// ── POST /webhooks/exotel ────────────────────────────────────────────────────
+// Exotel may POST either JSON or x-www-form-urlencoded. We capture rawBody in
+// app.js; parse best-effort and always return 200 so call flows aren't blocked.
+router.post('/exotel', (req, res) => {
+  try {
+    const raw = req.rawBody || '';
+    let payload = req.body || {};
+    if (
+      (!payload || Object.keys(payload).length === 0) &&
+      typeof raw === 'string' &&
+      raw.includes('=')
+    ) {
+      payload = querystring.parse(raw);
+    }
+
+    // Avoid logging full payload (can contain phone numbers). Keep it minimal.
+    logger.info('webhooks.exotel — received', {
+      keys: Object.keys(payload || {}),
+      callSid: payload?.CallSid || payload?.CallSid?.[0] || payload?.CallSid?.Sid,
+      status: payload?.Status || payload?.CallStatus || payload?.CallStatus?.[0],
+    });
+  } catch (err) {
+    logger.warn('webhooks.exotel — handler error', { error: err.message });
+  }
+  return res.status(200).json({ received: true });
+});
 
 // ── HMAC: Signzy ──────────────────────────────────────────────────────────────
 function validateSignzyHMAC(req, res, next) {
@@ -18,7 +46,7 @@ function validateSignzyHMAC(req, res, next) {
     return res.status(401).json({ error: { code: 'MISSING_SIGNATURE', message: 'Missing X-Signzy-Signature header.' } });
   }
 
-  const secret  = process.env.SIGNZY_WEBHOOK_SECRET || '';
+  const secret = process.env.SIGNZY_WEBHOOK_SECRET || '';
   const rawBody = req.rawBody || JSON.stringify(req.body);
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
 
@@ -43,9 +71,9 @@ function validateRazorpayHMAC(req, res, next) {
     return res.status(401).json({ error: { code: 'MISSING_SIGNATURE', message: 'Missing X-Razorpay-Signature header.' } });
   }
 
-  const secret   = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
   // Use raw body (preserved before JSON parsing) for HMAC computation
-  const rawBody  = req.rawBody;
+  const rawBody = req.rawBody;
   if (!rawBody) {
     logger.warn('webhooks.razorpay — rawBody not available; check rawBody middleware in app.js');
     return res.status(400).json({ error: { code: 'BODY_ERROR', message: 'Could not read raw body for HMAC.' } });
@@ -100,9 +128,9 @@ router.get('/signzy/digilocker-callback', async (req, res) => {
         .catch((e) => logger.warn('digilocker-callback — DB update failed', { error: e.message }));
     }
 
-    const icon    = success ? '✅' : '❌';
+    const icon = success ? '✅' : '❌';
     const heading = success ? 'Aadhaar Linked!' : 'Authorisation Failed';
-    const body    = success
+    const body = success
       ? 'Your DigiLocker Aadhaar has been authorised.<br/>You can close this window to continue.'
       : 'The DigiLocker authorisation was not completed.<br/>Please return to the app and try again.';
 
@@ -173,15 +201,15 @@ router.post('/signzy/digilocker-match-callback', async (req, res) => {
     }
 
     const supabase = require('../config/supabase');
-    const updates  = {
+    const updates = {
       digilocker_consent_at: new Date().toISOString(),
     };
 
     // Persist match scores
-    if (nameMatchScore  !== undefined) updates.digilocker_name_match_score  = nameMatchScore;
-    if (dobMatch        !== undefined) updates.digilocker_dob_match         = dobMatch === true || dobMatch === 'true';
-    if (faceMatchScore  !== undefined) updates.digilocker_face_match_score  = String(faceMatchScore);
-    if (pincodeMatch    !== undefined) updates.digilocker_pincode_match     = pincodeMatch === true || pincodeMatch === 'true';
+    if (nameMatchScore !== undefined) updates.digilocker_name_match_score = nameMatchScore;
+    if (dobMatch !== undefined) updates.digilocker_dob_match = dobMatch === true || dobMatch === 'true';
+    if (faceMatchScore !== undefined) updates.digilocker_face_match_score = String(faceMatchScore);
+    if (pincodeMatch !== undefined) updates.digilocker_pincode_match = pincodeMatch === true || pincodeMatch === 'true';
 
     // Prefer internalId (= driverId UUID) for lookup — fast and unambiguous
     const isValidUuid = internalId && /^[0-9a-f-]{36}$/i.test(internalId);
@@ -202,7 +230,7 @@ router.post('/signzy/digilocker-match-callback', async (req, res) => {
 // ── POST /webhooks/razorpay ───────────────────────────────────────────────────
 router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
   try {
-    const event   = req.body?.event;
+    const event = req.body?.event;
     const payload = req.body?.payload;
 
     logger.info('webhooks.razorpay — event received', { event });
@@ -210,13 +238,13 @@ router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
     // Payment captured
     if (event === 'payment.captured') {
       const paymentId = payload?.payment?.entity?.id;
-      const orderId   = payload?.payment?.entity?.order_id;
-      const amount    = payload?.payment?.entity?.amount; // paise
-      const notes     = payload?.payment?.entity?.notes || {};
+      const orderId = payload?.payment?.entity?.order_id;
+      const amount = payload?.payment?.entity?.amount; // paise
+      const notes = payload?.payment?.entity?.notes || {};
 
       const paymentService = require('../services/paymentService');
-      const supabase       = require('../config/supabase');
-      const io             = req.app.get('io');
+      const supabase = require('../config/supabase');
+      const io = req.app.get('io');
 
       // ── 1. Check if this order belongs to a RIDE ─────────────────────────
       const { data: rides } = await supabase
@@ -228,7 +256,7 @@ router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
       const ride = rides?.[0];
       if (ride && ride.payment_status !== 'paid') {
         await supabase.from('rides').update({
-          payment_status:     'paid',
+          payment_status: 'paid',
           razorpay_payment_id: paymentId,
         }).eq('id', ride.id);
 
@@ -251,7 +279,7 @@ router.post('/razorpay', validateRazorpayHMAC, async (req, res) => {
     // Subscription charged
     if (event === 'subscription.charged') {
       const subscriptionId = payload?.subscription?.entity?.id;
-      const paymentId      = payload?.payment?.entity?.id;
+      const paymentId = payload?.payment?.entity?.id;
       logger.info('webhooks.razorpay — subscription charged', { subscriptionId, paymentId });
       // Further handling can be added here
     }

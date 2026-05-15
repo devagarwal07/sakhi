@@ -41,7 +41,7 @@ export default function DriverFaceLivenessScreen({ navigation }) {
 
     const { width: W, height: H } = useWindowDimensions();
 
-    // ── Back = logout → forces RootNavigator back to AuthStack ─────────────
+    // ── Hardware back = logout → clears tokens → RootNavigator shows AuthStack (OTP login) ─
     useEffect(() => {
         const sub = BackHandler.addEventListener('hardwareBackPress', () => {
             logout();
@@ -186,7 +186,7 @@ export default function DriverFaceLivenessScreen({ navigation }) {
                 <TouchableOpacity style={s.permBtn} onPress={requestPermission}>
                     <Text style={s.btnTxt}>Grant Access</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 14 }}>
+                <TouchableOpacity onPress={logout} style={{ marginTop: 14 }}>
                     <Text style={[s.btnTxt, { color: PURPLE }]}>Go Back</Text>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -226,7 +226,7 @@ export default function DriverFaceLivenessScreen({ navigation }) {
                     <Text style={s.ovSub}>Only verified women drivers can join Sakhi.</Text>
                     <TouchableOpacity
                         style={[s.rBtn, { backgroundColor: 'rgba(255,255,255,0.12)' }]}
-                        onPress={() => navigation.goBack()}
+                        onPress={logout}
                     >
                         <Text style={s.btnTxt}>Go Back</Text>
                     </TouchableOpacity>
