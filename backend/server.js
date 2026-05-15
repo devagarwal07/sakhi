@@ -64,6 +64,27 @@ io.on('connection', (socket) => {
 // ─── Start Listening ──────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   logger.info(`Sakhi backend running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+
+  // ─── Render Keep-Alive Self-Ping ─────────────────────────────────────────
+  // Render free tier spins down after 15 min of inactivity.
+  // Ping our own /health endpoint every 14 minutes to stay warm.
+  // Only runs in production to avoid polluting dev logs.
+  if (process.env.NODE_ENV === 'production') {
+    const https = require('https');
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://sakhi-backend-pwej.onrender.com`;
+    const PING_INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
+
+    setInterval(() => {
+      https.get(`${SELF_URL}/health`, (res) => {
+        logger.info(`Keep-alive ping → ${res.statusCode}`);
+        res.resume(); // drain the response body
+      }).on('error', (err) => {
+        logger.warn(`Keep-alive ping failed: ${err.message}`);
+      });
+    }, PING_INTERVAL_MS);
+
+    logger.info(`Keep-alive self-ping scheduled every 14 min → ${SELF_URL}/health`);
+  }
 });
 
 // ─── Graceful Shutdown (SIGTERM / SIGINT) ─────────────────────────────────────

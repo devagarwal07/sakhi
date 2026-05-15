@@ -28,9 +28,28 @@ export async function clearTokens() {
 // ---------------------------------------------------------------------------
 const client = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000',
-  timeout: 15000,
+  timeout: 60000,  // 60s — Render cold start can take up to ~50s
   headers: { 'Content-Type': 'application/json' },
 });
+
+// ---------------------------------------------------------------------------
+// Render cold-start retry helper
+// Render free tier spins down after 15 min of inactivity. The first request
+// after idle gets a network error or 502/503 while the server wakes up (~30-50s).
+// We retry up to 2 times with a 5-second pause before each retry.
+// ---------------------------------------------------------------------------
+const COLD_START_RETRIES = 2;
+const COLD_START_DELAY_MS = 5000;
+
+function isColdStartError(error) {
+  if (!error.response) return true; // network error / no response = server is sleeping
+  const { status } = error.response;
+  return status === 502 || status === 503 || status === 504;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ---------------------------------------------------------------------------
 // Request interceptor — attach Bearer token
@@ -64,6 +83,15 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // ── Render cold-start retry ────────────────────────────────────────────
+    // If the server is waking up, silently retry up to COLD_START_RETRIES times
+    originalRequest._retryCount = originalRequest._retryCount ?? 0;
+    if (isColdStartError(error) && originalRequest._retryCount < COLD_START_RETRIES) {
+      originalRequest._retryCount += 1;
+      await sleep(COLD_START_DELAY_MS);
+      return client(originalRequest);
+    }
 
     const is401 = error.response?.status === 401;
     const errBody = error.response?.data?.error ?? error.response?.data;
@@ -112,5 +140,6 @@ client.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
 
 export default client;

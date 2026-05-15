@@ -5,12 +5,28 @@ import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 15000,
+    timeout: 60000,  // 60s — Render cold start can take up to ~50s
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
     },
 });
+
+// ---------------------------------------------------------------------------
+// Render cold-start retry helper
+// ---------------------------------------------------------------------------
+const COLD_START_RETRIES = 2;
+const COLD_START_DELAY_MS = 5000;
+
+function isColdStartError(error) {
+    if (!error.response) return true; // no response = server sleeping
+    const { status } = error.response;
+    return status === 502 || status === 503 || status === 504;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ── Request Interceptor ────────────────────────────────────────────────────
 apiClient.interceptors.request.use(
@@ -43,6 +59,14 @@ apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        // ── Render cold-start retry ─────────────────────────────────────────
+        originalRequest._retryCount = originalRequest._retryCount ?? 0;
+        if (isColdStartError(error) && originalRequest._retryCount < COLD_START_RETRIES) {
+            originalRequest._retryCount += 1;
+            await sleep(COLD_START_DELAY_MS);
+            return apiClient(originalRequest);
+        }
 
         if (
             error.response?.status === 401 &&
