@@ -279,6 +279,9 @@ export default function MapplsMapWebView({
         originWhitelist={['*']}
         mixedContentMode="always"
         allowsInlineMediaPlayback
+        allowFileAccess
+        allowFileAccessFromFileURLs
+        allowUniversalAccessFromFileURLs
         startInLoadingState
         onMessage={onMessage}
         renderLoading={() => (

@@ -118,9 +118,13 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
       return wrap;
     }
 
+    /* ── Map instance (global so postMessage can access it) ─────────────── */
+    var _map = null;
+    var _markerInstances = [];
+
     /* ── Map init (called after SDK ready) ──────────────────────────────── */
     function initMap() {
-      var map = new mappls.Map('map', {
+      _map = new mappls.Map('map', {
         center:  [${lng}, ${lat}],
         zoom:    ${zoom ?? 15},
         search:  false,
@@ -129,16 +133,17 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
         dragPan:     ${scrollEnabled !== false},
       });
 
-      map.on('load', function () {
+      _map.on('load', function () {
         /* ── Markers ─────────────────────────────────────────────────── */
         var markers = ${markersJson};
         markers.forEach(function(m) {
           var el = createMarkerEl(m);
-          new mappls.Marker({
-            map:      map,
+          var marker = new mappls.Marker({
+            map:      _map,
             position: { lat: m.lat, lng: m.lng },
             element:  el,
           });
+          _markerInstances.push(marker);
         });
 
         /* ── Polylines ───────────────────────────────────────────────── */
@@ -147,7 +152,7 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
           if (!p.coords || !p.coords.length) return;
           var lnglat = p.coords.map(function(c) { return [c.lng, c.lat]; });
           new mappls.Polyline({
-            map:     map,
+            map:     _map,
             path:    lnglat,
             strokeColor:   p.color,
             strokeWidth:   p.width,
@@ -155,8 +160,39 @@ function buildMapHtml({ center, zoom, markers = [], polylines = [], scrollEnable
             strokeDashstyle: p.dashed ? 'dot' : 'solid',
           });
         });
+
+        /* Notify native that map is ready */
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
+        }
       });
     }
+
+    /* ── postMessage handler — update center/markers without full reload ─ */
+    document.addEventListener('message', function(e) {
+      try {
+        var msg = JSON.parse(e.data);
+        if (!_map) return;
+        if (msg.type === 'FLY_TO') {
+          _map.flyTo({ center: [msg.lng, msg.lat], zoom: msg.zoom || 15 });
+        }
+        if (msg.type === 'SET_MARKERS') {
+          /* Remove old markers */
+          _markerInstances.forEach(function(m) { m.remove && m.remove(); });
+          _markerInstances = [];
+          /* Add new markers */
+          msg.markers.forEach(function(m) {
+            var el = createMarkerEl(m);
+            var marker = new mappls.Marker({
+              map: _map,
+              position: { lat: m.lat, lng: m.lng },
+              element: el,
+            });
+            _markerInstances.push(marker);
+          });
+        }
+      } catch(err) {}
+    });
 
     window.initMap = initMap;
   </script>
@@ -181,24 +217,44 @@ export default function MapplsMapWebView({
   zoomEnabled   = true,
   pointerEvents,
 }) {
+  // Round to 4 decimal places (~11m precision) to avoid pointless reloads
+  const latKey = center?.latitude  ? Math.round(center.latitude  * 10000) : 0;
+  const lngKey = center?.longitude ? Math.round(center.longitude * 10000) : 0;
+
+  // Generate fresh HTML whenever center changes significantly.
+  // Using `key` on WebView forces a full remount → map loads at correct coords.
   const html = useMemo(
     () => buildMapHtml({ center, zoom, markers, polylines, scrollEnabled, zoomEnabled }),
+    // Rebuild when center moves >~11m, or markers/polylines change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      center?.latitude, center?.longitude, zoom,
+      latKey, lngKey, zoom,
       JSON.stringify(markers), JSON.stringify(polylines),
       scrollEnabled, zoomEnabled,
     ]
   );
 
+  // Use latKey+lngKey as the WebView key so it remounts when location is obtained
+  const webViewKey = `${latKey}_${lngKey}`;
+
+  if (!API_KEY) {
+    return <View style={[styles.container, style, { backgroundColor: '#EEE' }]} />;
+  }
+
   return (
     <View style={[styles.container, style]} pointerEvents={pointerEvents}>
       <WebView
+        key={webViewKey}
         source={{ html }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
         originWhitelist={['*']}
+        mixedContentMode="always"
+        allowsInlineMediaPlayback
+        allowFileAccess
+        allowFileAccessFromFileURLs
+        allowUniversalAccessFromFileURLs
         startInLoadingState
         renderLoading={() => (
           <View style={styles.loader}>
