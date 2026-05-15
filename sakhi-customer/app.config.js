@@ -39,7 +39,7 @@ export default {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY
         }
       },
-      package: "com.sakhi.customer",
+      package: "in.sakhirides.customer",
       permissions: [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -52,7 +52,7 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.sakhi.customer",
+      bundleIdentifier: "in.sakhirides.customer",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "Sakhi needs your location to find nearby drivers and track your ride.",
