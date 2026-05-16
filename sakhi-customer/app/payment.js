@@ -1,12 +1,13 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Modal, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
@@ -15,12 +16,33 @@ export default function PaymentMethodsScreen() {
     const [upiIds, setUpiIds] = useState([]);
     const [showAddUpi, setShowAddUpi] = useState(false);
     const [newUpi, setNewUpi] = useState('');
+    const [editingUpiId, setEditingUpiId] = useState(null);
     const [modal, setModal] = useState(null);
 
     const modalSheetPaddingBottom = Math.max(insets.bottom + 10, 28);
     const footerPaddingBottom = Math.max(insets.bottom, 24);
     const footerHeight = 97 + footerPaddingBottom;
     const scrollPaddingBottom = footerHeight + 16;
+
+    useEffect(() => {
+        const loadUpiIds = async () => {
+            try {
+                const saved = await AsyncStorage.getItem('saved_upi_ids');
+                if (saved) setUpiIds(JSON.parse(saved));
+            } catch (err) {
+                console.log('Error loading UPI IDs:', err);
+            }
+        };
+        loadUpiIds();
+    }, []);
+
+    const saveUpiToStorage = async (ids) => {
+        try {
+            await AsyncStorage.setItem('saved_upi_ids', JSON.stringify(ids));
+        } catch (err) {
+            console.log('Error saving UPI IDs:', err);
+        }
+    };
 
     const handleDeleteUpi = (id) => {
         setModal({
@@ -29,7 +51,14 @@ export default function PaymentMethodsScreen() {
             message: `Remove ${id} from saved IDs?`,
             buttons: [
                 { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
-                { text: 'Remove', style: 'destructive', onPress: () => { setUpiIds(prev => prev.filter(u => u !== id)); setModal(null); } },
+                { text: 'Remove', style: 'destructive', onPress: () => { 
+                    setUpiIds(prev => {
+                        const updated = prev.filter(u => u !== id);
+                        saveUpiToStorage(updated);
+                        return updated;
+                    }); 
+                    setModal(null); 
+                } },
             ],
         });
     };
@@ -44,8 +73,18 @@ export default function PaymentMethodsScreen() {
             });
             return;
         }
-        setUpiIds(prev => [...prev, newUpi.trim()]);
+        setUpiIds(prev => {
+            let updated;
+            if (editingUpiId) {
+                updated = prev.map(u => (u === editingUpiId ? newUpi.trim() : u));
+            } else {
+                updated = [...prev, newUpi.trim()];
+            }
+            saveUpiToStorage(updated);
+            return updated;
+        });
         setNewUpi('');
+        setEditingUpiId(null);
         setShowAddUpi(false);
     };
 
@@ -72,7 +111,7 @@ export default function PaymentMethodsScreen() {
 
                     {/* Banner: Info */}
                     <View style={styles.infoBanner}>
-                        <Text style={styles.infoIcon}>ⓘ</Text>
+                        <Feather name="info" size={18} color="#BEA3D8" style={styles.infoIcon} />
                         <View style={{ flex: 1 }}>
                             <Text style={styles.infoBold}>Payment Rules</Text>
                             <Text style={styles.infoText}><Feather name="truck" size={13} color="#64748B" />  On-Demand Rides  <Feather name="arrow-right" size={13} color="#64748B" />  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}<Feather name="calendar" size={13} color="#64748B" />  Subscriptions  <Feather name="arrow-right" size={13} color="#64748B" />  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
@@ -99,11 +138,11 @@ export default function PaymentMethodsScreen() {
                                     </View>
                                 </TouchableOpacity>
                                 <View style={styles.actionBtns}>
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => setModal({
-                                        title: 'Edit UPI',
-                                        message: 'UPI editing coming soon.',
-                                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                    })}>
+                                    <TouchableOpacity style={styles.actionBtn} onPress={() => {
+                                        setEditingUpiId(id);
+                                        setNewUpi(id);
+                                        setShowAddUpi(true);
+                                    }}>
                                         <Feather name="edit-2" size={16} color="#94A3B8" />
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteUpi(id)}>
@@ -114,7 +153,11 @@ export default function PaymentMethodsScreen() {
                         ))}
 
                         {/* Add UPI Action */}
-                        <TouchableOpacity style={styles.addUpiBtn} activeOpacity={0.7} onPress={() => setShowAddUpi(true)}>
+                        <TouchableOpacity style={styles.addUpiBtn} activeOpacity={0.7} onPress={() => {
+                            setEditingUpiId(null);
+                            setNewUpi('');
+                            setShowAddUpi(true);
+                        }}>
                             <Text style={styles.addUpiIcon}>+</Text>
                             <Text style={styles.addUpiText}>Add UPI ID</Text>
                         </TouchableOpacity>
@@ -128,7 +171,7 @@ export default function PaymentMethodsScreen() {
                         <TouchableOpacity style={[styles.cashCard, selectedMethod === 'cash' && styles.cashCardSelected]} onPress={() => setSelectedMethod('cash')} activeOpacity={0.8}>
                             <View style={styles.cashLeft}>
                                 <View style={styles.cashIconBg}>
-                                    <Feather name="dollar-sign" size={20} color="#22C55E" />
+                                    <FontAwesome name="rupee" size={20} color="#BEA3D8" style={{ marginTop: 2 }} />
                                 </View>
                                 <View style={styles.cashDetails}>
                                     <Text style={styles.cashTitle}>Cash — Pay Driver Directly</Text>
@@ -172,10 +215,10 @@ export default function PaymentMethodsScreen() {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowAddUpi(false)} activeOpacity={1} />
+                    <TouchableOpacity style={styles.modalBackdrop} onPress={() => { setShowAddUpi(false); setEditingUpiId(null); setNewUpi(''); }} activeOpacity={1} />
                     <View style={[styles.modalSheet, { paddingBottom: modalSheetPaddingBottom }]}>
                         <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>Add UPI ID</Text>
+                        <Text style={styles.modalTitle}>{editingUpiId ? 'Edit UPI ID' : 'Add UPI ID'}</Text>
                         <TextInput
                             style={styles.modalInput}
                             value={newUpi}
@@ -188,7 +231,7 @@ export default function PaymentMethodsScreen() {
                             autoFocus
                         />
                         <TouchableOpacity style={styles.modalBtn} onPress={handleAddUpi}>
-                            <Text style={styles.modalBtnText}>Add UPI ID</Text>
+                            <Text style={styles.modalBtnText}>{editingUpiId ? 'Update UPI ID' : 'Add UPI ID'}</Text>
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
@@ -247,7 +290,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#EDE9FE',
         borderRadius: 12,
     },
-    infoIcon: { fontSize: 16, color: '#BEA3D8', marginTop: 2 },
+    infoIcon: { marginTop: 2 },
     infoBold: { fontSize: 13, fontWeight: '700', color: '#1E1B2E', marginBottom: 4 },
     infoText: { fontSize: 13, color: '#64748B', lineHeight: 22 },
 
@@ -294,7 +337,7 @@ const styles = StyleSheet.create({
     },
     cashCardSelected: { borderColor: '#BEA3D8', backgroundColor: '#F5F0FF' },
     cashLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    cashIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
+    cashIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF', justifyContent: 'center', alignItems: 'center' },
     cashIcon: { fontSize: 20 },
     cashDetails: { gap: 2 },
     cashTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B2E' },

@@ -163,7 +163,7 @@ export default function SakhiModal({ config, onClose }) {
                     {message ? <Text style={styles.message}>{message}</Text> : null}
 
                     {/* Buttons */}
-                    <View style={[styles.buttonsRow, buttons.length === 1 && styles.buttonsSingle]}>
+                    <View style={[styles.buttonsRow, (buttons.length === 1 || buttons.length > 2) && styles.buttonsStack]}>
                         {buttons.map((btn, i) => {
                             const isDestructive = btn.style === 'destructive';
                             const isCancel = btn.style === 'cancel';
@@ -172,7 +172,7 @@ export default function SakhiModal({ config, onClose }) {
                                     key={i}
                                     style={[
                                         styles.btn,
-                                        buttons.length === 1 && styles.btnFull,
+                                        (buttons.length === 1 || buttons.length > 2) && styles.btnFull,
                                         isDestructive && styles.btnDestructive,
                                         isCancel && styles.btnCancel,
                                         !isDestructive && !isCancel && styles.btnPrimary,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
         gap: 10,
         width: '100%',
     },
-    buttonsSingle: {
+    buttonsStack: {
         flexDirection: 'column',
     },
     btn: {

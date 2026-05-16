@@ -18,6 +18,7 @@ router.post('/sos/cancel',             authMiddleware, roleGuard('rider', 'drive
 // ── Emergency Contacts (riders: emergency_contacts; drivers: driver_emergency_contacts) ──
 router.get('/emergency-contacts',      authMiddleware, roleGuard('rider', 'driver'), safetyController.getEmergencyContacts);
 router.post('/emergency-contacts',     authMiddleware, roleGuard('rider', 'driver'), safetyController.addEmergencyContact);
+router.put('/emergency-contacts/:id',  authMiddleware, roleGuard('rider', 'driver'), safetyController.updateEmergencyContact);
 router.delete('/emergency-contacts/:id', authMiddleware, roleGuard('rider', 'driver'), safetyController.deleteEmergencyContact);
 
 // ── Live Sharing ──────────────────────────────────────────────────────────────

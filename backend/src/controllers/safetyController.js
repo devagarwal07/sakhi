@@ -107,6 +107,27 @@ async function addEmergencyContact(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ── PUT /safety/emergency-contacts/:id ───────────────────────────────────────
+async function updateEmergencyContact(req, res, next) {
+  try {
+    const body = contactSchema.parse(req.body);
+    const { userId, role } = req.user;
+    const table = role === 'rider' ? 'emergency_contacts' : 'driver_emergency_contacts';
+    const ownerCol = role === 'rider' ? 'user_id' : 'driver_id';
+
+    const { data, error } = await supabase
+      .from(table)
+      .update(body)
+      .eq('id', req.params.id)
+      .eq(ownerCol, userId)
+      .select('id, name, phone, relation')
+      .single();
+
+    if (error) throw new AppError('Failed to update contact.', 500, 'DB_ERROR');
+    return res.status(200).json(data);
+  } catch (err) { return handleError(err, res, next); }
+}
+
 // ── DELETE /safety/emergency-contacts/:id ─────────────────────────────────────
 async function deleteEmergencyContact(req, res, next) {
   try {
@@ -134,7 +155,7 @@ async function cancelSOS(req, res, next) {
     const { userId, role } = req.user;
     const { data: rows } = await supabase
       .from('sos_events')
-      .select('id')
+      .select('id, ride_id')
       .eq('user_id', userId)
       .eq('triggered_by', role)
       .is('resolved_at', null)
@@ -146,6 +167,13 @@ async function cancelSOS(req, res, next) {
         .from('sos_events')
         .update({ resolved_at: new Date().toISOString() })
         .eq('id', rows[0].id);
+        
+      if (rows[0].ride_id) {
+        await supabase
+          .from('rides')
+          .update({ sos_triggered: false })
+          .eq('id', rows[0].ride_id);
+      }
     }
     return res.status(200).json({ ok: true });
   } catch (err) { return handleError(err, res, next); }
@@ -294,6 +322,7 @@ module.exports = {
   cancelSOS,
   getEmergencyContacts,
   addEmergencyContact,
+  updateEmergencyContact,
   deleteEmergencyContact,
   shareTrip,
   getLiveTrack,

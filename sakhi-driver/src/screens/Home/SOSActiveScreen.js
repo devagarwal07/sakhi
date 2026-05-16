@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Linking, Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cancelSOS } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
@@ -60,9 +60,10 @@ export default function SOSActiveScreen({ navigation, route }) {
   };
 
   return (
-    <View style={[s.root, { paddingTop: Math.max(insets.top, 0) }]}>
+    <View style={s.root}>
 
       {/* ── Top Nav ─────────────────────────────────────────────────── */}
+      <SafeAreaView edges={['top']} style={s.topNavSafe}>
       <View style={s.topNav}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.navIconBtn}>
           <Text style={s.navIcon}>←</Text>
@@ -70,9 +71,11 @@ export default function SOSActiveScreen({ navigation, route }) {
         <Text style={s.navTitle}>{t('sos.emergencySos')}</Text>
         <View style={{ width: 32 }} />
       </View>
+      </SafeAreaView>
 
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: Math.max(insets.bottom + 32, 60) }]}
+        style={{ flex: 1 }}
+        contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Siren Section ─────────────────────────────────────────── */}
@@ -88,7 +91,7 @@ export default function SOSActiveScreen({ navigation, route }) {
         <View style={s.headerText}>
           <Text style={s.title}>{t('sos.sosAlertSent')}</Text>
           <Text style={s.subtitle}>
-            Your emergency contacts and the Sakhi{'\n'}Safety Team have been notified with{'\n'}your live location.
+            Your emergency contacts and the Sakhi Safety Team have been notified with your live location.
           </Text>
         </View>
 
@@ -171,7 +174,7 @@ export default function SOSActiveScreen({ navigation, route }) {
       </ScrollView>
 
       {/* ── Bottom Footer ─────────────────────────────────────────────── */}
-      <View style={s.footer}>
+      <SafeAreaView edges={['bottom']} style={s.footer}>
         <TouchableOpacity
           style={s.cancelBtn}
           onPress={handleCancel}
@@ -182,7 +185,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             {cancelling ? 'CANCELLING…' : "CANCEL SOS — I'M SAFE"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -191,18 +194,16 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: DKRED },
 
   // Top nav
+  topNavSafe: { backgroundColor: RED, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 6, zIndex: 10 },
   topNav: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     height: 56, paddingHorizontal: 20,
-    backgroundColor: RED,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 8, elevation: 6,
   },
   navIconBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   navIcon:    { fontSize: 22, color: WHITE, fontWeight: '700' },
   navTitle:   { fontSize: 17, fontWeight: '900', color: WHITE, letterSpacing: -0.4 },
 
-  scroll: { paddingHorizontal: 24, paddingTop: 32, gap: 24 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 32, gap: 24, paddingBottom: 24, justifyContent: 'center' },
 
   // Siren
   sirenSection: {
@@ -297,8 +298,8 @@ const s = StyleSheet.create({
 
   // Footer
   footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 24, paddingBottom: 40, alignItems: 'center',
+    width: '100%', alignItems: 'center', backgroundColor: DKRED,
+    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16
   },
   cancelBtn: { paddingVertical: 14, paddingHorizontal: 32 },
   cancelText: {

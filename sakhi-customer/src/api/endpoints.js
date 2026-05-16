@@ -75,6 +75,7 @@ export const callDriver = (rideId) =>
 
 export const getEmergencyContacts = () => apiClient.get('/safety/emergency-contacts');
 export const addEmergencyContact = (data) => apiClient.post('/safety/emergency-contacts', data);
+export const updateEmergencyContact = (id, data) => apiClient.put(`/safety/emergency-contacts/${id}`, data);
 export const deleteEmergencyContact = (id) => apiClient.delete(`/safety/emergency-contacts/${id}`);
 
 // Backend batterySchema: { level (int 0-100), lat, lng } — NOT { location, batteryLevel }

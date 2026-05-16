@@ -16,12 +16,7 @@ export default function SOSActiveScreen() {
     const [loadingContacts, setLoadingContacts] = useState(true);
     const [cancelling, setCancelling] = useState(false);
 
-    const footerPaddingBottom = Math.max(
-        insets.bottom + (Platform.OS === 'ios' ? 6 : 16),
-        40
-    );
-
-    const scrollPaddingBottom = footerPaddingBottom + 60;
+    const footerPaddingBottom = Math.max(insets.bottom, 16);
 
     useEffect(() => {
         getEmergencyContacts()
@@ -56,7 +51,11 @@ export default function SOSActiveScreen() {
                             // Proceed regardless
                         } finally {
                             setCancelling(false);
-                            router.replace('/(tabs)/');
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace('/');
+                            }
                         }
                     } 
                 },
@@ -67,20 +66,19 @@ export default function SOSActiveScreen() {
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <SafeAreaView style={styles.topNavSafe}>
+            <SafeAreaView edges={['top']} style={styles.topNavSafe}>
                 <View style={styles.topNav}>
                     <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                         <Feather name="arrow-left" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>Emergency SOS</Text>
-                    <TouchableOpacity onPress={() => router.push('/sos-settings')} style={styles.navIconBtn}>
-                        <Feather name="settings" size={20} color="#FFFFFF" />
-                    </TouchableOpacity>
+                    <View style={{ width: 32 }} />
                 </View>
             </SafeAreaView>
 
             <ScrollView
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
                 
@@ -97,7 +95,7 @@ export default function SOSActiveScreen() {
                 <View style={styles.headerTextSection}>
                     <Text style={styles.title}>SOS Alert Sent</Text>
                     <Text style={styles.subtitle}>
-                        Your emergency contacts and the Sakhi{'\n'}team have been notified with your live{'\n'}location.
+                        Your emergency contacts and the Sakhi team have been notified with your live location.
                     </Text>
                 </View>
 
@@ -180,14 +178,14 @@ export default function SOSActiveScreen() {
             </ScrollView>
 
             {/* Bottom Safe Footer */}
-            <View style={[styles.footerSection, { paddingBottom: footerPaddingBottom }]}>
-                <TouchableOpacity style={styles.safeBtn} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
+            <SafeAreaView edges={['bottom']} style={styles.footerSection}>
+                <TouchableOpacity style={[styles.safeBtn, { marginBottom: footerPaddingBottom }]} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
                     {cancelling
                         ? <ActivityIndicator color="rgba(255,255,255,0.6)" />
                         : <Text style={styles.safeBtnText}>CANCEL SOS — I'M SAFE</Text>
                     }
                 </TouchableOpacity>
-            </View>
+            </SafeAreaView>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
@@ -203,7 +201,7 @@ const styles = StyleSheet.create({
     navIcon: { fontSize: 20, color: '#FFFFFF', fontWeight: 'bold' },
     navTitle: { fontSize: 18, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.9 },
 
-    scrollContent: { paddingHorizontal: 24, paddingTop: 40 },
+    scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24, justifyContent: 'center' },
 
     sirenSection: { width: '100%', height: 192, justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' },
     ringOuter: { position: 'absolute', width: 176, height: 176, borderRadius: 88, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', opacity: 0.4 },
@@ -247,8 +245,8 @@ const styles = StyleSheet.create({
     shieldIcon: { fontSize: 14 },
     authoritiesText: { fontSize: 14, fontWeight: '500', color: 'rgba(255, 255, 255, 0.9)', textDecorationLine: 'underline' },
 
-    footerSection: { position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' },
-    safeBtn: { paddingVertical: 16, paddingHorizontal: 32 },
+    footerSection: { width: '100%', alignItems: 'center', backgroundColor: '#991B1B' },
+    safeBtn: { paddingVertical: 16, paddingHorizontal: 32, marginTop: 16 },
     safeBtnText: { fontSize: 10, fontWeight: '700', color: 'rgba(255, 255, 255, 0.6)', letterSpacing: 2, textTransform: 'uppercase' },
 
 });

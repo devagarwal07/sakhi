@@ -8,7 +8,7 @@ import {
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
-import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../src/api/endpoints';
+import { getEmergencyContacts, addEmergencyContact, updateEmergencyContact, deleteEmergencyContact } from '../src/api/endpoints';
 
 const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Friend', 'Spouse', 'Other'];
 
@@ -24,6 +24,7 @@ export default function EmergencyContactsScreen() {
     const [newName, setNewName] = useState('');
     const [newPhone, setNewPhone] = useState('');
     const [newRelation, setNewRelation] = useState('Friend');
+    const [editingContactId, setEditingContactId] = useState(null);
     const [alertModal, setAlertModal] = useState(null);
 
     const AVATAR_COLORS = ['#BEA3D8', '#AB8FFE', '#68C4AF', '#F9A8D4', '#FCD34D'];
@@ -118,25 +119,40 @@ export default function EmergencyContactsScreen() {
         }
         setSaving(true);
         try {
-            const { data } = await addEmergencyContact({
-                name: newName.trim(),
-                phone: `+91${cleaned}`,
-                relation: newRelation.toLowerCase(),
-            });
-            const contact = data.contact || data;
-            const i = contacts.length;
-            setContacts(prev => [...prev, {
-                ...contact,
-                autoShare: contact.auto_share ?? false,
-                color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                initial: (contact.name || 'U')[0].toUpperCase(),
-            }]);
-            setNewName(''); setNewPhone(''); setNewRelation('Friend');
+            if (editingContactId) {
+                const { data } = await updateEmergencyContact(editingContactId, {
+                    name: newName.trim(),
+                    phone: `+91${cleaned}`,
+                    relation: newRelation.toLowerCase(),
+                });
+                const contact = data.contact || data;
+                setContacts(prev => prev.map(c => c.id === editingContactId ? {
+                    ...c,
+                    ...contact,
+                    autoShare: c.autoShare,
+                    initial: (contact.name || 'U')[0].toUpperCase(),
+                } : c));
+            } else {
+                const { data } = await addEmergencyContact({
+                    name: newName.trim(),
+                    phone: `+91${cleaned}`,
+                    relation: newRelation.toLowerCase(),
+                });
+                const contact = data.contact || data;
+                const i = contacts.length;
+                setContacts(prev => [...prev, {
+                    ...contact,
+                    autoShare: contact.auto_share ?? false,
+                    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                    initial: (contact.name || 'U')[0].toUpperCase(),
+                }]);
+            }
+            setNewName(''); setNewPhone(''); setNewRelation('Friend'); setEditingContactId(null);
             setAddModalVisible(false);
         } catch (err) {
             setAlertModal({
                 icon: '⚠️', title: 'Error',
-                message: err?.response?.data?.message || 'Could not add contact.',
+                message: err?.response?.data?.message || 'Could not save contact.',
                 buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
             });
         } finally {
@@ -198,21 +214,22 @@ export default function EmergencyContactsScreen() {
                                                     <Text style={styles.relationBadgeText}>{(contact.relation || 'contact').toUpperCase()}</Text>
                                                 </View>
                                             </View>
+                                            <Text style={styles.contactPhone}>{contact.phone}</Text>
                                         </View>
-                                        <Text style={styles.contactPhone}>{contact.phone}</Text>
-                                    </View>
-                                    <View style={styles.actionBtnsRow}>
-                                        <TouchableOpacity style={styles.editBtn} onPress={() => setAlertModal({
-                                            icon: '✏️',
-                                            title: 'Edit Contact',
-                                            message: 'Contact editing coming soon.',
-                                            buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
-                                        })}>
-                                            <Feather name="edit-2" size={18} color="#BEA3D8" />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(contact.id, contact.name)}>
-                                            <Feather name="trash-2" size={18} color="#BA1A1A" />
-                                        </TouchableOpacity>
+                                        <View style={styles.actionBtnsRow}>
+                                            <TouchableOpacity style={styles.editBtn} onPress={() => {
+                                                setEditingContactId(contact.id);
+                                                setNewName(contact.name);
+                                                setNewPhone(contact.phone.replace('+91', ''));
+                                                setNewRelation((contact.relation || 'Friend').charAt(0).toUpperCase() + (contact.relation || 'friend').slice(1));
+                                                setAddModalVisible(true);
+                                            }}>
+                                                <Feather name="edit-2" size={16} color="#BEA3D8" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(contact.id, contact.name)}>
+                                                <Feather name="trash-2" size={16} color="#BA1A1A" />
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
                                     <View style={styles.cardBottom}>
                                         <View style={styles.autoShareInfo}>
@@ -233,7 +250,11 @@ export default function EmergencyContactsScreen() {
 
                         {/* Add Contact Button - show only if < 3 */}
                         {contacts.length < 3 && (
-                            <TouchableOpacity style={styles.addContactBtn} activeOpacity={0.7} onPress={() => setAddModalVisible(true)}>
+                            <TouchableOpacity style={styles.addContactBtn} activeOpacity={0.7} onPress={() => {
+                                setEditingContactId(null);
+                                setNewName(''); setNewPhone(''); setNewRelation('Friend');
+                                setAddModalVisible(true);
+                            }}>
                                 <View style={styles.addIconBg}>
                                     <Feather name="user-plus" size={20} color="#BEA3D8" />
                                 </View>
@@ -267,7 +288,7 @@ export default function EmergencyContactsScreen() {
                     <TouchableOpacity
                         style={{ flex: 1, width: '100%' }}
                         activeOpacity={1}
-                        onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); }}
+                        onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); setEditingContactId(null); setNewName(''); setNewPhone(''); setNewRelation('Friend'); }}
                     />
                     {/* Bottom Sheet */}
                     <View style={[styles.bottomSheet, { paddingBottom: addSheetPaddingBottom, marginBottom: keyboardOffset }]}>
@@ -275,14 +296,14 @@ export default function EmergencyContactsScreen() {
                         <View style={styles.sheetTopRow}>
                             <TouchableOpacity
                                 style={styles.sheetCloseBtn}
-                                onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); }}
+                                onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); setEditingContactId(null); setNewName(''); setNewPhone(''); setNewRelation('Friend'); }}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
                                 <Feather name="x" size={20} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
                             <View style={styles.sheetHeader}>
-                                <Text style={styles.sheetTitle}>Add New Contact</Text>
+                                <Text style={styles.sheetTitle}>{editingContactId ? 'Edit Contact' : 'Add New Contact'}</Text>
                                 <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
                             </View>
                             <View style={styles.formContent}>
@@ -340,7 +361,7 @@ export default function EmergencyContactsScreen() {
                                 >
                                     {saving
                                         ? <ActivityIndicator color="#fff" />
-                                        : <Text style={styles.sheetActionText}>Save Contact</Text>
+                                        : <Text style={styles.sheetActionText}>{editingContactId ? 'Update Contact' : 'Save Contact'}</Text>
                                     }
                                 </TouchableOpacity>
                             </View>
@@ -414,44 +435,44 @@ const styles = StyleSheet.create({
     contactCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
-        padding: 24,
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4,
+        padding: 16,
+        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 16, elevation: 2,
     },
     cardTop: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-        marginBottom: 24,
+        flexDirection: 'row', alignItems: 'center',
+        marginBottom: 16,
     },
     avatar: {
-        width: 50, height: 50, borderRadius: 25,
+        width: 44, height: 44, borderRadius: 22,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 16,
+        marginRight: 12,
     },
-    avatarText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
-    contactInfo: { flex: 1, gap: 8 },
+    avatarText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+    contactInfo: { flex: 1, gap: 4 },
     nameRow: {
-        flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap',
     },
-    contactName: { fontSize: 18, fontWeight: '700', color: '#685F96', lineHeight: 22 },
+    contactName: { fontSize: 16, fontWeight: '700', color: '#685F96', lineHeight: 20 },
     relationBadge: {
         backgroundColor: '#E8DDFF',
-        paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, marginTop: 4,
+        paddingHorizontal: 6, paddingVertical: 2, borderRadius: 9999,
     },
-    relationBadgeText: { fontSize: 10, fontWeight: '700', color: '#BEA3D8', letterSpacing: 0.5 },
-    contactPhone: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
-    actionBtnsRow: { flexDirection: 'row', gap: 8 },
+    relationBadgeText: { fontSize: 9, fontWeight: '700', color: '#BEA3D8', letterSpacing: 0.5 },
+    contactPhone: { fontSize: 13, fontWeight: '500', color: '#6B7280' },
+    actionBtnsRow: { flexDirection: 'row', gap: 6 },
     editBtn: {
-        width: 40, height: 40, borderRadius: 12, backgroundColor: '#F6F1FF',
+        width: 36, height: 36, borderRadius: 10, backgroundColor: '#F6F1FF',
         justifyContent: 'center', alignItems: 'center',
     },
-    editIcon: { fontSize: 18, color: '#BEA3D8' },
+    editIcon: { fontSize: 16, color: '#BEA3D8' },
     deleteBtn: {
-        width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255, 218, 214, 0.4)',
+        width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255, 218, 214, 0.4)',
         justifyContent: 'center', alignItems: 'center',
     },
-    deleteIcon: { fontSize: 18, color: '#BA1A1A' },
+    deleteIcon: { fontSize: 16, color: '#BA1A1A' },
     cardBottom: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingTop: 20, borderTopWidth: 1, borderTopColor: '#F5F0FF',
+        paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F0FF',
     },
     autoShareInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     shareIcon: { fontSize: 20, color: '#BEA3D8' },
