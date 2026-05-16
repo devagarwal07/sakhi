@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const EventEmitter = require('events');
 const supabase = require('../config/supabase');
@@ -79,8 +79,11 @@ function gpsStalenessMultiplier(updatedAt, now) {
 function computeDriverScore(d, distanceMeters, now) {
   const loc = Array.isArray(d.driver_locations) ? d.driver_locations[0] : d.driver_locations;
 
-  const rar         = Math.min(1, Math.max(0, parseFloat(d.acceptance_rate ?? 1.0)));
-  const effectiveRar = (d.total_requests || 0) < 10 ? 1.0 : rar;
+  const totalReq = d.total_requests || 0;
+  const totalAcc = d.total_accepts || 0;
+  const rawRar = totalReq > 0 ? (totalAcc / totalReq) : 1.0;
+  const rar = Math.min(1, Math.max(0, parseFloat(rawRar)));
+  const effectiveRar = totalReq < 10 ? 1.0 : rar;
   const rar_penalty  = 1 + RAR_PENALTY_FACTOR * (1 - effectiveRar);
 
   const pingAt      = loc?.updated_at ?? d._ping_at;
@@ -225,7 +228,7 @@ class MatchingEngine extends EventEmitter {
       .select(`
         id, name, phone, fcm_token, vehicle_type, vehicle_reg_no,
         vehicle_color, vehicle_model, language_pref,
-        acceptance_rate, total_requests,
+        total_accepts, total_requests,
         driver_locations!inner(lat, lng, updated_at)
       `)
       .eq('is_online', true)
