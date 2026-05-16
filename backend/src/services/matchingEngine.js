@@ -563,23 +563,26 @@ class MatchingEngine extends EventEmitter {
 
     // RAR: timeout = implicit rejection — penalise acceptance rate
     supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: false })
-      .catch(() => {
-        supabase
-          .from('drivers')
-          .select('total_requests, total_accepts')
-          .eq('id', driverId)
-          .single()
-          .then(({ data: d }) => {
-            if (!d) return;
-            const total_requests  = (d.total_requests || 0) + 1;
-            const total_accepts   = d.total_accepts  || 0;
-            const acceptance_rate = total_requests > 0
-              ? parseFloat((total_accepts / total_requests).toFixed(4)) : 1.0;
-            return supabase.from('drivers')
-              .update({ total_requests, acceptance_rate }).eq('id', driverId);
-          })
-          .catch((err) => logger.warn('MatchingEngine — RAR timeout fallback failed', { driverId, error: err.message }));
-      });
+      .then(({ error }) => {
+        if (error) {
+          supabase
+            .from('drivers')
+            .select('total_requests, total_accepts')
+            .eq('id', driverId)
+            .single()
+            .then(({ data: d }) => {
+              if (!d) return;
+              const total_requests  = (d.total_requests || 0) + 1;
+              const total_accepts   = d.total_accepts  || 0;
+              const acceptance_rate = total_requests > 0
+                ? parseFloat((total_accepts / total_requests).toFixed(4)) : 1.0;
+              return supabase.from('drivers')
+                .update({ total_requests, acceptance_rate }).eq('id', driverId);
+            })
+            .catch((err) => logger.warn('MatchingEngine — RAR timeout fallback failed', { driverId, error: err.message }));
+        }
+      })
+      .catch((e) => logger.error('MatchingEngine rpc error', { error: e.message }));
 
     const { drivers, candidateIndex } = session;
     this._sendToCandidate(rideId, drivers, candidateIndex)
