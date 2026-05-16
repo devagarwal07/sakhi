@@ -12,6 +12,7 @@ import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { bookRide, cancelRide } from '../src/api/endpoints';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 const RetryIcon = () => (
     <Svg viewBox="0 0 640 640" width={18} height={18}>
@@ -241,7 +242,7 @@ export default function RideFindingScreen() {
                     
                     {/* Center solid pin (using emoji as placeholder for location_on) */}
                     <View style={styles.solidPin}>
-                        <Text style={{ fontSize: 24, color: '#8C37DD' }}>📍</Text>
+                        <Feather name="map-pin" size={24} color="#8C37DD" />
                     </View>
                 </View>
             </View>
@@ -249,7 +250,7 @@ export default function RideFindingScreen() {
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                     <TouchableOpacity onPress={handleCancel} style={styles.navIconBtn}>
-                    <Text style={styles.navIconText}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
                     icon: '📧',
@@ -261,7 +262,7 @@ export default function RideFindingScreen() {
                         { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
                     ],
                 })}>
-                    <Text style={styles.navDots}>⋮</Text>
+                    <Feather name="more-vertical" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
             </View>
 
@@ -270,7 +271,7 @@ export default function RideFindingScreen() {
                 {/* Floating Badge overlapping map and sheet */}
                 <View style={styles.badgeWrapper}>
                     <View style={styles.badge}>
-                        <Text style={styles.badgeIcon}>🚚</Text>
+                        <Feather name="truck" size={24} color="#BEA3D8" />
                     </View>
                 </View>
 
@@ -303,7 +304,7 @@ export default function RideFindingScreen() {
                         {/* Drop */}
                         <View style={styles.row}>
                             <View style={styles.iconCol}>
-                                <Text style={styles.dropPin}>📍</Text>
+                                <Feather name="map-pin" size={14} color="#BEA3D8" />
                             </View>
                             <View style={styles.textCol}>
                                 <Text style={styles.label}>DROP</Text>
@@ -339,7 +340,7 @@ export default function RideFindingScreen() {
                         <View style={styles.noDriversIconWrap}>
                             <View style={styles.noDriversPulse1} />
                             <View style={styles.noDriversPulse2} />
-                            <Text style={styles.noDriversEmoji}>🛺</Text>
+                            <Feather name="truck" size={44} color="#BEA3D8" />
                         </View>
 
                         <Text style={styles.noDriversTitle}>All Sakhis Are Busy</Text>

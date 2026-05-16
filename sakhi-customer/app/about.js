@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 export default function AboutScreen() {
     const router = useRouter();
@@ -19,7 +20,7 @@ export default function AboutScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.headerIcon}>←</Text>
+                        <Feather name="arrow-left" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                         <Text style={styles.headerTitle}>About Sakhi</Text>
                     </View>
@@ -34,7 +35,7 @@ export default function AboutScreen() {
                     <View style={styles.logoSection}>
                         <View style={styles.logoBlock}>
                             <View style={styles.logoGradientBox}>
-                                <Text style={styles.shieldIcon}>🛡️</Text>
+                                <Feather name="shield" size={40} color="#FFFFFF" />
                             </View>
                         </View>
                         <Text style={styles.appName}>Sakhi</Text>
@@ -54,7 +55,7 @@ export default function AboutScreen() {
                         {/* Feature 1 */}
                         <View style={styles.featureRow}>
                             <View style={styles.featureIconBox}>
-                                <Text style={styles.featureIcon}>📅</Text>
+                                <Feather name="calendar" size={16} color="#BEA3D8" />
                             </View>
                             <View style={styles.featureTextCol}>
                                 <Text style={styles.featureTitle}>Founded in 2023</Text>
@@ -65,7 +66,7 @@ export default function AboutScreen() {
                         {/* Feature 2 */}
                         <View style={styles.featureRow}>
                             <View style={styles.featureIconBox}>
-                                <Text style={styles.featureIcon}>♀️</Text>
+                                <Feather name="heart" size={16} color="#BEA3D8" />
                             </View>
                             <View style={styles.featureTextCol}>
                                 <Text style={styles.featureTitle}>Women-Only Platform</Text>
@@ -76,7 +77,7 @@ export default function AboutScreen() {
                         {/* Feature 3 */}
                         <View style={styles.featureRow}>
                             <View style={styles.featureIconBox}>
-                                <Text style={styles.featureIcon}>✅</Text>
+                                <Feather name="check-circle" size={16} color="#BEA3D8" />
                             </View>
                             <View style={styles.featureTextCol}>
                                 <Text style={styles.featureTitle}>Verified Professionals</Text>
@@ -88,13 +89,13 @@ export default function AboutScreen() {
                     {/* Social Share Icons */}
                     <View style={styles.socialRow}>
                         <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://twitter.com/sakhirides')}>
-                            <Text style={styles.socialIcon}>🔗</Text>
+                            <Feather name="link" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://sakhi.app')}>
-                            <Text style={styles.socialIcon}>🌍</Text>
+                            <Feather name="globe" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:hello@sakhi.app')}>
-                            <Text style={styles.socialIcon}>✉️</Text>
+                            <Feather name="mail" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
                     </View>
 
@@ -107,7 +108,7 @@ export default function AboutScreen() {
                             buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                         })}>
                             <Text style={styles.legalLabel}>Terms of Service</Text>
-                            <Text style={styles.legalChevron}>›</Text>
+                            <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
                             icon: '🛡️',
@@ -116,7 +117,7 @@ export default function AboutScreen() {
                             buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                         })}>
                             <Text style={styles.legalLabel}>Privacy Policy</Text>
-                            <Text style={styles.legalChevron}>›</Text>
+                            <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
                             icon: '🍪',
@@ -125,13 +126,13 @@ export default function AboutScreen() {
                             buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                         })}>
                             <Text style={styles.legalLabel}>Cookie Policy</Text>
-                            <Text style={styles.legalChevron}>›</Text>
+                            <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
                     </View>
 
                     {/* Rate Button */}
                     <TouchableOpacity style={styles.rateBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.sakhi.rider')}>
-                        <Text style={styles.rateIcon}>★</Text>
+                        <Feather name="star" size={20} color="#BEA3D8" />
                         <Text style={styles.rateText}>Rate Sakhi on Play Store</Text>
                     </TouchableOpacity>
 

@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
@@ -47,7 +48,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
         <View style={styles.spinnerWrap}>
           <View style={styles.ring} />
           <View style={styles.iconCircle}>
-            <Text style={styles.iconEmoji}>📄</Text>
+            <Feather name="file-text" size={38} color="#BEA3D8" />
           </View>
         </View>
 
@@ -59,7 +60,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
         {/* Status card */}
         <View style={styles.statusCard}>
           <View style={styles.statusRow}>
-            <Text style={styles.statusIcon}>🕐</Text>
+            <Feather name="clock" size={20} color="#BEA3D8" />
             <View>
               <Text style={styles.statusRowLabel}>SUBMITTED</Text>
               <Text style={styles.statusRowValue}>{submittedAt}</Text>
@@ -67,7 +68,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
           </View>
           <View style={styles.divider} />
           <View style={styles.statusRow}>
-            <Text style={styles.statusIcon}>✅</Text>
+            <Feather name="check-circle" size={20} color="#BEA3D8" />
             <View>
               <Text style={styles.statusRowLabel}>EXPECTED BY</Text>
               <Text style={styles.statusRowValue}>Within 24 hours</Text>
@@ -75,7 +76,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
           </View>
           <View style={styles.divider} />
           <View style={styles.statusRow}>
-            <Text style={[styles.statusIcon, { color: '#F59E0B' }]}>⏳</Text>
+            <Feather name="loader" size={20} color="#F59E0B" />
             <View>
               <Text style={styles.statusRowLabel}>CURRENT STATUS</Text>
               <Text style={[styles.statusRowValue, { color: '#D97706', fontWeight: '700' }]}>Under Manual Review</Text>
@@ -85,7 +86,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
 
         {/* Info banner */}
         <View style={styles.infoBanner}>
-          <Text style={styles.infoEmoji}>ℹ️</Text>
+          <Feather name="info" size={18} color="#BEA3D8" />
           <Text style={styles.infoText}>You'll be notified once your profile is approved.</Text>
         </View>
 
@@ -93,7 +94,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
         <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} disabled={refreshing} activeOpacity={0.8}>
           {refreshing
             ? <ActivityIndicator color={Colors.primaryContainer} size="small" />
-            : <Text style={styles.refreshText}>🔄  Refresh Status</Text>
+            : <Text style={styles.refreshText}><Feather name="refresh-cw" size={14} color="#BEA3D8" />  Refresh Status</Text>
           }
         </TouchableOpacity>
       </ScrollView>

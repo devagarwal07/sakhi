@@ -5,6 +5,7 @@ import {
     Switch, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -60,7 +61,7 @@ export default function NotificationsScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Notifications</Text>
                     </View>
@@ -120,7 +121,7 @@ export default function NotificationsScreen() {
                                 </View>
                                 {/* Padlock Icon Badge */}
                                 <View style={styles.padlockBadge}>
-                                    <Text style={styles.padlockIcon}>🔒</Text>
+                                    <Feather name="lock" size={14} color="#6B7280" />
                                 </View>
                             </View>
                         </View>

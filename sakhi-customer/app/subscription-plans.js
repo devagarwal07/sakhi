@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
@@ -99,7 +100,7 @@ export default function SubscriptionPlansScreen() {
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#1E1B2E" />
                 </TouchableOpacity>
                 <View style={styles.headerTitles}>
                     <Text style={styles.title}>Choose Your Plan</Text>
@@ -118,10 +119,10 @@ export default function SubscriptionPlansScreen() {
                 <View style={styles.routePillWrapper}>
                     <View style={styles.routePill}>
                         <View style={styles.dotGreen} />
-                        <Text style={styles.arrowSmall}>→</Text>
+                        <Feather name="arrow-right" size={12} color="#BEA3D8" />
                         <View style={styles.pinPurple}><View style={styles.pinHole} /></View>
                         <Text style={styles.routeText} numberOfLines={1}>
-                            {pickupName}  →  {dropoffName}
+                            {pickupName}  <Feather name="arrow-right" size={13} color="#BEA3D8" />  {dropoffName}
                         </Text>
                     </View>
                 </View>
@@ -135,7 +136,7 @@ export default function SubscriptionPlansScreen() {
 
                 {/* 30-min Notification Info Banner */}
                 <View style={styles.notifyBanner}>
-                    <Text style={styles.notifyBannerIcon}>🔔</Text>
+                    <Feather name="bell" size={16} color="#1E40AF" style={{ marginTop: 1 }} />
                     <Text style={styles.notifyBannerText}>
                         We will notify you <Text style={styles.notifyBannerBold}>30 minutes before</Text> your first ride if no driver is available, so you can book an on-demand ride instead.
                     </Text>
@@ -156,7 +157,10 @@ export default function SubscriptionPlansScreen() {
                                 {/* Best Value Badge */}
                                 {isBest && (
                                     <View style={styles.bestValueBadge}>
-                                        <Text style={styles.bestValueText}>BEST VALUE 🏷</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                            <Text style={styles.bestValueText}>BEST VALUE</Text>
+                                            <Feather name="tag" size={10} color="#FFFFFF" />
+                                        </View>
                                     </View>
                                 )}
 
@@ -179,7 +183,7 @@ export default function SubscriptionPlansScreen() {
                                     </View>
                                     {isSelected && (
                                         <View style={styles.checkCircle}>
-                                            <Text style={styles.checkIcon}>✓</Text>
+                                            <Feather name="check" size={12} color="#FFFFFF" style={{ fontWeight: 'bold' }} />
                                         </View>
                                     )}
                                 </View>

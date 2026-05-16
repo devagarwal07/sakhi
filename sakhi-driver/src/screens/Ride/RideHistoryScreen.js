@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius } from '../../utils/theme';
 import client from '../../api/client';
 import { Search, MapPin, Flag, ChevronRight, BarChart2, Calendar } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 import { useTranslation } from 'react-i18next';
@@ -435,7 +436,7 @@ export default function RideHistoryScreen({ navigation }) {
           </View>
         ) : displayRides.length === 0 ? (
           <View style={s.emptyWrap}>
-            <Text style={s.emptyEmoji}>🛺</Text>
+            <Feather name="truck" size={48} color="#BEA3D8" />
             <Text style={s.emptyTitle}>{t('ride.noRidesFound')}</Text>
             <Text style={s.emptySub}>{t('ride.tryDifferentFilter')}</Text>
           </View>

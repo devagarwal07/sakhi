@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Image,
   Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
@@ -63,7 +64,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Alert banner */}
         <View style={styles.alertBanner}>
-          <Text style={styles.alertEmoji}>⚠️</Text>
+          <Feather name="alert-triangle" size={20} color="#F59E0B" />
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Action Required</Text>
             <Text style={styles.alertSub}>The following documents need to be re-uploaded.</Text>
@@ -95,7 +96,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
               </View>
             ) : (
               <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(rej.key)} activeOpacity={0.8}>
-                <Text style={styles.uploadBtnText}>📎  Upload New {rej.label ?? rej.key}</Text>
+                <Text style={styles.uploadBtnText}><Feather name="paperclip" size={14} color="#BEA3D8" />  Upload New {rej.label ?? rej.key}</Text>
               </TouchableOpacity>
             )}
           </View>

@@ -4,6 +4,7 @@ import {
   TouchableOpacity, KeyboardAvoidingView,
   ActivityIndicator, Pressable,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import client from '../api/client';
@@ -148,7 +149,7 @@ export default function ChatModal({ rideId, onClose }) {
       <View style={[c.msgRow, isOwn && c.msgRowOwn]}>
         {!isOwn && (
           <View style={c.customerAvatar}>
-            <Text style={{ fontSize: 14 }}>👩</Text>
+            <Feather name="user" size={14} color="#BEA3D8" />
           </View>
         )}
         <View style={[c.bubble, isOwn ? c.ownBubble : c.customerBubble]}>
@@ -194,7 +195,7 @@ export default function ChatModal({ rideId, onClose }) {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={c.emptyState}>
-              <Text style={c.emptyEmoji}>💬</Text>
+              <Feather name="message-circle" size={36} color="#BEA3D8" />
               <Text style={c.emptyText}>No messages yet. Say hello!</Text>
             </View>
           }
@@ -237,7 +238,7 @@ export default function ChatModal({ rideId, onClose }) {
           onPress={() => sendMessage()}
           disabled={!text.trim()}
         >
-          <Text style={c.sendBtnIcon}>➤</Text>
+          <Feather name="send" size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

@@ -5,6 +5,7 @@ import {
     Dimensions, PanResponder, ScrollView, Platform, Image
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import LogoutBottomSheet from '../src/components/LogoutBottomSheet';
@@ -92,7 +93,7 @@ export default function SidebarScreen() {
                         {iconSvg ? iconSvg(tint) : <Image source={iconSource} style={{ width: 24, height: 24, tintColor: tint, resizeMode: 'contain' }} />}
                     </View>
                     <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{label}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Feather name="chevron-right" size={20} color="#CBD5E1" />
                 </TouchableOpacity>
                 {!active && <View style={styles.divider} />}
             </View>
@@ -123,7 +124,7 @@ export default function SidebarScreen() {
                                 </Text>
                             </View>
                             <View style={styles.verifiedBadge}>
-                                <Text style={styles.verifiedCheck}>✓</Text>
+                                <Feather name="check" size={10} color="#FFFFFF" />
                             </View>
                         </View>
 

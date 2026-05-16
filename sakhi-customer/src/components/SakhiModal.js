@@ -33,6 +33,7 @@ import {
     Animated, Platform, Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -91,8 +92,64 @@ export default function SakhiModal({ config, onClose }) {
                         <View style={styles.iconBadge}>
                             {icon === '🔄' ? (
                                 <RetryIcon />
-                            ) : (
+                            ) : icon === '⚠️' ? (
+                                <Feather name="alert-triangle" size={26} color="#DC2626" />
+                            ) : icon === '🔔' ? (
+                                <Feather name="bell" size={26} color="#BEA3D8" />
+                            ) : icon === '🔗' ? (
+                                <Feather name="link" size={26} color="#BEA3D8" />
+                            ) : icon === '🔍' ? (
+                                <Feather name="search" size={26} color="#BEA3D8" />
+                            ) : icon === '✅' ? (
+                                <Feather name="check-circle" size={26} color="#10B981" />
+                            ) : icon === '🎁' ? (
+                                <Feather name="gift" size={26} color="#BEA3D8" />
+                            ) : icon === 'ⓘ' || icon === 'ℹ️' ? (
+                                <Feather name="info" size={26} color="#BEA3D8" />
+                            ) : icon === '💬' ? (
+                                <Feather name="message-circle" size={26} color="#BEA3D8" />
+                            ) : icon === '🛡️' ? (
+                                <Feather name="shield" size={26} color="#BEA3D8" />
+                            ) : icon === '💡' ? (
+                                <Feather name="zap" size={26} color="#F59E0B" />
+                            ) : icon === '📅' ? (
+                                <Feather name="calendar" size={26} color="#BEA3D8" />
+                            ) : icon === '📝' ? (
+                                <Feather name="edit-3" size={26} color="#BEA3D8" />
+                            ) : icon === '📞' || icon === '📧' || icon === '✉️' ? (
+                                <Feather name={icon === '📞' ? 'phone' : 'mail'} size={26} color="#BEA3D8" />
+                            ) : icon === '📤' ? (
+                                <Feather name="share" size={26} color="#BEA3D8" />
+                            ) : icon === '📥' ? (
+                                <Feather name="download" size={26} color="#BEA3D8" />
+                            ) : icon === '📶' ? (
+                                <Feather name="wifi" size={26} color="#BEA3D8" />
+                            ) : icon === '⚙️' ? (
+                                <Feather name="settings" size={26} color="#BEA3D8" />
+                            ) : icon === '✏️' ? (
+                                <Feather name="edit-2" size={26} color="#BEA3D8" />
+                            ) : icon === '🌐' ? (
+                                <Feather name="globe" size={26} color="#BEA3D8" />
+                            ) : icon === '🍪' ? (
+                                <Feather name="disc" size={26} color="#BEA3D8" />
+                            ) : icon === '🎯' ? (
+                                <Feather name="target" size={26} color="#BEA3D8" />
+                            ) : icon === '📄' ? (
+                                <Feather name="file-text" size={26} color="#BEA3D8" />
+                            ) : icon === '🗑️' ? (
+                                <Feather name="trash-2" size={26} color="#DC2626" />
+                            ) : icon === '🛒' ? (
+                                <Feather name="shopping-cart" size={26} color="#BEA3D8" />
+                            ) : icon === '▶️' ? (
+                                <Feather name="play" size={26} color="#10B981" />
+                            ) : icon === '⏸️' ? (
+                                <Feather name="pause" size={26} color="#F59E0B" />
+                            ) : typeof icon === 'string' && !icon.match(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}\u{FE00}-\u{FE0F}]/u) ? (
+                                <Feather name={icon} size={26} color="#BEA3D8" />
+                            ) : typeof icon === 'string' ? (
                                 <Text style={styles.iconText}>{icon}</Text>
+                            ) : (
+                                icon
                             )}
                         </View>
                     ) : null}

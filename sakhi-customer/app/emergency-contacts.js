@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { getEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../src/api/endpoints';
 
 const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Friend', 'Spouse', 'Other'];
@@ -141,7 +142,7 @@ export default function EmergencyContactsScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Emergency Contacts</Text>
                     </View>
@@ -165,7 +166,7 @@ export default function EmergencyContactsScreen() {
                         {/* Info Banner */}
                         <View style={styles.infoBanner}>
                             <View style={styles.infoIconWrapper}>
-                                <Text style={styles.infoIcon}>ⓘ</Text>
+                                <Feather name="info" size={18} color="#BEA3D8" />
                             </View>
                             <Text style={styles.infoText}>
                                 You can add up to 3 trusted contacts. They will receive your live location and trip details during an SOS.
@@ -197,15 +198,15 @@ export default function EmergencyContactsScreen() {
                                             message: 'Contact editing coming soon.',
                                             buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
                                         })}>
-                                            <Text style={styles.editIcon}>✎</Text>
+                                            <Feather name="edit-2" size={18} color="#BEA3D8" />
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(contact.id, contact.name)}>
-                                            <Text style={styles.deleteIcon}>🗑</Text>
+                                            <Feather name="trash-2" size={18} color="#BA1A1A" />
                                         </TouchableOpacity>
                                     </View>
                                     <View style={styles.cardBottom}>
                                         <View style={styles.autoShareInfo}>
-                                            <Text style={styles.shareIcon}>⛑</Text>
+                                            <Feather name="shield" size={20} color="#BEA3D8" />
                                             <Text style={styles.shareText}>Auto-share trip on start</Text>
                                         </View>
                                         <Switch
@@ -224,7 +225,7 @@ export default function EmergencyContactsScreen() {
                         {contacts.length < 3 && (
                             <TouchableOpacity style={styles.addContactBtn} activeOpacity={0.7} onPress={() => setAddModalVisible(true)}>
                                 <View style={styles.addIconBg}>
-                                    <Text style={styles.addIcon}>👤+</Text>
+                                    <Feather name="user-plus" size={20} color="#BEA3D8" />
                                 </View>
                                 <View style={styles.addContactContent}>
                                     <Text style={styles.addContactText}>Add Emergency Contact</Text>
@@ -274,7 +275,7 @@ export default function EmergencyContactsScreen() {
                                         value={newName}
                                         onChangeText={setNewName}
                                     />
-                                    <Text style={styles.inputIcon}>👤</Text>
+                                    <Feather name="user" size={16} color="#CCC3D8" />
                                 </View>
                             </View>
                             <View style={styles.fieldGroup}>
@@ -289,7 +290,7 @@ export default function EmergencyContactsScreen() {
                                         value={newPhone}
                                         onChangeText={setNewPhone}
                                     />
-                                    <Text style={styles.inputIcon}>📞</Text>
+                                    <Feather name="phone" size={16} color="#CCC3D8" />
                                 </View>
                             </View>
                             <View style={styles.fieldGroup}>

@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
@@ -10,20 +11,20 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
 
 const ICON_MAP = {
-  ride_completed:   '🛺',
-  payment_received: '💸',
-  commission_due:   '⚠️',
-  system:           '📣',
-  subscription:     '🔄',
-  sub_cancelled:    '❌',
-  sub_paused:       '⏸️',
+  ride_completed:   'truck',
+  payment_received: 'dollar-sign',
+  commission_due:   'alert-triangle',
+  system:           'bell',
+  subscription:     'refresh-cw',
+  sub_cancelled:    'x-circle',
+  sub_paused:       'pause-circle',
 };
 
 function NotifCard({ item }) {
   return (
     <View style={[styles.card, !item.read && styles.cardUnread]}>
       <View style={[styles.iconBox, !item.read && styles.iconBoxUnread]}>
-        <Text style={{ fontSize: 22 }}>{ICON_MAP[item.type] ?? '🔔'}</Text>
+        <Feather name={ICON_MAP[item.type] ?? 'bell'} size={22} color="#BEA3D8" />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{item.title}</Text>
@@ -78,7 +79,7 @@ export default function NotificationsScreen({ navigation }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primaryContainer} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🔕</Text>
+              <Feather name="bell-off" size={52} color="#BEA3D8" />
               <Text style={styles.emptyTitle}>No notifications</Text>
               <Text style={styles.emptySub}>You're all caught up!</Text>
             </View>

@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { getWalletDetails } from '../src/api/endpoints';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 export default function WalletScreen() {
     const router = useRouter();
@@ -50,7 +51,7 @@ export default function WalletScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={20} color="#BEA3D8" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Wallet & Referrals</Text>
                 <View style={{ width: 40 }} />
@@ -69,7 +70,7 @@ export default function WalletScreen() {
                 <View style={styles.referralCard}>
                     <View style={styles.referralIconRow}>
                         <View style={styles.giftIconBg}>
-                            <Text style={{ fontSize: 24 }}>🎁</Text>
+                            <Feather name="gift" size={24} color="#BEA3D8" />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.referralTitle}>Give ₹50, Get ₹50</Text>

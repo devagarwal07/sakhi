@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import client from '../api/client';
 import MonogramAvatar from './MonogramAvatar';
 import LanguageSwitcher from './LanguageSwitcher';
 
@@ -62,7 +63,19 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
       return;
     }
     handleClose();
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Check commission before going to Home
+      if (screen === 'DriverHome') {
+        try {
+          const { data } = await client.get('/drivers/commission/status');
+          if (data.total_due > 0) {
+            navigation.navigate('DailyCommissionPayment', { amount: data.total_due });
+            return;
+          }
+        } catch {
+          // If API fails, let them proceed to home
+        }
+      }
       navigation.navigate(screen);
     }, 250);
   };
@@ -206,7 +219,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
             activeOpacity={0.75}
           >
             <View style={styles.langIconWrap}>
-              <Text style={styles.langIcon}>🌐</Text>
+              <Feather name="globe" size={20} color="#BEA3D8" />
             </View>
             <Text style={styles.langBtnText}>{t('sidebar.language')}</Text>
             <View style={styles.langPill}>

@@ -10,6 +10,7 @@ import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
 
 import { submitRating } from '../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
@@ -87,7 +88,7 @@ export default function RideSummaryScreen() {
             {/* Top Navigation AppBar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.push('/')} style={styles.closeBtn}>
-                    <Text style={styles.closeIcon}>✕</Text>
+                    <Feather name="x" size={20} color="#BEA3D8" />
                 </TouchableOpacity>
 
                 <View style={styles.titleContainer}>
@@ -105,11 +106,11 @@ export default function RideSummaryScreen() {
                 <View style={styles.headerSection}>
                     <View style={styles.successCircleWrapper}>
                         <View style={styles.successCircle}>
-                            <Text style={styles.successCheck}>✓</Text>
+                            <Feather name="check" size={36} color="#10B981" />
                         </View>
                     </View>
                     
-                    <Text style={styles.headerTitle}>Ride Complete! <Text style={{ fontSize: 22 }}>🎉</Text></Text>
+                    <Text style={styles.headerTitle}>Ride Complete! <Feather name="award" size={22} color="#BEA3D8" /></Text>
                     <Text style={styles.headerSub}>Hope you had a safe journey, {userName}</Text>
                 </View>
 
@@ -164,7 +165,7 @@ export default function RideSummaryScreen() {
 
                     {/* Payment Mode */}
                     <View style={styles.paymentRow}>
-                        <Text style={styles.paymentIcon}>💵</Text>
+                        <Feather name="dollar-sign" size={16} color="#6B7280" />
                         <Text style={styles.paymentText}>{paymentMethod} Payment</Text>
                     </View>
 
@@ -181,14 +182,14 @@ export default function RideSummaryScreen() {
                                         });
                                     }}
                                 >
-                                    <Text style={[styles.paymentText, { color: '#16A34A', fontWeight: '700' }]}>📲 Pay Directly (UPI Intent)</Text>
+                                    <Text style={[styles.paymentText, { color: '#16A34A', fontWeight: '700' }]}><Feather name="smartphone" size={13} color="#16A34A" /> Pay Directly (UPI Intent)</Text>
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity
                                 style={[styles.paymentRow, { backgroundColor: '#F3E8FF', justifyContent: 'center' }]}
                                 onPress={handleOpenScanner}
                             >
-                                <Text style={[styles.paymentText, { color: '#9333EA', fontWeight: '700' }]}>📷 Scan Driver QR to Pay</Text>
+                                <Text style={[styles.paymentText, { color: '#9333EA', fontWeight: '700' }]}><Feather name="camera" size={13} color="#9333EA" /> Scan Driver QR to Pay</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -257,19 +258,19 @@ export default function RideSummaryScreen() {
             {/* Dummy Tab Bar Overlay */}
             <View style={[styles.dummyTabBar, { height: tabBarHeight, paddingBottom: tabBarPaddingBottom }]}>
                 <View style={styles.tabItemActive}>
-                    <Text style={styles.tabIconActive}>🏠</Text>
+                    <Feather name="home" size={20} color="#BEA3D8" />
                     <Text style={styles.tabLabelActive}>HOME</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>🚙</Text>
+                    <Feather name="activity" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>ACTIVITY</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>🛡️</Text>
+                    <Feather name="shield" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>SAFETY</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>👤</Text>
+                    <Feather name="user" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>PROFILE</Text>
                 </View>
             </View>

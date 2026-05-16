@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { getEmergencyContacts, cancelSOS } from '../src/api/endpoints';
 
 const AVATAR_COLORS = ['#FCD34D', '#38BDF8', '#F472B6', '#BEA3D8', '#68C4AF'];
@@ -69,11 +70,11 @@ export default function SOSActiveScreen() {
             <SafeAreaView style={styles.topNavSafe}>
                 <View style={styles.topNav}>
                     <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
-                        <Text style={styles.navIcon}>←</Text>
+                        <Feather name="arrow-left" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>Emergency SOS</Text>
                     <TouchableOpacity onPress={() => router.push('/sos-settings')} style={styles.navIconBtn}>
-                        <Text style={styles.navIcon}>⚙️</Text>
+                        <Feather name="settings" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -88,7 +89,7 @@ export default function SOSActiveScreen() {
                     <View style={styles.ringOuter} />
                     <View style={styles.ringInner} />
                     <View style={styles.iconCircle}>
-                        <Text style={styles.dangerIcon}>❕</Text>
+                        <Feather name="alert-circle" size={36} color="#991B1B" />
                     </View>
                 </View>
 
@@ -106,19 +107,19 @@ export default function SOSActiveScreen() {
                     <View style={styles.statusList}>
                         <View style={styles.statusRow}>
                             <View style={styles.checkBg}>
-                                <Text style={styles.checkMark}>✓</Text>
+                                <Feather name="check" size={14} color="#059669" style={{ fontWeight: 'bold' }} />
                             </View>
                             <Text style={styles.statusText}>Sakhi Safety Team Notified</Text>
                         </View>
                         <View style={styles.statusRow}>
                             <View style={styles.checkBg}>
-                                <Text style={styles.checkMark}>✓</Text>
+                                <Feather name="check" size={14} color="#059669" style={{ fontWeight: 'bold' }} />
                             </View>
                             <Text style={styles.statusText}>Live Location Shared with Contacts</Text>
                         </View>
                         <View style={styles.statusRow}>
                             <View style={styles.checkBg}>
-                                <Text style={styles.checkMark}>✓</Text>
+                                <Feather name="check" size={14} color="#059669" style={{ fontWeight: 'bold' }} />
                             </View>
                             <Text style={styles.statusText}>Trip Details Transmitted</Text>
                         </View>
@@ -142,7 +143,10 @@ export default function SOSActiveScreen() {
                                         <Text style={styles.contactName}>{contact.name}</Text>
                                     </View>
                                     <View style={styles.notifiedPill}>
-                                        <Text style={styles.notifiedText}>NOTIFIED ✓</Text>
+                                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                                            <Text style={styles.notifiedText}>NOTIFIED</Text>
+                                            <Feather name="check" size={10} color="#059669" />
+                                        </View>
                                     </View>
                                 </View>
                             ))}
@@ -153,7 +157,7 @@ export default function SOSActiveScreen() {
                 {/* Primary Actions */}
                 <View style={styles.actionButtons}>
                     <TouchableOpacity style={styles.callSakhiBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:18001234567')}>
-                        <Text style={styles.callIcon}>📞</Text>
+                        <Feather name="phone-call" size={18} color="#B91C1C" />
                         <Text style={styles.callSakhiText}>Call Sakhi Team</Text>
                     </TouchableOpacity>
 
@@ -163,12 +167,12 @@ export default function SOSActiveScreen() {
                         message: 'Opening Sakhi safety chat. Our team is on standby 24/7.',
                         buttons: [{ text: 'OK', onPress: () => setModal(null) }],
                     })}>
-                        <Text style={styles.msgIcon}>💬</Text>
+                        <Feather name="message-square" size={18} color="#FFFFFF" />
                         <Text style={styles.msgSakhiText}>Message Sakhi Team</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.authoritiesBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:112')}>
-                        <Text style={styles.shieldIcon}>🛡️</Text>
+                        <Feather name="shield" size={14} color="#FFFFFF" />
                         <Text style={styles.authoritiesText}>Contact Authorities (112)</Text>
                     </TouchableOpacity>
                 </View>

@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Modal, ActivityIndicator, RefreshControl, Share,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
@@ -343,7 +344,7 @@ function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
           {/* ── Option 1: Share ── */}
           <TouchableOpacity style={ex.option} onPress={handleShare} activeOpacity={0.75}>
             <View style={[ex.iconBubble, { backgroundColor: '#EDE9FE' }]}>
-              <Text style={ex.iconEmoji}>📤</Text>
+              <Feather name="share" size={22} color="#BEA3D8" />
             </View>
             <View style={ex.optText}>
               <Text style={ex.optTitle}>Share</Text>
@@ -366,7 +367,7 @@ function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
             <View style={[ex.iconBubble, { backgroundColor: emailDone ? '#ECFDF5' : '#F5F0FF' }]}>
               {emailSending
                 ? <ActivityIndicator size="small" color="#BEA3D8" />
-                : <Text style={ex.iconEmoji}>{emailDone ? '✅' : '📧'}</Text>
+                : <Feather name={emailDone ? 'check-circle' : 'mail'} size={22} color={emailDone ? '#059669' : '#BEA3D8'} />
               }
             </View>
             <View style={ex.optText}>
@@ -544,7 +545,7 @@ export default function TransactionHistoryScreen({ navigation }) {
           <View style={s.groups}>
             {filtered.length === 0 ? (
               <View style={s.emptyWrap}>
-                <Text style={s.emptyEmoji}>🧾</Text>
+                <Feather name="file-text" size={48} color="#BEA3D8" />
                 <Text style={s.emptyTitle}>No transactions found</Text>
                 <Text style={s.emptySub}>Try changing the filter or date range.</Text>
               </View>

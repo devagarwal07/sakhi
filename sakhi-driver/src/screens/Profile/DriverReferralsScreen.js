@@ -9,8 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const REWARDS = [
-    { icon: '🎉', who: 'You Earn', value: '₹200', desc: 'For every driver who completes 10 rides using your code' },
-    { icon: '🎁', who: 'They Earn', value: '₹100', desc: 'New driver joining bonus applied to first payout' },
+    { iconName: 'gift', who: 'You Earn', value: '₹200', desc: 'For every driver who completes 10 rides using your code' },
+    { iconName: 'award', who: 'They Earn', value: '₹100', desc: 'New driver joining bonus applied to first payout' },
 ];
 
 const HOW = [
@@ -36,7 +36,7 @@ export default function DriverReferralsScreen({ navigation }) {
         try {
             await Share.share({
                 message: `Join Sakhi as a driver and earn great commissions! Use my code **${referralCode}** when you sign up and get ₹100 bonus after 10 rides. Apply: https://sakhi.app/driver`,
-                title: 'Drive with Sakhi 🛺',
+                title: 'Drive with Sakhi',
             });
         } catch {}
     };
@@ -56,7 +56,7 @@ export default function DriverReferralsScreen({ navigation }) {
 
                 {/* Hero */}
                 <View style={s.hero}>
-                    <Text style={s.heroEmoji}>🛺</Text>
+                    <Feather name="truck" size={44} color="#BEA3D8" style={{ marginBottom: 12 }} />
                     <Text style={s.heroTitle}>Refer a Driver,{'\n'}Earn Together</Text>
                     <Text style={s.heroSub}>Help other women drivers join Sakhi and earn rewards on every successful referral</Text>
                 </View>
@@ -78,7 +78,7 @@ export default function DriverReferralsScreen({ navigation }) {
                 <View style={s.rewardRow}>
                     {REWARDS.map((r, i) => (
                         <View key={i} style={s.rewardCard}>
-                            <Text style={s.rewardEmoji}>{r.icon}</Text>
+                            <Feather name={r.iconName} size={28} color="#BEA3D8" style={{ marginBottom: 8 }} />
                             <Text style={s.rewardWho}>{r.who}</Text>
                             <Text style={s.rewardValue}>{r.value}</Text>
                             <Text style={s.rewardDesc}>{r.desc}</Text>

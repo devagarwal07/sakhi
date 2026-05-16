@@ -10,6 +10,7 @@ import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useAuth } from '../src/context/AuthContext';
 import apiClient from '../src/api/client';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 const STEPS = { ENTER_PHONE: 'enter_phone', VERIFY_OTP: 'verify_otp', SUCCESS: 'success' };
 const OTP_LENGTH = 6;
@@ -126,7 +127,7 @@ export default function ChangePhoneScreen() {
         return (
             <SafeAreaView style={styles.successContainer}>
                 <Animated.View style={[styles.successCircle, { transform: [{ scale: checkScale }] }]}>
-                    <Text style={{ fontSize: 48 }}>✅</Text>
+                    <Feather name="check-circle" size={48} color="#10B981" />
                 </Animated.View>
                 <Text style={styles.successTitle}>Phone Number Updated!</Text>
                 <Text style={styles.successSub}>
@@ -143,7 +144,7 @@ export default function ChangePhoneScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={20} color="#BEA3D8" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Change Phone Number</Text>
                 <View style={{ width: 40 }} />
@@ -244,7 +245,7 @@ export default function ChangePhoneScreen() {
                             style={styles.changeNumBtn}
                             onPress={() => { setStep(STEPS.ENTER_PHONE); setOtp(Array(OTP_LENGTH).fill('')); }}
                         >
-                            <Text style={styles.changeNumText}>← Change number</Text>
+                            <Text style={styles.changeNumText}><Feather name="arrow-left" size={13} color="#6B7280" /> Change number</Text>
                         </TouchableOpacity>
                     </>
                 )}

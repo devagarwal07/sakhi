@@ -7,6 +7,7 @@ import {
 import { Svg, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { getAddresses, saveAddress, deleteAddress } from '../src/api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
@@ -151,12 +152,12 @@ export default function SavedPlacesScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Saved Places</Text>
                     </View>
                     <TouchableOpacity style={styles.headerDotsContainer} activeOpacity={0.7} onPress={loadAddresses}>
-                        <Text style={styles.headerDots}>↻</Text>
+                        <Feather name="refresh-cw" size={20} color="#BEA3D8" />
                     </TouchableOpacity>
                 </View>
 
@@ -180,7 +181,7 @@ export default function SavedPlacesScreen() {
                                     <Text style={styles.rowTitle}>Home</Text>
                                     <Text style={styles.rowActionText}>{homeAddress?.address || 'Add Home Address'}</Text>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={20} color="#CCC3D8" />
                             </TouchableOpacity>
                             <View style={styles.divider} />
                             <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => openModal('work')}>
@@ -193,7 +194,7 @@ export default function SavedPlacesScreen() {
                                     <Text style={styles.rowTitle}>Work</Text>
                                     <Text style={styles.rowActionText}>{workAddress?.address || 'Add Work Address'}</Text>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={20} color="#CCC3D8" />
                             </TouchableOpacity>
                             <View style={styles.divider} />
                             <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
@@ -206,13 +207,13 @@ export default function SavedPlacesScreen() {
                                     <Text style={styles.rowTitle}>Favourites</Text>
                                     <Text style={styles.rowSubtext}>{customPlaces.length} places saved</Text>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={20} color="#CCC3D8" />
                             </TouchableOpacity>
                         </View>
 
                         {/* Add New Place CTA */}
                         <TouchableOpacity style={styles.addPlaceBtn} activeOpacity={0.7} onPress={() => openModal('custom')}>
-                            <Text style={styles.addTextIcon}>+</Text>
+                            <Feather name="plus" size={18} color="#BEA3D8" />
                             <Text style={styles.addText}>Add New Place</Text>
                         </TouchableOpacity>
 
@@ -244,9 +245,9 @@ export default function SavedPlacesScreen() {
                         {/* Map Placeholder */}
                         <View style={styles.mapThumbnail}>
                             <View style={styles.mapOverlayBg}>
-                                <Text style={[styles.mapGraphicPin, { top: '30%', right: '30%' }]}>📍</Text>
-                                <Text style={[styles.mapGraphicPin, { top: '65%', left: '42%' }]}>📍</Text>
-                                <Text style={[styles.mapGraphicPin, { top: '75%', left: '55%' }]}>📍</Text>
+                                <Feather name="map-pin" size={24} color="#BEA3D8" style={{ position: 'absolute', top: '30%', right: '30%' }} />
+                                <Feather name="map-pin" size={24} color="#BEA3D8" style={{ position: 'absolute', top: '65%', left: '42%' }} />
+                                <Feather name="map-pin" size={24} color="#BEA3D8" style={{ position: 'absolute', top: '75%', left: '55%' }} />
                             </View>
                         </View>
 

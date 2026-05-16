@@ -5,11 +5,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 
 const REFERRAL_REWARDS = [
-    { icon: '🎉', title: 'You Get', value: '₹50 off', desc: 'Your next ride after friend books their first ride' },
-    { icon: '🎁', title: 'Friend Gets', value: '₹30 off', desc: 'Their first ride with Sakhi' },
+    { icon: 'gift', title: 'You Get', value: '₹50 off', desc: 'Your next ride after friend books their first ride' },
+    { icon: 'award', title: 'Friend Gets', value: '₹30 off', desc: 'Their first ride with Sakhi' },
 ];
 
 const HOW_IT_WORKS = [
@@ -50,7 +51,7 @@ export default function ReferralsScreen() {
                         style={s.iconBtn}
                         onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
                     >
-                        <Text style={s.headerIcon}>←</Text>
+                        <Feather name="arrow-left" size={24} color={PURPLE} />
                     </TouchableOpacity>
                     <Text style={s.headerTitle}>Referrals & Rewards</Text>
                 </View>
@@ -62,7 +63,7 @@ export default function ReferralsScreen() {
                 {/* Hero Banner — lavender card matching app's missionCard style */}
                 <View style={s.heroBanner}>
                     <View style={s.heroIconWrap}>
-                        <Text style={s.heroEmoji}>💜</Text>
+                        <Feather name="heart" size={32} color={PURPLE} />
                     </View>
                     <Text style={s.heroLabel}>OUR REFERRAL PROGRAM</Text>
                     <Text style={s.heroTitle}>Invite a Sister,{'\n'}Earn Together</Text>
@@ -75,7 +76,14 @@ export default function ReferralsScreen() {
                     <View style={s.codeRow}>
                         <Text style={s.codeText}>{referralCode}</Text>
                         <TouchableOpacity style={s.copyBtn} onPress={copyCode} activeOpacity={0.8}>
-                            <Text style={s.copyBtnText}>{copied ? '✓ Copied' : 'Copy'}</Text>
+                            {copied ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Feather name="check" size={13} color={PURPLE} />
+                                    <Text style={s.copyBtnText}>Copied</Text>
+                                </View>
+                            ) : (
+                                <Text style={s.copyBtnText}>Copy</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                     <Text style={s.codeSub}>Share this code with friends & family</Text>
@@ -87,7 +95,7 @@ export default function ReferralsScreen() {
                     {REFERRAL_REWARDS.map((r, i) => (
                         <View key={i} style={s.rewardCard}>
                             <View style={s.rewardIconWrap}>
-                                <Text style={s.rewardEmoji}>{r.icon}</Text>
+                                <Feather name={r.icon} size={24} color={PURPLE} />
                             </View>
                             <Text style={s.rewardTitle}>{r.title}</Text>
                             <Text style={s.rewardValue}>{r.value}</Text>
@@ -129,7 +137,10 @@ export default function ReferralsScreen() {
 
                 {/* Share CTA */}
                 <TouchableOpacity style={s.shareCta} onPress={shareCode} activeOpacity={0.88}>
-                    <Text style={s.shareCtaText}>📤  Invite Friends Now</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Feather name="share" size={18} color={WHITE} />
+                        <Text style={s.shareCtaText}>Invite Friends Now</Text>
+                    </View>
                 </TouchableOpacity>
 
                 <Text style={s.termsNote}>

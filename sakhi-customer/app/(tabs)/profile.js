@@ -9,6 +9,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import SakhiModal from '../../src/components/SakhiModal';
 import LogoutBottomSheet from '../../src/components/LogoutBottomSheet';
 import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -33,7 +34,7 @@ export default function ProfileScreen() {
                     )}
                 </View>
                 <Text style={styles.settingLabel}>{label}</Text>
-                <Text style={styles.chevron}>›</Text>
+                <Feather name="chevron-right" size={22} color="#CCC3D8" />
             </TouchableOpacity>
             {!isLast && <View style={styles.divider} />}
         </View>
@@ -57,7 +58,7 @@ export default function ProfileScreen() {
                             { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
                         ]
                     })}>
-                        <Text style={styles.headerDots}>⋮</Text>
+                        <Feather name="more-vertical" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                 </View>
 
@@ -76,14 +77,14 @@ export default function ProfileScreen() {
                             <View style={styles.heroNameRow}>
                                 <Text style={styles.heroName}>{user?.name || 'Priya Sharma'}</Text>
                                 <View style={styles.verifiedBadge}>
-                                    <Text style={styles.verifiedCheck}>✓</Text>
+                                    <Feather name="check" size={10} color="#059669" />
                                     <Text style={styles.verifiedText}>VERIFIED</Text>
                                 </View>
                             </View>
                             <Text style={styles.heroPhone}>{user?.phone || '+91 98765 43210'}</Text>
                             <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
                                 <Text style={styles.editText}>Edit Profile</Text>
-                                <Text style={styles.editArrow}>→</Text>
+                                <Feather name="chevron-right" size={14} color="#BEA3D8" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -129,7 +130,7 @@ export default function ProfileScreen() {
                                 onPress={() => router.push('/payment')} 
                             />
                             <SettingRow 
-                                icon={'🎁'}
+                                icon={<Feather name="gift" size={18} color="#BEA3D8" />}
                                 label="Referrals & Rewards" 
                                 onPress={() => router.push('/referrals')} 
                                 isLast 

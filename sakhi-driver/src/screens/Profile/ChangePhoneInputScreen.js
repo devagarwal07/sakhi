@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -104,7 +105,7 @@ export default function ChangePhoneInputScreen({ navigation, route }) {
               <View style={s.currentRow}>
                 <Text style={s.currentLabel}>CURRENT NUMBER</Text>
                 <View style={s.currentValueRow}>
-                  <Text style={s.shieldIcon}>🔒</Text>
+                  <Feather name="lock" size={14} color="#94A3B8" />
                   <Text style={s.currentValue}>{currentPhone}</Text>
                 </View>
               </View>
@@ -134,7 +135,7 @@ export default function ChangePhoneInputScreen({ navigation, route }) {
                   autoFocus
                 />
                 {newPhone.length === 10 && (
-                  <Text style={s.checkIcon}>✓</Text>
+                  <Feather name="check" size={18} color="#10B981" style={{ paddingRight: 14 }} />
                 )}
               </View>
               {error ? <Text style={s.errorText}>{error}</Text> : null}
@@ -142,7 +143,7 @@ export default function ChangePhoneInputScreen({ navigation, route }) {
 
             {/* Info note */}
             <View style={s.infoCard}>
-              <Text style={s.infoEmoji}>ℹ️</Text>
+              <Feather name="info" size={16} color="#BEA3D8" style={{ marginTop: 1 }} />
               <Text style={s.infoText}>
                 A 6-digit OTP will be sent to your new number. Your current number remains active until the change is verified.
               </Text>

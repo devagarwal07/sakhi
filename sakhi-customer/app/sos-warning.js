@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animate
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { Feather } from '@expo/vector-icons';
 import { triggerSOS } from '../src/api/endpoints';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
@@ -93,7 +94,7 @@ export default function SOSWarningScreen() {
                     <View style={styles.ringOuter} />
                     <View style={styles.ringInner} />
                     <View style={styles.iconCircle}>
-                        <Text style={styles.warningIcon}>⚠️</Text>
+                        <Feather name="alert-triangle" size={44} color="#BA1A1A" />
                     </View>
                 </View>
 
@@ -108,7 +109,7 @@ export default function SOSWarningScreen() {
                 {/* Action Stack */}
                 <View style={styles.actionStack}>
                     <TouchableOpacity style={styles.yesBtn} onPress={doTriggerSOS} activeOpacity={0.8}>
-                        <Text style={styles.yesIcon}>🚨</Text>
+                        <Feather name="alert-circle" size={16} color="#FFFFFF" />
                         <Text style={styles.yesText}>YES — Send SOS Alert</Text>
                     </TouchableOpacity>
 

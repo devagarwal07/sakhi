@@ -11,6 +11,7 @@ import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -168,7 +169,7 @@ export default function RideEstimateScreen() {
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
-                    <Text style={styles.navIconText}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Sakhi</Text>
@@ -182,7 +183,7 @@ export default function RideEstimateScreen() {
                         { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
                     ]
                 })}>
-                    <Text style={styles.navDots}>⋮</Text>
+                    <Feather name="more-vertical" size={24} color="#BEA3D8" style={{ marginTop: -2 }} />
                 </TouchableOpacity>
             </View>
 
@@ -210,7 +211,7 @@ export default function RideEstimateScreen() {
                             </Text>
                         </View>
                         <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/location-search')}>
-                            <Text style={styles.editBtnText}>✏️</Text>
+                            <Feather name="edit-2" size={16} color="#BEA3D8" style={{ marginTop: Platform.OS === 'ios' ? -2 : 0 }} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -244,7 +245,10 @@ export default function RideEstimateScreen() {
                     {/* Free Ride Banner */}
                 {isFreeRide && (
                     <View style={styles.freeRideBanner}>
-                        <Text style={styles.freeRideBannerTitle}>🎉 Your next ride is FREE!</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <Feather name="gift" size={16} color="#065F46" />
+                            <Text style={[styles.freeRideBannerTitle, { marginBottom: 0 }]}>Your next ride is FREE!</Text>
+                        </View>
                         <Text style={styles.freeRideBannerSub}>You had 3 consecutive failed bookings — enjoy a complimentary ride.</Text>
                     </View>
                 )}
@@ -252,7 +256,10 @@ export default function RideEstimateScreen() {
                 {/* Night Fare Banner */}
                 {isNightFare() && (
                     <View style={styles.nightFareBanner}>
-                        <Text style={styles.nightFareBannerText}>🌙 Night Fare Active (1.5×) — Applies between 10 PM and 6 AM</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Feather name="moon" size={14} color="#FCD34D" />
+                            <Text style={[styles.nightFareBannerText, { flex: 1 }]}>Night Fare Active (1.5×) — Applies between 10 PM and 6 AM</Text>
+                        </View>
                     </View>
                 )}
 
@@ -262,11 +269,11 @@ export default function RideEstimateScreen() {
                     <View style={styles.rideCard}>
                         {/* Checkmark Badge */}
                         <View style={styles.checkBadge}>
-                            <Text style={styles.checkIcon}>✓</Text>
+                            <Feather name="check" size={12} color="#FFFFFF" />
                         </View>
 
                         <View style={styles.rideIllustration}>
-                            <Text style={{ fontSize: 32 }}>🛺</Text>
+                            <Feather name="truck" size={32} color="#1E1B2E" />
                         </View>
                         
                         <View style={styles.rideInfo}>
@@ -295,7 +302,7 @@ export default function RideEstimateScreen() {
                         activeOpacity={0.8}
                     >
                         <Text style={styles.breakdownTitle}>Fare Breakdown</Text>
-                        <Text style={styles.breakdownChevron}>{breakdownExpanded ? '⌄' : '›'}</Text>
+                        <Feather name={breakdownExpanded ? "chevron-down" : "chevron-right"} size={20} color="#64748B" style={{ marginTop: -2 }} />
                     </TouchableOpacity>
 
                     {/* Fare Breakdown Card */}
@@ -307,9 +314,12 @@ export default function RideEstimateScreen() {
                             </View>
 
                             {!fareResult && !loadingRoute && (
-                                <Text style={styles.fareUnavailableNote}>
-                                    💸 Fare estimate unavailable — will be confirmed after booking
-                                </Text>
+                                <View style={{flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', paddingVertical: 8}}>
+                                    <Feather name="alert-circle" size={14} color="#94A3B8" />
+                                    <Text style={[styles.fareUnavailableNote, { paddingVertical: 0 }]}>
+                                        Fare estimate unavailable — will be confirmed after booking
+                                    </Text>
+                                </View>
                             )}
 
                             {loadingRoute && (
@@ -367,7 +377,10 @@ export default function RideEstimateScreen() {
                                     {nightFare && (
                                         <View style={styles.breakdownRow}>
                                             <View style={styles.breakdownLabelWrap}>
-                                                <Text style={styles.breakdownLabel}>🌙 Night Surcharge</Text>
+                                                <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                                                    <Feather name="moon" size={14} color="#1E1B2E" />
+                                                    <Text style={styles.breakdownLabel}>Night Surcharge</Text>
+                                                </View>
                                                 <Text style={styles.breakdownSubLabel}>+50% applied between 10 PM – 6 AM</Text>
                                             </View>
                                             <Text style={[styles.breakdownValue, { color: '#F59E0B' }]}>
@@ -398,7 +411,10 @@ export default function RideEstimateScreen() {
                                         })}
                                         activeOpacity={0.8}
                                     >
-                                        <Text style={styles.offersRowText}>ⓘ View Offers & Discounts</Text>
+                                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                                            <Feather name="gift" size={14} color="#BEA3D8" />
+                                            <Text style={styles.offersRowText}>View Offers & Discounts</Text>
+                                        </View>
                                     </TouchableOpacity>
                                 </>
                             )}
@@ -429,7 +445,7 @@ export default function RideEstimateScreen() {
                     activeOpacity={0.88}
                 >
                     <Text style={styles.bookText}>
-                        Book {ride?.vehicleType || ride?.vehicle_type || 'Auto'} ›
+                        <Text style={styles.actionBtnText}>Book {ride?.vehicleType || ride?.vehicle_type || 'Auto'}</Text> <Feather name="chevron-right" size={20} color="#FFFFFF" />
                     </Text>
                 </TouchableOpacity>
             </View>
