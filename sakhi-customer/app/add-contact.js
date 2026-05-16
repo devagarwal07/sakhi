@@ -3,10 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, ActivityIndicator, Pressable,
+    KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { addEmergencyContact } from '../src/api/endpoints';
+import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 
@@ -60,77 +62,91 @@ export default function AddContactScreen() {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <View style={styles.infoCard}>
-                    <Feather name="shield" size={20} color="#BEA3D8" />
-                    <Text style={styles.infoText}>
-                        Emergency contacts will receive an SMS with your live GPS location when you trigger an SOS alert.
-                    </Text>
-                </View>
-
-                {/* Name */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Full Name</Text>
-                    <View style={styles.inputRow}>
-                        <Feather name="user" size={18} color="#BEA3D8" />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Contact's full name"
-                            placeholderTextColor={Colors.outline}
-                            value={name}
-                            onChangeText={setName}
-                        />
-                    </View>
-                </View>
-
-                {/* Phone */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Mobile Number</Text>
-                    <View style={styles.inputRow}>
-                        <View style={styles.countryCode}>
-                            <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
-                        </View>
-                        <TextInput
-                            style={[styles.input, { flex: 1 }]}
-                            placeholder="10-digit number"
-                            placeholderTextColor={Colors.outline}
-                            value={phone}
-                            onChangeText={setPhone}
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                        />
-                    </View>
-                </View>
-
-                {/* Relation */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Relationship</Text>
-                    <View style={styles.relationsGrid}>
-                        {RELATION_OPTIONS.map((r) => (
-                            <TouchableOpacity
-                                key={r}
-                                style={[styles.relationChip, relation === r && styles.relationChipSelected]}
-                                onPress={() => setRelation(r)}
-                            >
-                                <Text style={[styles.relationChipText, relation === r && styles.relationChipTextSelected]}>
-                                    {r}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-
-                <TouchableOpacity
-                    style={[styles.saveBtn, saving && { opacity: 0.7 }]}
-                    onPress={handleSave}
-                    disabled={saving}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={KEYBOARD_BEHAVIOR}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.content}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
-                    {saving
-                        ? <ActivityIndicator color={Colors.onPrimary} />
-                        : <Text style={styles.saveBtnText}>Add Contact</Text>
-                    }
-                </TouchableOpacity>
-            </ScrollView>
+                    <View style={styles.infoCard}>
+                        <Feather name="shield" size={20} color="#BEA3D8" />
+                        <Text style={styles.infoText}>
+                            Emergency contacts will receive an SMS with your live GPS location when you trigger an SOS alert.
+                        </Text>
+                    </View>
+
+                    {/* Name */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>Full Name</Text>
+                        <View style={styles.inputRow}>
+                            <View style={styles.inputIconWrap}>
+                                <Feather name="user" size={18} color="#BEA3D8" />
+                            </View>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Contact's full name"
+                                placeholderTextColor={Colors.outline}
+                                value={name}
+                                onChangeText={setName}
+                                returnKeyType="next"
+                            />
+                        </View>
+                    </View>
+
+                    {/* Phone */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>Mobile Number</Text>
+                        <View style={styles.inputRow}>
+                            <View style={styles.countryCode}>
+                                <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, { flex: 1 }]}
+                                placeholder="10-digit number"
+                                placeholderTextColor={Colors.outline}
+                                value={phone}
+                                onChangeText={setPhone}
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                                returnKeyType="done"
+                            />
+                        </View>
+                    </View>
+
+                    {/* Relation */}
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>Relationship</Text>
+                        <View style={styles.relationsGrid}>
+                            {RELATION_OPTIONS.map((r) => (
+                                <TouchableOpacity
+                                    key={r}
+                                    style={[styles.relationChip, relation === r && styles.relationChipSelected]}
+                                    onPress={() => setRelation(r)}
+                                >
+                                    <Text style={[styles.relationChipText, relation === r && styles.relationChipTextSelected]}>
+                                        {r}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+                        onPress={handleSave}
+                        disabled={saving}
+                    >
+                        {saving
+                            ? <ActivityIndicator color={Colors.onPrimary} />
+                            : <Text style={styles.saveBtnText}>Add Contact</Text>
+                        }
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
             {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </SafeAreaView>
     );
@@ -172,7 +188,7 @@ const styles = StyleSheet.create({
     },
     backArrow: { fontSize: 20, color: Colors.primaryContainer, fontWeight: '700' },
     
-    content: { paddingHorizontal: 20, paddingBottom: 48, gap: 20 },
+    content: { paddingHorizontal: 20, paddingBottom: 80, paddingTop: 20, gap: 20 },
     infoCard: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 12,
         backgroundColor: Colors.primaryFixed, borderRadius: 14, padding: 14,
@@ -188,6 +204,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: Colors.surfaceContainerLowest,
         borderRadius: 14, overflow: 'hidden', ...Shadows.card,
+    },
+    inputIconWrap: {
+        paddingHorizontal: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     inputIcon: { fontSize: 18, paddingHorizontal: 14 },
     input: {

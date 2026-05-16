@@ -95,25 +95,38 @@ export default function HomeScreen() {
                 return;
             }
 
-            let coords = null;
-            try {
-                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-            } catch (_) {
-                // GPS off at device level — try last known position
-                try {
-                    const last = await Location.getLastKnownPositionAsync();
-                    if (last) coords = { latitude: last.coords.latitude, longitude: last.coords.longitude };
-                } catch (__) {}
-            }
-
-            if (coords) {
+            // Helper to update location state and map
+            const updateLocation = async (lat, lng) => {
+                const coords = { latitude: lat, longitude: lng };
                 setCurrentLocation(coords);
-                const address = await reverseGeocode(coords.latitude, coords.longitude);
+                const address = await reverseGeocode(lat, lng);
                 setPickup({ ...coords, address });
                 mapRef.current?.animateToRegion({
                     ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
                 });
+            };
+
+            // 1. Try to get last known position immediately for fast UI
+            try {
+                const last = await Location.getLastKnownPositionAsync();
+                if (last) {
+                    await updateLocation(last.coords.latitude, last.coords.longitude);
+                }
+            } catch (e) {
+                console.log('Error getting last location:', e);
+            }
+
+            // 2. Fetch current position in the background to update with accurate data
+            try {
+                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+                if (loc) {
+                    await updateLocation(loc.coords.latitude, loc.coords.longitude);
+                } else if (!currentLocation) {
+                    Alert.alert('Location Error', 'Could not determine your current position.');
+                }
+            } catch (e) {
+                console.log('Error getting current location:', e);
+                Alert.alert('Location Error', e.message || 'Failed to fetch location from device.');
             }
         })();
 
@@ -609,17 +622,17 @@ const styles = StyleSheet.create({
     },
     // Subscribe tab
     pillTabSubActive: {
-        backgroundColor: '#D97706',
-        shadowColor: 'rgba(217, 119, 6, 1)',
+        backgroundColor: '#BEA3D8',
+        shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.15,
         shadowRadius: 16,
         elevation: 4,
     },
     pillTabSubOutline: {
         backgroundColor: '#FFFFFF',
         borderWidth: 2,
-        borderColor: '#D97706',
+        borderColor: '#BEA3D8',
     },
     pillTabEmoji: {
         fontSize: 16,
@@ -640,7 +653,7 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     pillTabTextOutlineSub: {
-        color: '#D97706',
+        color: '#BEA3D8',
     },
 
     // Saved places chips

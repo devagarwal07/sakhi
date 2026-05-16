@@ -172,10 +172,8 @@ export default function SavedPlacesScreen() {
                         {/* Primary Address Card Setup */}
                         <View style={styles.primaryCard}>
                             <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => openModal('home')}>
-                                <View style={[styles.iconWrap, { backgroundColor: '#10B981' }]}>
-                                    <Svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-                                        <Path d="M0 18V6L8 0L16 6V18H10V11H6V18H0Z" fill="white" />
-                                    </Svg>
+                                <View style={[styles.iconWrap, { backgroundColor: '#ECFDF5' }]}>
+                                    <Feather name="home" size={18} color="#10B981" />
                                 </View>
                                 <View style={styles.rowTextWrap}>
                                     <Text style={styles.rowTitle}>Home</Text>
@@ -185,10 +183,8 @@ export default function SavedPlacesScreen() {
                             </TouchableOpacity>
                             <View style={styles.divider} />
                             <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => openModal('work')}>
-                                <View style={[styles.iconWrap, { backgroundColor: '#3B82F6' }]}>
-                                    <Svg width="20" height="19" viewBox="0 0 20 19" fill="none">
-                                        <Path d="M2 19C1.45 19 0.979167 18.8042 0.5875 18.4125C0.195833 18.0208 0 17.55 0 17V6C0 5.45 0.195833 4.97917 0.5875 4.5875C0.979167 4.19583 1.45 4 2 4H6V2C6 1.45 6.19583 0.979167 6.5875 0.5875C6.97917 0.195833 7.45 0 8 0H12C12.55 0 13.0208 0.195833 13.4125 0.5875C13.8042 0.979167 14 1.45 14 2V4H18C18.55 4 19.0208 4.19583 19.4125 4.5875C19.8042 4.97917 20 5.45 20 6V17C20 17.55 19.8042 18.0208 19.4125 18.4125C19.0208 18.8042 18.55 19 18 19H2ZM8 4H12V2H8V4Z" fill="white" />
-                                    </Svg>
+                                <View style={[styles.iconWrap, { backgroundColor: '#EFF6FF' }]}>
+                                    <Feather name="briefcase" size={18} color="#3B82F6" />
                                 </View>
                                 <View style={styles.rowTextWrap}>
                                     <Text style={styles.rowTitle}>Work</Text>
@@ -198,10 +194,8 @@ export default function SavedPlacesScreen() {
                             </TouchableOpacity>
                             <View style={styles.divider} />
                             <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
-                                <View style={[styles.iconWrap, { backgroundColor: '#A78BFA' }]}>
-                                    <Svg width="20" height="19" viewBox="0 0 20 19" fill="none">
-                                        <Path d="M10 18.35L8.55 17.05C6.86667 15.5333 5.475 14.225 4.375 13.125C3.275 12.025 2.4 11.0375 1.75 10.1625C1.1 9.2875 0.645833 8.48333 0.3875 7.75C0.129167 7.01667 0 6.26667 0 5.5C0 3.93333 0.525 2.625 1.575 1.575C2.625 0.525 3.93333 0 5.5 0C6.36667 0 7.19167 0.183333 7.975 0.55C8.75833 0.916667 9.43333 1.43333 10 2.1C10.5667 1.43333 11.2417 0.916667 12.025 0.55C12.8083 0.183333 13.6333 0 14.5 0C16.0667 0 17.375 0.525 18.425 1.575C19.475 2.625 20 3.93333 20 5.5C20 6.26667 19.8708 7.01667 19.6125 7.75C19.3542 8.48333 18.9 9.2875 18.25 10.1625C17.6 11.0375 16.725 12.025 15.625 13.125C14.525 14.225 13.1333 15.5333 11.45 17.05L10 18.35Z" fill="white" />
-                                    </Svg>
+                                <View style={[styles.iconWrap, { backgroundColor: '#F5F0FF' }]}>
+                                    <Feather name="heart" size={18} color="#A78BFA" />
                                 </View>
                                 <View style={styles.rowTextWrap}>
                                     <Text style={styles.rowTitle}>Favourites</Text>

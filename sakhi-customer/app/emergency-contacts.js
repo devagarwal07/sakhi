@@ -2,7 +2,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Switch, Platform, Modal, TextInput, ActivityIndicator
+    Switch, Platform, Modal, TextInput, ActivityIndicator,
+    Keyboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
@@ -30,6 +31,15 @@ export default function EmergencyContactsScreen() {
     const addSheetPaddingBottom = Math.max(insets.bottom, 24) + 32;
     const doneFooterPaddingBottom = Math.max(insets.bottom, 24);
     const scrollPaddingBottom = 40 + 60 + doneFooterPaddingBottom + 16;
+
+    const [keyboardOffset, setKeyboardOffset] = useState(0);
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+        const show = Keyboard.addListener(showEvent, e => setKeyboardOffset(e.endCoordinates.height));
+        const hide = Keyboard.addListener(hideEvent, () => setKeyboardOffset(0));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
 
     // ── Load contacts from backend ─────────────────────────────────────────
     useEffect(() => {
@@ -253,74 +263,87 @@ export default function EmergencyContactsScreen() {
                 onRequestClose={() => setAddModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
+                    {/* Backdrop tap to close */}
                     <TouchableOpacity
-                        style={styles.modalBackdropClose}
+                        style={{ flex: 1, width: '100%' }}
                         activeOpacity={1}
-                        onPress={() => setAddModalVisible(false)}
+                        onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); }}
                     />
-                    <View style={[styles.bottomSheet, { paddingBottom: addSheetPaddingBottom }]}>
-                        <View style={styles.dragHandle} />
-                        <View style={styles.sheetHeader}>
-                            <Text style={styles.sheetTitle}>Add New Contact</Text>
-                            <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
-                        </View>
-                        <View style={styles.formContent}>
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.fieldLabel}>FULL NAME</Text>
-                                <View style={styles.inputWrap}>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Enter name"
-                                        placeholderTextColor="#6B7280"
-                                        value={newName}
-                                        onChangeText={setNewName}
-                                    />
-                                    <Feather name="user" size={16} color="#CCC3D8" />
-                                </View>
-                            </View>
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
-                                <View style={styles.inputWrap}>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="10-digit mobile number"
-                                        placeholderTextColor="#6B7280"
-                                        keyboardType="phone-pad"
-                                        maxLength={10}
-                                        value={newPhone}
-                                        onChangeText={setNewPhone}
-                                    />
-                                    <Feather name="phone" size={16} color="#CCC3D8" />
-                                </View>
-                            </View>
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.fieldLabel}>RELATION</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-                                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                                        {RELATION_OPTIONS.map(rel => (
-                                            <TouchableOpacity
-                                                key={rel}
-                                                style={[styles.relChip, newRelation === rel && styles.relChipActive]}
-                                                onPress={() => setNewRelation(rel)}
-                                            >
-                                                <Text style={[styles.relChipText, newRelation === rel && styles.relChipTextActive]}>{rel}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </ScrollView>
-                            </View>
+                    {/* Bottom Sheet */}
+                    <View style={[styles.bottomSheet, { paddingBottom: addSheetPaddingBottom, marginBottom: keyboardOffset }]}>
+                        {/* Close Button */}
+                        <View style={styles.sheetTopRow}>
                             <TouchableOpacity
-                                style={[styles.sheetActionBtn, saving && { opacity: 0.6 }]}
-                                activeOpacity={0.8}
-                                onPress={handleSaveContact}
-                                disabled={saving}
+                                style={styles.sheetCloseBtn}
+                                onPress={() => { Keyboard.dismiss(); setAddModalVisible(false); }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                                {saving
-                                    ? <ActivityIndicator color="#fff" />
-                                    : <Text style={styles.sheetActionText}>Save Contact</Text>
-                                }
+                                <Feather name="x" size={20} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
+                            <View style={styles.sheetHeader}>
+                                <Text style={styles.sheetTitle}>Add New Contact</Text>
+                                <Text style={styles.sheetSub}>Select someone you trust to help in emergencies.</Text>
+                            </View>
+                            <View style={styles.formContent}>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>FULL NAME</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Enter name"
+                                            placeholderTextColor="#6B7280"
+                                            value={newName}
+                                            onChangeText={setNewName}
+                                            returnKeyType="next"
+                                        />
+                                        <Feather name="user" size={16} color="#CCC3D8" />
+                                    </View>
+                                </View>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="10-digit mobile number"
+                                            placeholderTextColor="#6B7280"
+                                            keyboardType="phone-pad"
+                                            maxLength={10}
+                                            value={newPhone}
+                                            onChangeText={setNewPhone}
+                                            returnKeyType="done"
+                                        />
+                                        <Feather name="phone" size={16} color="#CCC3D8" />
+                                    </View>
+                                </View>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>RELATION</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+                                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                                            {RELATION_OPTIONS.map(rel => (
+                                                <TouchableOpacity
+                                                    key={rel}
+                                                    style={[styles.relChip, newRelation === rel && styles.relChipActive]}
+                                                    onPress={() => setNewRelation(rel)}
+                                                >
+                                                    <Text style={[styles.relChipText, newRelation === rel && styles.relChipTextActive]}>{rel}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </ScrollView>
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.sheetActionBtn, saving && { opacity: 0.6 }]}
+                                    activeOpacity={0.8}
+                                    onPress={handleSaveContact}
+                                    disabled={saving}
+                                >
+                                    {saving
+                                        ? <ActivityIndicator color="#fff" />
+                                        : <Text style={styles.sheetActionText}>Save Contact</Text>
+                                    }
+                                </TouchableOpacity>
+                            </View>
                     </View>
                 </View>
             </Modal>
@@ -479,11 +502,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: -16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 10,
     },
-    dragHandle: {
-        width: 48, height: 6,
-        backgroundColor: '#E5E0EF',
-        borderRadius: 9999,
-        marginBottom: 32,
+    sheetTopRow: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        paddingTop: 4,
+        paddingBottom: 20,
+        position: 'relative',
+    },
+    sheetCloseBtn: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        width: 36, height: 36,
+        borderRadius: 18,
+        backgroundColor: '#F5F0FF',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     sheetHeader: {
         width: '100%', gap: 4, marginBottom: 32,
