@@ -24,6 +24,16 @@ const CLIENT_SECRET = () => process.env.MAPPLS_CLIENT_SECRET;
 const ROUTE_BASE    = 'https://apis.mappls.com/advancedmaps/v1';
 const ATLAS_BASE    = 'https://atlas.mappls.com/api';
 
+// ── Haversine fallback ─────────────────────────────────────────────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(2));
+}
+
 // ── OAuth token cache ──────────────────────────────────────────────────────────
 let _token  = null;
 let _expiry = 0;
@@ -54,25 +64,25 @@ async function getToken() {
  */
 async function getDistanceMatrix(originLat, originLng, destLat, destLng) {
   try {
-    const key   = API_KEY();
+    const key = API_KEY();
+    if (!key) throw new Error('No MAPPLS_API_KEY — using haversine fallback');
     const start = `${originLng},${originLat}`;
     const dest  = `${destLng},${destLat}`;
     const url   = `${ROUTE_BASE}/${key}/route_adv/driving/${start};${dest}?overview=false`;
     const { data } = await axios.get(url, { timeout: 8000 });
 
     const route = data?.routes?.[0];
-    if (!route) {
-      logger.error('mapsService.getDistanceMatrix — no route returned', { data });
-      throw new AppError('Could not calculate distance between the two points.', 502, 'MAPS_API_FAILED');
-    }
+    if (!route) throw new Error('No route returned by Mappls');
 
     const distance_km  = parseFloat(((route.distance || 0) / 1000).toFixed(2));
     const duration_min = parseFloat(((route.duration || 0) / 60).toFixed(1));
     return { distance_km, duration_min };
   } catch (err) {
-    if (err instanceof AppError) throw err;
-    logger.error('mapsService.getDistanceMatrix — request error', { error: err.message });
-    throw new AppError('Mappls Maps API request failed.', 502, 'MAPS_API_FAILED');
+    // Graceful fallback — use straight-line distance with urban speed estimate
+    logger.warn('mapsService.getDistanceMatrix — falling back to haversine', { error: err.message });
+    const distance_km  = haversineKm(originLat, originLng, destLat, destLng);
+    const duration_min = parseFloat(((distance_km / 20) * 60).toFixed(1)); // 20 km/h urban
+    return { distance_km, duration_min };
   }
 }
 
@@ -103,14 +113,15 @@ async function reverseGeocode(lat, lng) {
  */
 async function getRoutePolyline(originLat, originLng, destLat, destLng) {
   try {
-    const key   = API_KEY();
+    const key = API_KEY();
+    if (!key) return null;
     const start = `${originLng},${originLat}`;
     const dest  = `${destLng},${destLat}`;
     const url   = `${ROUTE_BASE}/${key}/route_adv/driving/${start};${dest}?geometries=polyline&overview=full`;
     const { data } = await axios.get(url, { timeout: 8000 });
 
     const geometry = data?.routes?.[0]?.geometry;
-    if (geometry) return geometry; // encoded polyline string
+    if (geometry) return geometry;
   } catch (err) {
     logger.warn('mapsService.getRoutePolyline — failed', { error: err.message });
   }
