@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerSOS } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED    = '#DC2626';
@@ -143,7 +144,7 @@ export default function SOSWarningScreen({ navigation, route }) {
           onPress={handleSendSOS}
           activeOpacity={0.85}
         >
-          <Text style={s.sendNowIcon}>⚡</Text>
+          <Feather name="zap" size={20} color={RED} />
           <Text style={s.sendNowText}>Send SOS Now</Text>
         </TouchableOpacity>
 

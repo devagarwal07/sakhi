@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 const OTP_LENGTH = 6;
@@ -176,9 +177,8 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
               <Text style={styles.phoneNum}>{formattedPhone}</Text>
             </Text>
           </View>
-          {/* SENT VIA SMS badge */}
           <View style={styles.smsBadge}>
-            <Text style={styles.smsIcon}>💬</Text>
+            <Feather name="message-circle" size={12} color="#94A3B8" />
             <Text style={styles.smsBadgeText}>{t('auth.sentViaSms')}</Text>
           </View>
         </View>

@@ -17,6 +17,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { API_BASE_URL } from '../../utils/constants';
@@ -193,7 +194,7 @@ export default function OtpScreen() {
             {/* Header — glassmorphic */}
             <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
                 <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.backButton}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#C0A6D6" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Sakhi</Text>
                 <View style={{ width: 18 }} />
@@ -247,7 +248,7 @@ export default function OtpScreen() {
 
                 {/* Countdown — clock icon + text */}
                 <View style={styles.countdownRow}>
-                    <Text style={styles.clockIcon}>⏱</Text>
+                    <Feather name="clock" size={14} color="#6B7280" />
                     <Text style={styles.countdownText}>
                         {resendTimer > 0
                             ? `Resend OTP in ${timerDisplay}`

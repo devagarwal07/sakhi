@@ -5,12 +5,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 // ── FAQ Data ──────────────────────────────────────────────────────────────────
 const FAQ_CATEGORIES = [
     {
         id: 'rides',
-        icon: '🛺',
+        icon: 'navigation',
         label: 'Rides',
         color: '#BEA3D8',
         bg: '#F5F0FF',
@@ -23,7 +24,7 @@ const FAQ_CATEGORIES = [
     },
     {
         id: 'payments',
-        icon: '💳',
+        icon: 'credit-card',
         label: 'Payments',
         color: '#059669',
         bg: '#ECFDF5',
@@ -36,7 +37,7 @@ const FAQ_CATEGORIES = [
     },
     {
         id: 'safety',
-        icon: '🛡️',
+        icon: 'shield',
         label: 'Safety',
         color: '#DC2626',
         bg: '#FFF1F2',
@@ -48,7 +49,7 @@ const FAQ_CATEGORIES = [
     },
     {
         id: 'account',
-        icon: '👤',
+        icon: 'user',
         label: 'Account',
         color: '#D97706',
         bg: '#FFFBEB',
@@ -71,7 +72,7 @@ function AccordionItem({ q, a }) {
                 activeOpacity={0.8}
             >
                 <Text style={ac.question}>{q}</Text>
-                <Text style={[ac.chevron, open && ac.chevronOpen]}>{open ? '−' : '+'}</Text>
+                <Feather name={open ? "minus" : "plus"} size={18} color={open ? "#7C3AED" : "#BEA3D8"} style={{ marginTop: 1 }} />
             </TouchableOpacity>
             {open && <Text style={ac.answer}>{a}</Text>}
         </View>
@@ -118,7 +119,7 @@ export default function HelpSupportScreen() {
                         style={s.backBtn}
                         onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
                     >
-                        <Text style={s.backArrow}>←</Text>
+                        <Feather name="arrow-left" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                     <Text style={s.headerTitle}>Help & Support</Text>
                 </View>
@@ -129,7 +130,7 @@ export default function HelpSupportScreen() {
 
                 {/* Search Bar */}
                 <View style={s.searchWrap}>
-                    <Text style={s.searchIcon}>🔍</Text>
+                    <Feather name="search" size={16} color="#94A3B8" />
                     <TextInput
                         style={s.searchInput}
                         placeholder="Search for help…"
@@ -140,7 +141,7 @@ export default function HelpSupportScreen() {
                     />
                     {search.length > 0 && (
                         <TouchableOpacity onPress={() => setSearch('')}>
-                            <Text style={s.searchClear}>✕</Text>
+                            <Feather name="x" size={16} color="#94A3B8" style={{ paddingHorizontal: 4 }} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -164,7 +165,7 @@ export default function HelpSupportScreen() {
                                 style={[s.catPill, activeCategory === cat.id && { backgroundColor: cat.bg, borderColor: cat.color }]}
                                 onPress={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
                             >
-                                <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                                <Feather name={cat.icon} size={14} color={activeCategory === cat.id ? cat.color : '#64748B'} />
                                 <Text style={[s.catPillText, activeCategory === cat.id && { color: cat.color }]}>{cat.label}</Text>
                             </TouchableOpacity>
                         ))}
@@ -182,7 +183,7 @@ export default function HelpSupportScreen() {
                                 onPress={() => router.push('/support-chat')}
                                 activeOpacity={0.82}
                             >
-                                <Text style={s.quickEmoji}>🤖</Text>
+                                <Feather name="message-square" size={22} color="#7C3AED" style={{ marginBottom: 4 }} />
                                 <Text style={[s.quickTitle, { color: '#7C3AED' }]}>Chat with{'\n'}Sakhi Bot</Text>
                                 <Text style={[s.quickSub, { color: '#BEA3D8' }]}>24/7 instant help</Text>
                             </TouchableOpacity>
@@ -193,7 +194,7 @@ export default function HelpSupportScreen() {
                                 onPress={() => Linking.openURL('tel:+918800000000').catch(() => {})}
                                 activeOpacity={0.82}
                             >
-                                <Text style={s.quickEmoji}>📞</Text>
+                                <Feather name="phone-call" size={22} color="#065F46" style={{ marginBottom: 4 }} />
                                 <Text style={[s.quickTitle, { color: '#065F46' }]}>Call{'\n'}Support</Text>
                                 <Text style={[s.quickSub, { color: '#059669' }]}>Mon–Sat 9AM–8PM</Text>
                             </TouchableOpacity>
@@ -204,7 +205,7 @@ export default function HelpSupportScreen() {
                                 onPress={() => router.push('/complaint')}
                                 activeOpacity={0.82}
                             >
-                                <Text style={s.quickEmoji}>📝</Text>
+                                <Feather name="file-text" size={22} color="#7C2D12" style={{ marginBottom: 4 }} />
                                 <Text style={[s.quickTitle, { color: '#7C2D12' }]}>Raise{'\n'}Issue</Text>
                                 <Text style={[s.quickSub, { color: '#F97316' }]}>Track your ticket</Text>
                             </TouchableOpacity>
@@ -219,11 +220,14 @@ export default function HelpSupportScreen() {
                     </Text>
                     {displayFaqs.length === 0 && (
                         <View style={s.emptyWrap}>
-                            <Text style={s.emptyEmoji}>🔎</Text>
+                            <Feather name="search" size={40} color="#CBD5E1" style={{ marginBottom: 12 }} />
                             <Text style={s.emptyText}>No results found</Text>
                             <Text style={s.emptySub}>Try a different search or chat with our bot</Text>
                             <TouchableOpacity style={s.emptyCta} onPress={() => router.push('/support-chat')}>
-                                <Text style={s.emptyCtaText}>Chat with Sakhi Bot →</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Text style={s.emptyCtaText}>Chat with Sakhi Bot</Text>
+                                    <Feather name="arrow-right" size={14} color="#FFFFFF" />
+                                </View>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -231,7 +235,7 @@ export default function HelpSupportScreen() {
                         <View key={cat.id}>
                             {!activeCategory && !search && (
                                 <View style={[s.catHeader, { backgroundColor: cat.bg }]}>
-                                    <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
+                                    <Feather name={cat.icon} size={16} color={cat.color} />
                                     <Text style={[s.catHeaderLabel, { color: cat.color }]}>{cat.label}</Text>
                                 </View>
                             )}
@@ -250,12 +254,12 @@ export default function HelpSupportScreen() {
                     onPress={() => router.push('/support-chat')}
                     activeOpacity={0.88}
                 >
-                    <Text style={s.chatCtaEmoji}>💬</Text>
+                    <Feather name="message-circle" size={28} color="#FFFFFF" />
                     <View style={s.chatCtaText}>
                         <Text style={s.chatCtaTitle}>Still need help?</Text>
                         <Text style={s.chatCtaSub}>Chat with Sakhi Bot — available 24/7</Text>
                     </View>
-                    <Text style={s.chatCtaArrow}>→</Text>
+                    <Feather name="arrow-right" size={20} color="#BEA3D8" />
                 </TouchableOpacity>
 
             </ScrollView>

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { getRideById } from '../src/api/endpoints';
 
 export default function RideDetailsScreen() {
@@ -66,7 +67,7 @@ export default function RideDetailsScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Ride Details</Text>
                     </View>
@@ -84,7 +85,7 @@ export default function RideDetailsScreen() {
                 {/* No data state */}
                 {!loading && !ride && (
                     <View style={styles.loadingState}>
-                        <Text style={{ fontSize: 36 }}>🎫</Text>
+                        <Feather name="file-text" size={36} color="#BEA3D8" />
                         <Text style={styles.loadingText}>Ride details not found.</Text>
                     </View>
                 )}
@@ -136,7 +137,7 @@ export default function RideDetailsScreen() {
                                 </View>
                                 <View style={styles.routeRow}>
                                     <View style={styles.pinPurpleWrap}>
-                                        <Text style={styles.pinPurple}>📍</Text>
+                                        <Feather name="map-pin" size={14} color="#BEA3D8" />
                                     </View>
                                     <Text style={styles.routeAddressText}>{ride.dropoff}</Text>
                                 </View>
@@ -165,7 +166,7 @@ export default function RideDetailsScreen() {
                                 </View>
                                 
                                 <View style={styles.paymentMetaRow}>
-                                    <Text style={styles.paymentMetaIcon}>💵</Text>
+                                     <Feather name="dollar-sign" size={12} color="#6B7280" />
                                     <Text style={styles.paymentMetaText}>Paid via {ride.paymentMethod}</Text>
                                 </View>
                             </View>
@@ -174,7 +175,7 @@ export default function RideDetailsScreen() {
                             <View style={styles.driverSection}>
                                 <View style={styles.driverLeft}>
                                     <View style={styles.driverImgWrap}>
-                                        <Text style={{fontSize: 24}}>👩🏽</Text>
+                                        <Feather name="user" size={24} color="#BEA3D8" />
                                     </View>
                                     <View style={styles.driverInfo}>
                                         <Text style={styles.driverName}>{ride.driver.name}</Text>
@@ -183,7 +184,7 @@ export default function RideDetailsScreen() {
                                 </View>
                                 <View style={styles.driverRatingRow}>
                                     <Text style={styles.driverRatingText}>{ride.driver.rating}</Text>
-                                    <Text style={styles.starIcon}>★</Text>
+                                    <Feather name="star" size={14} color="#F59E0B" />
                                 </View>
                             </View>
 
@@ -238,7 +239,7 @@ export default function RideDetailsScreen() {
                                 ]
                             })}
                         >
-                            <Text style={styles.actionBtnShareIcon}>📤</Text>
+                             <Feather name="share" size={22} color="#BEA3D8" />
                         </TouchableOpacity>
                     </View>
                 </View>

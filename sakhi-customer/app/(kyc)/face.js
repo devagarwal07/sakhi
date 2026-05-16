@@ -5,8 +5,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Lock, Play } from 'lucide-react-native';
+import { Lock, Play, ArrowLeft } from 'lucide-react-native';
 import { verifyFacePhoto } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
 import SakhiModal from '../../src/components/SakhiModal';
@@ -143,7 +144,11 @@ export default function FaceVerificationScreen() {
             const status = data?.status;
 
             if (status === 'approved') {
-                setStatusMsg('Verified ✓');
+                setStatusMsg(
+                    <Text>
+                        Verified <Feather name="check" size={16} color="#10B981" />
+                    </Text>
+                );
                 updateUser({ verification_status: 'approved', gender_verified: true });
                 setTimeout(() => router.replace('/'), 800);
                 return;
@@ -259,7 +264,7 @@ export default function FaceVerificationScreen() {
                     onPress={() => !scanning && (router.canGoBack() ? router.back() : router.replace('/'))}
                     style={styles.backBtn}
                 >
-                    <Text style={styles.backIcon}>←</Text>
+                    <ArrowLeft size={18} color="#FFFFFF" strokeWidth={2.5} />
                 </Pressable>
                 <Text style={styles.navTitle}>Identity Verification</Text>
                 <Text style={styles.stepBadge}>Step 1 of 1</Text>

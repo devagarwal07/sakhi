@@ -5,6 +5,7 @@ import {
     Switch, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEmergencyContacts } from '../src/api/endpoints';
 
@@ -60,7 +61,7 @@ export default function SOSSettingsScreen({ isTab = false }) {
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {!isTab && (
                             <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                                <Text style={styles.headerIcon}>←</Text>
+                                <Feather name="arrow-left" size={24} color="#BEA3D8" />
                             </TouchableOpacity>
                         )}
                         <Text style={styles.headerTitle}>Safety & SOS</Text>
@@ -150,7 +151,7 @@ export default function SOSSettingsScreen({ isTab = false }) {
 
                             {/* Info banner */}
                             <View style={[styles.infoBanner, liveSharingEnabled && styles.infoBannerActive]}>
-                                <Text style={styles.infoBannerIcon}>{liveSharingEnabled ? '📤' : '🔒'}</Text>
+                                <Feather name={liveSharingEnabled ? 'share' : 'lock'} size={18} color={liveSharingEnabled ? '#7C3AED' : '#6B7280'} />
                                 <Text style={styles.infoBannerText}>
                                     {liveSharingEnabled
                                         ? 'Share Trip button is now active. It will appear on your next ride.'
@@ -176,14 +177,14 @@ export default function SOSSettingsScreen({ isTab = false }) {
                                         </View>
                                     </View>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={20} color="#CBD5E1" />
                             </TouchableOpacity>
 
                             <View style={styles.row}>
                                 <View style={styles.rowTextCol}>
                                     <View style={styles.lockedRow}>
                                         <Text style={styles.rowTitle}>Sakhi Safety Team</Text>
-                                        <Text style={styles.padlockIcon}>🔒</Text>
+                                        <Feather name="lock" size={10} color="#6B7280" />
                                     </View>
                                 </View>
                                 <View style={styles.greenBadge}>

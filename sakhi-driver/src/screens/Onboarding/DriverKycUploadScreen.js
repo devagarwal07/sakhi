@@ -331,7 +331,7 @@ export default function DriverKycUploadScreen({ navigation }) {
             )
           }
         </TouchableOpacity>
-        <Text style={s.footerNote}>📋 Our team reviews documents within 24 hours</Text>
+        <Text style={s.footerNote}><Feather name="clipboard" size={11} color="#94A3B8" /> Our team reviews documents within 24 hours</Text>
       </SafeAreaView>
 
     </KeyboardAvoidingView>

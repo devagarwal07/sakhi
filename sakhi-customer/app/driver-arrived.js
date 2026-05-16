@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { callDriver } from '../src/api/endpoints';
@@ -129,7 +130,7 @@ export default function DriverArrivedScreen() {
             {/* Top Navigation AppBar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
-                    <Text style={styles.navIconArrow}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Arrived</Text>
@@ -144,7 +145,7 @@ export default function DriverArrivedScreen() {
                         { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
                     ],
                 })}>
-                    <Text style={styles.navDots}>⋮</Text>
+                    <Feather name="more-vertical" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
             </View>
 
@@ -158,7 +159,7 @@ export default function DriverArrivedScreen() {
                     {/* Status Badge */}
                     <TouchableOpacity style={styles.statusBadge} onPress={() => router.push('/active-ride')} activeOpacity={0.8}>
                         <View style={styles.checkIconWrapper}>
-                            <Text style={styles.checkIcon}>✓</Text>
+                            <Feather name="check" size={12} color="#FFFFFF" />
                         </View>
                         <Text style={styles.statusBadgeText}>Your Driver Has Arrived!</Text>
                     </TouchableOpacity>
@@ -217,11 +218,11 @@ export default function DriverArrivedScreen() {
                             >
                                 {calling
                                     ? <ActivityIndicator size="small" color="#FFFFFF" />
-                                    : <Text style={styles.callIconText}>📞</Text>
+                                    : <Feather name="phone-call" size={20} color="#BEA3D8" />
                                 }
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.msgBtn} onPress={() => setModal({ icon: '✉️', title: 'Message Driver', message: 'Chat with driver feature coming soon.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] })}>
-                                <Text style={styles.msgIconText}>✉️</Text>
+                                <Feather name="message-square" size={20} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -255,19 +256,19 @@ export default function DriverArrivedScreen() {
             {/* Dummy Tab Bar Overlay */}
             <View style={[styles.dummyTabBar, { height: tabBarHeight, paddingBottom: tabBarPaddingBottom }]}>
                 <View style={styles.tabItemActive}>
-                    <Text style={styles.tabIconActive}>🏠</Text>
+                    <Feather name="home" size={20} color="#BEA3D8" />
                     <Text style={styles.tabLabelActive}>HOME</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>🚙</Text>
+                    <Feather name="activity" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>ACTIVITY</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>🛡️</Text>
+                    <Feather name="shield" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>SAFETY</Text>
                 </View>
                 <View style={styles.tabItem}>
-                    <Text style={styles.tabIcon}>👤</Text>
+                    <Feather name="user" size={20} color="#6B7280" />
                     <Text style={styles.tabLabel}>PROFILE</Text>
                 </View>
             </View>

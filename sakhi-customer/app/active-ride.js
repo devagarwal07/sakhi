@@ -17,6 +17,7 @@ import * as Battery from 'expo-battery';
 import * as Sharing from 'expo-sharing';
 import ChatModal from '../src/components/ChatModal';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 const LIVE_SHARING_KEY = 'sakhi_live_sharing_enabled';
 
@@ -270,7 +271,10 @@ export default function ActiveRideScreen() {
                     onPress={() => router.push('/sos-warning')}
                     activeOpacity={0.85}
                 >
-                    <Text style={styles.sosPillText}>🆘  SOS</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Feather name="alert-triangle" size={14} color="#fff" />
+                        <Text style={styles.sosPillText}>SOS</Text>
+                    </View>
                 </TouchableOpacity>
 
                 {/* Share pill — only shown when live sharing is enabled AND user has tapped Share */}
@@ -280,7 +284,10 @@ export default function ActiveRideScreen() {
                         onPress={handleShareTrip}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.sharePillText}>📤  Sharing</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Feather name="share" size={12} color="#7C3AED" />
+                            <Text style={styles.sharePillText}>Sharing</Text>
+                        </View>
                     </TouchableOpacity>
                 )}
             </View>
@@ -304,13 +311,13 @@ export default function ActiveRideScreen() {
                         <View style={styles.driverAvatar}>
                             {ride.driver.photo
                                 ? <Image source={{ uri: ride.driver.photo }} style={styles.avatarImg} />
-                                : <Text style={{ fontSize: 28 }}>👩</Text>
+                                : <Feather name="user" size={28} color="#FFFFFF" />
                             }
                         </View>
                         <View style={styles.driverInfo}>
                             <Text style={styles.driverName}>{ride.driver.name || 'Your Driver'}</Text>
                             <View style={styles.ratingRow}>
-                                <Text style={styles.starIcon}>⭐</Text>
+                                <Feather name="star" size={12} color="#F59E0B" style={{ marginRight: 2 }} />
                                 <Text style={styles.ratingText}>{ride.driver.rating?.toFixed(1) || '4.9'}</Text>
                                 <Text style={styles.vehicleText}>  •  {ride.driver.vehicle || 'Auto'}</Text>
                             </View>
@@ -318,7 +325,7 @@ export default function ActiveRideScreen() {
                         </View>
                         <View style={styles.driverActions}>
                             <TouchableOpacity style={styles.actionBtn} onPress={() => setChatOpen(true)}>
-                                <Text style={{ fontSize: 18 }}>💬</Text>
+                                <Feather name="message-circle" size={18} color="#1E1B2E" />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.actionBtn}
@@ -334,7 +341,7 @@ export default function ActiveRideScreen() {
                                     }
                                 }}
                             >
-                                <Text style={{ fontSize: 18 }}>📞</Text>
+                                <Feather name="phone-call" size={18} color="#1E1B2E" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -344,7 +351,7 @@ export default function ActiveRideScreen() {
                 {ride.waitingSeconds > 0 && (
                     <View style={styles.waitingBanner}>
                         <Text style={styles.waitingText}>
-                            ⏱ Driver waiting: {Math.floor(ride.waitingSeconds / 60)}m {ride.waitingSeconds % 60}s
+                            <Text style={styles.waitingTimerText}><Feather name="clock" size={13} color="#1E1B2E" /> Driver waiting: {Math.floor(ride.waitingSeconds / 60)}m {ride.waitingSeconds % 60}s</Text>
                         </Text>
                         {ride.waitingCharge > 0 && (
                             <Text style={styles.waitingCharge}>+₹{ride.waitingCharge.toFixed(1)} waiting</Text>
@@ -355,14 +362,14 @@ export default function ActiveRideScreen() {
                 {/* Trip info pills */}
                 <View style={styles.tripInfoRow}>
                     <View style={styles.tripInfoPill}>
-                        <Text style={styles.tripInfoIcon}>📍</Text>
+                        <Feather name="map-pin" size={12} color="#BEA3D8" />
                         <Text style={styles.tripInfoText} numberOfLines={1}>
                             {ride.pickup?.address || 'Current Location'}
                         </Text>
                     </View>
-                    <Text style={styles.tripInfoArrow}>→</Text>
+                    <Feather name="arrow-right" size={14} color="#94A3B8" />
                     <View style={styles.tripInfoPill}>
-                        <Text style={styles.tripInfoIcon}>🏁</Text>
+                        <Feather name="flag" size={12} color="#1E1B2E" />
                         <Text style={styles.tripInfoText} numberOfLines={1}>
                             {ride.dropoff?.address || 'Destination'}
                         </Text>
@@ -378,7 +385,10 @@ export default function ActiveRideScreen() {
                     )}
                     {liveSharingEnabled && (
                         <TouchableOpacity style={styles.shareBtn} onPress={handleShareTrip} activeOpacity={0.85}>
-                            <Text style={styles.shareBtnText}>📤 Share Trip</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Feather name="share" size={14} color="#7C3AED" />
+                                <Text style={styles.shareBtnText}>Share Trip</Text>
+                            </View>
                         </TouchableOpacity>
                     )}
                     {ride.driver?.upi_id && ride.paymentMethod === 'cash' && (
@@ -394,7 +404,7 @@ export default function ActiveRideScreen() {
                             }} 
                             activeOpacity={0.85}
                         >
-                            <Text style={[styles.shareBtnText, { color: '#16A34A' }]}>📲 Pay via UPI</Text>
+                            <Text style={[styles.shareBtnText, { color: '#16A34A' }]}><Feather name="smartphone" size={13} color="#16A34A" /> Pay via UPI</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -422,7 +432,7 @@ export default function ActiveRideScreen() {
                         <View style={styles.contactModalHeader}>
                             <Text style={styles.contactModalTitle}>Share Live Trip</Text>
                             <TouchableOpacity onPress={() => setShowContactPrompt(false)} style={styles.contactModalClose}>
-                                <Text style={{ fontSize: 20, color: '#64748B' }}>×</Text>
+                                <Feather name="x" size={20} color="#64748B" />
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.contactModalSub}>Select an emergency contact to send your live tracking link.</Text>
@@ -441,7 +451,7 @@ export default function ActiveRideScreen() {
                                         onPress={() => handleShareWithContact(c)}
                                     >
                                         <View style={styles.contactAvatar}>
-                                            <Text style={{ fontSize: 16 }}>{c.name ? c.name[0].toUpperCase() : '👤'}</Text>
+                                            {c.name ? <Text style={{ fontSize: 16, color: '#BEA3D8', fontWeight: 'bold' }}>{c.name[0].toUpperCase()}</Text> : <Feather name="user" size={16} color="#BEA3D8" />}
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.contactName}>{c.name}</Text>

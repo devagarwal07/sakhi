@@ -10,6 +10,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { getChatHistory } from '../api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../utils/androidUtils';
+import { Feather } from '@expo/vector-icons';
 
 /**
  * In-ride chat modal.
@@ -136,7 +137,7 @@ export default function ChatModal({ rideId, onClose }) {
             <View style={[styles.msgRow, isOwn && styles.msgRowOwn]}>
                 {!isOwn && (
                     <View style={styles.driverAvatar}>
-                        <Text style={{ fontSize: 14 }}>👩</Text>
+                        <Feather name="user" size={14} color={Colors.primaryContainer} />
                     </View>
                 )}
                 <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.driverBubble]}>
@@ -162,7 +163,7 @@ export default function ChatModal({ rideId, onClose }) {
                     <Text style={styles.headerSubtitle}>Messages are end-to-end encrypted</Text>
                 </View>
                 <Pressable onPress={onClose} style={styles.closeBtn}>
-                    <Text style={styles.closeBtnText}>✕</Text>
+                    <Feather name="x" size={14} color={Colors.onSurfaceVariant} style={{ fontWeight: 'bold' }} />
                 </Pressable>
             </View>
 
@@ -181,7 +182,7 @@ export default function ChatModal({ rideId, onClose }) {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyEmoji}>💬</Text>
+                            <Feather name="message-circle" size={36} color={Colors.primaryContainer} style={{ marginBottom: 8 }} />
                             <Text style={styles.emptyText}>Send a message to your driver</Text>
                         </View>
                     }
@@ -225,7 +226,7 @@ export default function ChatModal({ rideId, onClose }) {
                     onPress={sendMessage}
                     disabled={!text.trim()}
                 >
-                    <Text style={styles.sendBtnIcon}>➤</Text>
+                    <Feather name="send" size={16} color={Colors.onPrimary} style={{ marginLeft: -2 }} />
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>

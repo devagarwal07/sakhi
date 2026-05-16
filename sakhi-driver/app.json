@@ -25,10 +25,18 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sakhi Driver needs camera access for face verification."
+        }
+      ],
       [
         "expo-location",
         {
@@ -48,6 +56,11 @@
       ],
       "./plugins/withAdiRegistration"
     ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sakhi.partner.driver",
+      "appleTeamId": "88KNFT5Y5Z"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },

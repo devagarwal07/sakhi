@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cancelSOS } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED   = '#DC2626';
@@ -79,7 +80,7 @@ export default function SOSActiveScreen({ navigation, route }) {
           <View style={s.ringOuter} />
           <View style={s.ringInner} />
           <View style={s.iconCircle}>
-            <Text style={s.dangerIcon}>❕</Text>
+            <Feather name="alert-triangle" size={36} color={RED} />
           </View>
         </View>
 
@@ -103,7 +104,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             ].map((txt) => (
               <View key={txt} style={s.statusRow}>
                 <View style={s.checkBg}>
-                  <Text style={s.checkMark}>✓</Text>
+                  <Feather name="check" size={12} color={GREEN} style={{ fontWeight: 'bold' }} />
                 </View>
                 <Text style={s.statusText}>{txt}</Text>
               </View>
@@ -144,7 +145,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             onPress={() => Linking.openURL('tel:18001234567')}
             activeOpacity={0.85}
           >
-            <Text style={s.callIcon}>📞</Text>
+            <Feather name="phone" size={18} color={RED} />
             <Text style={s.callBtnText}>{t('sos.callSakhiTeam')}</Text>
           </TouchableOpacity>
 
@@ -154,7 +155,7 @@ export default function SOSActiveScreen({ navigation, route }) {
             onPress={() => Alert.alert('Sakhi Safety Chat', 'Our team is on standby 24/7. Opening chat…')}
             activeOpacity={0.85}
           >
-            <Text style={s.msgIcon}>💬</Text>
+            <Feather name="message-circle" size={18} color={WHITE} />
             <Text style={s.msgBtnText}>{t('sos.messageSakhiTeam')}</Text>
           </TouchableOpacity>
 

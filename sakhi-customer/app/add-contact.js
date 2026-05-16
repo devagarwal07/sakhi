@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { addEmergencyContact } from '../src/api/endpoints';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 const RELATION_OPTIONS = ['Mother', 'Father', 'Sister', 'Brother', 'Husband', 'Friend', 'Other'];
 
@@ -53,7 +54,7 @@ export default function AddContactScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={20} color="#BEA3D8" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Add Emergency Contact</Text>
                 <View style={{ width: 40 }} />
@@ -61,7 +62,7 @@ export default function AddContactScreen() {
 
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoCard}>
-                    <Text style={styles.infoIcon}>🛡️</Text>
+                    <Feather name="shield" size={20} color="#BEA3D8" />
                     <Text style={styles.infoText}>
                         Emergency contacts will receive an SMS with your live GPS location when you trigger an SOS alert.
                     </Text>
@@ -71,7 +72,7 @@ export default function AddContactScreen() {
                 <View style={styles.fieldGroup}>
                     <Text style={styles.fieldLabel}>Full Name</Text>
                     <View style={styles.inputRow}>
-                        <Text style={styles.inputIcon}>👤</Text>
+                        <Feather name="user" size={18} color="#BEA3D8" />
                         <TextInput
                             style={styles.input}
                             placeholder="Contact's full name"

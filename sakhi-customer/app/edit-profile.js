@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { updateProfile } from '../src/api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
@@ -169,7 +170,7 @@ export default function EditProfileScreen() {
                 <View style={styles.header}>
                     <View style={styles.headerTitleWrap}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Edit Profile</Text>
                     </View>
@@ -196,11 +197,11 @@ export default function EditProfileScreen() {
                                 <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                             ) : (
                                 <View style={styles.avatarImagePlaceholder}>
-                                    <Text style={{ fontSize: 40 }}>👩🏽</Text>
+                                    <Feather name="user" size={40} color="#BEA3D8" />
                                 </View>
                             )}
                             <View style={styles.avatarEditBtn}>
-                                <Text style={styles.avatarEditIcon}>📷</Text>
+                                <Feather name="camera" size={14} color="#FFFFFF" />
                             </View>
                         </TouchableOpacity>
                         <Text style={styles.avatarHint}>Tap to change photo</Text>
@@ -247,7 +248,10 @@ export default function EditProfileScreen() {
                             <View style={[styles.inputWrap, styles.inputRow]}>
                                 <Text style={styles.inputText}>{user?.phone || '—'}</Text>
                                 <TouchableOpacity onPress={() => router.push('/change-phone')}>
-                                    <Text style={styles.changeLinkText}>Change →</Text>
+                                    <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
+                                        <Text style={styles.changeLinkText}>Change</Text>
+                                        <Feather name="chevron-right" size={14} color="#BEA3D8" />
+                                    </View>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -261,7 +265,7 @@ export default function EditProfileScreen() {
                                 onPress={openDobPicker}
                             >
                                 <Text style={styles.inputText}>{formattedDob}</Text>
-                                <Text style={styles.inputEndIcon}>📅</Text>
+                                <Feather name="calendar" size={18} color="#7B7487" />
                             </TouchableOpacity>
                         </View>
 
@@ -274,7 +278,7 @@ export default function EditProfileScreen() {
                                 onPress={() => setShowLangPicker(true)}
                             >
                                 <Text style={styles.inputText}>{language}</Text>
-                                <Text style={[styles.inputEndIcon, { fontSize: 14 }]}>▼</Text>
+                                <Feather name="chevron-down" size={18} color="#7B7487" />
                             </TouchableOpacity>
                         </View>
 
@@ -282,9 +286,7 @@ export default function EditProfileScreen() {
                         <View style={styles.verificationBox}>
                             <View style={styles.verifyRow}>
                                 <View style={styles.verifyIconWrap}>
-                                    <Text style={styles.verifyIcon}>
-                                        {user?.verification_status === 'approved' ? '✓' : '…'}
-                                    </Text>
+                                    <Feather name={user?.verification_status === 'approved' ? 'check' : 'clock'} size={11} color="#FFF" />
                                 </View>
                                 <Text style={styles.verifyLabel}>
                                     {user?.verification_status === 'approved' ? 'Identity Verified' : 'Verification Pending'}
@@ -293,7 +295,7 @@ export default function EditProfileScreen() {
                             {user?.gender_verified && (
                                 <View style={styles.verifyRow}>
                                     <View style={styles.verifyIconWrap}>
-                                        <Text style={styles.verifyIcon}>✓</Text>
+                                        <Feather name="check" size={11} color="#FFF" />
                                     </View>
                                     <Text style={styles.verifyLabel}>Gender Verified</Text>
                                 </View>
@@ -393,7 +395,7 @@ export default function EditProfileScreen() {
                                 <Text style={[styles.langItemText, item === language && styles.langItemTextActive]}>
                                     {item}
                                 </Text>
-                                {item === language && <Text style={styles.langCheck}>✓</Text>}
+                                {item === language && <Feather name="check" size={16} color="#BEA3D8" />}
                             </TouchableOpacity>
                         )}
                     />

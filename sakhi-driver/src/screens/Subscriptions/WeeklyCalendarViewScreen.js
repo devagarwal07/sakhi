@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
@@ -87,7 +88,7 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
 
         {(dayData.rides ?? []).length === 0 ? (
           <View style={styles.emptyDay}>
-            <Text style={styles.emptyEmoji}>🏖</Text>
+            <Feather name="sun" size={40} color="#BEA3D8" />
             <Text style={styles.emptyText}>{t('subscription.noRidesScheduled')}</Text>
           </View>
         ) : (
@@ -112,7 +113,7 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
         {/* Summary strip */}
         <View style={styles.summaryStrip}>
           <Text style={styles.summaryText}>
-            📅  {t('subscription.totalRidesThisWeek', { count: week.reduce((acc, d) => acc + (d.rides?.length ?? 0), 0) })}
+            <Feather name="calendar" size={13} color="#BEA3D8" />  {t('subscription.totalRidesThisWeek', { count: week.reduce((acc, d) => acc + (d.rides?.length ?? 0), 0) })}
           </Text>
         </View>
       </ScrollView>

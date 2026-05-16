@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getEmergencyContacts } from '../../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 
 export default function SafetyTab({ isTab = true }) {
     const router = useRouter();
@@ -43,7 +44,7 @@ export default function SafetyTab({ isTab = true }) {
                 <View style={styles.header}>
                     {!isTab ? (
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.iconBtn} /* Spacer for centering */ />
@@ -129,14 +130,14 @@ export default function SafetyTab({ isTab = true }) {
                                         </View>
                                     </View>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={24} color="#CBD5E1" />
                             </TouchableOpacity>
 
                             <View style={styles.row}>
                                 <View style={styles.rowTextCol}>
                                     <View style={styles.lockedRow}>
                                         <Text style={styles.rowTitle}>Sakhi Safety Team</Text>
-                                        <Text style={styles.padlockIcon}>🔒</Text>
+                                        <Feather name="lock" size={10} color="#6B7280" />
                                     </View>
                                 </View>
                                 <View style={styles.greenBadge}>

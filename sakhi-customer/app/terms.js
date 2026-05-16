@@ -4,6 +4,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 // ─── Policy Content ───────────────────────────────────────────────────────────
 
@@ -110,7 +111,7 @@ export default function TermsScreen() {
                         onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <Text style={styles.headerIcon}>←</Text>
+                        <Feather name="arrow-left" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Terms & Privacy</Text>
                     <View style={styles.iconBtn} />

@@ -72,16 +72,16 @@ function SubscriptionCountdown({ expiry }) {
   const { t } = useTranslation();
   let accent, bgColor, label, icon;
   if (msLeft <= 0) {
-    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '🔴';
+    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = <Feather name="alert-circle" size={16} color={accent} />;
     label = t('home.subscriptionExpired');
   } else if (daysLeft < 1) {
-    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = '⚠️';
+    accent = '#EF4444'; bgColor = '#FFF2F0'; icon = <Feather name="alert-triangle" size={16} color={accent} />;
     label = t('home.expiresIn', { hours: hoursLeft, mins: minsLeft });
   } else if (daysLeft <= 2) {
-    accent = '#F59E0B'; bgColor = '#FFFBEB'; icon = '⚠️';
+    accent = '#F59E0B'; bgColor = '#FFFBEB'; icon = <Feather name="alert-triangle" size={16} color={accent} />;
     label = t('home.daysRemaining', { days: daysLeft, hours: hoursLeft });
   } else {
-    accent = '#10B981'; bgColor = '#F0FDF4'; icon = '📅';
+    accent = '#10B981'; bgColor = '#F0FDF4'; icon = <Feather name="calendar" size={16} color={accent} />;
     label = t('home.daysLeft', { days: daysLeft });
   }
 
@@ -91,7 +91,7 @@ function SubscriptionCountdown({ expiry }) {
     <View style={[sub.wrap, { backgroundColor: bgColor, borderColor: accent + '33' }]}>
       {/* Label row */}
       <View style={sub.labelRow}>
-        <Text style={sub.icon}>{icon}</Text>
+        {icon}
         <View style={sub.textStack}>
           <Text style={sub.caption}>{t('home.weeklyPlan')}</Text>
           <Text style={[sub.label, { color: accent }]}>{label}</Text>
@@ -578,7 +578,7 @@ export default function DriverHomeScreen({ navigation }) {
               activeOpacity={0.85}
             >
               <Text style={[s.earningsPillLabel, (subscriptionExpired || subscriptionExpiring) && { color: subscriptionExpired ? '#991B1B' : '#92400E' }]}>
-                {subscriptionExpired ? '⚠️ Expired — ' : subscriptionExpiring ? `⏰ ${daysLeft}d left · ` : `${daysLeft}d · `}
+                {subscriptionExpired ? <Text><Feather name="alert-circle" size={11} color="#991B1B" /> Expired — </Text> : subscriptionExpiring ? <Text><Feather name="clock" size={11} color="#92400E" /> {daysLeft}d left · </Text> : `${daysLeft}d · `}
               </Text>
               <Text style={[s.earningsPillValue, subscriptionExpired && { color: '#DC2626' }, subscriptionExpiring && { color: '#B45309' }]}>
                 {subscriptionExpired ? 'Renew Now' : `₹${earnings.today}`}
@@ -594,9 +594,12 @@ export default function DriverHomeScreen({ navigation }) {
           s.subAlertBanner,
           subAlert.type === 'cancelled' ? s.subAlertBannerRed : s.subAlertBannerAmber,
         ]}>
-          <Text style={s.subAlertIcon}>
-            {subAlert.type === 'cancelled' ? '❌' : '⏸️'}
-          </Text>
+          <Feather
+            name={subAlert.type === 'cancelled' ? 'x-circle' : 'pause-circle'}
+            size={24}
+            color={subAlert.type === 'cancelled' ? '#991B1B' : '#92400E'}
+            style={s.subAlertIcon}
+          />
           <View style={s.subAlertTextCol}>
             <Text style={[
               s.subAlertTitle,

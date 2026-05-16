@@ -6,6 +6,7 @@ import client from '../../api/client';
 import ScreenHeader from '../../components/ScreenHeader';
 import SakhiModal from '../../components/SakhiModal';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -195,7 +196,7 @@ export default function NotificationSettingsScreen({ navigation }) {
                   <Text style={tr.sub}>Critical safety alerts — cannot be disabled</Text>
                 </View>
                 <View style={s.padlockBadge}>
-                  <Text style={s.padlockIcon}>🔒</Text>
+                  <Feather name="lock" size={14} color={DARK} />
                 </View>
               </View>
             </View>

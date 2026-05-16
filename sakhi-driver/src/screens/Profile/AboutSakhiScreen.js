@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
 
@@ -117,10 +117,10 @@ const mc = StyleSheet.create({
 
 // ─── FEATURE ROW ───────────────────────────────────────────────────────────────
 const FEATURES = [
-  { emoji: '🛡️', label: 'Verified women-only platform'       },
-  { emoji: '💰', label: 'Transparent commission structure'    },
-  { emoji: '📋', label: 'Subscription ride guarantees'        },
-  { emoji: '🆘', label: '24/7 safety support'                 },
+  { iconName: 'shield', label: 'Verified women-only platform'       },
+  { iconName: 'dollar-sign', label: 'Transparent commission structure'    },
+  { iconName: 'clipboard', label: 'Subscription ride guarantees'        },
+  { iconName: 'life-buoy', label: '24/7 safety support'                 },
 ];
 
 function FeaturesCard() {
@@ -132,7 +132,7 @@ function FeaturesCard() {
           <View key={f.label}>
             <View style={feat.row}>
               <View style={feat.iconBox}>
-                <Text style={feat.emoji}>{f.emoji}</Text>
+                <Feather name={f.iconName} size={20} color="#BEA3D8" />
               </View>
               <Text style={feat.label}>{f.label}</Text>
             </View>

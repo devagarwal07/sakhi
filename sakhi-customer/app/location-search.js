@@ -9,6 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { getRideHistory } from '../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -192,7 +193,7 @@ export default function LocationSearchScreen() {
             {/* Header */}
             <View style={[styles.header, { paddingTop: headerPaddingTop, height: headerHeight }]}>
                 <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="arrow-left" size={18} color="#BEA3D8" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Plan Your Ride</Text>
             </View>
@@ -247,7 +248,9 @@ export default function LocationSearchScreen() {
                                     }}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.addStopIcon}>{showStop ? '✕' : '+'}</Text>
+                                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Feather name={showStop ? "x" : "plus"} size={14} color="#7C3AED" />
+                                    </View>
                                     <Text style={styles.addStopText}>{showStop ? 'Remove Stop' : 'Add Stop'}</Text>
                                 </TouchableOpacity>
 
@@ -344,7 +347,7 @@ export default function LocationSearchScreen() {
                     {/* No results */}
                     {isSearching && !searching && results.length === 0 && (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyIcon}>🔍</Text>
+                            <Feather name="search" size={32} color="#94A3B8" style={{ marginBottom: 4 }} />
                             <Text style={styles.emptyText}>No results found for "{(activeInput === 'pickup' ? pickupQuery : dropoffQuery)}"</Text>
                             <Text style={styles.emptySubText}>Try a different search term</Text>
                         </View>
@@ -353,7 +356,7 @@ export default function LocationSearchScreen() {
                     {/* No recent destinations */}
                     {!isSearching && !loadingRecent && recentDestinations.length === 0 && (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyIcon}>🗺️</Text>
+                            <Feather name="map" size={32} color="#94A3B8" style={{ marginBottom: 4 }} />
                             <Text style={styles.emptyText}>No recent destinations yet</Text>
                             <Text style={styles.emptySubText}>Your past drop-offs will appear here</Text>
                         </View>
@@ -387,7 +390,7 @@ export default function LocationSearchScreen() {
                                             {item.structured_formatting?.secondary_text || item.secondary}
                                         </Text>
                                     </View>
-                                    <Text style={styles.recentArrow}>→</Text>
+                                    <Feather name="arrow-right" size={16} color="#BEA3D8" />
                                 </Pressable>
                                 {index < displayList.length - 1 && (
                                     <View style={styles.divider} />

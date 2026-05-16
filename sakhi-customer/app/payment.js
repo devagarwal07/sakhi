@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
@@ -56,7 +57,7 @@ export default function PaymentMethodsScreen() {
                 <View style={styles.header}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} activeOpacity={0.7}>
-                            <Text style={styles.headerIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Payment Methods</Text>
                     </View>
@@ -74,7 +75,7 @@ export default function PaymentMethodsScreen() {
                         <Text style={styles.infoIcon}>ⓘ</Text>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.infoBold}>Payment Rules</Text>
-                            <Text style={styles.infoText}>🛺  On-Demand Rides  →  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}📅  Subscriptions  →  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
+                            <Text style={styles.infoText}><Feather name="truck" size={13} color="#64748B" />  On-Demand Rides  <Feather name="arrow-right" size={13} color="#64748B" />  <Text style={{ fontWeight: '700' }}>Cash</Text> (pay driver directly){`\n`}<Feather name="calendar" size={13} color="#64748B" />  Subscriptions  <Feather name="arrow-right" size={13} color="#64748B" />  <Text style={{ fontWeight: '700' }}>UPI only</Text></Text>
                         </View>
                     </View>
 
@@ -86,7 +87,7 @@ export default function PaymentMethodsScreen() {
                             <View key={id} style={styles.upiCard}>
                                 <TouchableOpacity style={styles.upiLeft} onPress={() => setSelectedMethod(id)} activeOpacity={0.8}>
                                     <View style={[styles.upiIconBg, selectedMethod === id && { backgroundColor: '#EDE9FE' }]}>
-                                        <Text style={styles.upiIcon}>📱</Text>
+                                        <Feather name="smartphone" size={18} color="#BEA3D8" />
                                     </View>
                                     <View>
                                         <Text style={styles.upiID}>{id}</Text>
@@ -103,10 +104,10 @@ export default function PaymentMethodsScreen() {
                                         message: 'UPI editing coming soon.',
                                         buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                                     })}>
-                                        <Text style={styles.actionIcon}>✎</Text>
+                                        <Feather name="edit-2" size={16} color="#94A3B8" />
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteUpi(id)}>
-                                        <Text style={styles.actionIcon}>🗑</Text>
+                                        <Feather name="trash-2" size={16} color="#94A3B8" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -127,7 +128,7 @@ export default function PaymentMethodsScreen() {
                         <TouchableOpacity style={[styles.cashCard, selectedMethod === 'cash' && styles.cashCardSelected]} onPress={() => setSelectedMethod('cash')} activeOpacity={0.8}>
                             <View style={styles.cashLeft}>
                                 <View style={styles.cashIconBg}>
-                                    <Text style={styles.cashIcon}>💵</Text>
+                                    <Feather name="dollar-sign" size={20} color="#22C55E" />
                                 </View>
                                 <View style={styles.cashDetails}>
                                     <Text style={styles.cashTitle}>Cash — Pay Driver Directly</Text>
@@ -136,7 +137,7 @@ export default function PaymentMethodsScreen() {
                             </View>
                             {selectedMethod === 'cash' && (
                                 <View style={styles.checkIconWrapper}>
-                                    <Text style={styles.checkIcon}>✓</Text>
+                                    <Feather name="check" size={12} color="#BEA3D8" />
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -145,10 +146,10 @@ export default function PaymentMethodsScreen() {
                     {/* Transaction History Link */}
                     <TouchableOpacity style={styles.historyBtn} activeOpacity={0.7} onPress={() => router.push('/wallet')}>
                         <View style={styles.historyLeft}>
-                            <Text style={styles.historyIcon}>⏱</Text>
+                            <Feather name="clock" size={18} color="#94A3B8" />
                             <Text style={styles.historyText}>Transaction History</Text>
                         </View>
-                        <Text style={styles.chevron}>›</Text>
+                        <Feather name="chevron-right" size={24} color="#94A3B8" />
                     </TouchableOpacity>
 
                 </ScrollView>
@@ -156,7 +157,7 @@ export default function PaymentMethodsScreen() {
                 {/* Footer: Security */}
                 <View style={[styles.footerWrap, { height: footerHeight, paddingBottom: footerPaddingBottom }]}>
                     <View style={styles.securityFooter}>
-                        <Text style={styles.lockIcon}>🔒</Text>
+                        <Feather name="lock" size={10} color="#94A3B8" />
                         <Text style={styles.securityText}>
                             ALL TRANSACTIONS SECURED BY 256-BIT{'\n'}ENCRYPTION
                         </Text>

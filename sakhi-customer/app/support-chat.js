@@ -8,18 +8,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { sendSupportMessage, getSupportHistory, getSupportSessions } from '../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT, KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ── Quick suggestion chips ────────────────────────────────────────────────────
 const QUICK_CHIPS = [
-    { label: '🚗 Cancel Ride', text: 'How do I cancel my ride?' },
-    { label: '💳 Refund', text: 'I need a refund for my last ride' },
-    { label: '📦 Lost Item', text: 'I forgot something in the auto' },
-    { label: '💳 Payment Issue', text: 'My payment failed but I was charged' },
-    { label: '🔄 Subscription', text: 'Help me with my subscription plan' },
-    { label: '👤 Account', text: 'I need help with my account' },
+    { label: 'Cancel Ride', icon: 'x-circle', text: 'How do I cancel my ride?' },
+    { label: 'Refund', icon: 'credit-card', text: 'I need a refund for my last ride' },
+    { label: 'Lost Item', icon: 'package', text: 'I forgot something in the auto' },
+    { label: 'Payment Issue', icon: 'alert-circle', text: 'My payment failed but I was charged' },
+    { label: 'Subscription', icon: 'refresh-cw', text: 'Help me with my subscription plan' },
+    { label: 'Account', icon: 'user', text: 'I need help with my account' },
 ];
 
 // ── Intro messages shown before session starts ────────────────────────────────
@@ -116,7 +117,7 @@ const MessageBubble = React.memo(({ item, prevSender }) => {
                 </View>
                 <Text style={[styles.timestamp, isUser ? styles.timestampRight : styles.timestampLeft]}>
                     {formatTime(item.created_at)}
-                    {isUser && ' ✓'}
+                    {isUser && <Feather name="check" size={10} color="#F5F0FF" style={{ marginLeft: 2 }} />}
                 </Text>
             </View>
         </Animated.View>
@@ -247,7 +248,7 @@ export default function SupportChatScreen() {
                     onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/')}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 <View style={styles.headerCenter}>
@@ -264,7 +265,7 @@ export default function SupportChatScreen() {
                 </View>
 
                 <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/complaint')}>
-                    <Text style={styles.menuIcon}>⋮</Text>
+                    <Feather name="more-vertical" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -300,7 +301,9 @@ export default function SupportChatScreen() {
                                     onPress={() => handleSend(item.text)}
                                     activeOpacity={0.75}
                                 >
-                                    <Text style={styles.chipText}>{item.label}</Text>
+                                    <Text style={styles.chipText}>
+                                        <Feather name={item.icon} size={13} color="#6B21A8" />{' '}{item.label}
+                                    </Text>
                                 </TouchableOpacity>
                             )}
                         />
@@ -332,7 +335,7 @@ export default function SupportChatScreen() {
                     >
                         {sending
                             ? <ActivityIndicator size="small" color="#FFFFFF" />
-                            : <Text style={styles.sendIcon}>↑</Text>
+                            : <Feather name="arrow-up" size={20} color="#FFFFFF" />
                         }
                     </TouchableOpacity>
                 </View>

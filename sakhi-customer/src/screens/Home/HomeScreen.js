@@ -9,6 +9,7 @@ import * as Location from 'expo-location';
 import { StatusBar } from 'react-native';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
@@ -191,7 +192,7 @@ export default function HomeScreen() {
                 <View style={[styles.mapOverlay, { top: mapOverlayTop }]}>
                     {/* Hamburger */}
                     <TouchableOpacity style={styles.menuBtn} onPress={() => router.push('/sidebar')}>
-                        <Text style={styles.menuIcon}>☰</Text>
+                        <Feather name="menu" size={20} color="#BEA3D8" />
                     </TouchableOpacity>
 
                     {/* Search Bar */}
@@ -215,9 +216,8 @@ export default function HomeScreen() {
                         </View>
                     </TouchableOpacity>
 
-                    {/* Profile avatar */}
                     <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/(tabs)/profile')}>
-                        <Text style={styles.avatarEmoji}>👤</Text>
+                        <Feather name="user" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                 </View>
 

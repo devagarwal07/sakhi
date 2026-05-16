@@ -4,6 +4,7 @@ import {
   TextInput, Image, KeyboardAvoidingView,
   Modal, FlatList, Pressable, ActivityIndicator,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -180,11 +181,11 @@ export default function EditProfileScreen({ navigation }) {
                 <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
               ) : (
                 <View style={styles.avatarImagePlaceholder}>
-                  <Text style={{ fontSize: 40 }}>👩🏽</Text>
+                  <Feather name="user" size={40} color="#BEA3D8" />
                 </View>
               )}
               <View style={styles.avatarEditBtn}>
-                <Text style={styles.avatarEditIcon}>📷</Text>
+                <Feather name="camera" size={14} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
             <Text style={styles.avatarHint}>Tap to change photo</Text>
@@ -245,7 +246,7 @@ export default function EditProfileScreen({ navigation }) {
                 onPress={openDobPicker}
               >
                 <Text style={styles.inputText}>{formattedDob}</Text>
-                <Text style={styles.inputEndIcon}>📅</Text>
+                <Feather name="calendar" size={18} color="#BEA3D8" />
               </TouchableOpacity>
             </View>
 

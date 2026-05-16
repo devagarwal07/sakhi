@@ -6,6 +6,7 @@ import {
     ScrollView, Platform
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getRideHistory } from '../../src/api/endpoints';
 import { format, parseISO, isWithinInterval, startOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
@@ -127,7 +128,7 @@ export default function RideHistoryScreen() {
                         <Text style={styles.typeText}>
                             {item.vehicle_type ? item.vehicle_type.replace('_', ' ') : 'Auto'}
                         </Text>
-                        <Text style={styles.chevron}>›</Text>
+                        <Feather name="chevron-right" size={14} color="#CCC3D8" />
                     </View>
                 </View>
             </Pressable>
@@ -172,7 +173,7 @@ export default function RideHistoryScreen() {
                 <View style={styles.header}>
                     {showBack ? (
                         <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/profile')} style={styles.backBtn} activeOpacity={0.7}>
-                            <Text style={styles.backArrow}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.backBtn} /* Left Spacer if no back btn */ />

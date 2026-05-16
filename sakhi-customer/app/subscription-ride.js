@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { format, addDays } from 'date-fns';
+import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const { width } = Dimensions.get('window');
@@ -125,7 +126,7 @@ export default function SubscriptionRideScreen() {
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#1E1B2E" />
                 </TouchableOpacity>
 
                 <View style={styles.headerTitles}>
@@ -177,7 +178,7 @@ export default function SubscriptionRideScreen() {
                             <Text style={styles.configSub}>Subscription begins from</Text>
                         </View>
                         <TouchableOpacity style={styles.pillBtn} onPress={() => setActivePicker('date')} activeOpacity={0.7}>
-                            <Text style={styles.pillIcon}>📅</Text>
+                            <Feather name="calendar" size={14} color="#BEA3D8" />
                             <Text style={styles.pillValue}>{sub.startDate || 'Select Date'}</Text>
                         </TouchableOpacity>
                     </View>
@@ -189,7 +190,7 @@ export default function SubscriptionRideScreen() {
                             <Text style={styles.configSub}>Daily departure time</Text>
                         </View>
                         <TouchableOpacity style={styles.pillBtn} onPress={() => setActivePicker('morningTime')} activeOpacity={0.7}>
-                            <Text style={styles.pillIcon}>🕒</Text>
+                            <Feather name="clock" size={14} color="#BEA3D8" />
                             <Text style={styles.pillValue}>{sub.morningTime || 'Select Time'}</Text>
                         </TouchableOpacity>
                     </View>
@@ -204,7 +205,7 @@ export default function SubscriptionRideScreen() {
                             style={[styles.checkbox, sub.isTwoWay && styles.checkboxActive]}
                             onPress={() => updateSubscription({ isTwoWay: !sub.isTwoWay })}
                         >
-                            {sub.isTwoWay && <Text style={styles.checkboxTick}>✓</Text>}
+                            {sub.isTwoWay && <Feather name="check" size={12} color="#FFFFFF" style={{ fontWeight: 'bold' }} />}
                         </TouchableOpacity>
                     </View>
 
@@ -216,7 +217,7 @@ export default function SubscriptionRideScreen() {
                                 <Text style={styles.configSub}>Office to Home departure</Text>
                             </View>
                             <TouchableOpacity style={styles.pillBtn} onPress={() => setActivePicker('returnTime')} activeOpacity={0.7}>
-                                <Text style={styles.pillIcon}>🕒</Text>
+                                <Feather name="clock" size={14} color="#BEA3D8" />
                                 <Text style={styles.pillValue}>{sub.returnTime || 'Select Time'}</Text>
                             </TouchableOpacity>
                         </View>
@@ -258,7 +259,7 @@ export default function SubscriptionRideScreen() {
                 </TouchableOpacity>
                 {/* 30-min no-driver notice */}
                 <View style={styles.noticeBanner}>
-                    <Text style={styles.noticeIcon}>ℹ️</Text>
+                    <Feather name="info" size={14} color="#059669" />
                     <Text style={styles.noticeText}>
                         We will notify you before 30 mins if there isn't a driver.
                     </Text>

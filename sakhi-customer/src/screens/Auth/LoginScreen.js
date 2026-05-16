@@ -17,6 +17,7 @@ import {
     StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { API_BASE_URL } from '../../utils/constants';
@@ -147,7 +148,7 @@ export default function LoginScreen() {
                         <View style={styles.countryCodeArea}>
                             <Text style={styles.flagText}>🇮🇳</Text>
                             <Text style={styles.countryCodeText}>+91</Text>
-                            <Text style={styles.dropdownArrow}>▾</Text>
+                            <Feather name="chevron-down" size={14} color="#94A3B8" style={{ marginLeft: 2 }} />
                         </View>
                         {/* Vertical divider */}
                         <View style={styles.verticalDivider} />
@@ -178,7 +179,7 @@ export default function LoginScreen() {
                             ) : (
                                 <View style={styles.ctaInner}>
                                     <Text style={styles.ctaButtonText}>Get OTP</Text>
-                                    <Text style={styles.ctaArrow}>→</Text>
+                                    <Feather name="arrow-right" size={20} color="#FFFFFF" />
                                 </View>
                             )}
                         </TouchableOpacity>

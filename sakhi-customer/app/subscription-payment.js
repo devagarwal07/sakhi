@@ -11,6 +11,7 @@ import SakhiModal from '../src/components/SakhiModal';
 import { createSubscriptionOrder, verifyPayment } from '../src/api/endpoints';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import RazorpayCheckout from 'react-native-razorpay';
+import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '';
@@ -149,7 +150,7 @@ export default function SubscriptionPaymentScreen() {
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#1E1B2E" />
                 </TouchableOpacity>
 
                 <View style={styles.headerTitles}>
@@ -211,7 +212,7 @@ export default function SubscriptionPaymentScreen() {
 
                 {/* Policy Note */}
                 <View style={styles.policyNote}>
-                    <Text style={styles.policyIcon}>ⓘ</Text>
+                    <Feather name="info" size={16} color="#BEA3D8" style={{ marginTop: 2 }} />
                     <Text style={styles.policyText}>
                         Subscriptions cannot be cancelled within 7 days of starting your plan.
                     </Text>
@@ -228,11 +229,11 @@ export default function SubscriptionPaymentScreen() {
                     <Text style={styles.upiStripLabel}>Pay directly using</Text>
                     <View style={styles.upiAppRow}>
                         {[
-                            { label: 'GPay', emoji: '🟢' },
-                            { label: 'PhonePe', emoji: '🟣' },
-                            { label: 'Paytm', emoji: '🔵' },
-                            { label: 'BHIM', emoji: '🟠' },
-                            { label: 'UPI QR', emoji: '📷' },
+                            { label: 'GPay', icon: 'smartphone' },
+                            { label: 'PhonePe', icon: 'smartphone' },
+                            { label: 'Paytm', icon: 'smartphone' },
+                            { label: 'BHIM', icon: 'smartphone' },
+                            { label: 'UPI QR', icon: 'camera' },
                         ].map((app) => (
                             <TouchableOpacity
                                 key={app.label}
@@ -241,7 +242,7 @@ export default function SubscriptionPaymentScreen() {
                                 disabled={loading}
                                 activeOpacity={0.75}
                             >
-                                <Text style={styles.upiAppEmoji}>{app.emoji}</Text>
+                                <Feather name={app.icon} size={20} color="#BEA3D8" style={{ marginBottom: 2 }} />
                                 <Text style={styles.upiAppLabel}>{app.label}</Text>
                             </TouchableOpacity>
                         ))}
@@ -261,7 +262,10 @@ export default function SubscriptionPaymentScreen() {
                     }
                 </TouchableOpacity>
 
-                <Text style={styles.securedNote}>🔒 Secured by Razorpay · 256-bit encryption</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: 4 }}>
+                    <Feather name="lock" size={11} color="#94A3B8" />
+                    <Text style={[styles.securedNote, { paddingBottom: 0 }]}>Secured by Razorpay · 256-bit encryption</Text>
+                </View>
             </View>
 
             <SakhiModal config={modal} onClose={() => setModal(null)} />

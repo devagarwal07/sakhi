@@ -10,6 +10,7 @@ import { getSubscriptionDetails } from '../src/api/endpoints';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
 import apiClient from '../src/api/client';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -85,7 +86,10 @@ export default function SubscriptionDetailsScreen() {
             <SafeAreaView style={[styles.container, styles.centered]}>
                 <Text style={styles.emptyText}>Subscription not found.</Text>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.smallBack}>
-                    <Text style={styles.smallBackText}>← Go Back</Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                        <Feather name="arrow-left" size={14} color="#BEA3D8" />
+                        <Text style={styles.smallBackText}>Go Back</Text>
+                    </View>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -108,7 +112,7 @@ export default function SubscriptionDetailsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={20} color="#BEA3D8" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Subscription</Text>
                 <View style={[styles.statusBadge, { backgroundColor: isActive ? '#dcfce7' : '#f3f4f6' }]}>
@@ -141,12 +145,12 @@ export default function SubscriptionDetailsScreen() {
                 {/* Plan stats row */}
                 <View style={styles.statsRow}>
                     {[
-                        { icon: '📅', label: 'Plan', value: `${sub.plan_days || '—'} days` },
-                        { icon: '🛺', label: 'Vehicle', value: sub.vehicle_type === 'auto' ? 'Auto' : 'Cab' },
-                        { icon: '🔄', label: 'Type', value: sub.is_two_way ? 'Two-Way' : 'One-Way' },
+                        { icon: 'calendar', label: 'Plan', value: `${sub.plan_days || '—'} days` },
+                        { icon: 'truck', label: 'Vehicle', value: sub.vehicle_type === 'auto' ? 'Auto' : 'Cab' },
+                        { icon: 'refresh-cw', label: 'Type', value: sub.is_two_way ? 'Two-Way' : 'One-Way' },
                     ].map((s, i) => (
                         <View key={i} style={styles.statCard}>
-                            <Text style={styles.statIcon}>{s.icon}</Text>
+                            <Feather name={s.icon} size={20} color="#1E1B2E" style={{ marginBottom: 4 }} />
                             <Text style={styles.statLabel}>{s.label}</Text>
                             <Text style={styles.statValue}>{s.value}</Text>
                         </View>
@@ -240,7 +244,10 @@ export default function SubscriptionDetailsScreen() {
                         <View style={styles.timingCard}>
                             {sub.pickup_time && (
                                 <View style={styles.timingRow}>
-                                    <Text style={styles.timingLabel}>🌅  Morning Pickup</Text>
+                                    <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+                                        <Feather name="sunrise" size={14} color="#BEA3D8" />
+                                        <Text style={styles.timingLabel}>Morning Pickup</Text>
+                                    </View>
                                     <View style={styles.timePill}>
                                         <Text style={styles.timePillText}>{sub.pickup_time}</Text>
                                     </View>
@@ -250,7 +257,10 @@ export default function SubscriptionDetailsScreen() {
                                 <>
                                     <View style={styles.timingDivider} />
                                     <View style={styles.timingRow}>
-                                        <Text style={styles.timingLabel}>🌆  Evening Return</Text>
+                                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+                                            <Feather name="sunset" size={14} color="#BEA3D8" />
+                                            <Text style={styles.timingLabel}>Evening Return</Text>
+                                        </View>
                                         <View style={styles.timePill}>
                                             <Text style={styles.timePillText}>{sub.return_time}</Text>
                                         </View>

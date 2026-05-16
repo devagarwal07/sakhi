@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 export default function PaymentSuccessScreen() {
@@ -29,7 +30,7 @@ export default function PaymentSuccessScreen() {
             {/* Header */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
                 <TouchableOpacity onPress={() => router.replace('/(tabs)/subscriptions')} style={styles.backBtn}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuBtn} onPress={() => setModal({
                     icon: 'ⓘ',
@@ -48,7 +49,7 @@ export default function PaymentSuccessScreen() {
                         { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
                     ]
                 })}>
-                    <Text style={styles.menuIcon}>⋮</Text>
+                    <Feather name="more-vertical" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
             </View>
 
@@ -58,7 +59,7 @@ export default function PaymentSuccessScreen() {
                     <View style={styles.successBlur} />
                     <View style={styles.successCircle}>
                         <View style={styles.successInner}>
-                            <Text style={styles.tickIcon}>✓</Text>
+                            <Feather name="check" size={32} color="#10B981" />
                         </View>
                     </View>
                 </View>
@@ -86,11 +87,11 @@ export default function PaymentSuccessScreen() {
                     <View style={styles.methodRow}>
                         <View style={styles.methodLeft}>
                             <View style={styles.payIconBox}>
-                                <Text style={styles.payIcon}>🏦</Text>
+                                <Feather name="credit-card" size={12} color="#BEA3D8" />
                             </View>
                             <Text style={styles.methodText}>Paid via UPI</Text>
                         </View>
-                        <Text style={styles.verifiedIcon}>✓</Text>
+                        <Feather name="check" size={14} color="#BEA3D8" />
                     </View>
                 </View>
 
@@ -106,7 +107,7 @@ export default function PaymentSuccessScreen() {
                         message: 'Your receipt has been saved to Downloads.',
                         buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                     })}>
-                        <Text style={styles.receiptIcon}>↓</Text>
+                        <Feather name="download" size={14} color="#BEA3D8" />
                         <Text style={styles.receiptText}>Download Receipt</Text>
                     </TouchableOpacity>
                 </View>

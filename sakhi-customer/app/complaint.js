@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
+import { Feather } from '@expo/vector-icons';
 import { getRideHistory } from '../src/api/endpoints';
 
 export default function HelpSupportScreen() {
@@ -41,7 +42,7 @@ export default function HelpSupportScreen() {
             buttons: [{ text: 'OK', onPress: () => setModal(null) }]
         })}>
             <View style={[styles.quickIconBox, isEmergency && styles.quickIconBoxEmergency]}>
-                <Text style={[styles.quickIcon, isEmergency && styles.quickIconEmergency]}>{icon}</Text>
+                <Feather name={icon} size={20} color={isEmergency ? '#BA1A1A' : '#BEA3D8'} />
             </View>
             <Text style={styles.quickLabel}>{label}</Text>
         </TouchableOpacity>
@@ -80,7 +81,7 @@ export default function HelpSupportScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                        <Text style={styles.headerIcon}>←</Text>
+                        <Feather name="arrow-left" size={24} color="#BEA3D8" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Help & Support</Text>
                     <View style={styles.iconBtn} /> 
@@ -91,7 +92,7 @@ export default function HelpSupportScreen() {
                     
                     {/* Search Bar */}
                     <View style={styles.searchContainer}>
-                        <Text style={styles.searchIcon}>🔍</Text>
+                        <Feather name="search" size={18} color="#A78BFA" style={{ marginRight: 12 }} />
                         <TextInput 
                             style={styles.searchInput}
                             placeholder="Search for help..."
@@ -106,12 +107,12 @@ export default function HelpSupportScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionHeading}>QUICK HELP</Text>
                         <View style={styles.quickGridRow}>
-                            <QuickHelpCard icon="🚙" label="My Ride Issue" category="ride" />
-                            <QuickHelpCard icon="₹" label="Billing & Payments" category="billing" />
+                            <QuickHelpCard icon="activity" label="My Ride Issue" category="ride" />
+                            <QuickHelpCard icon="credit-card" label="Billing & Payments" category="billing" />
                         </View>
                         <View style={styles.quickGridRow}>
-                            <QuickHelpCard icon="🛡️" label="Safety Concern" category="safety" isEmergency={true} />
-                            <QuickHelpCard icon="🔁" label="Subscription Help" category="subscription" />
+                            <QuickHelpCard icon="shield" label="Safety Concern" category="safety" isEmergency={true} />
+                            <QuickHelpCard icon="refresh-cw" label="Subscription Help" category="subscription" />
                         </View>
                     </View>
 
@@ -148,7 +149,7 @@ export default function HelpSupportScreen() {
                             {/* Chat Row → Navigates to in-app chatbot */}
                             <TouchableOpacity style={[styles.contactRow, styles.contactRowChat]} activeOpacity={0.7} onPress={() => router.push('/support-chat')}>
                                 <View style={styles.contactRowLeft}>
-                                    <Text style={styles.contactIcon}>💬</Text>
+                                    <Feather name="message-circle" size={20} color="#A78BFA" />
                                     <View style={styles.contactTextCol}>
                                         <Text style={[styles.contactLabel, { color: '#6B21A8' }]}>Chat with Sakhi Bot</Text>
                                         <Text style={styles.contactSubText}>Instant answers, 24/7</Text>
@@ -162,22 +163,22 @@ export default function HelpSupportScreen() {
                             {/* Call Row */}
                             <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('tel:18001234567')}>
                                 <View style={styles.contactRowLeft}>
-                                    <Text style={styles.contactIcon}>📞</Text>
+                                    <Feather name="phone" size={20} color="#A78BFA" />
                                     <View style={styles.contactTextCol}>
                                         <Text style={styles.contactLabel}>Call Support</Text>
                                         <Text style={styles.contactSubText}>Mon-Sun, 9AM-9PM</Text>
                                     </View>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={22} color="#CBD5E1" />
                             </TouchableOpacity>
 
                             {/* Email Row */}
                             <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:support@sakhi.app?subject=Help Request')}>
                                 <View style={styles.contactRowLeft}>
-                                    <Text style={styles.contactIcon}>✉️</Text>
+                                    <Feather name="mail" size={20} color="#A78BFA" />
                                     <Text style={styles.contactLabel}>Email Us</Text>
                                 </View>
-                                <Text style={styles.chevron}>›</Text>
+                                <Feather name="chevron-right" size={22} color="#CBD5E1" />
                             </TouchableOpacity>
 
                         </View>

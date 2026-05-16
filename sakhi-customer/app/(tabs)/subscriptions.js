@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../../src/context/RideContext';
 import SakhiModal from '../../src/components/SakhiModal';
 import { cancelSubscription, toggleSubscriptionPause } from '../../src/api/endpoints';
+import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../src/utils/androidUtils';
 
 // ── Calendar helpers ──────────────────────────────────────────────────────────
@@ -212,13 +213,13 @@ export default function SubscriptionsDashboard() {
                 <View style={s.headerLeft}>
                     {(router.canGoBack() || showBack) && (
                         <TouchableOpacity style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
-                            <Text style={s.backIcon}>←</Text>
+                            <Feather name="arrow-left" size={24} color="#BEA3D8" />
                         </TouchableOpacity>
                     )}
                     <Text style={s.title}>My Subscription</Text>
                 </View>
                 <TouchableOpacity style={s.menuBtn} onPress={() => router.push('/subscription-plans')}>
-                    <Text style={s.menuIcon}>+</Text>
+                    <Feather name="plus" size={22} color="#BEA3D8" />
                 </TouchableOpacity>
             </View>
 
@@ -270,7 +271,7 @@ export default function SubscriptionsDashboard() {
                     </View>
 
                     <View style={s.paymentBadge}>
-                        <Text style={s.paymentBadgeText}>💳  Paid via UPI · Single rides are Cash only</Text>
+                        <Text style={s.paymentBadgeText}><Feather name="credit-card" size={12} color="#BEA3D8" />  Paid via UPI · Single rides are Cash only</Text>
                     </View>
                 </View>
 
@@ -291,7 +292,7 @@ export default function SubscriptionsDashboard() {
                 <View style={s.calendarCard}>
                     {/* Calendar header with month navigation */}
                     <View style={s.calendarHeader}>
-                        <Text style={s.calendarTitle}>📅  Upcoming Rides</Text>
+                        <Text style={s.calendarTitle}><Feather name="calendar" size={15} color="#1E1B2E" />  Upcoming Rides</Text>
                         <View style={s.calNavRow}>
                             <TouchableOpacity
                                 style={[s.calNavBtn, calMonthOffset === 0 && s.calNavBtnDisabled]}
@@ -303,7 +304,7 @@ export default function SubscriptionsDashboard() {
                                 }}
                                 activeOpacity={calMonthOffset === 0 ? 1 : 0.7}
                             >
-                                <Text style={[s.calNavIcon, calMonthOffset === 0 && s.calNavIconDisabled]}>‹</Text>
+                                <Feather name="chevron-left" size={20} color={calMonthOffset === 0 ? '#CBD5E1' : '#7C3AED'} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={s.calNavBtn}
@@ -313,7 +314,7 @@ export default function SubscriptionsDashboard() {
                                 }}
                                 activeOpacity={0.7}
                             >
-                                <Text style={s.calNavIcon}>›</Text>
+                                <Feather name="chevron-right" size={20} color="#7C3AED" />
                             </TouchableOpacity>
                         </View>
                     </View>
