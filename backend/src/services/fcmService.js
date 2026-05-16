@@ -248,24 +248,25 @@ async function sendRideRequest(driverId, { title, body, data = {} }) {
     if (!messaging) return { sent: false, reason: 'not_initialized' };
 
     const stringData = Object.fromEntries(
-      Object.entries({ type: 'RIDE_REQUEST', ...data }).map(([k, v]) => [k, String(v)])
+      Object.entries({ 
+        type: 'RIDE_REQUEST', 
+        notification_title: title,
+        notification_body: body,
+        ...data 
+      }).map(([k, v]) => [k, String(v)])
     );
 
     const message = {
       token,
-      notification: { title, body },
       data: stringData,
+      // ⚠️ Data-only message: The 'notification' key is purposefully OMITTED.
+      // This forces the message to be delivered directly to the React Native background task
+      // without the Android OS intercepting it to show a default Heads-Up banner.
+      // The background task uses Notifee to present a true full-screen intent.
 
-      // Android: MAX importance + HEADS_UP on the dedicated ride_requests channel
+      // Android: Set high priority for background data delivery
       android: {
         priority: 'high',
-        notification: {
-          channelId: 'ride_requests',
-          priority: 'max',
-          defaultSound: true,
-          defaultVibrateTimings: true,
-          visibility: 'public',
-        },
       },
 
       // iOS: time-sensitive interruption level for immediate delivery
@@ -273,9 +274,6 @@ async function sendRideRequest(driverId, { title, body, data = {} }) {
         headers: { 'apns-priority': '10' },
         payload: {
           aps: {
-            alert: { title, body },
-            sound: 'default',
-            badge: 1,
             'content-available': 1,
             'interruption-level': 'time-sensitive',
           },
