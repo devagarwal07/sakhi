@@ -1,8 +1,8 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-    Image, Platform
+    Image, Platform, Linking, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
@@ -10,12 +10,20 @@ import SakhiModal from '../../src/components/SakhiModal';
 import LogoutBottomSheet from '../../src/components/LogoutBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout } = useAuth();
     const [modal, setModal] = useState(null);
     const [showLogoutSheet, setShowLogoutSheet] = useState(false);
+    const [isDeleteRequested, setIsDeleteRequested] = useState(false);
+
+    useEffect(() => {
+        AsyncStorage.getItem('delete_requested').then(val => {
+            if (val === 'true') setIsDeleteRequested(true);
+        });
+    }, []);
 
     const handleLogout = async () => {
         await logout();
@@ -213,6 +221,52 @@ export default function ProfileScreen() {
                             />
                         </View>
                     </View>
+
+                    {/* Delete Account Button */}
+                    <TouchableOpacity 
+                        style={[styles.logoutCard, { marginBottom: 16 }]} 
+                        onPress={() => {
+                            if (isDeleteRequested) {
+                                setModal({
+                                    icon: '⏳',
+                                    title: 'Account Under Review',
+                                    message: 'Your request to delete this account is currently being processed by the Sakhi team.',
+                                    buttons: [
+                                        { text: 'OK', style: 'primary', onPress: () => setModal(null) }
+                                    ]
+                                });
+                                return;
+                            }
+                            setModal({
+                                icon: '🗑️',
+                                title: 'Delete Account',
+                                message: 'Are you sure you want to permanently delete your account? A request will be sent to the Sakhi support team.',
+                                buttons: [
+                                    { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
+                                    { 
+                                        text: 'Request Deletion', 
+                                        style: 'primary',
+                                        onPress: async () => {
+                                            setModal(null);
+                                            const subject = "Account Deletion Request";
+                                            const body = `Hello Sakhi Team,\n\nPlease delete my account. My details are:\nName: ${user?.name || 'User'}\nPhone: ${user?.phone || 'Unknown'}\n\nThank you.`;
+                                            await Linking.openURL(`mailto:support@sakhi.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                                            await AsyncStorage.setItem('delete_requested', 'true');
+                                            setIsDeleteRequested(true);
+                                        }
+                                    }
+                                ]
+                            });
+                        }} 
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.logoutIconBg}>
+                            <Feather name="trash-2" size={18} color="#BA1A1A" />
+                        </View>
+                        <Text style={styles.logoutText}>
+                            {isDeleteRequested ? "Account Deletion Requested" : "Delete Account"}
+                        </Text>
+                    </TouchableOpacity>
 
                     {/* Logout Button */}
                     <TouchableOpacity style={styles.logoutCard} onPress={() => setShowLogoutSheet(true)} activeOpacity={0.8}>

@@ -9,6 +9,7 @@ import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import SakhiDateRangePicker from '../../components/SakhiDateRangePicker';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ── Mini bar chart ───────────────────────────────────────────────────────────
 function BarChart({ bars = [], maxValue = 1, days = [], bestDayLabel }) {
@@ -224,6 +225,9 @@ export default function MyEarningsDashboardScreen({ navigation }) {
                   }}
                   activeOpacity={0.7}
                 >
+                  {p.value === 'custom' && (
+                    <Feather name="calendar" size={12} color={isActive ? Colors.primaryContainer : Colors.onSurfaceVariant} />
+                  )}
                   <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
                     {lbl}
                   </Text>

@@ -144,6 +144,8 @@ export default function SakhiModal({ config, onClose }) {
                                 <Feather name="play" size={26} color="#10B981" />
                             ) : icon === '⏸️' ? (
                                 <Feather name="pause" size={26} color="#F59E0B" />
+                            ) : icon === '⏳' ? (
+                                <Feather name="clock" size={26} color="#BEA3D8" />
                             ) : typeof icon === 'string' && !icon.match(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}\u{FE00}-\u{FE0F}]/u) ? (
                                 <Feather name={icon} size={26} color="#BEA3D8" />
                             ) : typeof icon === 'string' ? (
