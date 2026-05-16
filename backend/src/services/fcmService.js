@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 /**
  * FCM Push Notification Service — Production implementation.
@@ -22,7 +22,20 @@ function getMessaging() {
         logger.warn('fcmService — FIREBASE_SA_KEY not set; FCM disabled');
         return null;
       }
-      const serviceAccount = JSON.parse(raw);
+      
+      let serviceAccount;
+      try {
+        if (raw.trim().startsWith('{')) {
+          serviceAccount = JSON.parse(raw);
+        } else {
+          // Assume base64
+          serviceAccount = JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
+        }
+      } catch (parseErr) {
+        logger.error('fcmService — FIREBASE_SA_KEY parse failed.', { error: parseErr.message });
+        return null;
+      }
+      
       admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     }
     _messaging = admin.messaging();
@@ -289,4 +302,4 @@ async function sendRideRequest(driverId, { title, body, data = {} }) {
   }
 }
 
-module.exports = { sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };
+module.exports = { getMessaging, sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };

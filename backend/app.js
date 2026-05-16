@@ -123,7 +123,13 @@ app.get('/health', async (_req, res) => {
 
   // FCM init check
   try {
+    // Attempt lazy initialization if it hasn't been done yet
+    const fcmService = require('./src/services/fcmService');
     const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+       // Force init attempt without sending
+       const messaging = fcmService.getMessaging?.(); 
+    }
     health.fcm = admin.apps.length ? 'ready' : 'not_initialized';
     if (health.fcm === 'not_initialized') health.status = 'degraded';
   } catch {
