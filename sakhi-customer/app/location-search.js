@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ActivityIndicator, Pressable, Keyboard, Platform,
-    ScrollView,
+    ScrollView, Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -130,26 +130,79 @@ export default function LocationSearchScreen() {
         Keyboard.dismiss();
         try {
             let coords;
-            // If result came from our Mappls search, coords are inline
+            // If result came from our Mappls search, coords might be inline
             if (place._lat && place._lng) {
                 coords = { latitude: parseFloat(place._lat), longitude: parseFloat(place._lng) };
             } else if (place.lat && place.lng) {
                 // Recent destinations already have coords
                 coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lng) };
-            } else if (place.place_id && !place.place_id.startsWith('recent')) {
-                // Fallback: use Mappls eLoc place details to get coords
-                const token = await getMapplsToken();
-                const response = await fetch(
-                    `https://atlas.mappls.com/api/places/geocode?eLoc=${place.place_id}&access_token=${token}`
-                );
-                const data = await response.json();
-                const loc = data?.results?.[0];
-                if (loc) {
-                    coords = { latitude: parseFloat(loc.latitude), longitude: parseFloat(loc.longitude) };
-                }
+            } 
+            
+            const newAddress = place.structured_formatting?.main_text || place.description || place.main || 'Selected Location';
+            const secondary = place.structured_formatting?.secondary_text || place.secondary || '';
+            const fullAddress = secondary ? `${newAddress}, ${secondary}` : newAddress;
+
+            // Fallbacks for missing coordinates
+            if (!coords || !coords.latitude) {
+                try {
+                    // Fallback 1: Mappls Routing API Hack
+                    // Standard Mappls APIs mask coordinates for basic tiers, but the Route API does not!
+                    const eLoc = place.eLoc || place.place_id;
+                    if (eLoc && !eLoc.startsWith('recent')) {
+                        const routeRes = await fetch(`https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/route_adv/driving/${eLoc};${eLoc}`);
+                        const routeData = await routeRes.json();
+                        if (routeData?.waypoints?.length > 0) {
+                            const [lon, lat] = routeData.waypoints[0].location;
+                            coords = { latitude: parseFloat(lat), longitude: parseFloat(lon) };
+                        }
+                    }
+                } catch(e) { console.error('Mappls Routing Hack Failed:', e); }
             }
-            const newAddress = place.structured_formatting?.main_text || place.description || place.main;
-            if (!coords || !coords.latitude) throw new Error('Could not compute valid coordinates for this location.');
+
+            if (!coords || !coords.latitude) {
+                try {
+                    // Fallback 2: Mappls Geocode
+                    const token = await getMapplsToken();
+                    const response = await fetch(
+                        `https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(fullAddress)}&access_token=${token}`
+                    );
+                    const data = await response.json();
+                    const loc = data?.copResults?.latitude ? data.copResults : (data?.copResults?.[0] || data?.results?.[0]);
+                    if (loc && loc.latitude && loc.longitude) {
+                        coords = { latitude: parseFloat(loc.latitude), longitude: parseFloat(loc.longitude) };
+                    }
+                } catch(e) {}
+            }
+
+            if (!coords || !coords.latitude) {
+                try {
+                    // Fallback 3: OSM Nominatim (Full Address)
+                    const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1&countrycodes=in`, {
+                        headers: { 'User-Agent': 'SakhiCustomerApp/1.0' }
+                    });
+                    const osmData = await osmRes.json();
+                    if (osmData && osmData.length > 0) {
+                        coords = { latitude: parseFloat(osmData[0].lat), longitude: parseFloat(osmData[0].lon) };
+                    }
+                } catch(e) {}
+            }
+
+            if (!coords || !coords.latitude) {
+                try {
+                    // Fallback 4: Photon Komoot API
+                    const photonRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(fullAddress)}&limit=1`);
+                    const photonData = await photonRes.json();
+                    if (photonData?.features?.length > 0) {
+                        const [lon, lat] = photonData.features[0].geometry.coordinates;
+                        coords = { latitude: parseFloat(lat), longitude: parseFloat(lon) };
+                    }
+                } catch(e) {}
+            }
+
+            if (!coords || !coords.latitude) {
+                Alert.alert('Location Error', 'Could not precisely locate this address. Please try searching with a different term.');
+                return;
+            }
 
             if (activeInput === 'pickup') {
                 setPickup({ ...coords, address: newAddress });
@@ -168,6 +221,7 @@ export default function LocationSearchScreen() {
         } catch (error) {
             console.error('Location Search Error:', error);
             Keyboard.dismiss();
+            Alert.alert('Location Error', 'An error occurred while selecting this location. Please try again.');
         }
     };
 
@@ -201,6 +255,7 @@ export default function LocationSearchScreen() {
             <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
             >
                 {/* Search Card */}
                 <View style={styles.searchCardWrapper}>
@@ -230,7 +285,7 @@ export default function LocationSearchScreen() {
                                         onFocus={() => { setActiveInput('pickup'); setResults([]); }}
                                         onChangeText={(v) => handleSearch(v, 'pickup')}
                                         returnKeyType="search" autoCorrect={false}
-                                        autoCapitalize="words" multiline blurOnSubmit
+                                        autoCapitalize="words"
                                     />
                                 </View>
 
@@ -266,7 +321,7 @@ export default function LocationSearchScreen() {
                                             onFocus={() => { setActiveInput('stop'); setResults([]); }}
                                             onChangeText={(v) => handleSearch(v, 'stop')}
                                             returnKeyType="search" autoCorrect={false}
-                                            autoCapitalize="words" multiline blurOnSubmit
+                                            autoCapitalize="words"
                                         />
                                     </View>
                                 )}
@@ -284,7 +339,7 @@ export default function LocationSearchScreen() {
                                         returnKeyType="search"
                                         autoFocus={!stopQuery}
                                         autoCorrect={false}
-                                        autoCapitalize="words" multiline blurOnSubmit
+                                        autoCapitalize="words"
                                     />
                                 </View>
                             </View>
@@ -573,6 +628,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '500',
         color: '#1E1B2E',
+        lineHeight: 18,
+        padding: 0,
+    },
+    dropInputActive: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#7C3AED',
         lineHeight: 18,
         padding: 0,
     },

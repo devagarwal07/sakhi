@@ -18,7 +18,20 @@ export default function DocumentReUploadScreen({ route, navigation }) {
   const [uploads, setUploads] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const allFixed = rejections.every((r) => uploads[r.key]);
+  // ── Fallback: if no specific rejections provided, show all standard KYC docs ──
+  const DEFAULT_DOCS = [
+    { key: 'dl',        label: 'Driving Licence (Front)' },
+    { key: 'dl_back',   label: 'Driving Licence (Back)' },
+    { key: 'aadhaar',   label: 'Aadhaar Card' },
+    { key: 'rc',        label: 'Vehicle RC' },
+    { key: 'insurance', label: 'Insurance Certificate' },
+  ];
+
+  const docs = (rejections && rejections.length > 0) ? rejections : DEFAULT_DOCS;
+
+  // At least dl + dl_back must be present for submission
+  const requiredKeys = ['dl', 'dl_back'];
+  const requiredDone = requiredKeys.every((k) => uploads[k]);
 
   const pickImage = async (key) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -31,10 +44,15 @@ export default function DocumentReUploadScreen({ route, navigation }) {
   };
 
   const handleResubmit = async () => {
+    if (!requiredDone) {
+      Alert.alert('Required Documents', 'Please upload at least DL Front and DL Back to continue.');
+      return;
+    }
     try {
       setLoading(true);
       const form = new FormData();
-      rejections.forEach(({ key }) => {
+      docs.forEach(({ key }) => {
+        if (!uploads[key]) return; // skip optional docs not uploaded
         const asset = uploads[key];
         form.append(key, { uri: asset.uri, type: 'image/jpeg', name: `${key}.jpg` });
       });
@@ -44,7 +62,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
       updateDriver({ onboarding_status: 'kyc_submitted' });
       navigation.replace('DocumentUnderReview');
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Re-upload failed. Try again.');
+      Alert.alert('Error', err.response?.data?.message ?? err.response?.data?.error?.message ?? 'Re-upload failed. Try again.');
     } finally {
       setLoading(false);
     }
@@ -73,17 +91,19 @@ export default function DocumentReUploadScreen({ route, navigation }) {
 
         <Text style={styles.headline}>Re-upload Documents</Text>
 
-        {rejections.length === 0 && (
-          <Text style={styles.noRejections}>No specific rejections found. Please contact support.</Text>
-        )}
-
-        {rejections.map((rej) => (
+        {docs.map((rej) => (
           <View key={rej.key} style={styles.rejCard}>
             <View style={styles.rejHeader}>
               <Text style={styles.rejLabel}>{rej.label ?? rej.key}</Text>
-              <View style={styles.rejBadge}>
-                <Text style={styles.rejBadgeText}>REJECTED</Text>
-              </View>
+              {rej.reason ? (
+                <View style={styles.rejBadge}>
+                  <Text style={styles.rejBadgeText}>REJECTED</Text>
+                </View>
+              ) : (
+                <View style={[styles.rejBadge, { backgroundColor: '#EDE9FE' }]}>
+                  <Text style={[styles.rejBadgeText, { color: '#7C3AED' }]}>REQUIRED</Text>
+                </View>
+              )}
             </View>
             {rej.reason && <Text style={styles.rejReason}>Reason: {rej.reason}</Text>}
 
@@ -96,7 +116,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
               </View>
             ) : (
               <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(rej.key)} activeOpacity={0.8}>
-                <Text style={styles.uploadBtnText}><Feather name="paperclip" size={14} color="#BEA3D8" />  Upload New {rej.label ?? rej.key}</Text>
+                <Text style={styles.uploadBtnText}><Feather name="paperclip" size={14} color="#BEA3D8" />  Upload {rej.label ?? rej.key}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -106,10 +126,11 @@ export default function DocumentReUploadScreen({ route, navigation }) {
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.ctaBtn, (!allFixed || loading) && styles.ctaDisabled]}
+          style={[styles.ctaBtn, (!requiredDone || loading) && styles.ctaDisabled]}
           onPress={handleResubmit}
-          disabled={!allFixed || loading}
+          disabled={!requiredDone || loading}
           activeOpacity={0.85}
+
         >
           {loading
             ? <ActivityIndicator color="#fff" />

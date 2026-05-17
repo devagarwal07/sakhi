@@ -25,6 +25,7 @@ import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
+import { requestOverlayPermission } from '../../services/notificationService';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -245,7 +246,8 @@ const oc = StyleSheet.create({
   // Top row
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F0FDF4', borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
-  liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#10B981' },
+  liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#BEA3D8' },
+
   liveBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669', letterSpacing: 1.5 },
   offlineBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(190,163,216,0.4)', backgroundColor: '#F5F0FF' },
   offlineBtnText: { fontSize: 12, fontWeight: '700', color: '#94A3B8' },
@@ -294,6 +296,7 @@ export default function DriverHomeScreen({ navigation }) {
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(null); // Date | null
 
   const mapRef = useRef(null);
+
 
   // ── Bottom sheet drag state ───────────────────────────────────────────────
   const sheetY = useRef(new Animated.Value(SNAP_DEFAULT)).current;
@@ -390,7 +393,9 @@ export default function DriverHomeScreen({ navigation }) {
       
       setLocGranted(true);
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setLocation(coord);
+
     } catch {
       // ignore
     }
@@ -429,8 +434,12 @@ export default function DriverHomeScreen({ navigation }) {
     setIsOnline(driver?.is_online ?? false);
     if (driver?.is_online) {
       startLocationTracking('Sakhi Driver', 'Searching for nearby rides...');
+      // Ask for "Display over other apps" permission — shown once, naturally
+      // timed to when the driver first goes online and needs ride popups.
+      requestOverlayPermission();
     }
   }, [driver?.is_online]);
+
 
   // ── Session timer ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -555,9 +564,10 @@ export default function DriverHomeScreen({ navigation }) {
             zoom={15}
             showsTraffic={isOnline}
             markers={[
-              { id: 'driver', latitude: location.latitude, longitude: location.longitude, color: isOnline ? '#059669' : '#5B21B6', label: 'YOU' },
+              { id: 'driver', latitude: location.latitude, longitude: location.longitude, color: isOnline ? '#BEA3D8' : '#5B21B6', label: 'YOU' },
             ]}
           />
+
         ) : (
           <View style={s.mapLoading}>
             <ActivityIndicator size="large" color="#5B21B6" />
@@ -587,6 +597,7 @@ export default function DriverHomeScreen({ navigation }) {
           )}
         </View>
       </View>
+
 
       {/* ── SUBSCRIPTION ALERT BANNER ── */}
       {subAlert && (
@@ -784,7 +795,8 @@ const s = StyleSheet.create({
   driverMarkerInner: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#5B21B6', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
   driverMarkerOnline: { backgroundColor: '#5B21B6', borderColor: '#5B21B6' },
   markerLabel: { backgroundColor: '#5B21B6', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
-  markerLabelOnline: { backgroundColor: '#059669' },
+  markerLabelOnline: { backgroundColor: '#BEA3D8' },
+
   markerLabelText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1.5 },
 
   // Top bar
@@ -839,7 +851,8 @@ const s = StyleSheet.create({
   toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 20 },
   toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
-  toggleBtnOnline: { backgroundColor: '#059669' },
+  toggleBtnOnline: { backgroundColor: '#BEA3D8' },
+
   toggleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#9CA3AF' },
   toggleDotOffline: { backgroundColor: '#94A3B8' },
   toggleDotOnline: { backgroundColor: '#FFFFFF' },

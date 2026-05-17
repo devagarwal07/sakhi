@@ -30,7 +30,7 @@ const LANGUAGES = [
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function EditProfileScreen({ navigation }) {
   const { t } = useTranslation();
-  const { driver, checkAuth } = useAuth();
+  const { driver, updateDriver } = useAuth();
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -126,13 +126,19 @@ export default function EditProfileScreen({ navigation }) {
         email: email.trim(),
         language_pref,
       });
-      await checkAuth?.();
+      // Optimistically update local driver state — avoids re-triggering navigation
+      updateDriver({
+        name: name.trim(),
+        email: email.trim(),
+        language_pref: language === 'Kannada' ? 'kn' : 'en',
+      });
       setModal({
         icon: '✅',
         title: 'Profile Updated!',
         message: 'Your profile changes have been saved successfully.',
         buttons: [{ text: 'Done', onPress: () => { setModal(null); navigation?.goBack(); } }],
       });
+
     } catch (err) {
       setModal({
         icon: '⚠️',

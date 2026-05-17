@@ -46,6 +46,10 @@ function getMessaging() {
   }
 }
 
+function isMessagingReady() {
+  return Boolean(getMessaging());
+}
+
 // ── Internal: log to notifications_log (non-fatal) ────────────────────────────
 async function _logNotification(userId, type, title, body) {
   await supabase.from('notifications_log').insert({
@@ -300,4 +304,4 @@ async function sendRideRequest(driverId, { title, body, data = {} }) {
   }
 }
 
-module.exports = { getMessaging, sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };
+module.exports = { getMessaging, isMessagingReady, sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };

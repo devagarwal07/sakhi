@@ -74,6 +74,15 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
       0%   { transform: scale(0.5); opacity: 0.7; }
       100% { transform: scale(2.2); opacity: 0; }
     }
+
+    /* Hide Mappls Watermarks */
+    .mappls-logo, .mapmyindia-logo, .mapboxgl-ctrl-logo, .mappls-ctrl-logo, 
+    .mapboxgl-ctrl-attrib, .mappls-ctrl-attrib, .mappls-watermark, .mapmyindia-watermark,
+    .mappls-ctrl-bottom-right, .mappls-ctrl-bottom-left {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +91,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
     var map = null;
     var markerObjects = {};   // id -> mappls.Marker instance
     var polylineObjects = []; // array of mappls.Polyline instances
+    var zoneObjects = [];     // array of demand zone circles
 
     /* ── Custom HTML marker helper ─────────────────────────────────────── */
     function createMarkerEl(opts) {
@@ -123,6 +133,32 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
       });
     }
 
+    /* ── Update demand zones (circles showing customer density) ──────── */
+    function updateDemandZones(zones) {
+      if (!map) return;
+      // Remove old zones
+      zoneObjects.forEach(function(z) { try { z.remove(); } catch(e) {} });
+      zoneObjects = [];
+      if (!zones || !zones.length) return;
+      zones.forEach(function(z) {
+        // Color based on intensity (low=green, medium=yellow, high=red)
+        var intensity = z.intensity || 0.5;
+        var color = intensity > 0.7 ? '#EF4444' : intensity > 0.4 ? '#F59E0B' : '#10B981';
+        var opacity = 0.18 + (intensity * 0.22);
+        var circle = new mappls.Circle({
+          map: map,
+          center: { lat: z.lat, lng: z.lng },
+          radius: z.radius || 400,
+          strokeColor: color,
+          strokeOpacity: opacity + 0.15,
+          strokeWeight: 1.5,
+          fillColor: color,
+          fillOpacity: opacity,
+        });
+        zoneObjects.push(circle);
+      });
+    }
+
     /* ── Update polylines (called on postMessage updates) ───────────────── */
     function updatePolylines(polylines) {
       if (!map) return;
@@ -155,6 +191,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
           if (msg.zoom) map.setZoom(msg.zoom);
           if (msg.markers) updateMarkers(msg.markers);
           if (msg.polylines) updatePolylines(msg.polylines);
+          if (msg.demandZones) updateDemandZones(msg.demandZones);
         }
       } catch(e) {}
     }
@@ -194,8 +231,9 @@ export default function MapplsMapWebView({
   style,
   center,
   zoom = 15,
-  markers    = [],
-  polylines  = [],
+  markers     = [],
+  polylines   = [],
+  demandZones = [],
   scrollEnabled = true,
   zoomEnabled   = true,
   pointerEvents,
@@ -213,14 +251,14 @@ export default function MapplsMapWebView({
   );
 
   // Sends the current center + markers to the already-loaded map via postMessage
-  const sendUpdate = (lat, lng, mkrs, plns) => {
+  const sendUpdate = (lat, lng, mkrs, plns, zones) => {
     if (!webViewRef.current) return;
     const msg = JSON.stringify({
-      type:      'SET_CENTER',
+      type:        'SET_CENTER',
       lat,
       lng,
       zoom,
-      markers:   mkrs.map(m => ({
+      markers:     mkrs.map(m => ({
         id:    m.id,
         lat:   m.latitude,
         lng:   m.longitude,
@@ -228,11 +266,17 @@ export default function MapplsMapWebView({
         label: m.label || '',
         pulse: !!m.pulse,
       })),
-      polylines: plns.map(p => ({
+      polylines:   plns.map(p => ({
         coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
         color:  p.color  ?? '#BEA3D8',
         width:  p.width  ?? 5,
         dashed: !!p.dashed,
+      })),
+      demandZones: (zones || []).map(z => ({
+        lat:       z.latitude,
+        lng:       z.longitude,
+        radius:    z.radius    || 400,
+        intensity: z.intensity || 0.5,
       })),
     });
     webViewRef.current.postMessage(msg);
@@ -245,12 +289,12 @@ export default function MapplsMapWebView({
     const lng = center?.longitude ?? DEFAULT_LNG;
 
     if (mapReady.current) {
-      sendUpdate(lat, lng, markers, polylines);
+      sendUpdate(lat, lng, markers, polylines, demandZones);
     } else {
-      pendingMsg.current = { lat, lng, markers, polylines };
+      pendingMsg.current = { lat, lng, markers, polylines, demandZones };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines)]);
+  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines), JSON.stringify(demandZones)]);
 
   // Handle messages from the WebView (e.g. MAP_READY)
   const onMessage = (event) => {
@@ -261,8 +305,8 @@ export default function MapplsMapWebView({
         const lat = center?.latitude  ?? DEFAULT_LAT;
         const lng = center?.longitude ?? DEFAULT_LNG;
         // Send any pending update that arrived before map was ready
-        const { lat: pl, lng: plng, markers: pm, polylines: pp } = pendingMsg.current ?? {};
-        sendUpdate(pl ?? lat, plng ?? lng, pm ?? markers, pp ?? polylines);
+        const { lat: pl, lng: plng, markers: pm, polylines: pp, demandZones: pz } = pendingMsg.current ?? {};
+        sendUpdate(pl ?? lat, plng ?? lng, pm ?? markers, pp ?? polylines, pz ?? demandZones);
         pendingMsg.current = null;
       }
     } catch (_) {}

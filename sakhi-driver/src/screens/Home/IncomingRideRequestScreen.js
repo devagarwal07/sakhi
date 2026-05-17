@@ -17,21 +17,21 @@ const { height: SCREEN_H } = Dimensions.get('window');
 // ── Theme per ride type ───────────────────────────────────────────────────────
 const THEME = {
   regular: {
-    headerBg:    'rgba(255,255,255,0.85)',
-    sheetBg:     '#FFFFFF',
+    headerBg: 'rgba(255,255,255,0.85)',
+    sheetBg: '#FFFFFF',
     accentColor: '#BEA3D8',
-    accentDark:  '#7C3AED',
-    icon:        'bell-ring',
-    titleKey:    'ride.newRideRequest',
+    accentDark: '#7C3AED',
+    icon: 'bell-ring',
+    titleKey: 'ride.newRideRequest',
     pulseIconBg: 'rgba(190,163,216,0.2)',
   },
   subscription: {
-    headerBg:    'rgba(255,251,235,0.92)',
-    sheetBg:     '#FFFBEB',
+    headerBg: 'rgba(255,251,235,0.92)',
+    sheetBg: '#FFFBEB',
     accentColor: '#D97706',
-    accentDark:  '#92400E',
-    icon:        'calendar-clock',
-    titleKey:    'ride.subscriptionRequest',
+    accentDark: '#92400E',
+    icon: 'calendar-clock',
+    titleKey: 'ride.subscriptionRequest',
     pulseIconBg: 'rgba(217,119,6,0.15)',
   },
 };
@@ -41,11 +41,11 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const bellPulse  = useRef(new Animated.Value(1)).current;
-  const slideUp    = useRef(new Animated.Value(SCREEN_H)).current;
-  const [accepting, setAccepting]   = useState(false);
-  const [snoozing,  setSnoozing]    = useState(false);
-  const [countdown, setCountdown]   = useState(0);
+  const bellPulse = useRef(new Animated.Value(1)).current;
+  const slideUp = useRef(new Animated.Value(SCREEN_H)).current;
+  const [accepting, setAccepting] = useState(false);
+  const [snoozing, setSnoozing] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const isSubscription = incomingRide?.ride_type === 'subscription';
   const theme = isSubscription ? THEME.subscription : THEME.regular;
@@ -67,7 +67,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
     Animated.loop(
       Animated.sequence([
         Animated.timing(bellPulse, { toValue: 1.08, duration: 900, useNativeDriver: true }),
-        Animated.timing(bellPulse, { toValue: 1,    duration: 900, useNativeDriver: true }),
+        Animated.timing(bellPulse, { toValue: 1, duration: 900, useNativeDriver: true }),
       ]),
     ).start();
 
@@ -91,7 +91,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
     if (accepting) return;
     try {
       setAccepting(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => { });
       await acceptRide(incomingRide.ride_id);
       clearIncomingRide();
       if (navigationRef.isReady()) {
@@ -107,7 +107,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
   const handleSeeLater = () => {
     if (snoozing) return;
     setSnoozing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     snoozeRide?.(incomingRide.ride_id);
     clearIncomingRide();
   };
@@ -121,18 +121,18 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
   if (!incomingRide) return null;
 
   const {
-    rider_name  = 'Priya S.',
+    rider_name = 'Priya S.',
     rider_photo = null,
     rider_rating = 4.7,
     fare = 87,
-    pickup_address  = 'Versova Metro Station',
+    pickup_address = 'Versova Metro Station',
     dropoff_address = 'Oberoi Mall, Goregaon',
     drop_address,
     distance_to_pickup_km = 3.2,
-    distance_km           = null,
-    eta_to_pickup_min     = 6,
+    distance_km = null,
+    eta_to_pickup_min = 6,
     schedule_label,
-    is_night_fare         = false,
+    is_night_fare = false,
   } = incomingRide;
 
   const normaliseCoord = (coord) =>
@@ -140,14 +140,14 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
       ? { latitude: coord.latitude ?? coord.lat ?? 28.61, longitude: coord.longitude ?? coord.lng ?? 77.20 }
       : { latitude: 28.61, longitude: 77.20 };
 
-  const pickup_coords  = normaliseCoord(incomingRide.pickup_coords);
+  const pickup_coords = normaliseCoord(incomingRide.pickup_coords);
   const dropoff_coords = normaliseCoord(incomingRide.dropoff_coords);
   const displayDropAddress = dropoff_address || drop_address || t('ride.destination');
 
   const mapRegion = {
-    latitude:      (pickup_coords.latitude  + dropoff_coords.latitude)  / 2,
-    longitude:     (pickup_coords.longitude + dropoff_coords.longitude) / 2,
-    latitudeDelta:  Math.abs(pickup_coords.latitude  - dropoff_coords.latitude)  * 2.5 + 0.01,
+    latitude: (pickup_coords.latitude + dropoff_coords.latitude) / 2,
+    longitude: (pickup_coords.longitude + dropoff_coords.longitude) / 2,
+    latitudeDelta: Math.abs(pickup_coords.latitude - dropoff_coords.latitude) * 2.5 + 0.01,
     longitudeDelta: Math.abs(pickup_coords.longitude - dropoff_coords.longitude) * 2.5 + 0.01,
   };
 
@@ -164,12 +164,12 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
           zoomEnabled={false}
           pointerEvents="none"
           markers={[
-            { id: 'pickup',  latitude: pickup_coords.latitude,  longitude: pickup_coords.longitude,  color: '#10B981' },
+            { id: 'pickup', latitude: pickup_coords.latitude, longitude: pickup_coords.longitude, color: '#10B981' },
             { id: 'dropoff', latitude: dropoff_coords.latitude, longitude: dropoff_coords.longitude, color: isSubscription ? '#D97706' : '#9D58E0' },
           ]}
           polylines={[{
             coords: [pickup_coords, dropoff_coords],
-            color:  isSubscription ? '#D97706' : '#9D58E0',
+            color: isSubscription ? '#D97706' : '#9D58E0',
             width: 4,
             dashed: true,
           }]}
@@ -233,7 +233,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
               </Text>
             </View>
             <Text style={[s.pulseTitle, { color: isSubscription ? '#92400E' : '#1E1B2E' }]}>
-            {t(isSubscription ? 'ride.subscriptionRequest' : 'ride.newRideRequest')}
+              {t(isSubscription ? 'ride.subscriptionRequest' : 'ride.newRideRequest')}
             </Text>
             {/* Night fare badge */}
             {is_night_fare && (
@@ -405,8 +405,8 @@ const s = StyleSheet.create({
   },
   countdownText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   pulseIconWrap: { position: 'relative', width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  pulseIconBg:   { position: 'absolute', width: 32, height: 32, borderRadius: 16 },
-  pulseTitle:    { fontFamily: 'Inter', fontWeight: '800', fontSize: 20, letterSpacing: -0.5, marginTop: 4 },
+  pulseIconBg: { position: 'absolute', width: 32, height: 32, borderRadius: 16 },
+  pulseTitle: { fontFamily: 'Inter', fontWeight: '800', fontSize: 20, letterSpacing: -0.5, marginTop: 4 },
   nightBadge: {
     backgroundColor: '#EDE9FE', borderRadius: 9999,
     paddingHorizontal: 12, paddingVertical: 4,
@@ -462,7 +462,7 @@ const s = StyleSheet.create({
     paddingVertical: 10, paddingHorizontal: 16,
   },
   seeLaterBtnText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 15, color: '#92400E', letterSpacing: 0.3 },
-  seeLaterBtnSub:  { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#B45309', letterSpacing: 0.1, marginTop: 1 },
+  seeLaterBtnSub: { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#B45309', letterSpacing: 0.1, marginTop: 1 },
 
   declineBtn: {
     width: '100%', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center',

@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
   TouchableOpacity, KeyboardAvoidingView,
-  ActivityIndicator, Pressable,
+  ActivityIndicator, Pressable, Modal,
 } from 'react-native';
+
 import { Feather } from '@expo/vector-icons';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +35,8 @@ const DRIVER_QUICK_REPLIES = [
  *   rideId  (string) — current ride ID
  *   onClose (fn)     — callback to dismiss the modal
  */
-export default function ChatModal({ rideId, onClose }) {
+export default function ChatModal({ rideId, onClose, visible = true }) {
+
   const { driver } = useAuth();
   const { on, off, emit, joinRideRoom } = useSocket();
 
@@ -162,14 +164,22 @@ export default function ChatModal({ rideId, onClose }) {
     );
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView
-      style={c.container}
-      behavior="height"
-      keyboardVerticalOffset={20}
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
     >
+      <KeyboardAvoidingView
+        style={c.container}
+        behavior="height"
+        keyboardVerticalOffset={20}
+      >
+
       {/* ── Header ── */}
+
       <View style={c.header}>
         <View style={c.headerInfo}>
           <Text style={c.headerTitle}>Message Customer</Text>
@@ -241,9 +251,11 @@ export default function ChatModal({ rideId, onClose }) {
           <Feather name="send" size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
+
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const c = StyleSheet.create({

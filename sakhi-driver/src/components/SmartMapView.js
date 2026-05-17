@@ -34,6 +34,7 @@ const SmartMapView = forwardRef(function SmartMapView(
     zoom = 15,
     markers      = [],
     polylines    = [],
+    demandZones  = [],
     scrollEnabled = true,
     zoomEnabled   = true,
     pointerEvents,
@@ -49,6 +50,7 @@ const SmartMapView = forwardRef(function SmartMapView(
       zoom={zoom}
       markers={markers}
       polylines={polylines}
+      demandZones={demandZones}
       scrollEnabled={scrollEnabled}
       zoomEnabled={zoomEnabled}
       pointerEvents={pointerEvents}

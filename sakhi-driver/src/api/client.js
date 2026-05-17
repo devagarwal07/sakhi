@@ -6,15 +6,15 @@ import { DeviceEventEmitter } from 'react-native';
 // Token helpers
 // ---------------------------------------------------------------------------
 export const TOKEN_KEYS = {
-  access:  'sakhi_driver_access_token',
+  access: 'sakhi_driver_access_token',
   refresh: 'sakhi_driver_refresh_token',
 };
 
-export async function getAccessToken()  { return SecureStore.getItemAsync(TOKEN_KEYS.access);  }
+export async function getAccessToken() { return SecureStore.getItemAsync(TOKEN_KEYS.access); }
 export async function getRefreshToken() { return SecureStore.getItemAsync(TOKEN_KEYS.refresh); }
 
 export async function saveTokens(accessToken, refreshToken) {
-  await SecureStore.setItemAsync(TOKEN_KEYS.access,  accessToken);
+  await SecureStore.setItemAsync(TOKEN_KEYS.access, accessToken);
   await SecureStore.setItemAsync(TOKEN_KEYS.refresh, refreshToken);
 }
 
@@ -26,8 +26,10 @@ export async function clearTokens() {
 // ---------------------------------------------------------------------------
 // Axios instance
 // ---------------------------------------------------------------------------
+const DEFAULT_API_URL = 'https://sakhi-backend-pwej.onrender.com';
+
 const client = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000',
+  baseURL: process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL,
   timeout: 60000,  // 60s — Render cold start can take up to ~50s
   headers: { 'Content-Type': 'application/json' },
 });
@@ -114,7 +116,7 @@ client.interceptors.response.use(
       try {
         const refreshToken = await getRefreshToken();
         const { data } = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'}/auth/refresh-token`,
+          `${process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL}/auth/refresh-token`,
           { refreshToken },
         );
 

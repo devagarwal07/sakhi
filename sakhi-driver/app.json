@@ -27,7 +27,8 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_FULL_SCREEN_INTENT"
       ]
     },
     "plugins": [
@@ -54,7 +55,9 @@
           "androidMode": "default"
         }
       ],
-      "./plugins/withAdiRegistration"
+      "@react-native-firebase/app",
+      "./plugins/withAdiRegistration",
+      "./plugins/withManifestFixes"
     ],
     "ios": {
       "supportsTablet": false,
@@ -66,9 +69,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "30600045-9556-49be-b2c0-89653781213c"
+        "projectId": "15c6e802-c6a1-4029-95ed-c9f322085830"
       }
     },
-    "owner": "devaga1"
+    "owner": "devaga147"
   }
 }

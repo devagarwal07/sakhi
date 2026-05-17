@@ -3,6 +3,7 @@
 const { z } = require('zod');
 const supabase = require('../config/supabase');
 const AppError = require('../utils/AppError');
+const { isMessagingReady } = require('../services/fcmService');
 
 function handleError(err, res, next) {
   if (err.name === 'ZodError') return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid input.', details: err.flatten() } });
@@ -81,4 +82,42 @@ async function markAllRead(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
-module.exports = { updateRiderFcmToken, updateDriverFcmToken, getNotifications, markRead, markAllRead };
+// ── GET /notifications/driver-health ───────────────────────────────────────
+async function getDriverFcmHealth(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { data: driverRows, error: driverError } = await supabase
+      .from('drivers')
+      .select('fcm_token')
+      .eq('id', userId)
+      .limit(1);
+
+    if (driverError) throw new AppError('Failed to fetch driver token.', 500, 'DB_ERROR');
+
+    const hasToken = Boolean(driverRows?.[0]?.fcm_token);
+
+    const { data: notifRows } = await supabase
+      .from('notifications_log')
+      .select('id, type, sent_at')
+      .eq('user_id', userId)
+      .order('sent_at', { ascending: false })
+      .limit(1);
+
+    return res.status(200).json({
+      firebase_ready: isMessagingReady(),
+      has_fcm_token: hasToken,
+      last_notification: notifRows?.[0] ?? null,
+    });
+  } catch (err) {
+    return handleError(err, res, next);
+  }
+}
+
+module.exports = {
+  updateRiderFcmToken,
+  updateDriverFcmToken,
+  getNotifications,
+  markRead,
+  markAllRead,
+  getDriverFcmHealth,
+};

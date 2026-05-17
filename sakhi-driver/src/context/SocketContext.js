@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   createContext,
   useContext,
   useRef,
@@ -8,9 +8,49 @@
 } from 'react';
 import { DeviceEventEmitter } from 'react-native';
 import { io } from 'socket.io-client';
+import notifee, { AndroidImportance, AndroidVisibility } from '@notifee/react-native';
 import apiClient, { getAccessToken } from '../api/client';
 import { getRideDetails } from '../api/endpoints';
 import { useAuth } from './AuthContext';
+
+// ── Foreground service helpers ────────────────────────────────────────────────
+async function startDriverForegroundService() {
+  try {
+    const channelId = await notifee.createChannel({
+      id: 'driver_online',
+      name: 'Driver Online',
+      importance: AndroidImportance.LOW, // silent persistent notification
+      vibration: false,
+    });
+    await notifee.displayNotification({
+      id: 'driver_online_service',
+      title: 'Sakhi Driver — You are Online',
+      body: 'Waiting for ride requests...',
+      android: {
+        channelId,
+        asForegroundService: true,
+        importance: AndroidImportance.LOW,
+        ongoing: true,
+        autoCancel: false,
+        smallIcon: 'notification_icon',
+        color: '#BEA3D8',
+        pressAction: { id: 'default', launchActivity: 'default' },
+      },
+    });
+    console.log('[Notifee] Foreground service started — driver online');
+  } catch (err) {
+    console.warn('[Notifee] Failed to start foreground service:', err?.message);
+  }
+}
+
+async function stopDriverForegroundService() {
+  try {
+    await notifee.stopForegroundService();
+    console.log('[Notifee] Foreground service stopped — driver offline');
+  } catch (err) {
+    console.warn('[Notifee] Failed to stop foreground service:', err?.message);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Context
@@ -143,7 +183,7 @@ export function SocketProvider({ children }) {
     const token = await getAccessToken();
     if (!token) return;
 
-    const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+    const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://sakhi-backend-pwej.onrender.com';
 
     const socket = io(`${BASE_URL}/rides`, {
       transports: ['websocket'],
@@ -335,8 +375,10 @@ export function SocketProvider({ children }) {
   useEffect(() => {
     if (isAuthenticated && driver?.is_online) {
       connect();
+      startDriverForegroundService();
     } else {
       disconnect();
+      stopDriverForegroundService();
     }
   }, [isAuthenticated, driver?.is_online]);
 

@@ -4,7 +4,7 @@ import {
     Dimensions, Alert, Animated, PanResponder, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps';
+import MapplsMapWebView from '../../components/MapplsMapWebView';
 import * as Location from 'expo-location';
 import { StatusBar } from 'react-native';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
@@ -30,9 +30,6 @@ async function reverseGeocode(latitude, longitude) {
     }
 }
 
-const { width } = Dimensions.get('window');
-const LATITUDE_DELTA = 0.012;
-const LONGITUDE_DELTA = LATITUDE_DELTA * (width / 884);
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -43,16 +40,15 @@ export default function HomeScreen() {
     const [savedPlaces, setSavedPlaces] = useState([]);
     const [activeTab, setActiveTab] = useState('book');
     const [isExpanded, setIsExpanded] = useState(false);
-    const mapRef = useRef(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     // Custom Bottom Sheet Animation
     const SCREEN_HEIGHT = Dimensions.get('window').height;
     const SNAP_BOTTOM = SCREEN_HEIGHT * 0.58; // 42% height exposed (100 - 58)
     const SNAP_TOP = SCREEN_HEIGHT * 0.15;    // 85% height exposed (100 - 15)
-    
+
     const sheetAnim = useRef(new Animated.Value(SNAP_BOTTOM)).current;
-    
+
     const panResponder = useRef(
         PanResponder.create({
             onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -68,7 +64,7 @@ export default function HomeScreen() {
                 sheetAnim.flattenOffset();
                 const isDraggingDown = gestureState.vy > 0.5 || gestureState.dy > 50;
                 const isDraggingUp = gestureState.vy < -0.5 || gestureState.dy < -50;
-                
+
                 let target = sheetAnim._value;
                 if (isDraggingDown) target = SNAP_BOTTOM;
                 else if (isDraggingUp) target = SNAP_TOP;
@@ -132,7 +128,7 @@ export default function HomeScreen() {
 
         getAddresses()
             .then(({ data }) => setSavedPlaces(data.addresses || []))
-            .catch(() => {});
+            .catch(() => { });
 
         // Load real recent rides from API
         getRideHistory(1)
@@ -173,33 +169,20 @@ export default function HomeScreen() {
         <View style={styles.container}>
             {/* Top Map Section — 58% */}
             <View style={styles.mapSection}>
-                <MapView
-                    ref={mapRef}
+                <MapplsMapWebView
                     style={StyleSheet.absoluteFill}
-                    provider={undefined}
-                    showsUserLocation={false}
-                    showsMyLocationButton={false}
-                    initialRegion={{
-                        latitude: currentLocation?.latitude || 19.0760,
-                        longitude: currentLocation?.longitude || 72.8777,
-                        latitudeDelta: LATITUDE_DELTA,
-                        longitudeDelta: LONGITUDE_DELTA,
-                    }}
-                    customMapStyle={mapStyle}
-                >
-                    {currentLocation && (
-                        <Marker coordinate={currentLocation}>
-                            <View style={styles.pinWrapper}>
-                                {/* Pulse rings */}
-                                <Animated.View
-                                    style={[styles.pulseOuter, { transform: [{ scale: pulseAnim }] }]}
-                                />
-                                <View style={styles.pulseInner} />
-                                <View style={styles.pinDot} />
-                            </View>
-                        </Marker>
-                    )}
-                </MapView>
+                    center={currentLocation || { latitude: 19.0760, longitude: 72.8777 }}
+                    zoom={15}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                    markers={currentLocation ? [{
+                        id: 'me',
+                        latitude: currentLocation.latitude,
+                        longitude: currentLocation.longitude,
+                        color: '#BEA3D8',
+                        pulse: true,
+                    }] : []}
+                />
 
                 {/* Map overlay controls */}
                 <View style={[styles.mapOverlay, { top: mapOverlayTop }]}>
@@ -216,7 +199,7 @@ export default function HomeScreen() {
                     >
                         <View style={styles.searchIcon}>
                             <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                <Path d="M16.6 18L10.3 11.7C9.8 12.1 9.225 12.4167 8.575 12.65C7.925 12.8833 7.23333 13 6.5 13C4.68333 13 3.14583 12.3708 1.8875 11.1125C0.629167 9.85417 0 8.31667 0 6.5C0 4.68333 0.629167 3.14583 1.8875 1.8875C3.14583 0.629167 4.68333 0 6.5 0C8.31667 0 9.85417 0.629167 11.1125 1.8875C12.3708 3.14583 13 4.68333 13 6.5C13 7.23333 12.8833 7.925 12.65 8.575C12.4167 9.225 12.1 9.8 11.7 10.3L18 16.6L16.6 18ZM6.5 11C7.75 11 8.8125 10.5625 9.6875 9.6875C10.5625 8.8125 11 7.75 11 6.5C11 5.25 10.5625 4.1875 9.6875 3.3125C8.8125 2.4375 7.75 2 6.5 2C5.25 2 4.1875 2.4375 3.3125 3.3125C2.4375 4.1875 2 5.25 2 6.5C2 7.75 2.4375 8.8125 3.3125 9.6875C4.1875 10.5625 5.25 11 6.5 11Z" fill="#BEA3D8" fillOpacity="0.6"/>
+                                <Path d="M16.6 18L10.3 11.7C9.8 12.1 9.225 12.4167 8.575 12.65C7.925 12.8833 7.23333 13 6.5 13C4.68333 13 3.14583 12.3708 1.8875 11.1125C0.629167 9.85417 0 8.31667 0 6.5C0 4.68333 0.629167 3.14583 1.8875 1.8875C3.14583 0.629167 4.68333 0 6.5 0C8.31667 0 9.85417 0.629167 11.1125 1.8875C12.3708 3.14583 13 4.68333 13 6.5C13 7.23333 12.8833 7.925 12.65 8.575C12.4167 9.225 12.1 9.8 11.7 10.3L18 16.6L16.6 18ZM6.5 11C7.75 11 8.8125 10.5625 9.6875 9.6875C10.5625 8.8125 11 7.75 11 6.5C11 5.25 10.5625 4.1875 9.6875 3.3125C8.8125 2.4375 7.75 2 6.5 2C5.25 2 4.1875 2.4375 3.3125 3.3125C2.4375 4.1875 2 5.25 2 6.5C2 7.75 2.4375 8.8125 3.3125 9.6875C4.1875 10.5625 5.25 11 6.5 11Z" fill="#BEA3D8" fillOpacity="0.6" />
                             </Svg>
                         </View>
                         <View style={styles.searchInput}>
@@ -224,7 +207,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={styles.micIcon}>
                             <Svg width="14" height="19" viewBox="0 0 14 19" fill="none">
-                                <Path d="M7 12C6.16667 12 5.45833 11.7083 4.875 11.125C4.29167 10.5417 4 9.83333 4 9V3C4 2.16667 4.29167 1.45833 4.875 0.875C5.45833 0.291667 6.16667 0 7 0C7.83333 0 8.54167 0.291667 9.125 0.875C9.70833 1.45833 10 2.16667 10 3V9C10 9.83333 9.70833 10.5417 9.125 11.125C8.54167 11.7083 7.83333 12 7 12ZM6 19V15.925C4.26667 15.6917 2.83333 14.9167 1.7 13.6C0.566667 12.2833 0 10.75 0 9H2C2 10.3833 2.4875 11.5625 3.4625 12.5375C4.4375 13.5125 5.61667 14 7 14C8.38333 14 9.5625 13.5125 10.5375 12.5375C11.5125 11.5625 12 10.3833 12 9H14C14 10.75 13.4333 12.2833 12.3 13.6C11.1667 14.9167 9.73333 15.6917 8 15.925V19H6ZM7 10C7.28333 10 7.52083 9.90417 7.7125 9.7125C7.90417 9.52083 8 9.28333 8 9V3C8 2.71667 7.90417 2.47917 7.7125 2.2875C7.52083 2.09583 7.28333 2 7 2C6.71667 2 6.47917 2.09583 6.2875 2.2875C6.09583 2.47917 6 2.71667 6 3V9C6 9.28333 6.09583 9.52083 6.2875 9.7125C6.47917 9.90417 6.71667 10 7 10Z" fill="#BEA3D8" fillOpacity="0.6"/>
+                                <Path d="M7 12C6.16667 12 5.45833 11.7083 4.875 11.125C4.29167 10.5417 4 9.83333 4 9V3C4 2.16667 4.29167 1.45833 4.875 0.875C5.45833 0.291667 6.16667 0 7 0C7.83333 0 8.54167 0.291667 9.125 0.875C9.70833 1.45833 10 2.16667 10 3V9C10 9.83333 9.70833 10.5417 9.125 11.125C8.54167 11.7083 7.83333 12 7 12ZM6 19V15.925C4.26667 15.6917 2.83333 14.9167 1.7 13.6C0.566667 12.2833 0 10.75 0 9H2C2 10.3833 2.4875 11.5625 3.4625 12.5375C4.4375 13.5125 5.61667 14 7 14C8.38333 14 9.5625 13.5125 10.5375 12.5375C11.5125 11.5625 12 10.3833 12 9H14C14 10.75 13.4333 12.2833 12.3 13.6C11.1667 14.9167 9.73333 15.6917 8 15.925V19H6ZM7 10C7.28333 10 7.52083 9.90417 7.7125 9.7125C7.90417 9.52083 8 9.28333 8 9V3C8 2.71667 7.90417 2.47917 7.7125 2.2875C7.52083 2.09583 7.28333 2 7 2C6.71667 2 6.47917 2.09583 6.2875 2.2875C6.09583 2.47917 6 2.71667 6 3V9C6 9.28333 6.09583 9.52083 6.2875 9.7125C6.47917 9.90417 6.71667 10 7 10Z" fill="#BEA3D8" fillOpacity="0.6" />
                             </Svg>
                         </View>
                     </TouchableOpacity>
@@ -237,11 +220,11 @@ export default function HomeScreen() {
             </View>
 
             {/* Interactive Bottom Sheet */}
-            <Animated.View 
+            <Animated.View
                 {...panResponder.panHandlers}
                 style={[
-                    styles.bottomSheetShadow, 
-                    { 
+                    styles.bottomSheetShadow,
+                    {
                         position: 'absolute', left: 0, right: 0, bottom: 0, height: SCREEN_HEIGHT,
                         backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32,
                         transform: [{ translateY: sheetAnim }]
@@ -316,19 +299,19 @@ export default function HomeScreen() {
                     >
                         <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
                             <Svg width="12" height="14" viewBox="0 0 12 14" fill="none">
-                                <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8"/>
+                                <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8" />
                             </Svg>
                             <Text style={[styles.chipLabel]}>Home</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
                             <Svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                                <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8"/>
+                                <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8" />
                             </Svg>
                             <Text style={styles.chipLabel}>Work</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
                             <Svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <Path d="M6.75 13.5C5.025 13.5 3.52187 12.9281 2.24062 11.7844C0.959375 10.6406 0.225 9.2125 0.0375 7.5H1.575C1.75 8.8 2.32812 9.875 3.30938 10.725C4.29063 11.575 5.4375 12 6.75 12C8.2125 12 9.45312 11.4906 10.4719 10.4719C11.4906 9.45312 12 8.2125 12 6.75C12 5.2875 11.4906 4.04688 10.4719 3.02813C9.45312 2.00938 8.2125 1.5 6.75 1.5C5.8875 1.5 5.08125 1.7 4.33125 2.1C3.58125 2.5 2.95 3.05 2.4375 3.75H4.5V5.25H0V0.75H1.5V2.5125C2.1375 1.7125 2.91562 1.09375 3.83437 0.65625C4.75312 0.21875 5.725 0 6.75 0C7.6875 0 8.56562 0.178125 9.38437 0.534375C10.2031 0.890625 10.9156 1.37188 11.5219 1.97812C12.1281 2.58437 12.6094 3.29688 12.9656 4.11562C13.3219 4.93437 13.5 5.8125 13.5 6.75C13.5 7.6875 13.3219 8.56562 12.9656 9.38437C12.6094 10.2031 12.1281 10.9156 11.5219 11.5219C10.9156 12.1281 10.2031 12.6094 9.38437 12.9656C8.56562 13.3219 7.6875 13.5 6.75 13.5ZM8.85 9.9L6 7.05V3H7.5V6.45L9.9 8.85L8.85 9.9Z" fill="#BEA3D8"/>
+                                <Path d="M6.75 13.5C5.025 13.5 3.52187 12.9281 2.24062 11.7844C0.959375 10.6406 0.225 9.2125 0.0375 7.5H1.575C1.75 8.8 2.32812 9.875 3.30938 10.725C4.29063 11.575 5.4375 12 6.75 12C8.2125 12 9.45312 11.4906 10.4719 10.4719C11.4906 9.45312 12 8.2125 12 6.75C12 5.2875 11.4906 4.04688 10.4719 3.02813C9.45312 2.00938 8.2125 1.5 6.75 1.5C5.8875 1.5 5.08125 1.7 4.33125 2.1C3.58125 2.5 2.95 3.05 2.4375 3.75H4.5V5.25H0V0.75H1.5V2.5125C2.1375 1.7125 2.91562 1.09375 3.83437 0.65625C4.75312 0.21875 5.725 0 6.75 0C7.6875 0 8.56562 0.178125 9.38437 0.534375C10.2031 0.890625 10.9156 1.37188 11.5219 1.97812C12.1281 2.58437 12.6094 3.29688 12.9656 4.11562C13.3219 4.93437 13.5 5.8125 13.5 6.75C13.5 7.6875 13.3219 8.56562 12.9656 9.38437C12.6094 10.2031 12.1281 10.9156 11.5219 11.5219C10.9156 12.1281 10.2031 12.6094 9.38437 12.9656C8.56562 13.3219 7.6875 13.5 6.75 13.5ZM8.85 9.9L6 7.05V3H7.5V6.45L9.9 8.85L8.85 9.9Z" fill="#BEA3D8" />
                             </Svg>
                             <Text style={styles.chipLabel}>Recent</Text>
                         </TouchableOpacity>
@@ -358,29 +341,29 @@ export default function HomeScreen() {
                             const fare = ride.fare?.total ? `₹${ride.fare.total}` : (ride.price || '');
                             const rating = ride.rating?.toFixed(1) || ride.rating || '';
                             return (
-                            <TouchableOpacity key={ride.id || ride._id} style={styles.rideCard} onPress={() => router.push({ pathname: '/ride-details', params: { rideId: ride.id || ride._id } })}>
-                                <View style={styles.rideIconBox}>
-                                    <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                        <Path d="M3 16V17C3 17.2833 2.90417 17.5208 2.7125 17.7125C2.52083 17.9042 2.28333 18 2 18H1C0.716667 18 0.479167 17.9042 0.2875 17.7125C0.0958333 17.5208 0 17.2833 0 17V9L2.1 3C2.2 2.7 2.37917 2.45833 2.6375 2.275C2.89583 2.09167 3.18333 2 3.5 2H6V0H12V2H14.5C14.8167 2 15.1042 2.09167 15.3625 2.275C15.6208 2.45833 15.8 2.7 15.9 3L18 9V17C18 17.2833 17.9042 17.5208 17.7125 17.7125C17.5208 17.9042 17.2833 18 17 18H16C15.7167 18 15.4792 17.9042 15.2875 17.7125C15.0958 17.5208 15 17.2833 15 17V16H3ZM2.8 7H15.2L14.15 4H3.85L2.8 7ZM2 9V14V9ZM4.5 13C4.91667 13 5.27083 12.8542 5.5625 12.5625C5.85417 12.2708 6 11.9167 6 11.5C6 11.0833 5.85417 10.7292 5.5625 10.4375C5.27083 10.1458 4.91667 10 4.5 10C4.08333 10 3.72917 10.1458 3.4375 10.4375C3.14583 10.7292 3 11.0833 3 11.5C3 11.9167 3.14583 12.2708 3.4375 12.5625C3.72917 12.8542 4.08333 13 4.5 13ZM13.5 13C13.9167 13 14.2708 12.8542 14.5625 12.5625C14.8542 12.2708 15 11.9167 15 11.5C15 11.0833 14.8542 10.7292 14.5625 10.4375C14.2708 10.1458 13.9167 10 13.5 10C13.0833 10 12.7292 10.1458 12.4375 10.4375C12.1458 10.7292 12 11.0833 12 11.5C12 11.9167 12.1458 12.2708 12.4375 12.5625C12.7292 12.8542 13.0833 13 13.5 13ZM2 14H16V9H2V14Z" fill="#BEA3D8"/>
-                                    </Svg>
-                                </View>
-                                <View style={styles.rideInfo}>
-                                    <Text style={styles.rideTo} numberOfLines={1}>To: {dropAddress}</Text>
-                                    <Text style={styles.rideFrom} numberOfLines={1}>From: {pickAddress}</Text>
-                                    <Text style={styles.rideDate}>{rideDate}</Text>
-                                </View>
-                                <View style={styles.rideRight}>
-                                    <Text style={styles.ridePrice}>{fare}</Text>
-                                    {!!rating && (
-                                        <View style={styles.rideRatingRow}>
-                                            <Svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                                <Path d="M1.9125 9.5L2.725 5.9875L0 3.625L3.6 3.3125L5 0L6.4 3.3125L10 3.625L7.275 5.9875L8.0875 9.5L5 7.6375L1.9125 9.5Z" fill="#EAB308"/>
-                                            </Svg>
-                                            <Text style={styles.rideRating}>{rating}</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </TouchableOpacity>
+                                <TouchableOpacity key={ride.id || ride._id} style={styles.rideCard} onPress={() => router.push({ pathname: '/ride-details', params: { rideId: ride.id || ride._id } })}>
+                                    <View style={styles.rideIconBox}>
+                                        <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                            <Path d="M3 16V17C3 17.2833 2.90417 17.5208 2.7125 17.7125C2.52083 17.9042 2.28333 18 2 18H1C0.716667 18 0.479167 17.9042 0.2875 17.7125C0.0958333 17.5208 0 17.2833 0 17V9L2.1 3C2.2 2.7 2.37917 2.45833 2.6375 2.275C2.89583 2.09167 3.18333 2 3.5 2H6V0H12V2H14.5C14.8167 2 15.1042 2.09167 15.3625 2.275C15.6208 2.45833 15.8 2.7 15.9 3L18 9V17C18 17.2833 17.9042 17.5208 17.7125 17.7125C17.5208 17.9042 17.2833 18 17 18H16C15.7167 18 15.4792 17.9042 15.2875 17.7125C15.0958 17.5208 15 17.2833 15 17V16H3ZM2.8 7H15.2L14.15 4H3.85L2.8 7ZM2 9V14V9ZM4.5 13C4.91667 13 5.27083 12.8542 5.5625 12.5625C5.85417 12.2708 6 11.9167 6 11.5C6 11.0833 5.85417 10.7292 5.5625 10.4375C5.27083 10.1458 4.91667 10 4.5 10C4.08333 10 3.72917 10.1458 3.4375 10.4375C3.14583 10.7292 3 11.0833 3 11.5C3 11.9167 3.14583 12.2708 3.4375 12.5625C3.72917 12.8542 4.08333 13 4.5 13ZM13.5 13C13.9167 13 14.2708 12.8542 14.5625 12.5625C14.8542 12.2708 15 11.9167 15 11.5C15 11.0833 14.8542 10.7292 14.5625 10.4375C14.2708 10.1458 13.9167 10 13.5 10C13.0833 10 12.7292 10.1458 12.4375 10.4375C12.1458 10.7292 12 11.0833 12 11.5C12 11.9167 12.1458 12.2708 12.4375 12.5625C12.7292 12.8542 13.0833 13 13.5 13ZM2 14H16V9H2V14Z" fill="#BEA3D8" />
+                                        </Svg>
+                                    </View>
+                                    <View style={styles.rideInfo}>
+                                        <Text style={styles.rideTo} numberOfLines={1}>To: {dropAddress}</Text>
+                                        <Text style={styles.rideFrom} numberOfLines={1}>From: {pickAddress}</Text>
+                                        <Text style={styles.rideDate}>{rideDate}</Text>
+                                    </View>
+                                    <View style={styles.rideRight}>
+                                        <Text style={styles.ridePrice}>{fare}</Text>
+                                        {!!rating && (
+                                            <View style={styles.rideRatingRow}>
+                                                <Svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                    <Path d="M1.9125 9.5L2.725 5.9875L0 3.625L3.6 3.3125L5 0L6.4 3.3125L10 3.625L7.275 5.9875L8.0875 9.5L5 7.6375L1.9125 9.5Z" fill="#EAB308" />
+                                                </Svg>
+                                                <Text style={styles.rideRating}>{rating}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
                             );
                         })}
                     </View>
