@@ -55,6 +55,7 @@ export default {
       bundleIdentifier: "in.sakhirides.customer",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: "Sakhi needs your location to find nearby drivers and track your ride.",
         NSLocationAlwaysUsageDescription: "Sakhi needs your location to share it with emergency contacts during an active ride.",
         NSCameraUsageDescription: "Sakhi needs camera access for gender verification via selfie.",
@@ -98,10 +99,9 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "14e84f2e-a965-42d1-a192-de3f0c540c18"
+        projectId: "9664af70-e889-40d2-9b8a-de3dc0acd8f3"
       },
       router: {}
-    },
-    owner: "devaga123"
+    }
   }
 };

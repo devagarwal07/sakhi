@@ -147,7 +147,7 @@ export default function HomeScreen() {
         ).start();
     }, []);
 
-    const greetingName = user?.name ? user.name.split(' ')[0] : 'there';
+    const greetingName = 'Sakhi';
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good Morning';
