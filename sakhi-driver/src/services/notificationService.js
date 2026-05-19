@@ -40,100 +40,108 @@ Notifications.setNotificationHandler({
 //   - Accept / Decline  → quick-action buttons
 // ─────────────────────────────────────────────────────────────────────────────
 export async function showCustomRideNotification(payload = {}) {
+  console.log('[Notifee] showCustomRideNotification called, type:', payload.type);
   try {
-  // Delete the old channel (if it exists) — Android locks importance once set,
-  // so we must use a new channel ID to get MAX importance.
-  await notifee.deleteChannel('ride_requests_full_screen').catch(() => {});
-
-  const channelId = await notifee.createChannel({
-    id:         'ride_req_v2',          // NEW ID — forces fresh MAX-importance channel
-    name:       'Ride Requests',
-    importance: AndroidImportance.MAX,
-    visibility: AndroidVisibility.PUBLIC,
-    sound:      'default',
-    vibration:  true,
-    bypassDnd:  true,
-  });
-
-  const fare         = payload.fare || payload.estimated_fare || '';
-  const distToPickup = payload.distance_to_pickup_km || payload.distanceToPickupKm || '';
-  const pickup       = payload.pickup_address  || payload.pickupAddress  || 'Pickup location';
-  const drop         = payload.drop_address    || payload.dropoff_address
-                    || payload.dropAddress     || payload.dropoffAddress || 'Drop location';
-  const riderName    = payload.rider_name      || payload.riderName      || 'Rider';
-  const fareStr      = fare ? ` • ₹${fare}` : '';
-  const distStr      = distToPickup ? `📍 ${distToPickup} km away` : '';
-  const summaryLine  = [distStr, `🟢 ${pickup}`, `🔴 ${drop}`].filter(Boolean).join('\n');
-
-  await notifee.displayNotification({
-    id:    'ride_request',
-    title: `🚗 New Ride${fareStr}`,
-    body:  `${riderName}  ${distStr}`,
-    data:  Object.fromEntries(
-      Object.entries(payload).map(([k, v]) => [k, String(v ?? '')])
-    ),
-    android: {
-      channelId,
-
-      // ── CALL category: system treats this like an incoming phone call ──────
-      // This is the only reliable way to get a full-screen intent on Android 12+
-      // even when another app is in front or the screen is on.
-      category:   AndroidCategory.CALL,
-      importance: AndroidImportance.MAX,   // MUST be MAX for fullScreenAction
+    // ── Step 1: Create channel ─────────────────────────────────────────────
+    const channelId = await notifee.createChannel({
+      id:         'ride_req_v3',
+      name:       'Ride Requests',
+      importance: AndroidImportance.HIGH,
       visibility: AndroidVisibility.PUBLIC,
+      sound:      'default',
+      vibration:  true,
+      bypassDnd:  true,
+    });
+    console.log('[Notifee] Channel created:', channelId);
 
-      autoCancel: false,
-      ongoing:    false,
+    const fare         = payload.fare || payload.estimated_fare || '';
+    const distToPickup = payload.distance_to_pickup_km || payload.distanceToPickupKm || '';
+    const pickup       = payload.pickup_address  || payload.pickupAddress  || 'Pickup location';
+    const drop         = payload.drop_address    || payload.dropoff_address
+                      || payload.dropAddress     || payload.dropoffAddress || 'Drop location';
+    const riderName    = payload.rider_name      || payload.riderName      || 'Rider';
+    const fareStr      = fare ? ` • ₹${fare}` : '';
+    const distStr      = distToPickup ? `📍 ${distToPickup} km away` : '';
+    const summaryLine  = [distStr, `🟢 ${pickup}`, `🔴 ${drop}`].filter(Boolean).join('\n');
 
-      // ── FULL SCREEN INTENT ────────────────────────────────────────────────
-      // Targets IncomingRideActivity — a transparent trampoline with:
-      //   • no splash screen / cold boot cost
-      //   • showWhenLocked + turnScreenOn
-      // It stores the payload in SharedPreferences, then brings MainActivity
-      // to front. Android grants fullscreen much more reliably to it.
-      fullScreenAction: {
+    // ── Step 2: Build notification ─────────────────────────────────────────
+    const notifPayload = {
+      id:    'ride_request',
+      title: `🚗 New Ride${fareStr}`,
+      body:  `${riderName}  ${distStr}`,
+      data:  Object.fromEntries(
+        Object.entries(payload).map(([k, v]) => [k, String(v ?? '')])
+      ),
+      android: {
+        channelId,
+        importance:  AndroidImportance.HIGH,
+        visibility:  AndroidVisibility.PUBLIC,
+        category:    AndroidCategory.CALL,
+        autoCancel:  false,
+        ongoing:     false,
+        style: {
+          type: AndroidStyle.BIGTEXT,
+          text: summaryLine,
+        },
+        actions: [
+          {
+            title:       '✅ Accept',
+            pressAction: { id: 'accept' },
+          },
+          {
+            title:       '❌ Decline',
+            pressAction: { id: 'decline' },
+          },
+        ],
+        pressAction: {
+          id:             'default',
+          launchActivity: 'com.sakhi.partner.driver.MainActivity',
+        },
+        vibrationPattern: [0, 400, 200, 400, 200, 400],
+        color:            '#BEA3D8',
+      },
+    };
+
+    // ── Step 3: Add fullScreenAction only if IncomingRideActivity exists ───
+    // If the activity is missing from the manifest, skip it — the notification
+    // will still appear as a high-priority heads-up banner.
+    try {
+      notifPayload.android.fullScreenAction = {
         id:             'incoming_ride',
         launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity',
-        // Pass the ride payload as Intent extras so IncomingRideActivity
-        // can write it to SharedPreferences for the JS bridge.
-        mainComponent:  undefined,
-      },
-      pressAction: {
-        id:             'default',
-        launchActivity: 'com.sakhi.partner.driver.MainActivity',
-      },
+      };
+    } catch (fErr) {
+      console.warn('[Notifee] fullScreenAction setup failed, skipping:', fErr?.message);
+    }
 
-      // ── EXPANDED NOTIFICATION CONTENT ────────────────────────────────────
-      style: {
-        type: AndroidStyle.BIGTEXT,
-        text: summaryLine,
-      },
+    // ── Step 4: Display ────────────────────────────────────────────────────
+    await notifee.displayNotification(notifPayload);
+    console.log('[Notifee] ✅ Custom ride request notification displayed successfully');
 
-      // ── QUICK ACTION BUTTONS ──────────────────────────────────────────────
-      actions: [
-        {
-          title:       '✅ Accept',
-          // Launch IncomingRideActivity so the payload is bridged correctly
-          pressAction: { id: 'accept', launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity' },
-        },
-        {
-          title:       '❌ Decline',
-          pressAction: { id: 'decline' },
-        },
-      ],
-
-      vibrationPattern: [0, 400, 200, 400, 200, 400],
-      lights:           ['#BEA3D8', 500, 500],
-      color:            '#BEA3D8',
-      smallIcon:        'notification_icon',   // drawable confirmed in android/res/
-    },
-  });
-
-  console.log('[Notifee] Custom ride request notification displayed');
   } catch (err) {
-    console.error('[Notifee] showCustomRideNotification FAILED:', err?.message || err);
+    console.error('[Notifee] ❌ showCustomRideNotification FAILED at step:', err?.message || err);
+    // FALLBACK: show a minimal notification so the driver is at least alerted
+    try {
+      const fallbackChannelId = await notifee.createChannel({
+        id: 'ride_req_fallback', name: 'Ride Requests', importance: AndroidImportance.HIGH,
+      });
+      await notifee.displayNotification({
+        id:    'ride_request_fallback',
+        title: '🚗 New Ride Request',
+        body:  'Tap to view and accept',
+        android: {
+          channelId:   fallbackChannelId,
+          importance:  AndroidImportance.HIGH,
+          pressAction: { id: 'default', launchActivity: 'com.sakhi.partner.driver.MainActivity' },
+        },
+      });
+      console.log('[Notifee] Fallback notification displayed');
+    } catch (fallbackErr) {
+      console.error('[Notifee] FALLBACK also failed:', fallbackErr?.message);
+    }
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REQUEST FULL SCREEN INTENT PERMISSION (Android 14+)
@@ -295,14 +303,37 @@ export async function registerForPushAsync() {
 // RIDE_REQUEST notifications are suppressed (handled by the overlay).
 // ─────────────────────────────────────────────────────────────────────────────
 export function setupForegroundHandler() {
+  // Expo push notification listener (for system notifications while app is open)
   const subscription = Notifications.addNotificationReceivedListener((notification) => {
     const data = notification.request.content.data || {};
-    console.log('[FCM] Foreground notification type:', data.type);
-    // RIDE_REQUEST already suppressed by setNotificationHandler above.
-    // SocketContext handles it via DeviceEventEmitter for the in-app overlay.
+    console.log('[FCM] Expo Foreground notification type:', data.type);
   });
-  return () => subscription.remove();
+
+  // ── CRITICAL: React Native Firebase foreground handler ────────────────────
+  // When app is in FOREGROUND and we receive a data-only FCM message,
+  // messaging().onMessage fires (NOT setBackgroundMessageHandler).
+  // Without this, RIDE_REQUEST notifications are silently dropped when the
+  // driver is actively looking at the app.
+  const unsubFirebase = messaging().onMessage(async (remoteMessage) => {
+    const data = remoteMessage.data || {};
+    console.log('[Firebase] Foreground message received, type:', data.type);
+
+    if (data.type === 'RIDE_REQUEST') {
+      // Emit directly — SocketContext will show the IncomingRideRequestScreen overlay
+      DeviceEventEmitter.emit('PUSH_RIDE_REQUEST', data);
+      // Also show a Notifee heads-up banner (user can tap action buttons)
+      await showCustomRideNotification(data).catch((e) =>
+        console.warn('[Notifee] Foreground notification failed:', e?.message)
+      );
+    }
+  });
+
+  return () => {
+    subscription.remove();
+    unsubFirebase();
+  };
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATION TAP HANDLER
