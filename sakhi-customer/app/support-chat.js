@@ -239,7 +239,7 @@ export default function SupportChatScreen() {
 
     return (
         <View style={styles.root}>
-            <StatusBar barStyle="light-content" backgroundColor="#6B21A8" />
+            <StatusBar barStyle="light-content" backgroundColor="#9E7FC4" />
 
             {/* ── Header ── */}
             <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
@@ -302,7 +302,7 @@ export default function SupportChatScreen() {
                                     activeOpacity={0.75}
                                 >
                                     <Text style={styles.chipText}>
-                                        <Feather name={item.icon} size={13} color="#6B21A8" />{' '}{item.label}
+                                        <Feather name={item.icon} size={13} color="#BEA3D8" />{' '}{item.label}
                                     </Text>
                                 </TouchableOpacity>
                             )}
@@ -317,7 +317,7 @@ export default function SupportChatScreen() {
                             ref={inputRef}
                             style={styles.input}
                             placeholder="Type a message…"
-                            placeholderTextColor="rgba(107, 33, 168, 0.35)"
+                            placeholderTextColor="rgba(190, 163, 216, 0.6)"
                             value={input}
                             onChangeText={setInput}
                             multiline
@@ -334,8 +334,8 @@ export default function SupportChatScreen() {
                         activeOpacity={0.8}
                     >
                         {sending
-                            ? <ActivityIndicator size="small" color="#FFFFFF" />
-                            : <Feather name="arrow-up" size={20} color="#FFFFFF" />
+                            ? <ActivityIndicator size="small" color="#1E1B2E" />
+                            : <Feather name="arrow-up" size={20} color="#1E1B2E" />
                         }
                     </TouchableOpacity>
                 </View>
@@ -344,8 +344,8 @@ export default function SupportChatScreen() {
     );
 }
 
-const PURPLE_DARK  = '#6B21A8';
-const PURPLE_MID   = '#9333EA';
+const PURPLE_DARK  = '#BEA3D8';
+const PURPLE_MID   = '#BEA3D8';
 const PURPLE_LIGHT = '#BEA3D8';
 const PURPLE_PALE  = '#F5F0FF';
 const WHITE        = '#FFFFFF';
@@ -366,10 +366,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: PURPLE_DARK,
+        backgroundColor: '#9E7FC4',
         gap: 12,
         // Gradient-like shadow
-        shadowColor: PURPLE_DARK,
+        shadowColor: '#9E7FC4',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
         shadowRadius: 16,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     },
     botHeaderAvatar: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.22)',
+        backgroundColor: 'rgba(190,163,216,0.25)',
         alignItems: 'center', justifyContent: 'center',
         position: 'relative',
     },
@@ -398,13 +398,13 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: 1, right: 1,
         width: 11, height: 11, borderRadius: 6,
         backgroundColor: '#22C55E',
-        borderWidth: 2, borderColor: PURPLE_DARK,
+        borderWidth: 2, borderColor: '#9E7FC4',
     },
     headerTitle: {
         fontSize: 16, fontWeight: '700', color: WHITE, letterSpacing: -0.3,
     },
     headerSub: {
-        fontSize: 11, fontWeight: '400', color: 'rgba(255,255,255,0.72)',
+        fontSize: 11, fontWeight: '400', color: 'rgba(255,255,255,0.7)',
         marginTop: 1,
     },
     menuBtn: {
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 2,
     },
-    botAvatarText: { fontSize: 14, fontWeight: '800', color: WHITE },
+    botAvatarText: { fontSize: 14, fontWeight: '800', color: DARK },
 
     bubbleWrapper: { maxWidth: SCREEN_W * 0.72, gap: 3 },
     bubbleWrapperUser: { alignItems: 'flex-end' },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.08,
     },
     bubbleText: { fontSize: 14.5, lineHeight: 21 },
-    bubbleTextUser: { color: WHITE, fontWeight: '400' },
+    bubbleTextUser: { color: DARK, fontWeight: '500' },
     bubbleTextBot:  { color: DARK,  fontWeight: '400' },
 
     timestamp: {
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 7,
         borderWidth: 1.5,
-        borderColor: 'rgba(147, 51, 234, 0.2)',
+        borderColor: 'rgba(190, 163, 216, 0.4)',
         shadowColor: PURPLE_MID,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: 13, fontWeight: '600',
-        color: PURPLE_DARK, letterSpacing: -0.2,
+        color: DARK, letterSpacing: -0.2,
     },
 
     // ── Input Bar ────────────────────────────────────────────────────────────
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
         backgroundColor: PURPLE_PALE,
         borderRadius: 22,
         borderWidth: 1.5,
-        borderColor: 'rgba(147, 51, 234, 0.15)',
+        borderColor: 'rgba(190, 163, 216, 0.4)',
         paddingHorizontal: 16,
         paddingVertical: Platform.OS === 'ios' ? 10 : 6,
         maxHeight: 120,
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     sendBtnDisabled: {
-        backgroundColor: 'rgba(147,51,234,0.25)',
+        backgroundColor: 'rgba(190,163,216,0.45)',
         shadowOpacity: 0,
         elevation: 0,
     },

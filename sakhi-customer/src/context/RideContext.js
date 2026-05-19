@@ -2,97 +2,6 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const RideContext = createContext(null);
 
-// ── DEV BYPASS — mirrors the flag in AuthContext ──────────────────────────────
-const DEVELOPER_BYPASS = true;
-
-// Generate the next N upcoming weekday dates from today
-function getUpcomingWeekdays(count) {
-    const dates = [];
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
-    cursor.setDate(cursor.getDate() + 1); // start from tomorrow
-    while (dates.length < count) {
-        const dow = cursor.getDay();
-        if (dow !== 0 && dow !== 6) { // skip Sunday(0) and Saturday(6)
-            dates.push(cursor.toISOString().slice(0, 10));
-        }
-        cursor.setDate(cursor.getDate() + 1);
-    }
-    return dates;
-}
-
-const MOCK_SCHEDULED_DATES = getUpcomingWeekdays(20);
-
-// Second subscription: starts from Apr 22 specifically
-function getDatesStartingFrom(startDateStr, count) {
-    const dates = [];
-    const cursor = new Date(startDateStr + 'T00:00:00');
-    while (dates.length < count) {
-        const dow = cursor.getDay();
-        if (dow !== 0 && dow !== 6) {
-            dates.push(cursor.toISOString().slice(0, 10));
-        }
-        cursor.setDate(cursor.getDate() + 1);
-    }
-    return dates;
-}
-
-const MOCK_SCHEDULED_DATES_2 = getDatesStartingFrom('2026-04-22', 12);
-
-const DEV_INITIAL_STATE = {
-    rideId: null,
-    status: null,
-    pickup:  { latitude: 19.0760, longitude: 72.8777, address: 'Andheri West, Mumbai, Maharashtra' },
-    dropoff: { latitude: 18.9220, longitude: 72.8347, address: 'Churchgate, Mumbai, Maharashtra' },
-    stop: null,
-    driver: null,
-    fare: null,
-    paymentMethod: 'upi',
-    estimatedETA: null,
-    waitingSeconds: 0,
-    waitingCharge: 0,
-    polyline: [],
-    // Primary subscription (kept for backward-compat)
-    subscription: {
-        id: 'dev-sub-001',
-        morningTime: '8:30 AM',
-        days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-        rides_total: 22,
-        rides_used: 2,
-        plan: 22,
-        used: 2,
-        total_rides: 22,
-        scheduled_dates: MOCK_SCHEDULED_DATES,
-        pickup:  { address: 'Andheri West, Mumbai, Maharashtra' },
-        dropoff: { address: 'Churchgate, Mumbai, Maharashtra' },
-    },
-    // Full list for multi-subscription UI
-    subscriptions: [
-        {
-            id: 'dev-sub-001',
-            morningTime: '8:30 AM',
-            days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-            rides_total: 22,
-            rides_used: 2,
-            total_rides: 22,
-            scheduled_dates: MOCK_SCHEDULED_DATES,
-            pickup:  { address: 'Andheri West, Mumbai, Maharashtra' },
-            dropoff: { address: 'Churchgate, Mumbai, Maharashtra' },
-        },
-        {
-            id: 'dev-sub-002',
-            morningTime: '6:00 PM',
-            days: ['Mon', 'Tue', 'Wed', 'Thu'],
-            rides_total: 12,
-            rides_used: 0,
-            total_rides: 12,
-            scheduled_dates: MOCK_SCHEDULED_DATES_2,
-            pickup:  { address: 'Bandra West, Mumbai, Maharashtra' },
-            dropoff: { address: 'Lower Parel, Mumbai, Maharashtra' },
-        },
-    ],
-};
-
 const initialState = {
     rideId: null,
     status: null,
@@ -110,7 +19,7 @@ const initialState = {
 
 
 export function RideProvider({ children }) {
-    const [ride, setRide] = useState(DEVELOPER_BYPASS ? DEV_INITIAL_STATE : initialState);
+    const [ride, setRide] = useState(initialState);
 
     const setPickup = useCallback((pickup) => setRide((r) => ({ ...r, pickup })), []);
     const setDropoff = useCallback((dropoff) => setRide((r) => ({ ...r, dropoff })), []);

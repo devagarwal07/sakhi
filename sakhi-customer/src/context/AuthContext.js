@@ -6,20 +6,6 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { registerForPushAsync } from '../services/notificationService';
 
 
-// ── DEV BYPASS ─────────────────────────────────────────────────────────────
-// Set to `true` to skip OTP & auth entirely during local development.
-// ⚠️  MUST be `false` before any production build.
-const DEVELOPER_BYPASS = false;
-
-const MOCK_USER = {
-    _id: 'dev-user-001',
-    name: 'Dev Tester',
-    phone: '+919999999999',
-    email: 'dev@sakhi.app',
-    verification_status: 'pending',
-};
-// ───────────────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -29,12 +15,6 @@ export function AuthProvider({ children }) {
 
     // ── Check existing session on app load ─────────────────────────────────
     const checkAuth = useCallback(async () => {
-        if (DEVELOPER_BYPASS) {
-            setUser(MOCK_USER);
-            setIsAuthenticated(true);
-            setIsLoading(false);
-            return;
-        }
         setIsLoading(true);
         try {
             const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
@@ -73,18 +53,12 @@ export function AuthProvider({ children }) {
 
     // ── Send OTP ───────────────────────────────────────────────────────────
     const requestOtp = async (phone) => {
-        if (DEVELOPER_BYPASS) return { message: '[DEV] OTP bypassed' };
         const { data } = await sendOtp(phone);
         return data;
     };
 
     // ── Verify OTP + set session ───────────────────────────────────────────
     const login = async (phone, otp) => {
-        if (DEVELOPER_BYPASS) {
-            setUser(MOCK_USER);
-            setIsAuthenticated(true);
-            return MOCK_USER;
-        }
         const { data } = await verifyOtp(phone, otp);
         const { accessToken, refreshToken, user: userData } = data;
 

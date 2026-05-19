@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import SmartMapView from '../src/components/SmartMapView';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { bookRide, cancelRide } from '../src/api/endpoints';
@@ -76,6 +77,10 @@ export default function RideFindingScreen() {
 
     // ── Book ride + wire real-time socket listeners ───────────────────────────
     useEffect(() => {
+        if ((ride?.pickup && !isWithinBengaluru(ride.pickup)) || (ride?.dropoff && !isWithinBengaluru(ride.dropoff))) {
+            router.replace('/bengaluru-only');
+            return;
+        }
         let booked = false;
 
         const handleRideAssigned = ({ ride_id, driver, status }) => {

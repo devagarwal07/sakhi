@@ -8,6 +8,7 @@ import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { useRouter } from 'expo-router';
 import SmartMapView from '../src/components/SmartMapView';
 import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER } from '../src/utils/fareCalculator';
+import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
@@ -461,6 +462,10 @@ export default function RideEstimateScreen() {
                     style={[styles.bookButton, (!pickup || !dropoff) && { opacity: 0.5 }]}
                     onPress={() => {
                         if (!pickup || !dropoff) return;
+                        if ((pickup && !isWithinBengaluru(pickup)) || (dropoff && !isWithinBengaluru(dropoff))) {
+                            router.push('/bengaluru-only');
+                            return;
+                        }
                         if (fareData) {
                             setFare({
                                 base:          fareData.base          ?? 0,

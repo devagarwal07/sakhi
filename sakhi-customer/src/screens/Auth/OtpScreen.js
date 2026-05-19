@@ -30,7 +30,6 @@ export default function OtpScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const phone = Array.isArray(params.phone) ? params.phone[0] : params.phone;
-    const devBypass = Array.isArray(params.devBypass) ? params.devBypass[0] : params.devBypass;
     const { login, requestOtp } = useAuth();
     const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
     const [loading, setLoading] = useState(false);
@@ -56,19 +55,6 @@ export default function OtpScreen() {
             setResendTimer((t) => (t > 0 ? t - 1 : 0));
         }, 1000);
         return () => clearInterval(interval);
-    }, []);
-
-    // Auto-fill bypass code when navigated from dev bypass button
-    useEffect(() => {
-        if (devBypass && String(devBypass).length === OTP_LENGTH) {
-            const digits = String(devBypass).split('');
-            setOtp(digits);
-            // Small delay so UI renders first
-            setTimeout(() => {
-                handleVerify(digits.join(''));
-            }, 300);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const shake = () => {
@@ -151,18 +137,6 @@ export default function OtpScreen() {
         }
     };
 
-    const handleDevBypass = () => {
-        const code = process.env.EXPO_PUBLIC_OTP_BYPASS ?? '123456';
-        if (String(code).length !== OTP_LENGTH) {
-            Alert.alert('Dev bypass misconfigured', 'EXPO_PUBLIC_OTP_BYPASS must be 6 digits.');
-            return;
-        }
-        const digits = String(code).split('');
-        setOtp(digits);
-        setTimeout(() => {
-            handleVerify(digits.join(''));
-        }, 200);
-    };
     const handleResend = async () => {
         if (resendTimer > 0 || resendLoading) return;
         setResendLoading(true);
@@ -264,13 +238,6 @@ export default function OtpScreen() {
                     )}
                 </View>
 
-                {process.env.EXPO_PUBLIC_OTP_BYPASS ? (
-                    <Pressable onPress={handleDevBypass} disabled={loading}>
-                        <Text style={styles.resendLink}>
-                            ⚡ Dev: Skip OTP (use {process.env.EXPO_PUBLIC_OTP_BYPASS})
-                        </Text>
-                    </Pressable>
-                ) : null}
             </View>
 
             {/* Footer — sticky CTA */}

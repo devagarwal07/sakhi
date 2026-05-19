@@ -79,24 +79,6 @@ export default function LoginScreen() {
         }
     };
 
-    // Dev bypass — skip SMS OTP entirely during development
-    const handleDevBypass = () => {
-        const cleaned = phone.replace(/\s/g, '');
-        if (cleaned.length !== 10 || !/^\d+$/.test(cleaned)) {
-            shake();
-            Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
-            return;
-        }
-        const formattedPhone = `+91${cleaned}`;
-        router.push({
-            pathname: '/(auth)/otp',
-            params: {
-                phone: formattedPhone,
-                devBypass: process.env.EXPO_PUBLIC_OTP_BYPASS ?? '123456',
-            },
-        });
-    };
-
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -185,17 +167,6 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </Animated.View>
 
-                    {process.env.EXPO_PUBLIC_OTP_BYPASS ? (
-                        <TouchableOpacity
-                            onPress={handleDevBypass}
-                            disabled={loading}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.termsLink}>
-                                ⚡ Dev: Skip OTP (use {process.env.EXPO_PUBLIC_OTP_BYPASS})
-                            </Text>
-                        </TouchableOpacity>
-                    ) : null}
                 </View>
 
                 {/* Terms */}

@@ -74,3 +74,26 @@ export const VEHICLE_TYPES = {
 };
 
 export const SUBSCRIPTION_PLANS = [7, 14, 21, 30];
+
+// Bengaluru-only launch geofence (approx radius around city center).
+const BENGALURU_CENTER = { latitude: 12.9716, longitude: 77.5946 };
+const BENGALURU_RADIUS_KM = 35;
+
+const toRad = (deg) => (deg * Math.PI) / 180;
+const haversineKm = (a, b) => {
+    const dLat = toRad(b.latitude - a.latitude);
+    const dLng = toRad(b.longitude - a.longitude);
+    const lat1 = toRad(a.latitude);
+    const lat2 = toRad(b.latitude);
+    const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+export const isWithinBengaluru = (coords) => {
+    if (!coords) return false;
+    const { latitude, longitude } = coords;
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+    return haversineKm(coords, BENGALURU_CENTER) <= BENGALURU_RADIUS_KM;
+};
