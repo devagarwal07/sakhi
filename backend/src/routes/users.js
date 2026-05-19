@@ -8,6 +8,7 @@ const roleGuard      = require('../middleware/roleGuard');
 const { apiLimiter } = require('../middleware/rateLimiter');
 const supabase       = require('../config/supabase');
 const logger         = require('../utils/logger');
+const fcmService     = require('../services/fcmService');
 
 const router = Router();
 router.use(apiLimiter);
@@ -237,6 +238,139 @@ router.get('/wallet', authMiddleware, roleGuard('rider'), async (req, res, next)
         })),
       },
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /users/account
+// ─────────────────────────────────────────────────────────────────────────────
+router.delete('/account', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+
+    const { data: userRow, error: userErr } = await supabase
+      .from('users')
+      .select('id, name, phone')
+      .eq('id', userId)
+      .single();
+    if (userErr) throw userErr;
+
+    const activeStatuses = ['searching', 'assigned', 'driver_en_route', 'arrived', 'in_progress'];
+    const { data: activeRides, error: activeErr } = await supabase
+      .from('rides')
+      .select('id')
+      .eq('rider_id', userId)
+      .in('status', activeStatuses)
+      .limit(1);
+    if (activeErr) throw activeErr;
+    if (activeRides?.length) {
+      return res.status(409).json({
+        error: { code: 'ACTIVE_RIDE', message: 'Please complete or cancel your active ride before deleting the account.', details: {} },
+      });
+    }
+
+    const { data: rideRows, error: rideErr } = await supabase
+      .from('rides')
+      .select('id')
+      .eq('rider_id', userId);
+    if (rideErr) throw rideErr;
+
+    const rideIds = (rideRows || []).map((r) => r.id);
+
+    const { data: subscriptionRows, error: subscriptionErr } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('rider_id', userId);
+    if (subscriptionErr) throw subscriptionErr;
+
+    const subscriptionIds = (subscriptionRows || []).map((s) => s.id);
+
+    if (subscriptionIds.length) {
+      const { data: subscriptionRideRows, error: subscriptionRideErr } = await supabase
+        .from('subscription_rides')
+        .select('id')
+        .in('subscription_id', subscriptionIds);
+      if (subscriptionRideErr) throw subscriptionRideErr;
+
+      const subscriptionRideIds = (subscriptionRideRows || []).map((sr) => sr.id);
+
+      if (subscriptionRideIds.length) {
+        const { error: blocksErr } = await supabase
+          .from('driver_blocks')
+          .delete()
+          .in('subscription_ride_id', subscriptionRideIds);
+        if (blocksErr) throw blocksErr;
+      }
+
+      const { error: subRideDeleteErr } = await supabase
+        .from('subscription_rides')
+        .delete()
+        .in('subscription_id', subscriptionIds);
+      if (subRideDeleteErr) throw subRideDeleteErr;
+    }
+
+    if (rideIds.length) {
+      const deleteByRideId = async (table) => {
+        const { error } = await supabase.from(table).delete().in('ride_id', rideIds);
+        if (error) throw error;
+      };
+
+      await deleteByRideId('ride_chat_messages');
+      await deleteByRideId('sos_events');
+      await deleteByRideId('anomaly_alerts');
+      await deleteByRideId('driver_earnings');
+      await deleteByRideId('payout_transactions');
+      await deleteByRideId('support_tickets');
+      await deleteByRideId('rider_ratings');
+
+      const { error: ridesDeleteErr } = await supabase.from('rides').delete().in('id', rideIds);
+      if (ridesDeleteErr) throw ridesDeleteErr;
+    }
+
+    const deleteByUserId = async (table) => {
+      const { error } = await supabase.from(table).delete().eq('user_id', userId);
+      if (error) throw error;
+    };
+
+    await supabase.from('driver_blocks').delete().eq('rider_id', userId);
+    await deleteByUserId('emergency_contacts');
+    await deleteByUserId('user_addresses');
+    await deleteByUserId('wallet_transactions');
+    await deleteByUserId('notifications_log');
+    await deleteByUserId('support_sessions');
+    await deleteByUserId('support_tickets');
+    await deleteByUserId('sos_events');
+
+    const { error: referralsErr } = await supabase
+      .from('referrals')
+      .delete()
+      .or(`referrer_id.eq.${userId},referred_id.eq.${userId}`);
+    if (referralsErr) throw referralsErr;
+
+    const { error: refreshErr } = await supabase.from('refresh_tokens').delete().eq('user_id', userId);
+    if (refreshErr) throw refreshErr;
+
+    const { error: subscriptionsErr } = await supabase.from('subscriptions').delete().eq('rider_id', userId);
+    if (subscriptionsErr) throw subscriptionsErr;
+
+    const { error: userDeleteErr } = await supabase.from('users').delete().eq('id', userId);
+    if (userDeleteErr) throw userDeleteErr;
+
+    const supportFcm = process.env.SUPPORT_FCM_TOKEN;
+    if (supportFcm) {
+      const userName = userRow?.name || 'Unknown';
+      const userPhone = userRow?.phone || 'Unknown';
+      fcmService.sendRaw(supportFcm, {
+        title: 'Account Deleted',
+        body: `Rider ${userName} (${userPhone}) deleted their account.`,
+        data: { type: 'ACCOUNT_DELETED', user_id: userId },
+      }).catch(() => {});
+    }
+
+    logger.info('users.deleteAccount', { userId, rideCount: rideIds.length });
+    return res.status(204).send();
   } catch (err) {
     return next(err);
   }

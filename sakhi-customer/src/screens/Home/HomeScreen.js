@@ -97,9 +97,6 @@ export default function HomeScreen() {
                 setCurrentLocation(coords);
                 const address = await reverseGeocode(lat, lng);
                 setPickup({ ...coords, address });
-                mapRef.current?.animateToRegion({
-                    ...coords, latitudeDelta: LATITUDE_DELTA, longitudeDelta: LONGITUDE_DELTA,
-                });
             };
 
             // 1. Try to get last known position immediately for fast UI
@@ -173,8 +170,8 @@ export default function HomeScreen() {
                     style={StyleSheet.absoluteFill}
                     center={currentLocation || { latitude: 19.0760, longitude: 72.8777 }}
                     zoom={15}
-                    scrollEnabled={false}
-                    zoomEnabled={false}
+                    scrollEnabled
+                    zoomEnabled
                     markers={currentLocation ? [{
                         id: 'me',
                         latitude: currentLocation.latitude,
@@ -204,11 +201,6 @@ export default function HomeScreen() {
                         </View>
                         <View style={styles.searchInput}>
                             <Text style={styles.searchPlaceholder}>Where are you going?</Text>
-                        </View>
-                        <View style={styles.micIcon}>
-                            <Svg width="14" height="19" viewBox="0 0 14 19" fill="none">
-                                <Path d="M7 12C6.16667 12 5.45833 11.7083 4.875 11.125C4.29167 10.5417 4 9.83333 4 9V3C4 2.16667 4.29167 1.45833 4.875 0.875C5.45833 0.291667 6.16667 0 7 0C7.83333 0 8.54167 0.291667 9.125 0.875C9.70833 1.45833 10 2.16667 10 3V9C10 9.83333 9.70833 10.5417 9.125 11.125C8.54167 11.7083 7.83333 12 7 12ZM6 19V15.925C4.26667 15.6917 2.83333 14.9167 1.7 13.6C0.566667 12.2833 0 10.75 0 9H2C2 10.3833 2.4875 11.5625 3.4625 12.5375C4.4375 13.5125 5.61667 14 7 14C8.38333 14 9.5625 13.5125 10.5375 12.5375C11.5125 11.5625 12 10.3833 12 9H14C14 10.75 13.4333 12.2833 12.3 13.6C11.1667 14.9167 9.73333 15.6917 8 15.925V19H6ZM7 10C7.28333 10 7.52083 9.90417 7.7125 9.7125C7.90417 9.52083 8 9.28333 8 9V3C8 2.71667 7.90417 2.47917 7.7125 2.2875C7.52083 2.09583 7.28333 2 7 2C6.71667 2 6.47917 2.09583 6.2875 2.2875C6.09583 2.47917 6 2.71667 6 3V9C6 9.28333 6.09583 9.52083 6.2875 9.7125C6.47917 9.90417 6.71667 10 7 10Z" fill="#BEA3D8" fillOpacity="0.6" />
-                            </Svg>
                         </View>
                     </TouchableOpacity>
 
@@ -491,12 +483,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#94A3B8',
         lineHeight: 20,
-    },
-    micIcon: {
-        width: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: 0.6,
     },
 
     // Profile avatar — 48px circle

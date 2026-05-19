@@ -189,6 +189,31 @@ async function sendToMultiple(tokens, { title, body, data = {} }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// FUNCTION: sendRaw
+// Send a push notification to a single, explicit FCM token (support/admin).
+// ──────────────────────────────────────────────────────────────────────────────
+async function sendRaw(token, { title, body, data = {} }) {
+  if (!token) return { sent: false, reason: 'no_token' };
+
+  const messaging = getMessaging();
+  if (!messaging) return { sent: false, reason: 'not_initialized' };
+
+  const stringData = Object.fromEntries(
+    Object.entries({ type: '', ...data }).map(([k, v]) => [k, String(v)])
+  );
+
+  const message = {
+    token,
+    notification: { title, body },
+    data: stringData,
+  };
+
+  const messageId = await messaging.send(message);
+  logger.info('fcmService.sendRaw — sent', { messageId });
+  return { sent: true, message_id: messageId };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // FUNCTION: sendAdminBroadcast
 // Send a push notification to all active riders, all active drivers, or both.
 // ──────────────────────────────────────────────────────────────────────────────
@@ -304,4 +329,4 @@ async function sendRideRequest(driverId, { title, body, data = {} }) {
   }
 }
 
-module.exports = { getMessaging, isMessagingReady, sendToUser, sendToMultiple, sendAdminBroadcast, sendRideRequest };
+module.exports = { getMessaging, isMessagingReady, sendToUser, sendToMultiple, sendRaw, sendAdminBroadcast, sendRideRequest };

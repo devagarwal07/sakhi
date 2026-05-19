@@ -11,7 +11,7 @@ import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare } from '../src/api/endpoints';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -26,7 +26,7 @@ async function fetchDirectionsPolyline(origin, destination, waypoint) {
     const data = await res.json();
     const route = data?.routes?.[0];
     if (route) {
-        const points   = decodePolyline(route.geometry);
+        const points   = decodePolylineAdaptive(route.geometry, origin, destination);
         const distM    = route.legs?.reduce((s, l) => s + (l.distance || 0), 0) ?? 0;
         const durS     = route.legs?.reduce((s, l) => s + (l.duration || 0), 0) ?? 0;
         const distance = `${(distM / 1000).toFixed(1)} km`;
@@ -37,9 +37,10 @@ async function fetchDirectionsPolyline(origin, destination, waypoint) {
 }
 
 // Decode encoded polyline (compatible with both Google & Mappls formats)
-function decodePolyline(encoded) {
+function decodePolyline(encoded, precision = 5) {
     const poly = [];
     let index = 0, lat = 0, lng = 0;
+    const factor = Math.pow(10, precision);
     while (index < encoded.length) {
         let b, shift = 0, result = 0;
         do {
@@ -55,9 +56,34 @@ function decodePolyline(encoded) {
             shift += 5;
         } while (b >= 0x20);
         lng += result & 1 ? ~(result >> 1) : result >> 1;
-        poly.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+        poly.push({ latitude: lat / factor, longitude: lng / factor });
     }
     return poly;
+}
+
+function decodePolylineAdaptive(encoded, origin, destination) {
+    const p5 = decodePolyline(encoded, 5);
+    const p6 = decodePolyline(encoded, 6);
+
+    const isValid = (points) =>
+        points.length > 1 &&
+        points.every((p) => Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180);
+
+    if (isValid(p5) && !isValid(p6)) return p5;
+    if (isValid(p6) && !isValid(p5)) return p6;
+
+    const score = (points) => {
+        if (!origin || !points.length) return Number.POSITIVE_INFINITY;
+        const head = points[0];
+        const tail = points[points.length - 1];
+        const end = destination || origin;
+        return Math.abs(head.latitude - origin.latitude) +
+            Math.abs(head.longitude - origin.longitude) +
+            Math.abs(tail.latitude - end.latitude) +
+            Math.abs(tail.longitude - end.longitude);
+    };
+
+    return score(p5) <= score(p6) ? p5 : p6;
 }
 
 
@@ -114,7 +140,11 @@ export default function RideEstimateScreen() {
                 
                 if (!active) return;
                 
-                setRoutePolyline(dir.points || []);
+                const fallbackPoints = [pickup, stop, dropoff]
+                    .filter(Boolean)
+                    .map((p) => ({ latitude: p.latitude, longitude: p.longitude }));
+
+                setRoutePolyline((dir.points && dir.points.length > 1) ? dir.points : fallbackPoints);
                 if (dir.distance) setRouteDistance(dir.distance);
                 if (dir.duration) setRouteDuration(dir.duration);
                 if (estReq?.data) setFareData(estReq.data);
@@ -125,7 +155,7 @@ export default function RideEstimateScreen() {
             }
         })();
         return () => { active = false; };
-    }, [pickup, dropoff]);
+    }, [pickup, dropoff, stop]);
 
     // Compute midpoint for initial map region
     const midLat = pickup && dropoff
@@ -263,7 +293,7 @@ export default function RideEstimateScreen() {
                     </View>
                 )}
 
-                <Text style={styles.sectionHeader}>SELECT RIDE</Text>
+                <Text style={styles.sectionHeader}>AUTO RIDE</Text>
 
                     {/* Ride Selection Card */}
                     <View style={styles.rideCard}>
@@ -273,7 +303,7 @@ export default function RideEstimateScreen() {
                         </View>
 
                         <View style={styles.rideIllustration}>
-                            <Feather name="truck" size={32} color="#1E1B2E" />
+                            <MaterialCommunityIcons name="rickshaw" size={32} color="#BEA3D8" />
                         </View>
                         
                         <View style={styles.rideInfo}>

@@ -90,7 +90,9 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
   <script>
     var map = null;
     var markerObjects = {};   // id -> mappls.Marker instance
-    var polylineObjects = []; // array of mappls.Polyline instances
+    var polylineObjects = []; // array of mappls.Polyline instances (fallback)
+    var polylineSourceId = 'polylines-source';
+    var polylineLayerId = 'polylines-layer';
 
     /* ── Custom HTML marker helper ─────────────────────────────────────── */
     function createMarkerEl(opts) {
@@ -133,18 +135,65 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
     }
 
     /* ── Update polylines (called on postMessage updates) ───────────────── */
+    function ensurePolylineLayer() {
+      if (!map || !map.addSource || map.getSource(polylineSourceId)) return;
+      map.addSource(polylineSourceId, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      map.addLayer({
+        id: polylineLayerId,
+        type: 'line',
+        source: polylineSourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': ['get', 'opacity'],
+        }
+      });
+    }
+
     function updatePolylines(polylines) {
       if (!map) return;
+
+      if (map.getSource && map.addSource && map.addLayer) {
+        ensurePolylineLayer();
+        var source = map.getSource(polylineSourceId);
+        if (source && source.setData) {
+          var features = [];
+          (polylines || []).forEach(function(p) {
+            if (!p.coords || !p.coords.length) return;
+            features.push({
+              type: 'Feature',
+              properties: {
+                color: p.color || '#BEA3D8',
+                width: p.width || 5,
+                opacity: p.dashed ? 0.6 : 1,
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: p.coords.map(function(c) { return [c.lng, c.lat]; }),
+              }
+            });
+          });
+          source.setData({ type: 'FeatureCollection', features: features });
+          return;
+        }
+      }
+
+      // Fallback for environments without GeoJSON line support
       polylineObjects.forEach(function(p) { try { p.remove(); } catch(e) {} });
       polylineObjects = [];
-      polylines.forEach(function(p) {
+      (polylines || []).forEach(function(p) {
         if (!p.coords || !p.coords.length) return;
-        var lnglat = p.coords.map(function(c) { return [c.lng, c.lat]; });
+        var path = p.coords.map(function(c) { return { lat: c.lat, lng: c.lng }; });
         polylineObjects.push(new mappls.Polyline({
           map: map,
-          path: lnglat,
+          path: path,
           strokeColor: p.color,
           strokeWidth: p.width,
+          strokeWeight: p.width,
           strokeOpacity: p.dashed ? 0.6 : 1,
           strokeDashstyle: p.dashed ? 'dot' : 'solid',
         }));
@@ -179,6 +228,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
         dragPan:     ${scrollEnabled !== false},
       });
       map.on('load', function () {
+        ensurePolylineLayer();
         // Signal React Native that the map is ready to receive postMessage updates
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));

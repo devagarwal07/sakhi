@@ -29,6 +29,7 @@ export const updateProfile = (data) =>
     apiClient.put('/users/profile', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
+export const deleteAccount = () => apiClient.delete('/users/account');
 export const getAddresses = () => apiClient.get('/users/addresses');
 export const saveAddress = (data) => apiClient.post('/users/addresses', data);
 export const deleteAddress = (id) => apiClient.delete(`/users/addresses/${id}`);

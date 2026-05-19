@@ -12,7 +12,7 @@ import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { bookRide, cancelRide } from '../src/api/endpoints';
 import SakhiModal from '../src/components/SakhiModal';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const RetryIcon = () => (
     <Svg viewBox="0 0 640 640" width={18} height={18}>
@@ -271,7 +271,7 @@ export default function RideFindingScreen() {
                 {/* Floating Badge overlapping map and sheet */}
                 <View style={styles.badgeWrapper}>
                     <View style={styles.badge}>
-                        <Feather name="truck" size={24} color="#BEA3D8" />
+                        <MaterialCommunityIcons name="rickshaw" size={28} color="#BEA3D8" />
                     </View>
                 </View>
 
@@ -282,7 +282,7 @@ export default function RideFindingScreen() {
                 >
                     {/* Titles */}
                     <View style={styles.headerTitles}>
-                        <Text style={styles.titleText}>Finding Your Driver...</Text>
+                        <Text style={styles.titleText}>Finding Your Sakhi...</Text>
                         <Text style={styles.subtitleText}>Matching you with the nearest Sakhi driver</Text>
                     </View>
 
@@ -340,7 +340,7 @@ export default function RideFindingScreen() {
                         <View style={styles.noDriversIconWrap}>
                             <View style={styles.noDriversPulse1} />
                             <View style={styles.noDriversPulse2} />
-                            <Feather name="truck" size={44} color="#BEA3D8" />
+                            <MaterialCommunityIcons name="rickshaw" size={48} color="#BEA3D8" />
                         </View>
 
                         <Text style={styles.noDriversTitle}>All Sakhis Are Busy</Text>

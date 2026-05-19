@@ -10,6 +10,8 @@ node_modules/
 .env.test.local
 .env.production.local
 *.env.local
+.env.*
+.env.example
 
 # Logs
 logs/
@@ -56,23 +58,47 @@ obj/
 coverage/
 .nyc_output/
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Mobile development (Android/iOS)
 # Android
 .gradle/
 local.properties
 *.apk
+*.aab
 *.aar
+*.jks
 *.keystore
 !debug.keystore
 
 # iOS
 *.xcworkspace/
-/ios/Pods/
-/ios/Frameworks/
-/ios/DerivedData/
+*.xcuserstate
+*.xcuserdata/
+*.xcscmblueprint
+ios/Pods/
+ios/Frameworks/
+ios/DerivedData/
+ios/build/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
 
 # Misc
 .cache/
+.parcel-cache/
+.turbo/
+.vite/
 .eslintcache
 .stylelintcache
 node_modules.bak/

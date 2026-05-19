@@ -354,6 +354,7 @@ export default function LocationSearchScreen() {
                     </View>
                 </View>
 
+
                 {/* Saved Places */}
                 <View style={styles.savedSection}>
                     <Text style={styles.sectionTitle}>SAVED PLACES</Text>
