@@ -128,6 +128,30 @@ function makeBridgeModule(pkg) {
     '        } else {\n' +
     '            promise.resolve(true)\n' +
     '        }\n' +
+    '    }\n\n' +
+    '    @ReactMethod\n' +
+    '    fun showIncomingRide(data: String, promise: Promise) {\n' +
+    '        try {\n' +
+    '            // Save to SharedPreferences so the app picks it up when it opens\n' +
+    '            val prefs = reactApplicationContext.getSharedPreferences("SakhiRideBridge", Context.MODE_PRIVATE)\n' +
+    '            val editor = prefs.edit()\n' +
+    '            // Convert JSON string back to Map\n' +
+    '            val jsonObject = org.json.JSONObject(data)\n' +
+    '            val keys = jsonObject.keys()\n' +
+    '            while (keys.hasNext()) {\n' +
+    '                val key = keys.next()\n' +
+    '                editor.putString(key, jsonObject.getString(key))\n' +
+    '            }\n' +
+    '            editor.putString("_bridgeTimestamp", System.currentTimeMillis().toString())\n' +
+    '            editor.apply()\n\n' +
+    '            // Launch the trampoline activity\n' +
+    '            val intent = android.content.Intent(reactApplicationContext, IncomingRideActivity::class.java)\n' +
+    '            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)\n' +
+    '            reactApplicationContext.startActivity(intent)\n' +
+    '            promise.resolve(true)\n' +
+    '        } catch (e: Exception) {\n' +
+    '            promise.reject("LAUNCH_ERROR", e.message, e)\n' +
+    '        }\n' +
     '    }\n' +
     '}\n'
   );

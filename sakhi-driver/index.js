@@ -114,7 +114,21 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
     //    → wakes screen / shows HUD banner / opens app on tap
     await showCustomRideNotification(payload);
 
-    // 2. If the foreground service is running (JS thread alive in background),
+    // 2. Aggressively try to force the screen to wake via SYSTEM_ALERT_WINDOW
+    //    This bypasses Notifee's reliance on standard fullScreenIntent and explicitly
+    //    asks Android to launch our trampoline activity from the background JS.
+    //    Highly effective for strict OEMs (Oxygen OS, MIUI) if overlay permission is granted.
+    try {
+      const { NativeModules } = require('react-native');
+      if (NativeModules.RideRequestBridge?.showIncomingRide) {
+        console.log('[FCM] Attempting forceful overlay launch via RideRequestBridge...');
+        await NativeModules.RideRequestBridge.showIncomingRide(JSON.stringify(payload));
+      }
+    } catch (e) {
+      console.warn('[FCM] Forceful overlay launch failed:', e.message);
+    }
+
+    // 3. If the foreground service is running (JS thread alive in background),
     //    also emit directly so the IncomingRideRequestScreen can appear
     //    without the user needing to tap the notification.
     DeviceEventEmitter.emit('PUSH_RIDE_REQUEST', payload);
