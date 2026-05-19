@@ -132,8 +132,32 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
     }, [driver])
   );
 
-  const handleGoOnline = () => {
+  const handleGoOnline = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+    
+    // Check Android 14+ Full Screen Intent Permission
+    if (Platform.OS === 'android') {
+      try {
+        const notifee = require('@notifee/react-native').default;
+        const settings = await notifee.getNotificationSettings();
+        if (settings.android?.fullScreenIntent === false) {
+          // Alert user before bouncing them to settings
+          const { Alert } = require('react-native');
+          Alert.alert(
+            'Action Required',
+            'To see incoming ride requests instantly, please allow full-screen notifications for Sakhi Driver.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => notifee.openNotificationSettings() }
+            ]
+          );
+          return; // Stop the flow here until they grant it
+        }
+      } catch (e) {
+        console.warn('Failed to check full-screen intent permission:', e);
+      }
+    }
+
     navigation.navigate('PaymentPlans');
   };
 
