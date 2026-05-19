@@ -90,15 +90,25 @@ async function sendToUser(userId, role, { title, body, data = {} }) {
     const messaging = getMessaging();
     if (!messaging) return { sent: false, reason: 'not_initialized' };
 
-    // FCM requires all data values to be strings
+    // FCM requires all data values to be strings.
+    // IMPORTANT: We embed title/body into the data payload and OMIT the top-level
+    // `notification` key. If `notification` is present, Android OS intercepts
+    // the message and shows a plain banner BEFORE the JS handler runs, which
+    // prevents our Notifee full-screen intent from ever being displayed.
     const stringData = Object.fromEntries(
-      Object.entries({ type: '', ...data }).map(([k, v]) => [k, String(v)])
+      Object.entries({ type: '', notification_title: title, notification_body: body, ...data })
+        .map(([k, v]) => [k, String(v)])
     );
 
     const message = {
-      notification: { title, body },
-      data:         stringData,
+      // NO notification key — data-only so the JS background handler runs
+      data: stringData,
       token,
+      android: { priority: 'high' },
+      apns: {
+        headers: { 'apns-priority': '10' },
+        payload: { aps: { 'content-available': 1 } },
+      },
     };
 
     const messageId = await messaging.send(message);
@@ -148,8 +158,9 @@ async function sendToMultiple(tokens, { title, body, data = {} }) {
     try {
       const response = await messaging.sendEachForMulticast({
         tokens: chunk,
-        notification: { title, body },
+        // Data-only — no notification key (same reason as sendToUser above)
         data: stringData,
+        android: { priority: 'high' },
       });
 
       success_count += response.successCount;
