@@ -135,13 +135,12 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
   const handleGoOnline = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
     
-    // Check Android 14+ Full Screen Intent Permission
+    // Check Android Permissions for Full Screen Popups
     if (Platform.OS === 'android') {
       try {
         const notifee = require('@notifee/react-native').default;
         const settings = await notifee.getNotificationSettings();
         if (settings.android?.fullScreenIntent === false) {
-          // Alert user before bouncing them to settings
           const { Alert } = require('react-native');
           Alert.alert(
             'Action Required',
@@ -151,10 +150,28 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
               { text: 'Open Settings', onPress: () => notifee.openNotificationSettings() }
             ]
           );
-          return; // Stop the flow here until they grant it
+          return;
+        }
+
+        // Check "Display over other apps" (SYSTEM_ALERT_WINDOW)
+        const { NativeModules, Alert } = require('react-native');
+        const { RideRequestBridge } = NativeModules;
+        if (RideRequestBridge && RideRequestBridge.canDrawOverlays) {
+          const canDraw = await RideRequestBridge.canDrawOverlays();
+          if (!canDraw) {
+            Alert.alert(
+              'Overlay Permission Required',
+              'To show ride requests while you are using other apps, please enable "Display over other apps" for Sakhi Driver.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => RideRequestBridge.requestOverlayPermission() }
+              ]
+            );
+            return;
+          }
         }
       } catch (e) {
-        console.warn('Failed to check full-screen intent permission:', e);
+        console.warn('Failed to check permissions:', e);
       }
     }
 

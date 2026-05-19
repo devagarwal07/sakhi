@@ -108,6 +108,26 @@ function makeBridgeModule(pkg) {
     '        } catch (e: Exception) {\n' +
     '            promise.reject("BRIDGE_ERROR", e.message, e)\n' +
     '        }\n' +
+    '    }\n\n' +
+    '    @ReactMethod\n' +
+    '    fun canDrawOverlays(promise: Promise) {\n' +
+    '        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {\n' +
+    '            promise.resolve(android.provider.Settings.canDrawOverlays(reactApplicationContext))\n' +
+    '        } else {\n' +
+    '            promise.resolve(true)\n' +
+    '        }\n' +
+    '    }\n\n' +
+    '    @ReactMethod\n' +
+    '    fun requestOverlayPermission(promise: Promise) {\n' +
+    '        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {\n' +
+    '            val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION)\n' +
+    '            intent.data = android.net.Uri.parse("package:" + reactApplicationContext.packageName)\n' +
+    '            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)\n' +
+    '            reactApplicationContext.startActivity(intent)\n' +
+    '            promise.resolve(true)\n' +
+    '        } else {\n' +
+    '            promise.resolve(true)\n' +
+    '        }\n' +
     '    }\n' +
     '}\n'
   );
