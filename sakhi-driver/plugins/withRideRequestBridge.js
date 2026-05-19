@@ -327,18 +327,29 @@ function withCustomManifest(config) {
       return a.$ && a.$['android:name'] === '.IncomingRideActivity';
     });
 
+    // Add WAKE_LOCK permission if not already present
+    if (!manifest['uses-permission']) manifest['uses-permission'] = [];
+    var hasWakeLock = manifest['uses-permission'].find(function(p) {
+      return p.$ && p.$['android:name'] === 'android.permission.WAKE_LOCK';
+    });
+    if (!hasWakeLock) {
+      manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.WAKE_LOCK' } });
+    }
+
     if (!already) {
       application.activity.push({
         $: {
           'android:name':              '.IncomingRideActivity',
           'android:theme':             '@style/Theme.IncomingRide',
-          'android:launchMode':        'singleInstance',
+          // singleTask — NOT singleInstance. singleInstance breaks fullscreen
+          // intent on many OEM devices (OnePlus, Samsung, Xiaomi).
+          'android:launchMode':        'singleTask',
           'android:exported':          'true',
           'android:showWhenLocked':    'true',
+          'android:showOnLockScreen':  'true',
           'android:turnScreenOn':      'true',
           'android:screenOrientation': 'portrait',
           'android:excludeFromRecents':'true',
-          'android:taskAffinity':      pkg + '.incoming',
         },
       });
     }

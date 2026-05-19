@@ -44,9 +44,11 @@ export async function showCustomRideNotification(payload = {}) {
   try {
     // ── Step 1: Create channel ─────────────────────────────────────────────
     const channelId = await notifee.createChannel({
-      id:         'ride_req_v3',
+      // NOTE: Android caches channel settings. If this channel already exists
+      // with HIGH importance, delete the app and reinstall to pick up MAX.
+      id:         'ride_req_max',
       name:       'Ride Requests',
-      importance: AndroidImportance.HIGH,
+      importance: AndroidImportance.MAX,
       visibility: AndroidVisibility.PUBLIC,
       sound:      'default',
       vibration:  true,
@@ -74,11 +76,17 @@ export async function showCustomRideNotification(payload = {}) {
       ),
       android: {
         channelId,
-        importance:  AndroidImportance.HIGH,
+        importance:  AndroidImportance.MAX,
         visibility:  AndroidVisibility.PUBLIC,
         category:    AndroidCategory.CALL,
         autoCancel:  false,
         ongoing:     false,
+        // fullScreenAction MUST be set at creation time, not added later.
+        // Android ignores it if the notification was already posted without it.
+        fullScreenAction: {
+          id:             'incoming_ride',
+          launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity',
+        },
         style: {
           type: AndroidStyle.BIGTEXT,
           text: summaryLine,
@@ -101,18 +109,6 @@ export async function showCustomRideNotification(payload = {}) {
         color:            '#BEA3D8',
       },
     };
-
-    // ── Step 3: Add fullScreenAction only if IncomingRideActivity exists ───
-    // If the activity is missing from the manifest, skip it — the notification
-    // will still appear as a high-priority heads-up banner.
-    try {
-      notifPayload.android.fullScreenAction = {
-        id:             'incoming_ride',
-        launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity',
-      };
-    } catch (fErr) {
-      console.warn('[Notifee] fullScreenAction setup failed, skipping:', fErr?.message);
-    }
 
     // ── Step 4: Display ────────────────────────────────────────────────────
     await notifee.displayNotification(notifPayload);
