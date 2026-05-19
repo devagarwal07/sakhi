@@ -38,31 +38,54 @@ notifee.registerForegroundService((notification) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFEE BACKGROUND EVENT HANDLER
 //
-// Handles action-button presses when the app is in the background or killed.
+// ⚠️  IMPORTANT: This runs in a HEADLESS JS context when the app is backgrounded.
+//     DeviceEventEmitter.emit() here does NOT reach the main app's event listeners.
+//     Therefore: we call the REST API directly for Accept/Decline, instead of
+//     trying to relay through DeviceEventEmitter.
 // ─────────────────────────────────────────────────────────────────────────────
 notifee.onBackgroundEvent(async ({ type, detail }) => {
   const { notification, pressAction } = detail;
   const data = notification?.data || {};
+  const rideId = data.ride_id || data.rideId;
 
-  if (type === EventType.ACTION_PRESS && pressAction?.id === 'accept') {
-    // Emit accept — SocketContext picks this up and calls acceptRide()
-    DeviceEventEmitter.emit('PUSH_RIDE_REQUEST', { ...data, _action: 'accept' });
+  if (type === EventType.ACTION_PRESS && pressAction?.id === 'accept' && rideId) {
+    console.log('[Notifee BG] Accept pressed for ride:', rideId);
+    try {
+      // Call REST API directly — the only reliable way from a headless context.
+      // The auth token is stored in SecureStore by AuthContext on login.
+      const SecureStore = require('expo-secure-store');
+      const token = await SecureStore.getItemAsync('driver_access_token');
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://sakhi-backend-pwej.onrender.com';
+      const res = await fetch(`${API_URL}/rides/${rideId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await res.json().catch(() => ({}));
+      console.log('[Notifee BG] Accept API response:', res.status, json?.message || '');
+    } catch (e) {
+      console.error('[Notifee BG] Accept API call failed:', e?.message);
+    }
     await notifee.cancelNotification(notification.id);
     return;
   }
 
   if (type === EventType.ACTION_PRESS && pressAction?.id === 'decline') {
-    // Just dismiss
+    console.log('[Notifee BG] Decline pressed for ride:', rideId);
+    // Just dismiss — matching engine will timeout and move to next driver
     await notifee.cancelNotification(notification.id);
     return;
   }
 
   if (type === EventType.PRESS) {
-    // Body tap → bring app to front, show the overlay
-    DeviceEventEmitter.emit('PUSH_RIDE_REQUEST', data);
+    // Body tap → notification dismissed, app brought to foreground.
+    // IncomingRideActivity or the bridge hook will show the in-app overlay.
     await notifee.cancelNotification(notification.id);
   }
 });
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIREBASE BACKGROUND MESSAGE HANDLER
