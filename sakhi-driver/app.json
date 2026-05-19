@@ -57,7 +57,8 @@
       ],
       "@react-native-firebase/app",
       "./plugins/withAdiRegistration",
-      "./plugins/withManifestFixes"
+      "./plugins/withManifestFixes",
+      "./plugins/withRideRequestBridge"
     ],
     "ios": {
       "supportsTablet": false,

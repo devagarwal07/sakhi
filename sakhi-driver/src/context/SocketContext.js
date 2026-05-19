@@ -34,7 +34,7 @@ async function startDriverForegroundService() {
         autoCancel: false,
         smallIcon: 'notification_icon',
         color: '#BEA3D8',
-        pressAction: { id: 'default', launchActivity: 'default' },
+        pressAction: { id: 'default', launchActivity: 'com.sakhi.partner.driver.MainActivity' },
       },
     });
     console.log('[Notifee] Foreground service started — driver online');

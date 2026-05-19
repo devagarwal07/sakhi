@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
+import messaging from '@react-native-firebase/messaging';
 import { updateDriverFcmToken } from '../api/endpoints';
 import notifee, {
   AndroidImportance,
@@ -40,10 +41,14 @@ Notifications.setNotificationHandler({
 // ─────────────────────────────────────────────────────────────────────────────
 export async function showCustomRideNotification(payload = {}) {
   try {
+  // Delete the old channel (if it exists) — Android locks importance once set,
+  // so we must use a new channel ID to get MAX importance.
+  await notifee.deleteChannel('ride_requests_full_screen').catch(() => {});
+
   const channelId = await notifee.createChannel({
-    id:         'ride_requests_full_screen',
+    id:         'ride_req_v2',          // NEW ID — forces fresh MAX-importance channel
     name:       'Ride Requests',
-    importance: AndroidImportance.MAX,       // MAX required for fullScreenAction
+    importance: AndroidImportance.MAX,
     visibility: AndroidVisibility.PUBLIC,
     sound:      'default',
     vibration:  true,
@@ -74,23 +79,28 @@ export async function showCustomRideNotification(payload = {}) {
       // This is the only reliable way to get a full-screen intent on Android 12+
       // even when another app is in front or the screen is on.
       category:   AndroidCategory.CALL,
-      importance: AndroidImportance.HIGH,
+      importance: AndroidImportance.MAX,   // MUST be MAX for fullScreenAction
       visibility: AndroidVisibility.PUBLIC,
 
       autoCancel: false,
       ongoing:    false,
 
       // ── FULL SCREEN INTENT ────────────────────────────────────────────────
-      // Screen OFF / Locked → launches MainActivity as a full-screen activity.
-      // Screen ON           → shows a HUD banner at the top.
-      // Tapping either brings the app to foreground.
+      // Targets IncomingRideActivity — a transparent trampoline with:
+      //   • no splash screen / cold boot cost
+      //   • showWhenLocked + turnScreenOn
+      // It stores the payload in SharedPreferences, then brings MainActivity
+      // to front. Android grants fullscreen much more reliably to it.
       fullScreenAction: {
-        id:             'default',
-        launchActivity: 'default',
+        id:             'incoming_ride',
+        launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity',
+        // Pass the ride payload as Intent extras so IncomingRideActivity
+        // can write it to SharedPreferences for the JS bridge.
+        mainComponent:  undefined,
       },
       pressAction: {
         id:             'default',
-        launchActivity: 'default',
+        launchActivity: 'com.sakhi.partner.driver.MainActivity',
       },
 
       // ── EXPANDED NOTIFICATION CONTENT ────────────────────────────────────
@@ -103,7 +113,8 @@ export async function showCustomRideNotification(payload = {}) {
       actions: [
         {
           title:       '✅ Accept',
-          pressAction: { id: 'accept', launchActivity: 'default' },
+          // Launch IncomingRideActivity so the payload is bridged correctly
+          pressAction: { id: 'accept', launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity' },
         },
         {
           title:       '❌ Decline',
@@ -248,8 +259,19 @@ export async function registerForPushAsync() {
   await requestFullScreenIntentPermission();
 
   try {
-    const tokenResult = await Notifications.getDevicePushTokenAsync();
-    const fcmToken    = tokenResult.data;
+    // Request Firebase messaging permission
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (!enabled) {
+      console.warn('[FCM] Firebase Push notification permission denied');
+      return null;
+    }
+
+    // Use Firebase getToken instead of Expo
+    const fcmToken = await messaging().getToken();
 
     const stored = await SecureStore.getItemAsync(FCM_TOKEN_KEY).catch(() => null);
     if (stored === fcmToken) {

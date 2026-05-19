@@ -24,9 +24,10 @@ notifee.registerForegroundService((notification) => {
   return new Promise(() => {
     console.log('[Notifee] Foreground service started:', notification.id);
 
-    // no-op interval — keeps the JS event loop active so Android doesn't
-    // treat the service as idle and terminate it.
-    const keepalive = setInterval(() => {}, 25_000);
+    // Keepalive interval: fires every 5 s to keep the JS event loop active.
+    // 25 s was too long — Android's battery optimizer marked the service idle
+    // and terminated it, causing the app to stop receiving ride notifications.
+    const keepalive = setInterval(() => { /* no-op keepalive */ }, 5_000);
     global.__sakhiKeepalive = keepalive;
 
     // The promise never resolves — service stays alive until

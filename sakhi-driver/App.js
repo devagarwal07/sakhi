@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SocketProvider } from './src/context/SocketContext';
 import { Colors } from './src/utils/theme';
 import PageLoader from './src/components/PageLoader';
+import { useRideRequestBridge } from './src/hooks/useRideRequestBridge';
 import {
   setupForegroundHandler,
   setupNotificationTapHandler,
@@ -200,6 +201,11 @@ export default function App() {
   const [pageLoading, setPageLoading] = useState(false);
   const [i18nReady, setI18nReady] = useState(false);
   const loaderTimer = useRef(null);
+
+  // ── HOOK: Read ride payload from IncomingRideActivity native bridge ───────
+  // This fires on every app launch / foreground resume. If IncomingRideActivity
+  // stored a RIDE_REQUEST payload, it emits PUSH_RIDE_REQUEST → overlay shows.
+  useRideRequestBridge();
 
   // ── HOOK 1: Initialise i18n ───────────────────────────────────────────────
   useEffect(() => {

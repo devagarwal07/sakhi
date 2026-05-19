@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image,
   Alert, ActivityIndicator, ScrollView, TextInput,
@@ -9,9 +9,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import {
+  validateDriverName,
+  validateDLNumber,
+  validateRegistrationNumber,
+  validateModelName,
+  validateKycForm,
+} from '../../utils/onboardingValidators';
 
 const PURPLE = '#9B70D4';
 const LIGHT  = '#F5F0FF';
+const ERROR  = '#EF4444';
+const OK     = '#10B981';
 
 const VEHICLE_TYPES = [
   { id: 'auto',      label: 'Auto Rickshaw' },
@@ -28,8 +37,19 @@ const VEHICLE_COLORS = [
   { id: 'Blue',   hex: '#3B82F6' },
 ];
 
+// ── Inline error hint ─────────────────────────────────────────────────────────
+function FieldError({ error }) {
+  if (!error) return null;
+  return (
+    <View style={s.fieldErrRow}>
+      <Feather name="alert-circle" size={11} color={ERROR} />
+      <Text style={s.fieldErrTxt}>{error}</Text>
+    </View>
+  );
+}
+
 // ── Reusable photo picker card ─────────────────────────────────────────────────
-function PhotoPicker({ label, sublabel, icon, value, onChange }) {
+function PhotoPicker({ label, sublabel, icon, value, onChange, hasError }) {
   const pick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -45,7 +65,11 @@ function PhotoPicker({ label, sublabel, icon, value, onChange }) {
   };
 
   return (
-    <TouchableOpacity style={[s.photoBox, value && s.photoBoxFilled]} onPress={pick} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={[s.photoBox, value && s.photoBoxFilled, hasError && s.photoBoxError]}
+      onPress={pick}
+      activeOpacity={0.85}
+    >
       {value ? (
         <>
           <Image source={{ uri: value.uri }} style={s.photoPreview} />
@@ -56,18 +80,51 @@ function PhotoPicker({ label, sublabel, icon, value, onChange }) {
         </>
       ) : (
         <View style={s.photoPlaceholder}>
-          <View style={s.photoIconBg}>
-            <MaterialCommunityIcons name={icon} size={26} color={PURPLE} />
+          <View style={[s.photoIconBg, hasError && { backgroundColor: '#FEE2E2' }]}>
+            <MaterialCommunityIcons name={icon} size={26} color={hasError ? ERROR : PURPLE} />
           </View>
-          <Text style={s.photoLabel}>{label}</Text>
+          <Text style={[s.photoLabel, hasError && { color: ERROR }]}>{label}</Text>
           <Text style={s.photoSub}>{sublabel}</Text>
-          <View style={s.uploadChip}>
-            <Feather name="upload" size={11} color={PURPLE} />
-            <Text style={s.uploadChipTxt}>Upload</Text>
+          <View style={[s.uploadChip, hasError && { backgroundColor: '#FEE2E2' }]}>
+            <Feather name="upload" size={11} color={hasError ? ERROR : PURPLE} />
+            <Text style={[s.uploadChipTxt, hasError && { color: ERROR }]}>Upload</Text>
           </View>
         </View>
       )}
     </TouchableOpacity>
+  );
+}
+
+// ── Validated text input ──────────────────────────────────────────────────────
+function ValidatedInput({
+  label, value, onChangeText, placeholder, autoCapitalize = 'none',
+  error, hint, keyboardType = 'default', maxLength,
+}) {
+  const isOk = value.trim().length > 0 && !error;
+  return (
+    <View style={s.inputGroup}>
+      <Text style={s.inputLabel}>{label}</Text>
+      <View style={[
+        s.inputWrap,
+        error  ? s.inputWrapError : null,
+        isOk   ? s.inputWrapOk    : null,
+      ]}>
+        <TextInput
+          style={s.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#94A3B8"
+          autoCapitalize={autoCapitalize}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+        />
+        {isOk  && <Feather name="check" size={16} color={OK} style={s.inputIcon} />}
+        {error && <Feather name="alert-circle" size={16} color={ERROR} style={s.inputIcon} />}
+      </View>
+      {hint && !error && <Text style={s.hintTxt}>{hint}</Text>}
+      <FieldError error={error} />
+    </View>
   );
 }
 
@@ -90,21 +147,59 @@ export default function DriverKycUploadScreen({ navigation }) {
   const [colour,      setColour]      = useState('Yellow');
   const [typeOpen,    setTypeOpen]    = useState(false);
 
+  // Field-level errors (only shown after first blur or submit attempt)
+  const [touched,  setTouched]  = useState({});
+  const [errors,   setErrors]   = useState({});
+  const [photoErr, setPhotoErr] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
-  const canSubmit =
-    dlFront && dlBack &&
-    driverName.trim().length >= 2 &&
-    dlNumber.trim().length  >= 6 &&
-    vehicleType &&
-    regNumber.trim().length >= 4 &&
-    modelName.trim().length >= 2;
+  // ── Live field validation ────────────────────────────────────────────────
+  const validateField = useCallback((field, value) => {
+    let result = { ok: true };
+    switch (field) {
+      case 'driverName': result = validateDriverName(value);         break;
+      case 'dlNumber':   result = validateDLNumber(value);           break;
+      case 'regNumber':  result = validateRegistrationNumber(value); break;
+      case 'modelName':  result = validateModelName(value);          break;
+    }
+    setErrors(prev => ({ ...prev, [field]: result.ok ? undefined : result.error }));
+    return result.ok;
+  }, []);
 
+  const handleBlur = (field, value) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateField(field, value);
+  };
+
+  const handleChange = (field, value, setter) => {
+    setter(value);
+    if (touched[field]) validateField(field, value);
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!canSubmit) {
-      Alert.alert('Incomplete', 'Please fill all fields and upload both sides of your DL.');
+    // Mark all as touched to show all errors
+    setTouched({ driverName: true, dlNumber: true, regNumber: true, modelName: true });
+
+    const { valid, errors: formErrors, clean } = validateKycForm({
+      driverName, dlNumber, regNumber, modelName,
+    });
+    setErrors(formErrors);
+
+    const hasPhotos = dlFront && dlBack;
+    setPhotoErr(!hasPhotos);
+
+    if (!valid || !hasPhotos) {
+      Alert.alert(
+        'Fix Required',
+        !hasPhotos
+          ? 'Upload both sides of your Karnataka Driving Licence.'
+          : 'Please correct the highlighted fields before continuing.',
+      );
       return;
     }
+
     try {
       setLoading(true);
 
@@ -112,8 +207,8 @@ export default function DriverKycUploadScreen({ navigation }) {
       const kycForm = new FormData();
       kycForm.append('dl',          { uri: dlFront.uri, type: 'image/jpeg', name: 'dl_front.jpg' });
       kycForm.append('dl_back',     { uri: dlBack.uri,  type: 'image/jpeg', name: 'dl_back.jpg' });
-      kycForm.append('driver_name', driverName.trim());
-      kycForm.append('dl_number',   dlNumber.trim().toUpperCase());
+      kycForm.append('driver_name', clean.driverName);
+      kycForm.append('dl_number',   clean.dlNumber);
 
       await client.post('/drivers/kyc/upload', kycForm, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -123,9 +218,9 @@ export default function DriverKycUploadScreen({ navigation }) {
       // 2 — Save vehicle details
       await client.post('/drivers/vehicle', {
         vehicle_type:        vehicleType,
-        registration_number: regNumber.toUpperCase().trim(),
+        registration_number: clean.regNumber,
         colour,
-        model_name:          modelName.trim(),
+        model_name:          clean.modelName,
       });
 
       updateDriver({ onboarding_status: 'kyc_submitted' });
@@ -139,6 +234,14 @@ export default function DriverKycUploadScreen({ navigation }) {
 
   const currentTypeLabel = VEHICLE_TYPES.find(v => v.id === vehicleType)?.label ?? 'Select Type';
 
+  // Submit enabled only when there are no known errors (live gate)
+  const hasErrors = Object.values(errors).some(Boolean);
+  const canSubmit = !hasErrors && dlFront && dlBack &&
+    driverName.trim().length >= 2 &&
+    dlNumber.trim().length  >= 13 &&
+    regNumber.trim().length >= 9 &&
+    modelName.trim().length >= 2;
+
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
@@ -150,6 +253,14 @@ export default function DriverKycUploadScreen({ navigation }) {
         <Text style={s.topTitle}>Documents & Details</Text>
         <View style={{ width: 36 }} />
       </SafeAreaView>
+
+      {/* ── Karnataka notice banner ── */}
+      <View style={s.kaBanner}>
+        <MaterialCommunityIcons name="map-marker-check" size={15} color="#1D4ED8" />
+        <Text style={s.kaBannerTxt}>
+          Karnataka registered vehicles & KA driving licences only
+        </Text>
+      </View>
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -163,7 +274,7 @@ export default function DriverKycUploadScreen({ navigation }) {
             <MaterialCommunityIcons name="card-account-details-outline" size={18} color={PURPLE} />
             <Text style={s.sectionTitle}>Driving Licence</Text>
           </View>
-          <Text style={s.sectionSub}>Upload clear photos of both sides of your licence</Text>
+          <Text style={s.sectionSub}>Upload clear photos of both sides of your Karnataka DL</Text>
 
           <View style={s.photoRow}>
             <View style={{ flex: 1 }}>
@@ -174,6 +285,7 @@ export default function DriverKycUploadScreen({ navigation }) {
                 icon="card-account-details"
                 value={dlFront}
                 onChange={setDlFront}
+                hasError={photoErr && !dlFront}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -184,9 +296,13 @@ export default function DriverKycUploadScreen({ navigation }) {
                 icon="card-account-details-outline"
                 value={dlBack}
                 onChange={setDlBack}
+                hasError={photoErr && !dlBack}
               />
             </View>
           </View>
+          {photoErr && (!dlFront || !dlBack) && (
+            <FieldError error="Upload both sides of your Karnataka Driving Licence" />
+          )}
         </View>
 
         {/* ── Section 2: Personal Details ── */}
@@ -195,35 +311,38 @@ export default function DriverKycUploadScreen({ navigation }) {
             <MaterialCommunityIcons name="account-outline" size={18} color={PURPLE} />
             <Text style={s.sectionTitle}>Personal Details</Text>
           </View>
-          <Text style={s.sectionSub}>Details must match your driving licence</Text>
+          <Text style={s.sectionSub}>Details must match your driving licence exactly</Text>
 
           <View style={s.card}>
-            <View style={s.inputGroup}>
-              <Text style={s.inputLabel}>FULL NAME (AS ON DL)</Text>
-              <View style={s.inputWrap}>
-                <TextInput
-                  style={s.input}
-                  value={driverName}
-                  onChangeText={setDriverName}
-                  placeholder="e.g. Priya Sharma"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
+            <ValidatedInput
+              label="FULL NAME (AS ON DL)"
+              value={driverName}
+              onChangeText={v => handleChange('driverName', v, setDriverName)}
+              placeholder="e.g. Priya Sharma"
+              autoCapitalize="words"
+              error={touched.driverName ? errors.driverName : undefined}
+              hint="Enter first and last name as printed on your DL"
+            />
 
-            <View style={[s.inputGroup, { marginBottom: 0 }]}>
-              <Text style={s.inputLabel}>DL NUMBER</Text>
-              <View style={s.inputWrap}>
-                <TextInput
-                  style={s.input}
-                  value={dlNumber}
-                  onChangeText={t => setDlNumber(t.toUpperCase())}
-                  placeholder="e.g. KA0520110012345"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="characters"
-                />
-              </View>
+            <ValidatedInput
+              label="DL NUMBER (KARNATAKA KA ONLY)"
+              value={dlNumber}
+              onChangeText={v => handleChange('dlNumber', v.toUpperCase().replace(/\s/g, ''), setDlNumber)}
+              placeholder="KA0520110012345"
+              autoCapitalize="characters"
+              maxLength={18}
+              error={touched.dlNumber ? errors.dlNumber : undefined}
+              hint="Format: KA + district + year + serial (e.g. KA0520110012345)"
+            />
+
+            {/* Karnataka DL info box */}
+            <View style={s.infoBox}>
+              <MaterialCommunityIcons name="information-outline" size={14} color="#1D4ED8" />
+              <Text style={s.infoBoxTxt}>
+                DL must start with <Text style={{ fontWeight: '700' }}>KA</Text> followed by
+                your RTO code, year of issue, and serial number.
+                {'\n'}Example: <Text style={{ fontFamily: 'monospace', fontWeight: '600' }}>KA0520110012345</Text>
+              </Text>
             </View>
           </View>
         </View>
@@ -234,7 +353,7 @@ export default function DriverKycUploadScreen({ navigation }) {
             <MaterialCommunityIcons name="car-outline" size={18} color={PURPLE} />
             <Text style={s.sectionTitle}>Vehicle Details</Text>
           </View>
-          <Text style={s.sectionSub}>Provide accurate vehicle information</Text>
+          <Text style={s.sectionSub}>Vehicle must be registered in Karnataka (KA)</Text>
 
           <View style={s.card}>
 
@@ -264,33 +383,26 @@ export default function DriverKycUploadScreen({ navigation }) {
             </View>
 
             {/* Registration number */}
-            <View style={[s.inputGroup, { zIndex: 1 }]}>
-              <Text style={s.inputLabel}>REGISTRATION NUMBER</Text>
-              <View style={s.inputWrap}>
-                <TextInput
-                  style={s.input}
-                  value={regNumber}
-                  onChangeText={t => setRegNumber(t.toUpperCase())}
-                  placeholder="KA 05 AB 1234"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="characters"
-                />
-              </View>
-            </View>
+            <ValidatedInput
+              label="REGISTRATION NUMBER (KA ONLY)"
+              value={regNumber}
+              onChangeText={v => handleChange('regNumber', v.toUpperCase().replace(/\s/g, ''), setRegNumber)}
+              placeholder="KA05AB1234"
+              autoCapitalize="characters"
+              maxLength={12}
+              error={touched.regNumber ? errors.regNumber : undefined}
+              hint="Format: KA + district + series + number (e.g. KA05AB1234)"
+            />
 
             {/* Model name */}
-            <View style={[s.inputGroup, { zIndex: 1 }]}>
-              <Text style={s.inputLabel}>VEHICLE MODEL</Text>
-              <View style={s.inputWrap}>
-                <TextInput
-                  style={s.input}
-                  value={modelName}
-                  onChangeText={setModelName}
-                  placeholder="e.g. Bajaj RE, Mahindra Treo"
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-            </View>
+            <ValidatedInput
+              label="VEHICLE MODEL"
+              value={modelName}
+              onChangeText={v => handleChange('modelName', v, setModelName)}
+              placeholder="e.g. Bajaj RE, Mahindra Treo"
+              autoCapitalize="words"
+              error={touched.modelName ? errors.modelName : undefined}
+            />
 
             {/* Colour */}
             <View style={[s.inputGroup, { marginBottom: 0, zIndex: 1 }]}>
@@ -306,6 +418,7 @@ export default function DriverKycUploadScreen({ navigation }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={s.selectedColorTxt}>Selected: {colour}</Text>
             </View>
 
           </View>
@@ -318,7 +431,6 @@ export default function DriverKycUploadScreen({ navigation }) {
         <TouchableOpacity
           style={[s.submitBtn, (!canSubmit || loading) && s.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={!canSubmit || loading}
           activeOpacity={0.88}
         >
           {loading
@@ -331,7 +443,9 @@ export default function DriverKycUploadScreen({ navigation }) {
             )
           }
         </TouchableOpacity>
-        <Text style={s.footerNote}><Feather name="clipboard" size={11} color="#94A3B8" /> Our team reviews documents within 24 hours</Text>
+        <Text style={s.footerNote}>
+          <Feather name="shield" size={11} color="#94A3B8" /> Our team reviews documents within 24 hours
+        </Text>
       </SafeAreaView>
 
     </KeyboardAvoidingView>
@@ -345,7 +459,14 @@ const s = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#EDE9FA', alignItems: 'center', justifyContent: 'center' },
   topTitle:{ fontSize: 17, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.4 },
 
-  scroll: { paddingHorizontal: 20, paddingTop: 8 },
+  kaBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#EFF6FF', borderBottomWidth: 1, borderBottomColor: '#BFDBFE',
+    paddingHorizontal: 20, paddingVertical: 10,
+  },
+  kaBannerTxt: { fontSize: 12, fontWeight: '600', color: '#1D4ED8', flex: 1 },
+
+  scroll: { paddingHorizontal: 20, paddingTop: 12 },
 
   section:      { marginBottom: 24 },
   sectionHead:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
@@ -361,6 +482,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff', minHeight: 130,
   },
   photoBoxFilled: { borderStyle: 'solid', borderColor: `${PURPLE}66` },
+  photoBoxError:  { borderColor: `${ERROR}66`, borderStyle: 'solid' },
   photoPreview:   { width: '100%', height: 130, resizeMode: 'cover' },
   photoOverlay: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -380,10 +502,26 @@ const s = StyleSheet.create({
     shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 20, elevation: 4,
   },
 
+  // ── Input ──
   inputGroup:  { gap: 7 },
   inputLabel:  { fontSize: 10, fontWeight: '700', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' },
-  inputWrap:   { backgroundColor: LIGHT, borderRadius: 12, paddingHorizontal: 14, height: 48, justifyContent: 'center' },
-  input:       { fontSize: 15, fontWeight: '500', color: '#1E1B2E', padding: 0 },
+  inputWrap:   { backgroundColor: LIGHT, borderRadius: 12, paddingHorizontal: 14, height: 48, justifyContent: 'center', flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  inputWrapError: { borderColor: `${ERROR}66`, backgroundColor: '#FFF5F5' },
+  inputWrapOk:    { borderColor: `${OK}55` },
+  input:       { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E1B2E', padding: 0 },
+  inputIcon:   { marginLeft: 8 },
+  hintTxt:     { fontSize: 10, color: '#94A3B8', lineHeight: 14 },
+
+  fieldErrRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  fieldErrTxt: { fontSize: 11, color: ERROR, fontWeight: '500', flex: 1 },
+
+  // ── Info box ──
+  infoBox: {
+    flexDirection: 'row', gap: 8, alignItems: 'flex-start',
+    backgroundColor: '#EFF6FF', borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: '#BFDBFE',
+  },
+  infoBoxTxt: { flex: 1, fontSize: 11, color: '#1D4ED8', lineHeight: 17 },
 
   dropdownBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: LIGHT, borderRadius: 12, paddingHorizontal: 14, height: 48 },
   dropdownTxt:      { fontSize: 15, fontWeight: '500', color: '#1E1B2E' },
@@ -392,11 +530,12 @@ const s = StyleSheet.create({
   dropdownItemTxt:  { fontSize: 15, color: '#374151', fontWeight: '500' },
   dropdownItemActive:{ color: PURPLE, fontWeight: '700' },
 
-  colorRow:       { flexDirection: 'row', gap: 12 },
+  colorRow:       { flexDirection: 'row', gap: 12, marginTop: 4 },
   colorRing:      { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   colorRingActive:{ borderColor: PURPLE },
   colorDot:       { width: 28, height: 28, borderRadius: 14 },
   colorDotBorder: { borderWidth: 1, borderColor: '#E2E8F0' },
+  selectedColorTxt:{ fontSize: 11, color: '#6B7280', marginTop: 6 },
 
   footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 12 },
   submitBtn:      { height: 56, backgroundColor: PURPLE, borderRadius: 14, alignItems: 'center', justifyContent: 'center', shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8 },
