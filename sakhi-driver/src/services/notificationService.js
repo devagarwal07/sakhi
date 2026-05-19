@@ -95,7 +95,7 @@ export async function showCustomRideNotification(payload = {}) {
         ],
         pressAction: {
           id:             'default',
-          launchActivity: 'com.sakhi.partner.driver.MainActivity',
+          launchActivity: 'com.sakhi.partner.driver.IncomingRideActivity',
         },
         vibrationPattern: [0, 400, 200, 400, 200, 400],
         color:            '#BEA3D8',

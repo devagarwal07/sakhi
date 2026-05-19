@@ -17,9 +17,16 @@ function makeIncomingRideActivity(pkg) {
     'import android.app.KeyguardManager\n' +
     'import android.content.Context\n' +
     'import android.content.Intent\n' +
+    'import android.graphics.Color\n' +
+    'import android.graphics.drawable.GradientDrawable\n' +
     'import android.os.Build\n' +
     'import android.os.Bundle\n' +
-    'import android.view.WindowManager\n\n' +
+    'import android.view.Gravity\n' +
+    'import android.view.ViewGroup\n' +
+    'import android.view.WindowManager\n' +
+    'import android.widget.Button\n' +
+    'import android.widget.LinearLayout\n' +
+    'import android.widget.TextView\n\n' +
     'class IncomingRideActivity : Activity() {\n' +
     '    override fun onCreate(savedInstanceState: Bundle?) {\n' +
     '        super.onCreate(savedInstanceState)\n\n' +
@@ -38,30 +45,86 @@ function makeIncomingRideActivity(pkg) {
     '            val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager\n' +
     '            km.requestDismissKeyguard(this, null)\n' +
     '        }\n\n' +
+    '        val prefs = getSharedPreferences("SakhiRideBridge", Context.MODE_PRIVATE)\n' +
+    '        val editor = prefs.edit()\n' +
     '        val extras = intent?.extras\n' +
     '        if (extras != null) {\n' +
-    '            val prefs = getSharedPreferences("SakhiRideBridge", Context.MODE_PRIVATE)\n' +
-    '            val editor = prefs.edit()\n' +
     '            for (key in extras.keySet()) {\n' +
     '                val v = extras.get(key)\n' +
     '                if (v != null) editor.putString(key, v.toString())\n' +
     '            }\n' +
-    '            val pressActionId = extras.getString("pressAction.id")\n' +
-    '                ?: extras.getString("notifee.pressAction.id")\n' +
-    '            if (pressActionId == "accept") editor.putString("_action", "accept")\n' +
     '            editor.putString("_bridgeTimestamp", System.currentTimeMillis().toString())\n' +
     '            editor.apply()\n' +
     '        }\n\n' +
-    '        val mainIntent = Intent(this, MainActivity::class.java).apply {\n' +
-    '            addFlags(\n' +
-    '                Intent.FLAG_ACTIVITY_NEW_TASK or\n' +
-    '                Intent.FLAG_ACTIVITY_SINGLE_TOP or\n' +
-    '                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT\n' +
-    '            )\n' +
-    '            putExtra("INCOMING_RIDE_BRIDGE", true)\n' +
-    '        }\n' +
-    '        startActivity(mainIntent)\n' +
-    '        finish()\n' +
+    '        val fare = prefs.getString("fare", "") ?: ""\n' +
+    '        val riderName = prefs.getString("rider_name", "New Rider") ?: "New Rider"\n' +
+    '        val pickup = prefs.getString("pickup_address", "Pickup Location") ?: "Pickup"\n' +
+    '        val dropoff = prefs.getString("dropoff_address", "Drop Location") ?: "Drop"\n\n' +
+    '        val rootLayout = LinearLayout(this).apply {\n' +
+    '            orientation = LinearLayout.VERTICAL\n' +
+    '            gravity = Gravity.BOTTOM\n' +
+    '            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)\n' +
+    '            setBackgroundColor(Color.parseColor("#80000000"))\n' +
+    '        }\n\n' +
+    '        val cardLayout = LinearLayout(this).apply {\n' +
+    '            orientation = LinearLayout.VERTICAL\n' +
+    '            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {\n' +
+    '                setMargins(40, 40, 40, 60)\n' +
+    '            }\n' +
+    '            background = GradientDrawable().apply {\n' +
+    '                setColor(Color.WHITE)\n' +
+    '                cornerRadius = 40f\n' +
+    '            }\n' +
+    '            setPadding(50, 60, 50, 60)\n' +
+    '        }\n\n' +
+    '        val titleText = TextView(this).apply {\n' +
+    '            text = "🔔 New Ride Request"\n' +
+    '            textSize = 22f\n' +
+    '            setTextColor(Color.BLACK)\n' +
+    '            setTypeface(null, android.graphics.Typeface.BOLD)\n' +
+    '            gravity = Gravity.CENTER\n' +
+    '            setPadding(0, 0, 0, 50)\n' +
+    '        }\n\n' +
+    '        val detailsText = TextView(this).apply {\n' +
+    '            text = "Rider: $riderName\\nFare: ₹$fare\\n\\n🟢 $pickup\\n🔴 $dropoff"\n' +
+    '            textSize = 16f\n' +
+    '            setTextColor(Color.DKGRAY)\n' +
+    '            setPadding(0, 0, 0, 60)\n' +
+    '            setLineSpacing(12f, 1f)\n' +
+    '        }\n\n' +
+    '        val buttonLayout = LinearLayout(this).apply {\n' +
+    '            orientation = LinearLayout.HORIZONTAL\n' +
+    '            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)\n' +
+    '        }\n\n' +
+    '        val rejectBtn = Button(this).apply {\n' +
+    '            text = "DECLINE"\n' +
+    '            setTextColor(Color.DKGRAY)\n' +
+    '            background = GradientDrawable().apply { setColor(Color.parseColor("#EEEEEE")); cornerRadius = 20f }\n' +
+    '            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(0, 0, 20, 0) }\n' +
+    '            setOnClickListener { finish() }\n' +
+    '        }\n\n' +
+    '        val acceptBtn = Button(this).apply {\n' +
+    '            text = "ACCEPT RIDE"\n' +
+    '            setTextColor(Color.WHITE)\n' +
+    '            background = GradientDrawable().apply { setColor(Color.parseColor("#6B21A8")); cornerRadius = 20f }\n' +
+    '            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f)\n' +
+    '            setOnClickListener {\n' +
+    '                prefs.edit().putString("_action", "accept").apply()\n' +
+    '                val mainIntent = Intent(this@IncomingRideActivity, MainActivity::class.java).apply {\n' +
+    '                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)\n' +
+    '                    putExtra("INCOMING_RIDE_BRIDGE", true)\n' +
+    '                }\n' +
+    '                startActivity(mainIntent)\n' +
+    '                finish()\n' +
+    '            }\n' +
+    '        }\n\n' +
+    '        buttonLayout.addView(rejectBtn)\n' +
+    '        buttonLayout.addView(acceptBtn)\n' +
+    '        cardLayout.addView(titleText)\n' +
+    '        cardLayout.addView(detailsText)\n' +
+    '        cardLayout.addView(buttonLayout)\n' +
+    '        rootLayout.addView(cardLayout)\n\n' +
+    '        setContentView(rootLayout)\n' +
     '    }\n' +
     '}\n'
   );
