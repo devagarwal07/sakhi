@@ -18,7 +18,7 @@ export default {
   expo: {
     name: "Sakhi",
     slug: "sakhi-customer",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/icon.png",
     scheme: "sakhi",
@@ -36,10 +36,11 @@ export default {
       ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
       config: {
         googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY || "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY || ""
         }
       },
       package: "in.sakhirides.customer",
+      versionCode: 2,
       permissions: [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -53,7 +54,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "in.sakhirides.customer",
-      buildNumber: "2",
+      buildNumber: "3",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,

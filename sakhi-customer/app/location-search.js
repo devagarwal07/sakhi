@@ -9,6 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { getRideHistory } from '../src/api/endpoints';
+import { isInBengaluru } from '../src/utils/bengaluruUtils';
 import { Feather } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
@@ -210,11 +211,21 @@ export default function LocationSearchScreen() {
                 setActiveInput('dropoff');
                 setResults([]);
             } else if (activeInput === 'stop') {
+                // Block stops outside Bengaluru — show back so user can fix it
+                if (!isInBengaluru(coords.latitude, coords.longitude)) {
+                    router.push({ pathname: '/bengaluru-only', params: { allowBack: 'true' } });
+                    return;
+                }
                 setStop?.({ ...coords, address: newAddress });
                 setStopQuery(newAddress);
                 setActiveInput('dropoff');
                 setResults([]);
             } else {
+                // Block drop-offs outside Bengaluru — show back so user can fix it
+                if (!isInBengaluru(coords.latitude, coords.longitude)) {
+                    router.push({ pathname: '/bengaluru-only', params: { allowBack: 'true' } });
+                    return;
+                }
                 setDropoff({ ...coords, address: newAddress });
                 router.replace(returnRoute);
             }

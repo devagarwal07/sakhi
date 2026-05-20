@@ -107,6 +107,11 @@ function AppNavigator() {
             <Stack.Screen name="ride-summary" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="subscription-plans" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="subscription-ride" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="city-not-available" options={{ animation: 'fade', gestureEnabled: false }} />
+            <Stack.Screen name="bengaluru-only" options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="referrals" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="support-chat" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="help-support" options={{ animation: 'slide_from_right' }} />
         </Stack>
         </>
     );

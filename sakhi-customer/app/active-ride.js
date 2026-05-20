@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Image, Animated, Modal, Linking
+    ScrollView, Image, Animated, Modal, Linking, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmartMapView from '../src/components/SmartMapView';

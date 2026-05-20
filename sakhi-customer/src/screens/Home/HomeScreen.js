@@ -9,6 +9,7 @@ import * as Location from 'expo-location';
 import { StatusBar } from 'react-native';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { useRouter } from 'expo-router';
+import { isInBengaluru } from '../../utils/bengaluruUtils';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
@@ -85,18 +86,30 @@ export default function HomeScreen() {
 
     useEffect(() => {
         (async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
+            let permStatus;
+            try {
+                const result = await Location.requestForegroundPermissionsAsync();
+                permStatus = result.status;
+            } catch (permErr) {
+                console.warn('[Location] Permission request failed:', permErr?.message);
+                return;
+            }
+
+            if (permStatus !== 'granted') {
                 Alert.alert('Location Required', 'Sakhi needs your location to find nearby drivers.');
                 return;
             }
 
             // Helper to update location state and map
             const updateLocation = async (lat, lng) => {
-                const coords = { latitude: lat, longitude: lng };
-                setCurrentLocation(coords);
-                const address = await reverseGeocode(lat, lng);
-                setPickup({ ...coords, address });
+                try {
+                    const coords = { latitude: lat, longitude: lng };
+                    setCurrentLocation(coords);
+                    const address = await reverseGeocode(lat, lng);
+                    setPickup({ ...coords, address });
+                } catch (e) {
+                    console.warn('[Location] updateLocation error:', e?.message);
+                }
             };
 
             // 1. Try to get last known position immediately for fast UI
@@ -113,13 +126,21 @@ export default function HomeScreen() {
             try {
                 const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
                 if (loc) {
-                    await updateLocation(loc.coords.latitude, loc.coords.longitude);
-                } else if (!currentLocation) {
-                    Alert.alert('Location Error', 'Could not determine your current position.');
+                    const { latitude, longitude } = loc.coords;
+                    await updateLocation(latitude, longitude);
+
+                    // ── Bengaluru gate check ──────────────────────────────────
+                    // Redirect to info screen if user is outside service area.
+                    // No back button — user cannot book from outside Bengaluru.
+                    if (!isInBengaluru(latitude, longitude)) {
+                        router.replace('/city-not-available');
+                        return;
+                    }
                 }
             } catch (e) {
-                console.log('Error getting current location:', e);
-                Alert.alert('Location Error', e.message || 'Failed to fetch location from device.');
+                // Only log to console — don't show alerts for internal SDK errors
+                // (e.g. "Property 'mapRef' doesn't exist" on certain iOS builds)
+                console.warn('[Location] getCurrentPosition error:', e?.message);
             }
         })();
 
