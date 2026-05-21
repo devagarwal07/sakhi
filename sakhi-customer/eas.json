@@ -26,10 +26,12 @@
     "production": {
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sakhi-backend-pwej.onrender.com",
-        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE",
+        "EXPO_PUBLIC_LIVENESS_URL": "https://sakhi-backend-pwej.onrender.com",
+        "EXPO_PUBLIC_MAPPLS_API_KEY": "915a6719509dc46cb6022eccff1c9644",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_ID": "96dHZVzsAuvwo2En2Rw6E-FHKCJpvannlNQRxc84y8kl0gcoSfCd2ldUfc9mubpgiOQvD9Ep9VciCRjQlAQKLEd8P0i2X1m0",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_SECRET": "lrFxI-iSEg-P_IdOhBbuTHJPOxRftmmxKpUG8oaXHYzkicnQpmxCrxCfytJEKL0aJfc-C18EkWLvbmTLKYSZDsi5kcU498vT0EsPCNL-LPA=",
         "EXPO_PUBLIC_SUPABASE_URL": "https://bygvapypvrseiwqvwcaj.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "PASTE_NEW_ANON_KEY_HERE",
-        "EXPO_PUBLIC_RAZORPAY_KEY": "rzp_test_SYE3kLJZ16sUyz"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5Z3ZhcHlwdnJzZWl3cXZ3Y2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjY2NjcsImV4cCI6MjA5MTI0MjY2N30.yo78rTxEmO7fxC2b5JVbvoLDGnlpc6Bwz17oNEBW7o0"
       },
       "android": {
         "buildType": "app-bundle"
@@ -37,6 +39,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6770027111"
+      }
+    }
   }
 }
