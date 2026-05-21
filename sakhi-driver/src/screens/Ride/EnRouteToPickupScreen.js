@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Linking, Image, Dimensions, Platform, Modal, ActivityIndicator,
+  Alert, Linking, Image, Dimensions, Platform, Modal, ActivityIndicator, BackHandler,
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -9,7 +9,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import { patchRideStatus, callRider } from '../../api/endpoints';
+import { patchRideStatus, callRider, cancelRide } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +45,13 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
   const pickupNavCoords = { lat: pickup.latitude, lng: pickup.longitude };
 
   const rideId = ride?.ride_id ?? ride?.id;
+
+  // Lock navigation — prevent back button from exiting active screen
+  useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, []);
 
   // After accept, ride is `assigned` — backend requires `driver_en_route` before `arrived`
   useEffect(() => {
@@ -162,6 +169,28 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
     } catch (err) {
       Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not update arrival status.');
     }
+  };
+
+  const handleCancelRide = () => {
+    Alert.alert(
+      t('ride.cancelTitle', 'Cancel Ride?'),
+      t('ride.cancelConfirmMsg', 'Are you sure you want to cancel/reject this ride assignment?'),
+      [
+        { text: t('common.no', 'No'), style: 'cancel' },
+        {
+          text: t('common.yes', 'Yes, Cancel'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelRide(rideId, 'Driver cancelled during en route');
+              navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
+            } catch (err) {
+              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const recenter = () => {
@@ -305,6 +334,11 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         {/* Primary Action Button */}
         <TouchableOpacity style={s.primaryBtn} onPress={handleArrived} activeOpacity={0.8}>
           <Text style={s.primaryBtnText}>{t('ride.arrivedAtPickup')}</Text>
+        </TouchableOpacity>
+
+        {/* Cancel Ride Button */}
+        <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
+          <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -502,7 +536,7 @@ const s = StyleSheet.create({
   statusRow: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   statusPill: {
     backgroundColor: 'rgba(171, 143, 254, 0.2)',
@@ -524,7 +558,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   riderLeft: {
     flex: 1,
@@ -618,5 +652,22 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontSize: 18,
     color: '#FFFFFF',
+  },
+  cancelBtn: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1.5,
+    borderColor: '#FEE2E2',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#EF4444',
   },
 });

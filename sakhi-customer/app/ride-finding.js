@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Animated, Platform, ScrollView, Alert
+    Dimensions, Animated, Platform, ScrollView, Alert, BackHandler
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -47,6 +47,13 @@ export default function RideFindingScreen() {
     const pulse1 = useRef(new Animated.Value(0)).current;
     const pulse2 = useRef(new Animated.Value(0)).current;
     const pulse3 = useRef(new Animated.Value(0)).current;
+
+    // Lock navigation — prevent back button from exiting active screen
+    useEffect(() => {
+        const backAction = () => true;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, []);
 
     // ── Animate search pulses ──────────────────────────────────────────────────
     useEffect(() => {

@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
+import { getActiveRide } from '../../api/endpoints';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import { useTranslation } from 'react-i18next';
@@ -122,6 +123,23 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      // Check for active ride and redirect
+      getActiveRide()
+        .then((res) => {
+          const activeRide = res.data?.ride ?? res.data;
+          if (activeRide && activeRide.status) {
+            const status = activeRide.status;
+            if (status === 'assigned' || status === 'driver_en_route') {
+              navigation.navigate('EnRouteToPickup', { ride: activeRide });
+            } else if (status === 'arrived') {
+              navigation.navigate('ArrivedWaiting', { ride: activeRide });
+            } else if (status === 'in_progress') {
+              navigation.navigate('TripInProgress', { ride: activeRide });
+            }
+          }
+        })
+        .catch(() => {});
+
       client.get('/drivers/earnings/today').then(r => {
         setEarnings({
           today: r.data?.today_earnings ?? null,

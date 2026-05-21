@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Image, Animated, Modal, Linking, Platform
+    ScrollView, Image, Animated, Modal, Linking, Platform, BackHandler
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmartMapView from '../src/components/SmartMapView';
@@ -52,6 +52,13 @@ export default function ActiveRideScreen() {
     const [liveSharingEnabled, setLiveSharingEnabled] = useState(false);
     const [contacts, setContacts] = useState([]);
     const [showContactPrompt, setShowContactPrompt] = useState(false);
+
+    // Lock navigation — prevent back button from exiting active screen
+    useEffect(() => {
+        const backAction = () => true;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, []);
 
     // Load live sharing preference from Safety settings
     useEffect(() => {

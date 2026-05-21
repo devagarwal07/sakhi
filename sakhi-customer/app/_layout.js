@@ -48,7 +48,7 @@ function AppNavigator() {
             />
             <Stack.Screen
                 name="active-ride"
-                options={{ animation: 'slide_from_right' }}
+                options={{ animation: 'slide_from_right', gestureEnabled: false }}
             />
             <Stack.Screen
                 name="notifications"
@@ -102,9 +102,9 @@ function AppNavigator() {
             <Stack.Screen name="sos-settings" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="sos-warning" options={{ animation: 'fade' }} />
             <Stack.Screen name="sos-active" options={{ animation: 'none', presentation: 'fullScreenModal' }} />
-            <Stack.Screen name="ride-finding" options={{ animation: 'fade' }} />
-            <Stack.Screen name="driver-arrived" options={{ animation: 'slide_from_bottom' }} />
-            <Stack.Screen name="ride-summary" options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="ride-finding" options={{ animation: 'fade', gestureEnabled: false }} />
+            <Stack.Screen name="driver-arrived" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+            <Stack.Screen name="ride-summary" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
             <Stack.Screen name="subscription-plans" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="subscription-ride" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="city-not-available" options={{ animation: 'fade', gestureEnabled: false }} />

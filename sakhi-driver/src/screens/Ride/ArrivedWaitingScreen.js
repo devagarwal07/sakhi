@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, Animated, Platform, Image, Modal,
+  Alert, ActivityIndicator, Animated, Platform, Image, Modal, BackHandler,
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import { patchRideStatus } from '../../api/endpoints';
+import { patchRideStatus, cancelRide } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +40,13 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Lock navigation — prevent back button from exiting active screen
+  useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
   }, []);
 
   useEffect(() => {
@@ -74,6 +81,28 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelRide = () => {
+    Alert.alert(
+      t('ride.cancelTitle', 'Cancel Ride?'),
+      t('ride.cancelConfirmMsg', 'Are you sure you want to cancel/reject this ride assignment?'),
+      [
+        { text: t('common.no', 'No'), style: 'cancel' },
+        {
+          text: t('common.yes', 'Yes, Cancel'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelRide(rideId, 'Driver cancelled after arriving');
+              navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
+            } catch (err) {
+              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const recenter = () => {
@@ -220,6 +249,11 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
               <Text style={s.primaryBtnText}>Start Trip</Text>
             </>
           )}
+        </TouchableOpacity>
+
+        {/* Cancel Ride Button */}
+        <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
+          <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -573,8 +607,8 @@ const s = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 15,
     elevation: 8,
-    marginTop: 'auto',
-    marginBottom: 30, // push up
+    marginTop: 16,
+    marginBottom: 0,
   },
   primaryBtnText: {
     fontFamily: 'Inter',
@@ -582,5 +616,23 @@ const s = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
     letterSpacing: -0.45,
+  },
+  cancelBtn: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1.5,
+    borderColor: '#FEE2E2',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  cancelBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#EF4444',
   },
 });

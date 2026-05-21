@@ -356,26 +356,29 @@ async function cancelRide(rideId, userId, role, reason, io) {
   if (role === 'rider' && ride.rider_id !== userId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
   if (role === 'driver' && ride.driver_id !== userId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
 
-  // 2. Block terminal states
+  // 2. Block terminal states and in_progress
   const terminalStatuses = ['completed', 'cancelled', 'no_drivers_available'];
   if (terminalStatuses.includes(ride.status)) {
     throw new AppError(`Cannot cancel a ride with status '${ride.status}'.`, 409, 'RIDE_NOT_CANCELLABLE');
+  }
+  if (ride.status === 'in_progress') {
+    throw new AppError('Cannot cancel a ride that is already in progress.', 409, 'RIDE_IN_PROGRESS_NOT_CANCELLABLE');
   }
 
   const emitter = require('../socket/emitter');
   const cancelledBy = role;
   const prevStatus = ride.status;
 
-  // If driver cancels during searching (shouldn't happen) — treat as no-op
-  if (role === 'driver' && !['assigned', 'driver_en_route'].includes(prevStatus)) {
-    throw new AppError('Driver can only cancel after being assigned.', 409, 'CANCEL_NOT_ALLOWED');
+  // If driver cancels, they can only do so inassigned, driver_en_route, or arrived states
+  if (role === 'driver' && !['assigned', 'driver_en_route', 'arrived'].includes(prevStatus)) {
+    throw new AppError('Driver can only cancel before starting the trip.', 409, 'CANCEL_NOT_ALLOWED');
   }
 
   // Stop waiting timer if active
   waitingTimerService.stopWaitingTimer(rideId);
 
-  // 5. If driver cancels and ride was assigned/en_route — re-enter matching
-  if (role === 'driver' && ['assigned', 'driver_en_route'].includes(prevStatus)) {
+  // 5. If driver cancels and ride was assigned/en_route/arrived — re-enter matching
+  if (role === 'driver' && ['assigned', 'driver_en_route', 'arrived'].includes(prevStatus)) {
     logger.info('rideService.cancelRide — driver cancelled, re-entering matching', { rideId });
 
     // Reset to searching

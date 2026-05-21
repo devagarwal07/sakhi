@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import client from '../../api/client';
+import { getActiveRide } from '../../api/endpoints';
 import {
   startLocationTracking,
   stopLocationTracking,
@@ -450,6 +451,23 @@ export default function DriverHomeScreen({ navigation }) {
 
   // ── Sync earnings + subscription expiry on focus ───────────────────────────
   useFocusEffect(useCallback(() => {
+    // Check for active ride and redirect
+    getActiveRide()
+      .then((res) => {
+        const activeRide = res.data?.ride ?? res.data;
+        if (activeRide && activeRide.status) {
+          const status = activeRide.status;
+          if (status === 'assigned' || status === 'driver_en_route') {
+            navigation.navigate('EnRouteToPickup', { ride: activeRide });
+          } else if (status === 'arrived') {
+            navigation.navigate('ArrivedWaiting', { ride: activeRide });
+          } else if (status === 'in_progress') {
+            navigation.navigate('TripInProgress', { ride: activeRide });
+          }
+        }
+      })
+      .catch(() => {});
+
     // Earnings — backend returns { rides_completed, gross_earnings, net_earnings }
     client.get('/drivers/earnings/today')
       .then((r) => {

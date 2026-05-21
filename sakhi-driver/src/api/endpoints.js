@@ -38,6 +38,7 @@ export const getRideHistory = (params = {}) => {
   if (typeof params === 'number') return client.get('/drivers/rides', { params: { page: params } });
   return client.get('/drivers/rides', { params });
 };
+export const getActiveRide     = () => client.get('/rides/active');
 export const getRideDetails    = (rideId)  => client.get(`/rides/${rideId}`);
 /** Itemized Sakhi fare breakdown — use this on PaymentDetailsScreen */
 export const getFareSummary    = (rideId)  => client.get(`/rides/${rideId}/fare-summary`);

@@ -22,6 +22,9 @@ router.post('/',              authMiddleware, roleGuard('rider'),           ride
 /** POST /rides/subscription/:id/initiate — driver starts subscription leg */
 router.post('/subscription/:id/initiate', authMiddleware, roleGuard('driver'), rideController.initiateSubscriptionRide);
 
+/** GET /rides/active — fetch current active ride for driver/rider */
+router.get('/active',          authMiddleware, roleGuard('rider', 'driver'), rideController.getActiveRide);
+
 /** GET /rides/:id — fetch full ride details */
 router.get('/:id',            authMiddleware,                               rideController.getRide);
 

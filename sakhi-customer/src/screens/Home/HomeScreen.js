@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
-import { getAddresses, getRideHistory } from '../../api/endpoints';
+import { getAddresses, getRideHistory, getActiveRide } from '../../api/endpoints';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -36,7 +36,7 @@ export default function HomeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
-    const { setPickup, setDropoff } = useRide();
+    const { setPickup, setDropoff, setRideId, setDriver, updateStatus } = useRide();
     const [currentLocation, setCurrentLocation] = useState(null);
     const [savedPlaces, setSavedPlaces] = useState([]);
     const [activeTab, setActiveTab] = useState('book');
@@ -85,6 +85,46 @@ export default function HomeScreen() {
     const [recentRides, setRecentRides] = useState([]);
 
     useEffect(() => {
+        // ── Active Ride Guard Check ─────────────────────────────────────────
+        getActiveRide()
+            .then(({ data }) => {
+                if (data && data.ride) {
+                    const activeRide = data.ride;
+                    const status = activeRide.status;
+                    
+                    // Populate ride context so pages can bind safely
+                    setRideId(activeRide.ride_id);
+                    updateStatus(status);
+                    if (activeRide.driver) {
+                        setDriver({
+                            id:      activeRide.driver.id,
+                            name:    activeRide.driver.name ?? 'Your Driver',
+                            phone:   activeRide.driver.phone ?? null,
+                            photo:   activeRide.driver.profile_photo_url ?? null,
+                            rating:  activeRide.driver.avg_rating ?? 4.8,
+                            vehicle: {
+                                type:  activeRide.driver.vehicle_type ?? 'Auto',
+                                plate: activeRide.driver.vehicle_reg_no ?? '',
+                                model: activeRide.driver.vehicle_model ?? '',
+                                color: activeRide.driver.vehicle_color ?? '',
+                            },
+                        });
+                    }
+                    
+                    // Route to active screen
+                    if (status === 'searching') {
+                        router.replace('/ride-finding');
+                    } else if (['assigned', 'driver_en_route', 'arrived'].includes(status)) {
+                        router.replace('/driver-arrived');
+                    } else if (status === 'in_progress') {
+                        router.replace('/active-ride');
+                    }
+                }
+            })
+            .catch((err) => {
+                console.warn('[ActiveRideCheck] error:', err?.message);
+            });
+
         (async () => {
             let permStatus;
             try {

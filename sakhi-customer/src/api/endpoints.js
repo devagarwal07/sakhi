@@ -47,6 +47,7 @@ export const estimateFare = (pickup, dropoff, stop = null) =>
             ...(stop ? { stop_lat: stop.latitude, stop_lng: stop.longitude } : {}),
         },
     });
+export const getActiveRide = () => apiClient.get('/rides/active');
 export const bookRide = (data) => apiClient.post('/rides', data);
 export const cancelRide = (rideId, reason) => apiClient.patch(`/rides/${rideId}/cancel`, { reason });
 export const getRideDetails = (rideId) => apiClient.get(`/rides/${rideId}`);

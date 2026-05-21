@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Image, Platform, ScrollView, Linking, ActivityIndicator
+    Dimensions, Image, Platform, ScrollView, Linking, ActivityIndicator, BackHandler
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,7 +11,7 @@ import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { callDriver } from '../src/api/endpoints';
+import { callDriver, cancelRide } from '../src/api/endpoints';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +25,13 @@ export default function DriverArrivedScreen() {
     const [modal, setModal] = useState(null);
     const [calling, setCalling] = useState(false);
     const mountedRef = useRef(true);
+
+    // Lock navigation — prevent back button from exiting active screen
+    useEffect(() => {
+        const backAction = () => true;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, []);
 
     const insets = useSafeAreaInsets();
 
@@ -248,6 +255,45 @@ export default function DriverArrivedScreen() {
                         </View>
                     </View>
 
+                    {/* Cancel Button */}
+                    <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => {
+                            setModal({
+                                icon: '🛑',
+                                title: 'Cancel Ride?',
+                                message: 'Are you sure you want to cancel the ride? A cancellation fee might apply.',
+                                buttons: [
+                                    { text: 'Keep Ride', style: 'cancel', onPress: () => setModal(null) },
+                                    {
+                                        text: 'Cancel Ride',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                            setModal(null);
+                                            if (ride?.rideId) {
+                                                try {
+                                                    await cancelRide(ride.rideId, 'Rider cancelled after driver arrived');
+                                                    router.replace('/(tabs)/');
+                                                } catch (err) {
+                                                    setModal({
+                                                        icon: '⚠️',
+                                                        title: 'Failed to Cancel',
+                                                        message: err.response?.data?.error?.message || 'Could not cancel ride.',
+                                                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                                    });
+                                                }
+                                            } else {
+                                                router.replace('/(tabs)/');
+                                            }
+                                        }
+                                    }
+                                ]
+                            });
+                        }}
+                    >
+                        <Text style={styles.cancelBtnText}>CANCEL RIDE</Text>
+                    </TouchableOpacity>
+
                     {/* Padding for tab bar */}
                     <View style={{ height: bottomSpacerHeight }} />
                 </ScrollView>
@@ -423,7 +469,25 @@ const styles = StyleSheet.create({
     tabItem: { alignItems: 'center', gap: 4 },
     tabItemActive: { alignItems: 'center', gap: 2, backgroundColor: '#F5F0FF', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 16 },
     tabIcon: { fontSize: 20, color: '#6B7280' },
-    tabLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', letterSpacing: 1 },
     tabIconActive: { fontSize: 20, color: '#BEA3D8' },
     tabLabelActive: { fontSize: 10, fontWeight: '600', color: '#BEA3D8', letterSpacing: 1 },
+
+    // Cancel Button styles
+    cancelBtn: {
+        marginTop: 20,
+        backgroundColor: '#FFF5F5',
+        borderWidth: 1.5,
+        borderColor: '#FEE2E2',
+        borderRadius: 16,
+        height: 56,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelBtnText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#EF4444',
+        letterSpacing: 0.5,
+    },
 });

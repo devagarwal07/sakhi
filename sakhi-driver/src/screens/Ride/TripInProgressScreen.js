@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, Vibration, Image, ActivityIndicator,
-  Animated, Dimensions,
+  Animated, Dimensions, BackHandler,
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -44,6 +44,13 @@ export default function TripInProgressScreen({ navigation, route }) {
   const [countdown, setCountdown]         = useState(30);
   const countdownRef                      = useRef(null);
   const slideAnim                         = useRef(new Animated.Value(300)).current;
+
+  // Lock navigation — prevent back button from exiting active screen
+  useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, []);
 
   const dropoff = {
     latitude:  ride?.dropoff_coords?.latitude  ?? ride?.dropoff_coords?.lat  ?? 28.6280,

@@ -126,11 +126,11 @@ function MainStack({ initialRoute = 'DriverOnlineDashboard' }) {
         <Stack.Screen name="DriverOnlineDashboard" component={DriverOnlineDashboardScreen} />
         <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
         <Stack.Screen name="PaymentPlans" component={PaymentPlansScreen} />
-        <Stack.Screen name="ActiveTrip" component={EnRouteToPickupScreen} />
-        <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} />
-        <Stack.Screen name="ArrivedWaiting" component={ArrivedWaitingScreen} />
-        <Stack.Screen name="TripInProgress" component={TripInProgressScreen} />
-        <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} />
+        <Stack.Screen name="ActiveTrip" component={EnRouteToPickupScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="EnRouteToPickup" component={EnRouteToPickupScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="ArrivedWaiting" component={ArrivedWaitingScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="TripInProgress" component={TripInProgressScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} options={{ gestureEnabled: false }} />
         <Stack.Screen name="CompletedRideDetails" component={CompletedRideDetailsScreen} />
         <Stack.Screen name="RideHistory" component={RideHistoryScreen} />
         {/* SOS Flow */}

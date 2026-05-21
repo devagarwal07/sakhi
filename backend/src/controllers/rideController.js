@@ -762,10 +762,58 @@ async function initiateSubscriptionRide(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+async function getActiveRide(req, res, next) {
+  try {
+    const { userId, role } = req.user;
+    let query = supabase
+      .from('rides')
+      .select(`
+        *,
+        users!rides_rider_id_fkey(id, name, phone),
+        drivers(id, name, phone, vehicle_type, vehicle_reg_no, vehicle_color, vehicle_model, profile_photo_url, upi_id)
+      `);
+
+    if (role === 'rider') {
+      query = query
+        .eq('rider_id', userId)
+        .in('status', ['searching', 'assigned', 'driver_en_route', 'arrived', 'in_progress']);
+    } else if (role === 'driver') {
+      query = query
+        .eq('driver_id', userId)
+        .in('status', ['assigned', 'driver_en_route', 'arrived', 'in_progress']);
+    } else {
+      return res.status(400).json({ error: 'Invalid role.' });
+    }
+
+    const { data: rides, error } = await query.limit(1);
+    if (error) throw error;
+
+    const ride = rides?.[0];
+    if (!ride) {
+      return res.status(200).json(null);
+    }
+
+    // Mask phone to last 4 digits
+    if (ride.users?.phone) {
+      ride.users.phone = '****' + ride.users.phone.slice(-4);
+    }
+    if (ride.drivers?.phone) {
+      ride.drivers.phone = '****' + ride.drivers.phone.slice(-4);
+    }
+
+    // PIN visibility
+    if (role === 'driver') {
+      delete ride.ride_start_pin;
+    }
+
+    return res.status(200).json(ride);
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   estimateFare, createRide, updateStatus, cancelRide,
   acceptRide, rejectRide, getRide, rateRide, getChatHistory,
   fareSummary, cashCollected, rateRider,
   createRidePaymentOrder, verifyRidePayment,
-  initiateSubscriptionRide,
+  initiateSubscriptionRide, getActiveRide,
 };
