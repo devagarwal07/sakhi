@@ -207,16 +207,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          {/* Navigation Instruction Banner */}
-          <View style={[s.turnBanner, { top: Math.max(insets.top, 16) + 80 }]}>
-            <View style={s.turnIconBg}>
-              <MaterialCommunityIcons name="arrow-u-left-top" size={24} color="#FFFFFF" />
-            </View>
-            <View style={s.turnTextBox}>
-              <Text style={s.turnInstruction}>Turn left onto MG Road</Text>
-              <Text style={s.turnDistance}>200M</Text>
-            </View>
-          </View>
+
 
           {/* Floating Map Controls & SOS */}
           <View style={s.bottomMapControls} pointerEvents="box-none">
