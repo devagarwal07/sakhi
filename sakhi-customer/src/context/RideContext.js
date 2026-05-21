@@ -15,6 +15,8 @@ const initialState = {
     waitingSeconds: 0,
     waitingCharge: 0,
     polyline: [],
+    promoCode: null,  // promo code string applied
+    promoData: null,  // { promo_discount, discounted_fare, promo_data }
 };
 
 
@@ -52,6 +54,9 @@ export function RideProvider({ children }) {
 
     const setPolyline = useCallback((polyline) => setRide((r) => ({ ...r, polyline })), []);
 
+    const setPromo = useCallback((promoCode, promoData) => setRide((r) => ({ ...r, promoCode, promoData })), []);
+    const clearPromo = useCallback(() => setRide((r) => ({ ...r, promoCode: null, promoData: null })), []);
+
     const updateSubscription = useCallback((updates) => {
         setRide((r) => ({ ...r, subscription: { ...r.subscription, ...updates } }));
     }, []);
@@ -75,6 +80,8 @@ export function RideProvider({ children }) {
                 tickWaiting,
                 updateFare,
                 setPolyline,
+                setPromo,
+                clearPromo,
                 updateSubscription,
                 clearRide,
             }}

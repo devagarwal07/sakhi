@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Trip Tracking — Sakhi</title>
+  <meta name="description" content="Track your contact's live Sakhi ride in real-time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sakhi-pink:    #E91E8C;
+      --sakhi-pink-dk: #C2157A;
+      --sakhi-purple:  #7B2FF7;
+      --sakhi-dark:    #0D0D1A;
+      --sakhi-card:    #13132A;
+      --sakhi-border:  rgba(255,255,255,0.08);
+      --sakhi-text:    #F0EAF8;
+      --sakhi-muted:   #8A82A8;
+      --sakhi-green:   #22C55E;
+      --sakhi-amber:   #F59E0B;
+      --sakhi-red:     #EF4444;
+      --radius:        14px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--sakhi-dark);
+      color: var(--sakhi-text);
+      overflow: hidden;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(13,13,26,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--sakhi-border);
+      z-index: 1000;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--sakhi-pink), var(--sakhi-purple));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px; color: #fff;
+    }
+    .brand-name {
+      font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, var(--sakhi-pink), var(--sakhi-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #live-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+      color: var(--sakhi-green);
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.3);
+      padding: 4px 10px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.4s;
+    }
+    #live-badge.visible { opacity: 1; }
+    #live-badge .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--sakhi-green);
+      animation: pulse-dot 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.4; transform:scale(0.7); }
+    }
+
+    /* ── MAP ────────────────────────────────────────── */
+    #map-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #map {
+      width: 100%; height: 100%;
+      background: #1a1a2e;
+    }
+    /* Dark Leaflet tiles */
+    .leaflet-tile { filter: brightness(0.85) saturate(0.6) hue-rotate(200deg); }
+
+    /* ── BOTTOM SHEET ───────────────────────────────── */
+    #bottom-sheet {
+      flex-shrink: 0;
+      background: var(--sakhi-card);
+      border-top: 1px solid var(--sakhi-border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 16px 20px 20px;
+      z-index: 900;
+      transition: transform 0.3s ease;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px; margin: 0 auto 14px;
+    }
+
+    /* Status Bar */
+    #status-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    #status-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      background: rgba(233,30,140,0.15);
+    }
+    #status-label {
+      font-size: 14px; font-weight: 600; color: var(--sakhi-pink);
+    }
+    #status-sub {
+      font-size: 12px; color: var(--sakhi-muted); margin-top: 1px;
+    }
+
+    /* Driver Card */
+    #driver-card {
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--sakhi-border);
+      border-radius: 12px; padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    #driver-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--sakhi-pink);
+      background: linear-gradient(135deg, var(--sakhi-pink), var(--sakhi-purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #fff; font-weight: 700;
+      flex-shrink: 0;
+    }
+    #driver-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+    .driver-info { flex: 1; min-width: 0; }
+    #driver-name {
+      font-size: 15px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #vehicle-info {
+      font-size: 12px; color: var(--sakhi-muted); margin-top: 2px;
+    }
+    #vehicle-plate {
+      display: inline-block;
+      font-size: 11px; font-weight: 600;
+      background: rgba(123,47,247,0.15);
+      border: 1px solid rgba(123,47,247,0.3);
+      color: var(--sakhi-purple);
+      padding: 2px 8px; border-radius: 6px;
+      margin-top: 4px; letter-spacing: 0.5px;
+    }
+
+    /* Route Row */
+    #route-row {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .route-point {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .route-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 3px;
+    }
+    .route-dot.pickup { background: var(--sakhi-green); }
+    .route-dot.drop   { background: var(--sakhi-pink);  }
+    .route-addr {
+      font-size: 12px; color: var(--sakhi-muted); line-height: 1.4;
+    }
+    .route-addr strong { color: var(--sakhi-text); font-size: 12px; font-weight: 500; }
+
+    /* Last update */
+    #last-update {
+      text-align: center;
+      font-size: 11px; color: var(--sakhi-muted);
+      margin-top: 12px;
+    }
+
+    /* ── LOADING OVERLAY ────────────────────────────── */
+    #loader {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      background: var(--sakhi-dark);
+      z-index: 9999; transition: opacity 0.5s;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(233,30,140,0.2);
+      border-top-color: var(--sakhi-pink);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loader p { font-size: 14px; color: var(--sakhi-muted); }
+
+    /* ── ERROR / EXPIRED ────────────────────────────── */
+    #error-view {
+      display: none;
+      position: absolute; inset: 0;
+      flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      background: var(--sakhi-dark); z-index: 9998;
+      padding: 32px; text-align: center;
+    }
+    #error-view.visible { display: flex; }
+    #error-icon { font-size: 52px; }
+    #error-title { font-size: 20px; font-weight: 700; }
+    #error-msg { font-size: 14px; color: var(--sakhi-muted); max-width: 280px; line-height: 1.6; }
+
+    /* ── CUSTOM MAP MARKERS ─────────────────────────── */
+    .driver-marker-wrap {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--sakhi-pink), var(--sakhi-purple));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 4px rgba(233,30,140,0.3), 0 4px 12px rgba(0,0,0,0.5);
+      animation: pulse-marker 2s ease-in-out infinite;
+      font-size: 20px;
+    }
+    @keyframes pulse-marker {
+      0%,100% { box-shadow: 0 0 0 4px rgba(233,30,140,0.3), 0 4px 12px rgba(0,0,0,0.5); }
+      50%      { box-shadow: 0 0 0 10px rgba(233,30,140,0.1), 0 4px 12px rgba(0,0,0,0.5); }
+    }
+    .pickup-marker-wrap, .drop-marker-wrap {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #fff; font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .pickup-marker-wrap { background: var(--sakhi-green); }
+    .drop-marker-wrap   { background: var(--sakhi-pink); }
+
+    /* ── RESPONSIVE ─────────────────────────────────── */
+    @media (min-width: 640px) {
+      #bottom-sheet { max-width: 420px; margin: 0 auto; border-radius: var(--radius); border: 1px solid var(--sakhi-border); }
+      #app { flex-direction: row; }
+      #map-wrap { flex: 1; }
+      #bottom-sheet { width: 380px; border-radius: 0; border-top: none; border-left: 1px solid var(--sakhi-border); overflow-y: auto; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">S</div>
+      <span class="brand-name">Sakhi</span>
+    </div>
+    <div id="live-badge">
+      <span class="dot"></span> LIVE
+    </div>
+  </header>
+
+  <!-- Map -->
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <!-- Loading overlay -->
+    <div id="loader">
+      <div class="spinner"></div>
+      <p>Loading live location…</p>
+    </div>
+
+    <!-- Error / Expired view -->
+    <div id="error-view">
+      <div id="error-icon">🔗</div>
+      <div id="error-title">Link Unavailable</div>
+      <div id="error-msg">This tracking link has expired or is no longer valid.</div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet -->
+  <div id="bottom-sheet">
+    <div class="sheet-handle"></div>
+
+    <!-- Status -->
+    <div id="status-bar">
+      <div id="status-icon">🚗</div>
+      <div>
+        <div id="status-label">Connecting…</div>
+        <div id="status-sub">Fetching ride details</div>
+      </div>
+    </div>
+
+    <!-- Driver -->
+    <div id="driver-card">
+      <div id="driver-avatar">?</div>
+      <div class="driver-info">
+        <div id="driver-name">Loading…</div>
+        <div id="vehicle-info">—</div>
+        <div id="vehicle-plate"></div>
+      </div>
+    </div>
+
+    <!-- Route -->
+    <div id="route-row">
+      <div class="route-point">
+        <div class="route-dot pickup"></div>
+        <div class="route-addr"><strong>Pickup</strong><br/><span id="pickup-addr">—</span></div>
+      </div>
+      <div class="route-point">
+        <div class="route-dot drop"></div>
+        <div class="route-addr"><strong>Destination</strong><br/><span id="drop-addr">—</span></div>
+      </div>
+    </div>
+
+    <div id="last-update">Waiting for location…</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Extract token from URL path /track/<token> ──────────────────────────
+  const pathParts = window.location.pathname.split('/');
+  const TOKEN = pathParts[pathParts.length - 1];
+
+  if (!TOKEN || TOKEN === 'track') {
+    showError('🔗', 'Invalid Link', 'This tracking link appears to be malformed.');
+    return;
+  }
+
+  // ── Map init ────────────────────────────────────────────────────────────
+  const map = L.map('map', {
+    center: [20.5937, 78.9629], // India centre
+    zoom: 5,
+    zoomControl: true,
+    attributionControl: false,
+  });
+
+  // Use CartoDB dark tiles (no API key)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 20,
+  }).addTo(map);
+
+  // ── Markers ─────────────────────────────────────────────────────────────
+  let driverMarker = null;
+  let pickupMarker = null;
+  let dropMarker   = null;
+  let hasZoomed    = false;
+
+  function makeIcon(html, size = [44, 44]) {
+    return L.divIcon({ html, className: '', iconSize: size, iconAnchor: [size[0]/2, size[1]/2] });
+  }
+
+  const driverIcon = makeIcon('<div class="driver-marker-wrap">🛺</div>');
+  const pickupIcon = makeIcon('<div class="pickup-marker-wrap">🟢</div>', [28,28]);
+  const dropIcon   = makeIcon('<div class="drop-marker-wrap">🏁</div>',  [28,28]);
+
+  function setDriverMarker(lat, lng) {
+    if (!driverMarker) {
+      driverMarker = L.marker([lat, lng], { icon: driverIcon, zIndexOffset: 1000 }).addTo(map);
+    } else {
+      driverMarker.setLatLng([lat, lng]);
+    }
+    if (!hasZoomed) {
+      map.setView([lat, lng], 15, { animate: true });
+      hasZoomed = true;
+    }
+  }
+
+  function setPickupMarker(lat, lng) {
+    if (!pickupMarker && lat && lng) {
+      pickupMarker = L.marker([lat, lng], { icon: pickupIcon }).addTo(map)
+        .bindTooltip('Pickup', { permanent: false });
+    }
+  }
+
+  function setDropMarker(lat, lng) {
+    if (!dropMarker && lat && lng) {
+      dropMarker = L.marker([lat, lng], { icon: dropIcon }).addTo(map)
+        .bindTooltip('Destination', { permanent: false });
+    }
+  }
+
+  // ── UI helpers ──────────────────────────────────────────────────────────
+  function showError(icon, title, msg) {
+    document.getElementById('loader').classList.add('hidden');
+    const ev = document.getElementById('error-view');
+    document.getElementById('error-icon').textContent  = icon;
+    document.getElementById('error-title').textContent = title;
+    document.getElementById('error-msg').textContent   = msg;
+    ev.classList.add('visible');
+  }
+
+  function hideLoader() {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('live-badge').classList.add('visible');
+  }
+
+  const STATUS_MAP = {
+    searching:        { icon: '🔍', label: 'Finding a driver',  color: '#F59E0B' },
+    assigned:         { icon: '✅', label: 'Driver assigned',    color: '#22C55E' },
+    driver_en_route:  { icon: '🛺', label: 'Driver on the way',  color: '#3B82F6' },
+    arrived:          { icon: '📍', label: 'Driver has arrived',  color: '#8B5CF6' },
+    in_progress:      { icon: '🚗', label: 'Ride in progress',   color: '#E91E8C' },
+    completed:        { icon: '🏁', label: 'Ride completed',      color: '#22C55E' },
+    cancelled:        { icon: '❌', label: 'Ride cancelled',      color: '#EF4444' },
+  };
+
+  function setStatus(status) {
+    const s = STATUS_MAP[status] || { icon: '🔄', label: status, color: '#8A82A8' };
+    document.getElementById('status-icon').textContent  = s.icon;
+    document.getElementById('status-label').textContent = s.label;
+    document.getElementById('status-label').style.color = s.color;
+    document.getElementById('status-sub').textContent   = 'Updated just now';
+  }
+
+  function setRideData(data) {
+    // Driver
+    const dn = document.getElementById('driver-name');
+    dn.textContent = data.driver_name || 'Awaiting driver';
+
+    if (data.vehicle_details) {
+      const v = data.vehicle_details;
+      document.getElementById('vehicle-info').textContent =
+        [v.type, v.model, v.color].filter(Boolean).join(' · ') || '—';
+      if (v.reg_no) {
+        const plate = document.getElementById('vehicle-plate');
+        plate.textContent = v.reg_no;
+        plate.style.display = 'inline-block';
+      }
+      // Vehicle-specific icon
+      const vehicleIcon = v.type?.toLowerCase().includes('auto') ? '🛺'
+        : v.type?.toLowerCase().includes('bike') ? '🏍️' : '🚗';
+      driverIcon.options.html = `<div class="driver-marker-wrap">${vehicleIcon}</div>`;
+    }
+
+    // Avatar
+    const av = document.getElementById('driver-avatar');
+    if (data.vehicle_details?.photo) {
+      av.innerHTML = `<img src="${data.vehicle_details.photo}" alt="driver" />`;
+    } else {
+      av.textContent = (data.driver_name || '?')[0].toUpperCase();
+    }
+
+    // Route
+    document.getElementById('pickup-addr').textContent = data.pickup_address || '—';
+    document.getElementById('drop-addr').textContent   = data.drop_address   || '—';
+
+    setStatus(data.status);
+  }
+
+  function updateLastTime() {
+    const now = new Date();
+    document.getElementById('last-update').textContent =
+      `Last updated: ${now.toLocaleTimeString()}`;
+  }
+
+  // ── Fetch initial ride data ─────────────────────────────────────────────
+  async function fetchRideData() {
+    try {
+      const res = await fetch(`/api/track/${TOKEN}`);
+      if (res.status === 410) { showError('⏰', 'Link Expired', 'This tracking link has expired.'); return null; }
+      if (!res.ok)            { showError('❌', 'Error', 'Could not load ride data. Please try again.'); return null; }
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      showError('📡', 'Network Error', 'Unable to reach Sakhi servers. Check your connection.');
+      return null;
+    }
+  }
+
+  // ── Socket.IO live updates ──────────────────────────────────────────────
+  function connectSocket(rideId) {
+    const socket = io('/track', {
+      transports: ['websocket', 'polling'],
+      reconnectionDelay: 3000,
+    });
+
+    socket.on('connect', () => {
+      socket.emit('track:join', { token: TOKEN });
+    });
+
+    socket.on('track:joined', ({ ride_id }) => {
+      console.log('[Track] Joined room for ride', ride_id);
+    });
+
+    socket.on('driver_location', ({ lat, lng, heading, timestamp }) => {
+      if (!lat || !lng) return;
+      setDriverMarker(lat, lng);
+      updateLastTime();
+      document.getElementById('status-sub').textContent = 'Live — updating in real-time';
+    });
+
+    socket.on('ride_status_update', ({ status }) => {
+      if (status) setStatus(status);
+      if (status === 'completed' || status === 'cancelled') {
+        document.getElementById('live-badge').classList.remove('visible');
+        document.getElementById('status-sub').textContent = 'Ride has ended';
+      }
+    });
+
+    socket.on('connect_error', () => {
+      console.warn('[Track] Socket connection failed — falling back to polling');
+    });
+
+    return socket;
+  }
+
+  // ── Polling fallback (every 10s) ────────────────────────────────────────
+  function startPolling() {
+    return setInterval(async () => {
+      const data = await fetchRideData();
+      if (!data) return;
+      if (data.driver_location?.lat) {
+        setDriverMarker(data.driver_location.lat, data.driver_location.lng);
+        updateLastTime();
+      }
+      setStatus(data.status);
+    }, 10_000);
+  }
+
+  // ── Main init ───────────────────────────────────────────────────────────
+  async function init() {
+    const data = await fetchRideData();
+    if (!data) return;
+
+    hideLoader();
+    setRideData(data);
+
+    // Place driver marker if location available
+    if (data.driver_location?.lat && data.driver_location?.lng) {
+      setDriverMarker(data.driver_location.lat, data.driver_location.lng);
+      updateLastTime();
+    }
+
+    // Place static pickup/drop markers if coords are available
+    if (data.pickup_lat && data.pickup_lng) setPickupMarker(data.pickup_lat, data.pickup_lng);
+    if (data.drop_lat   && data.drop_lng)   setDropMarker(data.drop_lat, data.drop_lng);
+
+    // Connect to Socket.IO for live updates
+    connectSocket(data.ride_id);
+
+    // Also poll as fallback
+    startPolling();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

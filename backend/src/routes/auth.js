@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const rateLimit = require('express-rate-limit');
+const rateLimit  = require('express-rate-limit');
 
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -17,20 +17,14 @@ const DEV_BYPASS_PHONES = new Set([
   '+919876543212',
 ]);
 
-/** Skip rate-limiting entirely for known test driver numbers */
-const skipIfDevPhone = (req, res, next) => {
-  const phone = req.body?.phone ?? '';
-  if (DEV_BYPASS_PHONES.has(phone)) return next();
-  return next('route'); // fall through to rate-limited handler below
-};
-
-/** 50 requests per 10 minutes per IP — relaxed for demo/dev */
+/** 5 requests per 10 min per IP — OTP send */
 const sendOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 50,
+  max: 5,
   keyGenerator: (req) => req.ip,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => DEV_BYPASS_PHONES.has(req.body?.phone ?? ''),
   handler: (_req, res) =>
     res.status(429).json({
       error: {
@@ -41,13 +35,14 @@ const sendOtpLimiter = rateLimit({
     }),
 });
 
-/** 50 attempts per 10 minutes keyed by phone — relaxed for demo/dev */
+/** 10 attempts per 10 min keyed by phone — OTP verify */
 const verifyOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 50,
+  max: 10,
   keyGenerator: (req) => req.body?.phone || req.ip,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => DEV_BYPASS_PHONES.has(req.body?.phone ?? ''),
   handler: (_req, res) =>
     res.status(429).json({
       error: {
@@ -60,18 +55,10 @@ const verifyOtpLimiter = rateLimit({
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
 
-/** POST /auth/send-otp
- *  - Test phones → skip rate limiter entirely
- *  - All others  → 50 req / 10 min limit
- */
-router.post('/send-otp', skipIfDevPhone, authController.sendOtp);
-router.post('/send-otp', sendOtpLimiter, authController.sendOtp);
+/** POST /auth/send-otp */
+router.post('/send-otp',   sendOtpLimiter,   authController.sendOtp);
 
-/** POST /auth/verify-otp
- *  - Test phones → skip rate limiter entirely
- *  - All others  → 50 req / 10 min limit
- */
-router.post('/verify-otp', skipIfDevPhone, authController.verifyOtp);
+/** POST /auth/verify-otp */
 router.post('/verify-otp', verifyOtpLimiter, authController.verifyOtp);
 
 /** POST /auth/refresh-token */

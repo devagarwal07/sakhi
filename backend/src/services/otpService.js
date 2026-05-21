@@ -5,6 +5,7 @@ const axios    = require('axios');
 const redis    = require('../config/redis');
 const supabase = require('../config/supabase');
 const logger   = require('../utils/logger');
+const smsService = require('./smsService');
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 const OTP_TTL_SECONDS = 300;                           // 5 minutes
@@ -95,39 +96,34 @@ async function retrieveAndConsumeOtp(phone) {
  * Generate a 6-digit OTP, store it, and send via MSG91.
  */
 async function sendOTP(phone) {
+  // Normalise: always store/look up by the canonical phone format
+  const normalizedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
+
   const otp = crypto.randomInt(100000, 999999).toString();
 
   // Store OTP (Redis primary, Supabase fallback)
-  await storeOtp(phone, otp);
+  await storeOtp(normalizedPhone, otp);
 
-  // Send via MSG91
+  // Send via Fortius SMS — note the required space before the OTP number
   try {
-    await axios.post(
-      'https://api.msg91.com/api/v5/otp',
-      {
-        template_id: process.env.MSG91_TEMPLATE_ID,
-        mobile:      phone,
-        otp,
-      },
-      {
-        headers: {
-          authkey:        process.env.MSG91_AUTH_KEY,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    logger.info('otpService.sendOTP — OTP sent via MSG91', { phone });
+    const formattedMsg = `SAKHI MOBILITY: Your OTP is ${otp} . Please do not share it with anyone.`;
+    const res = await smsService.sendSMS(normalizedPhone, formattedMsg, smsService.FORTIUS_TEMPLATES.SAKHI_OTP);
+    if (res.sent) {
+      logger.info('otpService.sendOTP — OTP sent via Fortius', { phone: normalizedPhone });
+    } else {
+      logger.warn('otpService.sendOTP — Fortius delivery failed', { phone: normalizedPhone, reason: res.reason });
+    }
   } catch (smsErr) {
     // Log but do not fail — OTP is stored; client can retry verify
-    logger.error('otpService.sendOTP — MSG91 error', {
-      phone,
-      error: smsErr?.response?.data || smsErr.message,
+    logger.error('otpService.sendOTP — Fortius error', {
+      phone: normalizedPhone,
+      error: smsErr.message,
     });
   }
 
   // In dev mode, log OTP to console for easy testing
   if (IS_DEV) {
-    logger.info(`[DEV] OTP for ${phone}: ${otp}`);
+    logger.info(`[DEV] OTP for ${normalizedPhone}: ${otp}`);
   }
 }
 
@@ -136,17 +132,20 @@ async function sendOTP(phone) {
  * Throws with specific error codes on failure.
  */
 async function verifyOTP(phone, candidateOtp) {
+  // Normalise phone to match the key used in sendOTP
+  const normalizedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
+
   // ── Dev bypass: accept OTP_BYPASS_CODE in non-production ──────────────────
   if (IS_DEV && DEV_BYPASS_CODE && candidateOtp === DEV_BYPASS_CODE) {
-    logger.warn('otpService.verifyOTP — DEV BYPASS used', { phone });
+    logger.warn('otpService.verifyOTP — DEV BYPASS used', { phone: normalizedPhone });
     return;
   }
 
   // Retrieve stored OTP (auto-consumed)
-  const storedOtp = await retrieveAndConsumeOtp(phone);
+  const storedOtp = await retrieveAndConsumeOtp(normalizedPhone);
 
   if (!storedOtp) {
-    throw Object.assign(new Error('No valid OTP found'), { code: 'OTP_NOT_FOUND', status: 400 });
+    throw Object.assign(new Error('No valid OTP found or OTP has expired'), { code: 'OTP_NOT_FOUND', status: 400 });
   }
 
   // Constant-time comparison to prevent timing attacks
@@ -154,10 +153,10 @@ async function verifyOTP(phone, candidateOtp) {
   const storedBuf    = Buffer.from(String(storedOtp).padEnd(6, ' '));
 
   if (candidateBuf.length !== storedBuf.length || !crypto.timingSafeEqual(candidateBuf, storedBuf)) {
-    throw Object.assign(new Error('Invalid OTP'), { code: 'OTP_INVALID', status: 400 });
+    throw Object.assign(new Error('Incorrect OTP'), { code: 'OTP_INVALID', status: 400 });
   }
 
-  logger.info('otpService.verifyOTP — OTP verified', { phone });
+  logger.info('otpService.verifyOTP — OTP verified', { phone: normalizedPhone });
 }
 
 module.exports = { sendOTP, verifyOTP };

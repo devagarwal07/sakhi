@@ -64,8 +64,10 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
     }
     handleClose();
     setTimeout(async () => {
-      // Check commission before going to Home
-      if (screen === 'DriverHome') {
+      // Gate both home screens behind commission check.
+      // DriverOnlineDashboard is the real entry point; DriverHome is the offline home.
+      const isHomeDestination = screen === 'DriverHome' || screen === 'DriverOnlineDashboard';
+      if (isHomeDestination) {
         try {
           const { data } = await client.get('/drivers/commission/status');
           if (data.total_due > 0) {
@@ -73,7 +75,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
             return;
           }
         } catch {
-          // If API fails, let them proceed to home
+          // API failure — allow navigation so driver is not locked out
         }
       }
       navigation.navigate(screen);

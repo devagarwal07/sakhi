@@ -9,6 +9,7 @@
     "ios": "expo run:ios"
   },
   "dependencies": {
+    "@expo/config-plugins": "^55.0.9",
     "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@react-native-firebase/app": "^24.0.0",

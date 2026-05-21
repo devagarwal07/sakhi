@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Platform, ActivityIndicator,
+    Dimensions, Platform, ActivityIndicator, TextInput, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
@@ -11,7 +11,7 @@ import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER
 import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
-import { estimateFare } from '../src/api/endpoints';
+import { estimateFare, validatePromoCode } from '../src/api/endpoints';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
@@ -92,7 +92,7 @@ const { width } = Dimensions.get('window');
 
 export default function RideEstimateScreen() {
     const router = useRouter();
-    const { ride, setFare, setPaymentMethod } = useRide();
+    const { ride, setFare, setPaymentMethod, setPromo, clearPromo } = useRide();
     const insets = useSafeAreaInsets();
     const [breakdownExpanded, setBreakdownExpanded] = useState(true);
     const [selectedPayment, setSelectedPayment] = useState('cash');
@@ -102,6 +102,14 @@ export default function RideEstimateScreen() {
     const [routeDuration, setRouteDuration] = useState(null);
     const [fareData, setFareData] = useState(null);
     const [loadingRoute, setLoadingRoute] = useState(true);
+
+    // Promo code state
+    const [promoInput, setPromoInput]         = useState('');
+    const [promoLoading, setPromoLoading]     = useState(false);
+    const [promoResult, setPromoResult]       = useState(null);  // { valid, promo_discount, discounted_fare, promo_data }
+    const [promoError, setPromoError]         = useState(null);  // error message string
+    const promoSuccessAnim                    = useRef(new Animated.Value(0)).current;
+    const promoDebounceRef                    = useRef(null);
 
     const pickup  = ride?.pickup;
     const dropoff = ride?.dropoff;
@@ -194,6 +202,50 @@ export default function RideEstimateScreen() {
     const originalFare    = fareResult ? `₹${baseTotal}` : null;
     const displayTime     = routeDuration || '—';
     const displayDistance = routeDistance || '—';
+
+    // Promo validation: debounce 800ms after user stops typing
+    const handlePromoChange = useCallback((text) => {
+        const code = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        setPromoInput(code);
+        setPromoError(null);
+        if (!code) { setPromoResult(null); clearPromo?.(); return; }
+        clearTimeout(promoDebounceRef.current);
+        promoDebounceRef.current = setTimeout(() => validatePromo(code), 800);
+    }, [nightTotal]);
+
+    const validatePromo = async (code) => {
+        if (!code || !nightTotal) return;
+        try {
+            setPromoLoading(true);
+            setPromoError(null);
+            const { data } = await validatePromoCode(code, nightTotal);
+            if (data?.valid) {
+                setPromoResult(data);
+                setPromo?.(code, data);
+                // Animate success banner in
+                Animated.spring(promoSuccessAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 10 }).start();
+            } else {
+                setPromoResult(null);
+                clearPromo?.();
+                setPromoError('Invalid or expired promo code.');
+            }
+        } catch (err) {
+            setPromoResult(null);
+            clearPromo?.();
+            const msg = err?.response?.data?.error?.message || 'Invalid or expired promo code.';
+            setPromoError(msg);
+        } finally {
+            setPromoLoading(false);
+        }
+    };
+
+    const clearPromoInput = () => {
+        setPromoInput('');
+        setPromoResult(null);
+        setPromoError(null);
+        promoSuccessAnim.setValue(0);
+        clearPromo?.();
+    };
 
     return (
         <View style={styles.container}>
@@ -431,22 +483,83 @@ export default function RideEstimateScreen() {
                                         </Text>
                                     </View>
 
-                                    {/* Offers & Discounts info button */}
-                                    <TouchableOpacity
-                                        style={styles.offersRow}
-                                        onPress={() => setModal({
-                                            icon: '🎁',
-                                            title: 'Offers & Discounts',
-                                            message: '5% off up to ₹100 on your first 3 rides\n\n10% off up to ₹150 on 15-day subscription rides\n\n15% off up to ₹200 on 30-day subscription rides',
-                                            buttons: [{ text: 'Got it', onPress: () => setModal(null) }],
-                                        })}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                                            <Feather name="gift" size={14} color="#BEA3D8" />
-                                            <Text style={styles.offersRowText}>View Offers & Discounts</Text>
+                                    {/* Offers & Discounts — Promo Code input */}
+                                    <View style={styles.promoSection}>
+                                        <View style={styles.promoInputRow}>
+                                            <Feather name="tag" size={16} color="#BEA3D8" style={{ marginRight: 8 }} />
+                                            <TextInput
+                                                style={[
+                                                    styles.promoInput,
+                                                    promoResult && styles.promoInputSuccess,
+                                                    promoError  && styles.promoInputError,
+                                                ]}
+                                                placeholder="Enter promo code"
+                                                placeholderTextColor="#94A3B8"
+                                                value={promoInput}
+                                                onChangeText={handlePromoChange}
+                                                autoCapitalize="characters"
+                                                autoCorrect={false}
+                                                maxLength={20}
+                                                returnKeyType="done"
+                                                onSubmitEditing={() => promoInput && validatePromo(promoInput)}
+                                            />
+                                            {promoLoading ? (
+                                                <ActivityIndicator size="small" color="#BEA3D8" style={{ marginLeft: 8 }} />
+                                            ) : promoResult ? (
+                                                <TouchableOpacity onPress={clearPromoInput} style={styles.promoClearBtn}>
+                                                    <Feather name="x" size={16} color="#64748B" />
+                                                </TouchableOpacity>
+                                            ) : promoInput.length > 0 ? (
+                                                <TouchableOpacity onPress={() => validatePromo(promoInput)} style={styles.promoApplyBtn}>
+                                                    <Text style={styles.promoApplyBtnText}>APPLY</Text>
+                                                </TouchableOpacity>
+                                            ) : null}
                                         </View>
-                                    </TouchableOpacity>
+
+                                        {/* Success Banner */}
+                                        {promoResult && (
+                                            <Animated.View style={[styles.promoSuccessBanner, {
+                                                opacity: promoSuccessAnim,
+                                                transform: [{ translateY: promoSuccessAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }]
+                                            }]}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                    <Feather name="check-circle" size={14} color="#059669" />
+                                                    <Text style={styles.promoSuccessText}>
+                                                        {promoResult.promo_data?.description ||
+                                                         (promoResult.promo_data?.discount_type === 'flat'
+                                                            ? `₹${promoResult.promo_data.flat_amount} OFF`
+                                                            : `${promoResult.promo_data?.discount_pct}% OFF`)}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.promoSavingText}>You save ₹{promoResult.promo_discount} 🎉</Text>
+                                            </Animated.View>
+                                        )}
+
+                                        {/* Error */}
+                                        {promoError && (
+                                            <View style={styles.promoErrorRow}>
+                                                <Feather name="alert-circle" size={13} color="#BA1A1A" />
+                                                <Text style={styles.promoErrorText}>{promoError}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                {/* Offers info */}
+                                <TouchableOpacity
+                                    style={styles.offersRow}
+                                    onPress={() => setModal({
+                                        icon: '🎁',
+                                        title: 'Offers & Discounts',
+                                        message: '5% off up to ₹100 on your first 3 rides\n\n10% off up to ₹150 on 15-day subscription rides\n\n15% off up to ₹200 on 30-day subscription rides',
+                                        buttons: [{ text: 'Got it', onPress: () => setModal(null) }],
+                                    })}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                                        <Feather name="gift" size={14} color="#BEA3D8" />
+                                        <Text style={styles.offersRowText}>View Offers & Discounts</Text>
+                                    </View>
+                                </TouchableOpacity>
                                 </>
                             )}
                         </View>
@@ -458,7 +571,18 @@ export default function RideEstimateScreen() {
 
             {/* Footer Action Button Wrapper (Sticky) */}
             <View style={[styles.footerSticky, { paddingBottom: footerPaddingBottom }]}>
-                <TouchableOpacity 
+                {/* If promo applied — show final fare with strikethrough */}
+                {promoResult && (
+                    <View style={styles.promoFinalRow}>
+                        <Text style={styles.promoFinalOriginal}>₹{nightTotal}</Text>
+                        <Feather name="arrow-right" size={14} color="#059669" style={{ marginHorizontal: 6 }} />
+                        <Text style={styles.promoFinalDiscounted}>₹{promoResult.discounted_fare}</Text>
+                        <View style={styles.promoFinalBadge}>
+                            <Text style={styles.promoFinalBadgeText}>PROMO</Text>
+                        </View>
+                    </View>
+                )}
+                <TouchableOpacity
                     style={[styles.bookButton, (!pickup || !dropoff) && { opacity: 0.5 }]}
                     onPress={() => {
                         if (!pickup || !dropoff) return;
@@ -471,7 +595,8 @@ export default function RideEstimateScreen() {
                                 base:          fareData.base          ?? 0,
                                 distance_fare: fareData.distance_fare ?? fareData.distance ?? 0,
                                 waiting:       fareData.waiting       ?? 0,
-                                total:         fareData.total         ?? fareData.max      ?? 0,
+                                total:         promoResult ? promoResult.discounted_fare : (fareData.total ?? fareData.max ?? 0),
+                                promo_discount: promoResult?.promo_discount ?? 0,
                             });
                         }
                         setPaymentMethod(selectedPayment);
@@ -936,5 +1061,127 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: '#FFFFFF',
+    },
+
+    // ── Promo Code UI ────────────────────────────────────────────────────────
+    promoSection: {
+        marginBottom: 12,
+    },
+    promoInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8F4FF',
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#E5E0EF',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        minHeight: 48,
+    },
+    promoInput: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1E1B2E',
+        letterSpacing: 1.2,
+        paddingVertical: 8,
+    },
+    promoInputSuccess: {
+        borderColor: '#10B981',
+        backgroundColor: '#F0FDF4',
+    },
+    promoInputError: {
+        borderColor: '#BA1A1A',
+        backgroundColor: '#FFF2F0',
+    },
+    promoApplyBtn: {
+        backgroundColor: '#BEA3D8',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        marginLeft: 8,
+    },
+    promoApplyBtnText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: 0.6,
+    },
+    promoClearBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 8,
+    },
+    promoSuccessBanner: {
+        marginTop: 8,
+        backgroundColor: '#F0FDF4',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: '#BBF7D0',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    promoSuccessText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#059669',
+    },
+    promoSavingText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#047857',
+    },
+    promoErrorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 6,
+        paddingHorizontal: 4,
+    },
+    promoErrorText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#BA1A1A',
+        flex: 1,
+    },
+
+    // Promo final fare row (above Book button)
+    promoFinalRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        paddingHorizontal: 4,
+    },
+    promoFinalOriginal: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#94A3B8',
+        textDecorationLine: 'line-through',
+    },
+    promoFinalDiscounted: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#059669',
+        letterSpacing: -0.5,
+    },
+    promoFinalBadge: {
+        backgroundColor: '#059669',
+        borderRadius: 9999,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        marginLeft: 8,
+    },
+    promoFinalBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: 0.5,
     },
 });

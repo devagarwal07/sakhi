@@ -88,8 +88,14 @@ export const sendBatteryAlert = ({ lat, lng } = {}, batteryLevel = 0) =>
     });
 
 
-// ── Wallet & Referrals ────────────────────────────────────────────────────
+// ── Wallet & Referrals ────────────────────────────────────────────────
 export const getWalletDetails = () => apiClient.get('/users/wallet');
+export const getReferralInfo  = () => apiClient.get('/users/referral');
+export const applyReferralCode = (referral_code) => apiClient.post('/users/referral/apply', { referral_code });
+
+// Validate a promo code before booking (dry-run, no usage recorded)
+export const validatePromoCode = (promo_code, fare) =>
+    apiClient.post('/rides/promo/validate', { promo_code, fare });
 
 
 // ── Subscriptions ─────────────────────────────────────────────────────────

@@ -3,42 +3,218 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-const MSG91_BASE = 'https://api.msg91.com/api/v5';
+const FORTIUS_ENDPOINT = 'https://smsfortius.org/V2/';
+
+// Approved DLT Templates
+const FORTIUS_TEMPLATES = {
+  SAKHI_TRACK_SHORT: '1207177867618699566',
+  SAKHI_OFFER: '1207177867977490120',
+  SAKHI_LOW_BATTERY: '1207177867323005303',
+  SAKHI_SOS_TRACK: '1207177884674043816',
+  SAKHI_EMERGENCY: '1207177867461201690',
+  SAKHI_REFERRAL: '1207177867105129353',
+  SAKHI_OTP: '1207177867777159329',
+};
+
+// Exact template formatters matching DLT registration
+const TEMPLATE_FORMATTERS = {
+  '1207177867618699566': (var1, var2) => `SAKHI MOBILITY: ${var1} shared live ride tracking. Please track here: ${var2}`,
+  '1207177867977490120': (var1, var2) => `SAKHI MOBILITY:${var1} offer. Use code ${var2} for a special ride discount. Please book now.`,
+  '1207177867323005303': (var1, var2) => `SAKHI MOBILITY:${var1} is low on battery during ride. Please track here:${var2}`,
+  '1207177884674043816': (var1, var2, var3) => `SAKHI MOBILITY:${var1} shared live ride tracking. Current location:${var2} . Please track here:${var3}`,
+  '1207177867461201690': (var1, var2, var3) => `SAKHI MOBILITY Alert: ${var1} activated SOS during ride. Current location: ${var2} . Please track here: ${var3}`,
+  '1207177867105129353': (var1) => `SAKHI MOBILITY: Your referral code is${var1} . Please share it with friends and family.`,
+  '1207177867777159329': (var1) => `SAKHI MOBILITY: Your OTP is${var1} . Please do not share it with anyone.`,
+};
+
+/**
+ * Normalises phone numbers to plain 10-digit formats required by Fortius API.
+ */
+function normalizePhone(phone) {
+  if (!phone) return '';
+  const clean = phone.replace(/\D/g, '');
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return clean.slice(2);
+  }
+  if (clean.length === 10) {
+    return clean;
+  }
+  return clean;
+}
+
+/**
+ * Resolves a template ID and formats the message to match the DLT templates exactly.
+ * Helps with backward compatibility when general text is sent.
+ */
+function resolveTemplateAndMessage(message, templateId) {
+  const cleanMsg = (message || '').trim();
+
+  // If a known template ID is passed and message is just comma-separated vars
+  if (templateId && TEMPLATE_FORMATTERS[templateId]) {
+    if (cleanMsg.startsWith('SAKHI MOBILITY') || cleanMsg.startsWith('SAKHI Alert:')) {
+      return { templateId, formattedMessage: cleanMsg };
+    }
+    const vars = cleanMsg.split(',').map(v => v.trim());
+    try {
+      const formattedMessage = TEMPLATE_FORMATTERS[templateId](...vars);
+      return { templateId, formattedMessage };
+    } catch (e) {
+      return { templateId, formattedMessage: cleanMsg };
+    }
+  }
+
+  // --- SMART AUTO-DETECT & REWRITE ---
+
+  // 1. OTP / PIN
+  const otpMatch = cleanMsg.match(/\b\d{6}\b/);
+  if (otpMatch || cleanMsg.includes('OTP') || cleanMsg.includes('PIN')) {
+    const otp = otpMatch ? otpMatch[0] : cleanMsg.replace(/\D/g, '').slice(0, 6);
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_OTP,
+      formattedMessage: `SAKHI MOBILITY: Your OTP is${otp} . Please do not share it with anyone.`
+    };
+  }
+
+  // 2. SOS / Emergency
+  if (cleanMsg.includes('EMERGENCY') || cleanMsg.includes('SOS') || cleanMsg.includes('activated SOS')) {
+    let name = 'A Sakhi user';
+    let location = 'unknown';
+    let mapsUrl = 'https://maps.google.com';
+
+    const mapsMatch = cleanMsg.match(/https:\/\/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
+    if (mapsMatch) {
+      location = `${mapsMatch[1]},${mapsMatch[2]}`;
+      mapsUrl = mapsMatch[0];
+    }
+    const nameMatch = cleanMsg.match(/(?:ALERT:|SOS Alert from)\s*([^#]+?)\s*(?:has triggered|activated|triggered)/i);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    }
+
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_EMERGENCY,
+      formattedMessage: `SAKHI MOBILITY Alert: ${name} activated SOS during ride. Current location: ${location} . Please track here: ${mapsUrl}`
+    };
+  }
+
+  // 3. Battery Low
+  if (cleanMsg.includes('battery') || cleanMsg.includes('critically low')) {
+    let name = 'User';
+    let mapsUrl = 'https://maps.google.com';
+
+    const mapsMatch = cleanMsg.match(/https:\/\/maps\.google\.com\/\?q=[-\d.,]+/);
+    if (mapsMatch) {
+      mapsUrl = mapsMatch[0];
+    }
+    const nameMatch = cleanMsg.match(/(?:SAKHI ALERT:|ALERT:)\s*([^#]+?)(?:'s phone battery)/i);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    }
+
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_LOW_BATTERY,
+      formattedMessage: `SAKHI MOBILITY:${name} is low on battery during ride. Please track here:${mapsUrl}`
+    };
+  }
+
+  // 4. Safe Drop / Live Tracking
+  if (cleanMsg.includes('Safe Drop') || cleanMsg.includes('safely reached') || cleanMsg.includes('shared live')) {
+    let name = 'Rider';
+    let destination = 'destination';
+
+    const nameMatch = cleanMsg.match(/(?:Safe Drop Alert:)\s*([^#]+?)\s*(?:has safely reached)/i);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    }
+    const destMatch = cleanMsg.match(/safely reached\s+([^#]+?)\s+via/i);
+    if (destMatch) {
+      destination = destMatch[1].trim();
+    }
+
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_TRACK_SHORT,
+      formattedMessage: `SAKHI MOBILITY: ${name} shared live ride tracking. Please track here: ${destination}`
+    };
+  }
+
+  // 5. Referral Code
+  if (cleanMsg.includes('referral')) {
+    const codeMatch = cleanMsg.match(/is\s*([A-Za-z0-9]+)/i);
+    const code = codeMatch ? codeMatch[1].trim() : 'SAKHI';
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_REFERRAL,
+      formattedMessage: `SAKHI MOBILITY: Your referral code is${code} . Please share it with friends and family.`
+    };
+  }
+
+  // 6. Offer / Promotion
+  if (cleanMsg.includes('offer') || cleanMsg.includes('discount')) {
+    return {
+      templateId: FORTIUS_TEMPLATES.SAKHI_OFFER,
+      formattedMessage: `SAKHI MOBILITY:ride offer. Use code SAKHI for a special ride discount. Please book now.`
+    };
+  }
+
+  // Fallback
+  return {
+    templateId: templateId || FORTIUS_TEMPLATES.SAKHI_TRACK_SHORT,
+    formattedMessage: cleanMsg
+  };
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // FUNCTION: sendSMS
-// Send a single SMS via MSG91 flow/template API
+// Send a single SMS via Fortius V2 GET API
 // ──────────────────────────────────────────────────────────────────────────────
-async function sendSMS(phone, message) {
+async function sendSMS(phone, message, templateId = null) {
   try {
-    if (!process.env.MSG91_AUTH_KEY || !process.env.MSG91_TEMPLATE_ID) {
-      logger.warn('smsService.sendSMS — MSG91 credentials not configured');
+    const apiKey = process.env.FORTIUS_API_KEY;
+    const senderId = process.env.FORTIUS_SENDER_ID;
+
+    if (!apiKey || !senderId) {
+      logger.warn('smsService.sendSMS — Fortius credentials not configured');
       return { sent: false, reason: 'not_configured' };
     }
 
-    // Normalise: MSG91 expects plain 10-digit or E.164 without leading +
-    const mobile = phone.replace(/^\+/, '');
+    const { templateId: resolvedId, formattedMessage } = resolveTemplateAndMessage(message, templateId);
+    const mobile = normalizePhone(phone);
 
-    const payload = {
-      flow_id: process.env.MSG91_TEMPLATE_ID,
-      sender:  'SAKHI',
-      mobiles: mobile,
-      VAR1:    message,
+    const params = {
+      apikey: apiKey,
+      senderid: senderId,
+      templateid: resolvedId,
+      number: mobile,
+      message: formattedMessage,
     };
 
-    const { data } = await axios.post(`${MSG91_BASE}/flow/`, payload, {
-      headers: {
-        authkey:        process.env.MSG91_AUTH_KEY,
-        'Content-Type': 'application/json',
-        Accept:         'application/json',
-      },
+    const { data } = await axios.get(FORTIUS_ENDPOINT, {
+      params,
       timeout: 8000,
     });
 
-    logger.info('smsService.sendSMS — sent', { mobile, response: data });
-    return { sent: true, response: data };
+    let success = false;
+    let desc = 'Unknown response';
+
+    if (data) {
+      if (typeof data === 'object') {
+        success = data.status === 'Success' || data.code === '011';
+        desc = data.description || (success ? 'Message submitted successfully' : 'Request failed');
+      } else if (typeof data === 'string') {
+        const cleanData = data.trim();
+        success = cleanData.toLowerCase().includes('success') || cleanData.includes('011');
+        desc = cleanData;
+      }
+    }
+
+    if (success) {
+      logger.info('smsService.sendSMS — success', { mobile, templateId: resolvedId, response: data });
+      return { sent: true, response: data };
+    } else {
+      logger.warn('smsService.sendSMS — API failure response', { mobile, templateId: resolvedId, response: data });
+      return { sent: false, reason: desc };
+    }
   } catch (err) {
-    logger.error('smsService.sendSMS — error', { phone, error: err.message });
+    logger.error('smsService.sendSMS — network/server error', { phone, error: err.message });
     return { sent: false, reason: err.message };
   }
 }
@@ -46,42 +222,67 @@ async function sendSMS(phone, message) {
 // ──────────────────────────────────────────────────────────────────────────────
 // FUNCTION: sendBulkSMS
 // Send the same message to multiple phone numbers.
-// MSG91 accepts mobiles as comma-separated string.
 // ──────────────────────────────────────────────────────────────────────────────
-async function sendBulkSMS(phones, message) {
+async function sendBulkSMS(phones, message, templateId = null) {
   try {
-    if (!process.env.MSG91_AUTH_KEY || !process.env.MSG91_TEMPLATE_ID) {
-      logger.warn('smsService.sendBulkSMS — MSG91 credentials not configured');
+    const apiKey = process.env.FORTIUS_API_KEY;
+    const senderId = process.env.FORTIUS_SENDER_ID;
+
+    if (!apiKey || !senderId) {
+      logger.warn('smsService.sendBulkSMS — Fortius credentials not configured');
       return { sent: false, reason: 'not_configured' };
     }
 
     if (!phones?.length) return { sent: false, reason: 'no_recipients' };
 
-    // Normalise all numbers
-    const mobiles = phones.map((p) => p.replace(/^\+/, '')).join(',');
+    const { templateId: resolvedId, formattedMessage } = resolveTemplateAndMessage(message, templateId);
+    const mobiles = phones.map(normalizePhone).filter(Boolean).join(',');
 
-    const payload = {
-      flow_id: process.env.MSG91_TEMPLATE_ID,
-      sender:  'SAKHI',
-      mobiles,
-      VAR1:    message,
+    if (!mobiles) return { sent: false, reason: 'no_valid_recipients' };
+
+    const params = {
+      apikey: apiKey,
+      senderid: senderId,
+      templateid: resolvedId,
+      number: mobiles,
+      message: formattedMessage,
     };
 
-    const { data } = await axios.post(`${MSG91_BASE}/flow/`, payload, {
-      headers: {
-        authkey:        process.env.MSG91_AUTH_KEY,
-        'Content-Type': 'application/json',
-        Accept:         'application/json',
-      },
+    const { data } = await axios.get(FORTIUS_ENDPOINT, {
+      params,
       timeout: 15000,
     });
 
-    logger.info('smsService.sendBulkSMS — sent', { count: phones.length, response: data });
-    return { sent: true, count: phones.length, response: data };
+    let success = false;
+    let desc = 'Unknown response';
+
+    if (data) {
+      if (typeof data === 'object') {
+        success = data.status === 'Success' || data.code === '011';
+        desc = data.description || (success ? 'Message submitted successfully' : 'Request failed');
+      } else if (typeof data === 'string') {
+        const cleanData = data.trim();
+        success = cleanData.toLowerCase().includes('success') || cleanData.includes('011');
+        desc = cleanData;
+      }
+    }
+
+    if (success) {
+      logger.info('smsService.sendBulkSMS — success', { count: phones.length, templateId: resolvedId, response: data });
+      return { sent: true, count: phones.length, response: data };
+    } else {
+      logger.warn('smsService.sendBulkSMS — API failure response', { count: phones.length, templateId: resolvedId, response: data });
+      return { sent: false, reason: desc };
+    }
   } catch (err) {
-    logger.error('smsService.sendBulkSMS — error', { count: phones?.length, error: err.message });
+    logger.error('smsService.sendBulkSMS — network/server error', { count: phones?.length, error: err.message });
     return { sent: false, reason: err.message };
   }
 }
 
-module.exports = { sendSMS, sendBulkSMS };
+module.exports = {
+  sendSMS,
+  sendBulkSMS,
+  FORTIUS_TEMPLATES,
+  normalizePhone
+};

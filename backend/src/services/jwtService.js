@@ -6,9 +6,9 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
 
-const ACCESS_TOKEN_EXPIRY = '7d';
-const REFRESH_TOKEN_EXPIRY = '30d';
-const REFRESH_TOKEN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
+const ACCESS_TOKEN_EXPIRY  = '7d';
+const REFRESH_TOKEN_EXPIRY    = '90d';              // 3-month session lifetime
+const REFRESH_TOKEN_EXPIRY_MS = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');

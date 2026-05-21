@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, Share,
-    ScrollView, Clipboard, StatusBar,
+    ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
+import { applyReferralCode, getReferralInfo } from '../src/api/endpoints';
 
 const REFERRAL_REWARDS = [
     { icon: 'gift', title: 'You Get', value: '₹50 off', desc: 'Your next ride after friend books their first ride' },
@@ -26,8 +28,28 @@ export default function ReferralsScreen() {
     const referralCode = user?.referral_code ?? `SAKHI${(user?.phone ?? '').slice(-4).padStart(4, '0')}`;
     const [copied, setCopied] = useState(false);
 
-    const copyCode = () => {
-        Clipboard.setString(referralCode);
+    // Enter-a-code state
+    const [enterCode, setEnterCode]         = useState('');
+    const [applying, setApplying]           = useState(false);
+    const [applySuccess, setApplySuccess]   = useState(null);  // success message
+    const [applyError, setApplyError]       = useState(null);
+
+    // Live stats from API
+    const [stats, setStats] = useState({ total_referred: 0, completed_referrals: 0 });
+    const [walletCredits, setWalletCredits] = useState(0);
+    const alreadyReferred = !!user?.referred_by_code;
+
+    useEffect(() => {
+        getReferralInfo()
+            .then(({ data }) => {
+                if (data?.stats)          setStats(data.stats);
+                if (data?.wallet_credits) setWalletCredits(data.wallet_credits);
+            })
+            .catch(() => {});
+    }, []);
+
+    const copyCode = async () => {
+        await Clipboard.setStringAsync(referralCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -36,14 +58,35 @@ export default function ReferralsScreen() {
         try {
             await Share.share({
                 message: `Join Sakhi — India's safest women-only ride service! Use my code **${referralCode}** when you sign up and get ₹30 off your first ride. Download: https://sakhi.app`,
-                title: 'Ride safe with Sakhi 🛺',
+                title: 'Ride safe with Sakhi 🚚',
             });
         } catch {}
     };
 
+    const handleApplyReferral = async () => {
+        const code = enterCode.toUpperCase().trim();
+        if (!code) return;
+        try {
+            setApplying(true);
+            setApplyError(null);
+            setApplySuccess(null);
+            const { data } = await applyReferralCode(code);
+            setApplySuccess(data.message);
+            setEnterCode('');
+            // Refresh stats
+            getReferralInfo().then(({ data: d }) => {
+                if (d?.wallet_credits) setWalletCredits(d.wallet_credits);
+            }).catch(() => {});
+        } catch (err) {
+            const msg = err?.response?.data?.error?.message || 'Invalid referral code. Please check and try again.';
+            setApplyError(msg);
+        } finally {
+            setApplying(false);
+        }
+    };
+
     return (
         <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-            <StatusBar barStyle="dark-content" backgroundColor={BG} />
             {/* Header — matches About/Wallet screen pattern exactly */}
             <View style={s.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -104,23 +147,82 @@ export default function ReferralsScreen() {
                     ))}
                 </View>
 
-                {/* Stats row */}
+                {/* Stats row — real data from API */}
                 <View style={s.statsCard}>
                     <View style={s.statItem}>
-                        <Text style={s.statValue}>0</Text>
+                        <Text style={s.statValue}>{stats.total_referred}</Text>
                         <Text style={s.statLabel}>Friends Invited</Text>
                     </View>
                     <View style={s.statDivider} />
                     <View style={s.statItem}>
-                        <Text style={s.statValue}>₹0</Text>
-                        <Text style={s.statLabel}>Rewards Earned</Text>
+                        <Text style={s.statValue}>₹{walletCredits}</Text>
+                        <Text style={s.statLabel}>Wallet Credits</Text>
                     </View>
                     <View style={s.statDivider} />
                     <View style={s.statItem}>
-                        <Text style={s.statValue}>0</Text>
-                        <Text style={s.statLabel}>Pending</Text>
+                        <Text style={s.statValue}>{stats.completed_referrals}</Text>
+                        <Text style={s.statLabel}>Completed</Text>
                     </View>
                 </View>
+
+                {/* Enter a Referral Code you received */}
+                {!alreadyReferred && (
+                    <>
+                        <Text style={s.sectionLabel}>HAVE A FRIEND'S CODE?</Text>
+                        <View style={s.enterCodeCard}>
+                            <Text style={s.enterCodeTitle}>Enter a referral code</Text>
+                            <Text style={s.enterCodeSub}>Enter a friend's code to get ₹30 wallet credit on your account</Text>
+                            <View style={s.enterCodeRow}>
+                                <TextInput
+                                    style={[
+                                        s.enterCodeInput,
+                                        applySuccess && s.enterCodeInputSuccess,
+                                        applyError   && s.enterCodeInputError,
+                                    ]}
+                                    placeholder="e.g. SAKHI1234"
+                                    placeholderTextColor="#94A3B8"
+                                    value={enterCode}
+                                    onChangeText={(t) => { setEnterCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '')); setApplyError(null); setApplySuccess(null); }}
+                                    autoCapitalize="characters"
+                                    autoCorrect={false}
+                                    maxLength={20}
+                                />
+                                <TouchableOpacity
+                                    style={[s.enterCodeBtn, (!enterCode || applying) && { opacity: 0.6 }]}
+                                    onPress={handleApplyReferral}
+                                    disabled={!enterCode || applying}
+                                    activeOpacity={0.85}
+                                >
+                                    {applying
+                                        ? <ActivityIndicator size="small" color="#FFFFFF" />
+                                        : <Text style={s.enterCodeBtnText}>Apply</Text>
+                                    }
+                                </TouchableOpacity>
+                            </View>
+                            {applySuccess && (
+                                <View style={s.applySuccessRow}>
+                                    <Feather name="check-circle" size={14} color="#059669" />
+                                    <Text style={s.applySuccessText}>{applySuccess}</Text>
+                                </View>
+                            )}
+                            {applyError && (
+                                <View style={s.applyErrorRow}>
+                                    <Feather name="alert-circle" size={14} color="#BA1A1A" />
+                                    <Text style={s.applyErrorText}>{applyError}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </>
+                )}
+                {alreadyReferred && (
+                    <View style={[s.enterCodeCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Feather name="check-circle" size={16} color="#059669" />
+                            <Text style={[s.enterCodeTitle, { color: '#059669' }]}>Referral Code Applied!</Text>
+                        </View>
+                        <Text style={s.enterCodeSub}>You signed up with code <Text style={{ fontWeight: '800', color: '#047857' }}>{user.referred_by_code}</Text>. Your ₹30 credit has been added.</Text>
+                    </View>
+                )}
 
                 {/* How it works */}
                 <Text style={s.sectionLabel}>HOW IT WORKS</Text>
@@ -287,5 +389,70 @@ const s = StyleSheet.create({
     termsNote: {
         fontSize: 11, fontWeight: '400', color: '#94A3B8',
         textAlign: 'center', lineHeight: 17, paddingHorizontal: 12,
+    },
+
+    // ── Enter a Referral Code card ─────────────────────────────────────────
+    enterCodeCard: {
+        backgroundColor: WHITE, borderRadius: 16, padding: 20,
+        marginBottom: 24, borderWidth: 1, borderColor: '#EDE9FE',
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04, shadowRadius: 12, elevation: 3,
+    },
+    enterCodeTitle: {
+        fontSize: 15, fontWeight: '700', color: DARK, marginBottom: 4,
+    },
+    enterCodeSub: {
+        fontSize: 12, fontWeight: '400', color: MID, lineHeight: 18, marginBottom: 16,
+    },
+    enterCodeRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+    },
+    enterCodeInput: {
+        flex: 1,
+        backgroundColor: BG,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#D8D0EC',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        fontSize: 15,
+        fontWeight: '700',
+        color: DARK,
+        letterSpacing: 1.2,
+    },
+    enterCodeInputSuccess: {
+        borderColor: '#10B981',
+        backgroundColor: '#F0FDF4',
+    },
+    enterCodeInputError: {
+        borderColor: '#BA1A1A',
+        backgroundColor: '#FFF2F0',
+    },
+    enterCodeBtn: {
+        backgroundColor: PURPLE,
+        borderRadius: 10,
+        paddingHorizontal: 18,
+        paddingVertical: 11,
+        shadowColor: 'rgba(124,58,237,1)', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15, shadowRadius: 8, elevation: 3,
+    },
+    enterCodeBtnText: {
+        fontSize: 14, fontWeight: '700', color: WHITE, letterSpacing: 0.3,
+    },
+    applySuccessRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        marginTop: 10, padding: 10,
+        backgroundColor: '#F0FDF4', borderRadius: 8,
+    },
+    applySuccessText: {
+        fontSize: 13, fontWeight: '600', color: '#059669', flex: 1,
+    },
+    applyErrorRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        marginTop: 10, padding: 10,
+        backgroundColor: '#FFF2F0', borderRadius: 8,
+    },
+    applyErrorText: {
+        fontSize: 13, fontWeight: '600', color: '#BA1A1A', flex: 1,
     },
 });

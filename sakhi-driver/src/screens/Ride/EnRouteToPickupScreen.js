@@ -14,6 +14,7 @@ import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
 import { startLocationTracking } from '../../services/locationTask';
+import StartNavigationButton from '../../components/StartNavigationButton';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -39,6 +40,9 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         longitude: ride.pickup_coords.longitude ?? ride.pickup_coords.lng  ?? 77.2090,
       }
     : { latitude: 28.6139, longitude: 77.2090 };
+
+  // Nav-service expects { lat, lng }
+  const pickupNavCoords = { lat: pickup.latitude, lng: pickup.longitude };
 
   const rideId = ride?.ride_id ?? ride?.id;
 
@@ -297,6 +301,15 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Start Navigation Button — launches Google Maps to pickup */}
+        <StartNavigationButton
+          coords={pickupNavCoords}
+          destinationLabel={ride?.pickup_address}
+          rideId={rideId}
+          mode="d"
+          style={{ marginBottom: 12 }}
+        />
 
         {/* Primary Action Button */}
         <TouchableOpacity style={s.primaryBtn} onPress={handleArrived} activeOpacity={0.8}>

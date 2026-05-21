@@ -1,9 +1,11 @@
-'use strict';
+﻿'use strict';
 
-const axios = require('axios');
 const supabase = require('../config/supabase');
+const smsService = require('../services/smsService');
+const sosService  = require('../services/sosService');
 const { registerChatEvents } = require('./chatSocket');
 const matchingEngine = require('../services/matchingEngine');
+const { broadcastToTrackers, broadcastStatusToTrackers } = require('./trackSocket');
 const logger = require('../utils/logger');
 
 
@@ -21,7 +23,7 @@ async function getRideForSocket(rideId, userId, role) {
   return ride;
 }
 
-// ── Battery-low SMS via MSG91 ─────────────────────────────────────────────────
+// ── Battery-low SMS via Fortius ─────────────────────────────────────────────────
 async function notifyEmergencyContacts(userId, name, lat, lng) {
   const { data: contacts } = await supabase
     .from('emergency_contacts')
@@ -31,20 +33,11 @@ async function notifyEmergencyContacts(userId, name, lat, lng) {
   if (!contacts?.length) return;
 
   const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
-  const smsText = `SAKHI ALERT: ${name || 'User'}'s phone battery is critically low. Last known location: ${mapsUrl}`;
+  const smsText = `SAKHI MOBILITY:${name || 'User'} is low on battery during ride. Please track here:${mapsUrl}`;
 
   for (const contact of contacts) {
     try {
-      await axios.post(
-        'https://api.msg91.com/api/v5/sms',
-        {
-          sender:  'SAKHI',
-          route:   '4',
-          mobiles: contact.phone,
-          message: smsText,
-        },
-        { headers: { authkey: process.env.MSG91_AUTH_KEY }, timeout: 5000 }
-      );
+      await smsService.sendSMS(contact.phone, smsText, smsService.FORTIUS_TEMPLATES.SAKHI_LOW_BATTERY);
     } catch (err) {
       logger.warn('rideSocket.notifyEmergencyContacts — SMS failed', {
         phone: contact.phone,
@@ -152,6 +145,8 @@ function registerRideSocket(io) {
           ride_id,
           message: 'Your trip is complete!',
         });
+        // Notify public track viewers that the ride is done
+        broadcastStatusToTrackers(io, ride_id, 'completed');
         logger.info('rideSocket — ride:complete forwarded to rider', { ride_id, driverId: userId });
       } catch (err) {
         logger.error('rideSocket — ride:complete error', { ride_id, error: err.message });
@@ -161,7 +156,8 @@ function registerRideSocket(io) {
 
     // ── driver:location_update ────────────────────────────────────────────────
     socket.on('driver:location_update', async ({ ride_id, lat, lng, heading, speed }) => {
-      if (!lat || !lng || role !== 'driver') return;
+      // Explicit null/undefined check — lat=0 or lng=0 (equator/prime meridian) must still pass
+      if (lat == null || lng == null || role !== 'driver') return;
 
       // Upsert driver_locations
       await supabase.from('driver_locations').upsert(
@@ -180,6 +176,14 @@ function registerRideSocket(io) {
             heading:     heading || 0,
             eta_minutes: null,
             timestamp:   new Date().toISOString(),
+          });
+
+          // ── Broadcast to public track viewers (share-link contacts) ─────────
+          broadcastToTrackers(io, ride_id, {
+            lat,
+            lng,
+            heading:   heading || 0,
+            timestamp: new Date().toISOString(),
           });
 
           // ── SCENARIO 1: Pre-Dispatch Trigger ─────────────────────────────
@@ -230,7 +234,7 @@ function registerRideSocket(io) {
 
     // ── driver:ping (keep-alive) ──────────────────────────────────────────────
     socket.on('driver:ping', async ({ lat, lng }) => {
-      if (role !== 'driver' || !lat || !lng) return;
+      if (role !== 'driver' || lat == null || lng == null) return;
       await supabase.from('driver_locations').upsert(
         { driver_id: userId, lat, lng, updated_at: new Date().toISOString() },
         { onConflict: 'driver_id' }
@@ -305,7 +309,7 @@ function registerRideSocket(io) {
           });
 
           const gracePeriodMs = 30_000;
-          const gracetHandle = setTimeout(async () => {
+          const graceHandle = setTimeout(async () => {
             // Check if driver has reconnected (any socket in their room)
             const driverSockets = await ridesNs.in(`driver:${userId}`).allSockets();
             if (driverSockets.size === 0) {
@@ -321,7 +325,7 @@ function registerRideSocket(io) {
           }, gracePeriodMs);
 
           // Store handle on socket to cancel if reconnect occurs before timeout
-          socket._gracePeriodHandle = gracetHandle;
+          socket._graceHandle = graceHandle;
         }
       }
     });

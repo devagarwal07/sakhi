@@ -15,6 +15,7 @@ import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
 import { startLocationTracking } from '../../services/locationTask';
+import StartNavigationButton from '../../components/StartNavigationButton';
 
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
@@ -44,7 +45,13 @@ export default function TripInProgressScreen({ navigation, route }) {
   const countdownRef                      = useRef(null);
   const slideAnim                         = useRef(new Animated.Value(300)).current;
 
-  const dropoff = ride?.dropoff_coords ?? { latitude: 28.6280, longitude: 77.2300 };
+  const dropoff = {
+    latitude:  ride?.dropoff_coords?.latitude  ?? ride?.dropoff_coords?.lat  ?? 28.6280,
+    longitude: ride?.dropoff_coords?.longitude ?? ride?.dropoff_coords?.lng  ?? 77.2300,
+  };
+
+  // Nav-service expects { lat, lng }
+  const dropoffNavCoords = { lat: dropoff.latitude, lng: dropoff.longitude };
 
   // ── Incoming request card slide-in animation ──────────────────────────────
   const showRequestCard = (show) => {
@@ -294,6 +301,18 @@ export default function TripInProgressScreen({ navigation, route }) {
             </View>
           </View>
         </View>
+
+        {/* Start Navigation Button — launches Google Maps for drop-off */}
+        <StartNavigationButton
+          coords={dropoffNavCoords}
+          destinationLabel={ride?.dropoff_address}
+          rideId={rideId}
+          mode="d"
+          style={{ marginBottom: 12 }}
+          onNavigationStart={() => {
+            // Already handled inside the hook — tracking is kept alive
+          }}
+        />
 
         {/* Complete Trip Button */}
         <TouchableOpacity

@@ -482,25 +482,107 @@ router.get('/users/face-review', async (req, res, next) => {
 // NOTIFICATIONS — BROADCAST
 // ────────────────────────────────────────────────────────────────────────────
 
+// ────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS — BROADCAST
+// ────────────────────────────────────────────────────────────────────────────
+
 const broadcastSchema = z.object({
   target: z.enum(['all_riders', 'all_drivers', 'all']),
-  title: z.string().min(1).max(200),
-  body: z.string().min(1).max(500),
+  delivery_mode: z.enum(['push', 'sms']).default('push'),
+
+  // For push notification
+  title: z.string().max(200).optional(),
+  body: z.string().max(500).optional(),
   data: z.record(z.string()).optional(),
+
+  // For SMS offer template
+  offer_name: z.string().max(30).optional(),
+  promo_code: z.string().max(20).optional(),
 });
 
 /**
  * POST /admin/notifications/broadcast
- * Body: { target: 'all_riders'|'all_drivers'|'all', title, body, data? }
+ * Body: { target: 'all_riders'|'all_drivers'|'all', delivery_mode: 'push'|'sms', title?, body?, data?, offer_name?, promo_code? }
  */
 router.post('/notifications/broadcast', async (req, res, next) => {
   try {
-    const { target, title, body, data } = broadcastSchema.parse(req.body);
+    const parsed = broadcastSchema.parse(req.body);
+    const { target, delivery_mode, title, body, data, offer_name, promo_code } = parsed;
 
-    const result = await fcmService.sendAdminBroadcast(target, { title, body, data: data || {} });
+    if (delivery_mode === 'sms') {
+      if (!offer_name || !promo_code) {
+        return res.status(400).json({ error: { message: 'offer_name and promo_code are required for SMS delivery mode' } });
+      }
 
-    logger.info('admin — broadcast notification sent', { target, adminId: req.user.userId, ...result });
-    return res.status(200).json({ success: true, target, ...result });
+      // Fetch all target phone numbers from database
+      const phones = [];
+      if (target === 'all_riders' || target === 'all') {
+        const { data: riders } = await supabase.from('users').select('phone').not('phone', 'is', null);
+        if (riders) {
+          phones.push(...riders.map(r => r.phone));
+        }
+      }
+      if (target === 'all_drivers' || target === 'all') {
+        const { data: drivers } = await supabase.from('drivers').select('phone').not('phone', 'is', null);
+        if (drivers) {
+          phones.push(...drivers.map(d => d.phone));
+        }
+      }
+
+      if (phones.length === 0) {
+        return res.json({ success: true, target, sent_count: 0, failed_count: 0, note: 'No target phone numbers found' });
+      }
+
+      const formattedMessage = `SAKHI MOBILITY:${offer_name} offer. Use code ${promo_code} for a special ride discount. Please book now.`;
+
+      const result = await smsService.sendBulkSMS(phones, formattedMessage, smsService.FORTIUS_TEMPLATES.SAKHI_OFFER);
+
+      if (result.sent) {
+        logger.info('admin — broadcast SMS offer sent', { target, count: phones.length, adminId: req.user.userId });
+
+        // Log to notifications_log table to keep a beautiful history for the UI
+        try {
+          const insertRows = phones.map(p => ({
+            title: `SMS Offer: ${offer_name}`,
+            body: formattedMessage,
+            user_id: null, // Broadcast level
+            type: 'sms_offer',
+            is_read: false,
+          }));
+          await supabase.from('notifications_log').insert(insertRows.slice(0, 100)); // cap database logs to avoid overflow
+        } catch (logErr) {
+          logger.error('admin — failed to log sms broadcasts to notifications_log', { error: logErr.message });
+        }
+
+        return res.status(200).json({
+          success: true,
+          delivery_mode: 'sms',
+          target,
+          sent_count: phones.length,
+          failed_count: 0,
+          response: result.response,
+        });
+      } else {
+        return res.status(500).json({ success: false, error: result.reason });
+      }
+
+    } else {
+      // Default delivery_mode: 'push'
+      if (!title || !body) {
+        return res.status(400).json({ error: { message: 'title and body are required for Push delivery mode' } });
+      }
+
+      const result = await fcmService.sendAdminBroadcast(target, { title, body, data: data || {} });
+
+      logger.info('admin — broadcast notification sent', { target, adminId: req.user.userId, ...result });
+      return res.status(200).json({
+        success: true,
+        delivery_mode: 'push',
+        target,
+        ...result,
+      });
+    }
+
   } catch (err) {
     if (err.name === 'ZodError') {
       return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid broadcast payload', details: err.flatten() } });
@@ -687,61 +769,95 @@ router.post('/debug/test-sms', async (req, res, next) => {
 
     // Credentials health check — return useful diagnostics without leaking values
     const credentialsConfigured = !!(
-      process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID
+      process.env.FORTIUS_API_KEY && process.env.FORTIUS_SENDER_ID
     );
-    const authKeyHint = process.env.MSG91_AUTH_KEY
-      ? `${process.env.MSG91_AUTH_KEY.slice(0, 6)}...` // first 6 chars only
+    const authKeyHint = process.env.FORTIUS_API_KEY
+      ? `${process.env.FORTIUS_API_KEY.slice(0, 6)}...` // first 6 chars only
       : null;
 
-    logger.info('admin — test-sms triggered', {
+    logger.info('admin — test-sms triggered (Fortius)', {
       phone,
       type,
       adminId: req.user?.userId ?? req.user?.id,
     });
 
     let result;
-    const testMessage = message || `[Sakhi Test] SMS delivery verification. Type: ${type}. Time: ${new Date().toISOString()}`;
+    const smsService = require('../services/smsService');
+    const testMessage = message || 'SAKHI MOBILITY: Your referral code isTEST12 . Please share it with friends and family.';
 
     if (type === 'otp') {
-      // Uses otpService — stores OTP in Redis/Supabase AND fires MSG91 OTP API
+      // Uses otpService — stores OTP in Redis/Supabase AND fires Fortius OTP SMS
       const { sendOTP } = require('../services/otpService');
       await sendOTP(phone);
-      result = { dispatched: true, note: 'OTP generated, stored, and sent via MSG91 OTP API. Check the phone for the 6-digit code.' };
+      result = { dispatched: true, note: 'OTP generated, stored, and sent via Fortius SMS. Check the phone for the 6-digit code.' };
 
     } else if (type === 'sms') {
-      result = await require('../services/smsService').sendSMS(phone, testMessage);
+      result = await smsService.sendSMS(phone, testMessage, smsService.FORTIUS_TEMPLATES.SAKHI_REFERRAL);
 
     } else if (type === 'bulk') {
       // Single-number bulk — same code path as real bulk but with one recipient
-      result = await require('../services/smsService').sendBulkSMS([phone], testMessage);
+      result = await smsService.sendBulkSMS([phone], testMessage, smsService.FORTIUS_TEMPLATES.SAKHI_REFERRAL);
     }
 
     logger.info('admin — test-sms completed', { phone, type, result });
 
     return res.status(200).json({
       success: true,
-      provider: 'msg91',
+      provider: 'fortius',
       type,
       phone,
       message_sent: type === 'otp' ? '(OTP — generated internally)' : testMessage,
       credentials_configured: credentialsConfigured,
       auth_key_hint: authKeyHint,
-      template_id: process.env.MSG91_TEMPLATE_ID || null,
-      msg91_response: result,
+      fortius_response: result,
       tested_at: new Date().toISOString(),
       tested_by: req.user?.userId ?? req.user?.id ?? 'admin',
     });
   } catch (err) {
     logger.error('admin — test-sms error', { error: err.message });
-    // Return structured error so MSG91 support can read it
+    // Return structured error so Fortius support can read it
     return res.status(500).json({
       success: false,
-      provider: 'msg91',
+      provider: 'fortius',
       error_message: err.message,
-      msg91_response: err.response?.data || null,
+      fortius_response: err.response?.data || null,
       http_status: err.response?.status || 500,
       tested_at: new Date().toISOString(),
     });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/sms/send-offer
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/sms/send-offer', async (req, res, next) => {
+  try {
+    const parsed = z.object({
+      phones: z.array(z.string().min(10).max(15)),
+      offer_name: z.string().max(30),
+      promo_code: z.string().max(20),
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    }
+
+    const { phones, offer_name, promo_code } = parsed.data;
+    const smsService = require('../services/smsService');
+
+    // Exact matching pattern for DLT:
+    // SAKHI MOBILITY:{#var#} offer. Use code {#var#} for a special ride discount. Please book now.
+    const formattedMessage = `SAKHI MOBILITY:${offer_name} offer. Use code ${promo_code} for a special ride discount. Please book now.`;
+
+    const result = await smsService.sendBulkSMS(phones, formattedMessage, smsService.FORTIUS_TEMPLATES.SAKHI_OFFER);
+
+    if (result.sent) {
+      return res.json({ success: true, count: result.count, response: result.response });
+    } else {
+      return res.status(500).json({ success: false, error: result.reason });
+    }
+  } catch (err) {
+    return next(err);
   }
 });
 

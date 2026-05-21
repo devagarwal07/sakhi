@@ -17,6 +17,7 @@ import {
   setupNotificationTapHandler,
   getInitialNotificationDataAsync,
 } from './src/services/notificationService';
+import client from './src/api/client';
 
 // ── Screens ──────────────────────────────────────────────────────────────────
 import DriverSplashScreen from './src/screens/Auth/DriverSplashScreen';
@@ -112,10 +113,16 @@ function OnboardingStack({ initialRoute = 'GenderVerification' }) {
 }
 
 
-function MainStack() {
+function MainStack({ initialRoute = 'DriverOnlineDashboard' }) {
   return (
     <SocketProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRoute}
+      >
+        <Stack.Screen name="DailyCommissionPayment" component={DailyCommissionPaymentScreen} />
+        <Stack.Screen name="WeeklyCommissionPayment" component={WeeklyCommissionPaymentScreen} />
+        <Stack.Screen name="CommissionPaidConfirmation" component={CommissionPaidConfirmationScreen} />
         <Stack.Screen name="DriverOnlineDashboard" component={DriverOnlineDashboardScreen} />
         <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
         <Stack.Screen name="PaymentPlans" component={PaymentPlansScreen} />
@@ -131,9 +138,6 @@ function MainStack() {
         <Stack.Screen name="SOSActive" component={SOSActiveScreen} />
         {/* Earnings */}
         <Stack.Screen name="MyEarnings" component={MyEarningsDashboardScreen} />
-        <Stack.Screen name="DailyCommissionPayment" component={DailyCommissionPaymentScreen} />
-        <Stack.Screen name="WeeklyCommissionPayment" component={WeeklyCommissionPaymentScreen} />
-        <Stack.Screen name="CommissionPaidConfirmation" component={CommissionPaidConfirmationScreen} />
         {/* Subscriptions */}
         <Stack.Screen name="SubscriptionRides" component={SubscriptionRidesOverviewScreen} />
         <Stack.Screen name="WeeklyCalendarView" component={WeeklyCalendarViewScreen} />
@@ -166,9 +170,38 @@ function MainStack() {
 // ── Root navigator — picks stack based on auth state ─────────────────────────
 function RootNavigator() {
   const { isLoading, isAuthenticated, driver } = useAuth();
+  const [commissionChecked, setCommissionChecked] = useState(false);
+  const [commissionInitialRoute, setCommissionInitialRoute] = useState('DriverOnlineDashboard');
 
-  // Show full-screen loader while checkAuth() is running
-  if (isLoading) {
+  const onboardingComplete = isAuthenticated && driver?.onboarding_status === 'approved';
+
+  // When driver is authenticated + approved, check commission before rendering MainStack.
+  // This runs once per app session (commissionChecked acts as the gate).
+  useEffect(() => {
+    if (!onboardingComplete || commissionChecked) return;
+
+    let cancelled = false;
+    client
+      .get('/drivers/commission/status')
+      .then(({ data }) => {
+        if (cancelled) return;
+        // total_due > 0  → land on payment screen; otherwise go straight to home
+        const route = data?.total_due > 0 ? 'DailyCommissionPayment' : 'DriverOnlineDashboard';
+        setCommissionInitialRoute(route);
+      })
+      .catch(() => {
+        // Network failure — let driver into app; commission check in sidebar will catch them
+        if (!cancelled) setCommissionInitialRoute('DriverOnlineDashboard');
+      })
+      .finally(() => {
+        if (!cancelled) setCommissionChecked(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [onboardingComplete]);
+
+  // Show full-screen loader while checkAuth() or commission check is running
+  if (isLoading || (onboardingComplete && !commissionChecked)) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={Colors.primaryContainer} />
@@ -180,10 +213,9 @@ function RootNavigator() {
     return <AuthStack />;
   }
 
-  // Authenticated + fully approved → Main app
-  const onboardingComplete = driver?.onboarding_status === 'approved';
+  // Authenticated + fully approved → Main app (with correct initial route)
   if (onboardingComplete) {
-    return <MainStack />;
+    return <MainStack initialRoute={commissionInitialRoute} />;
   }
 
   // Submitted KYC — show static under-review screen
@@ -193,7 +225,6 @@ function RootNavigator() {
 
   // Not yet submitted — start onboarding from the beginning
   return <OnboardingStack initialRoute="GenderVerification" />;
-
 }
 
 // ── App root ──────────────────────────────────────────────────────────────────

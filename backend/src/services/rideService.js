@@ -98,6 +98,31 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
   }
 
   else if (newStatus === 'in_progress') {
+    // ── PIN verification ──────────────────────────────────────────────────────
+    // Driver must supply the 4-digit PIN the rider received when booking.
+    const submittedPin = String(body?.pin || '').trim();
+    const storedPin    = String(ride.ride_start_pin || '').trim();
+
+    if (!storedPin) {
+      // PIN not set on ride — fail closed for safety
+      throw new AppError('Ride start PIN is missing. Cannot start trip.', 409, 'PIN_NOT_SET');
+    }
+    if (!submittedPin) {
+      throw new AppError('PIN is required to start the trip. Ask the rider for their 4-digit PIN.', 403, 'INVALID_START_PIN');
+    }
+
+    // Constant-time comparison to prevent timing attacks
+    const crypto = require('crypto');
+    const aBuf = Buffer.from(submittedPin.padEnd(4, ' '));
+    const bBuf = Buffer.from(storedPin.padEnd(4, ' '));
+    const pinMatch = aBuf.length === bBuf.length && crypto.timingSafeEqual(aBuf, bBuf);
+
+    if (!pinMatch) {
+      logger.warn('rideService.updateRideStatus — wrong start PIN', { rideId, driverId });
+      throw new AppError('Incorrect PIN. Please ask the rider for the correct 4-digit PIN.', 403, 'INVALID_START_PIN');
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Stop waiting timer
     waitingTimerService.stopWaitingTimer(rideId);
 
@@ -106,11 +131,12 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
     const updatedFare = parseFloat((parseFloat(ride.estimated_fare || 0) + waiting_charge).toFixed(2));
 
     await supabase.from('rides').update({
-      status: 'in_progress',
-      started_at: new Date().toISOString(),
+      status:         'in_progress',
+      started_at:     new Date().toISOString(),
       waiting_seconds,
       waiting_charge,
       estimated_fare: updatedFare,
+      ride_start_pin: null,   // clear PIN after successful use — one-time only
     }).eq('id', rideId);
 
     fcmService.sendToUser(riderId, 'rider', {
@@ -247,10 +273,10 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
 
         if (contacts?.length) {
           const riderName = ride.users?.name || 'Your family member';
-          const destination = ride.destination_address || 'their destination';
+          const destination = ride.drop_address || 'their destination';
           const phones = contacts.map((c) => c.phone);
-          const message = `✅ Safe Drop Alert: ${riderName} has safely reached ${destination} via Sakhi. Trip completed at ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.`;
-          await smsService.sendBulkSMS(phones, message);
+          const message = `SAKHI MOBILITY: ${riderName} shared live ride tracking. Please track here: ${destination}`;
+          await smsService.sendBulkSMS(phones, message, smsService.FORTIUS_TEMPLATES.SAKHI_TRACK_SHORT);
           logger.info('rideService — Safe Drop SMS sent', { rideId, recipientCount: phones.length });
         }
       } catch (e) {

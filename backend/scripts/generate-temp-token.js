@@ -4,7 +4,7 @@
  * generate-temp-token.js
  * ─────────────────────
  * Generates a short-lived admin JWT for sharing with external parties
- * (e.g. MSG91 support) to test the /admin/debug/test-sms endpoint.
+ * (e.g. Fortius support) to test the /admin/debug/test-sms endpoint.
  *
  * Usage:
  *   node scripts/generate-temp-token.js
@@ -39,7 +39,7 @@ if (!process.env.JWT_SECRET) {
 
 // ── Generate token ────────────────────────────────────────────────────────────
 const payload = {
-  userId : 'msg91-support-temp',
+  userId : 'fortius-support-temp',
   role   : 'admin',
   phone  : '+910000000000',
   jti    : uuidv4(),
@@ -63,7 +63,7 @@ console.log('TOKEN:\n');
 console.log(token);
 
 console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  📋  Ready-to-use cURL commands for MSG91 support:');
+console.log('  📋  Ready-to-use cURL commands for Fortius support:');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
 const BASE = 'https://sakhi-backend-pwej.onrender.com';

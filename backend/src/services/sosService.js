@@ -1,23 +1,15 @@
 'use strict';
 
-const axios = require('axios');
-const supabase = require('../config/supabase');
+const jwt      = require('jsonwebtoken');
+const supabase  = require('../config/supabase');
 const fcmService = require('./fcmService');
-const AppError = require('../utils/AppError');
-const logger = require('../utils/logger');
+const AppError  = require('../utils/AppError');
+const logger    = require('../utils/logger');
+const smsService = require('./smsService');
 
 let _io = null;
 
 function setIO(io) { _io = io; }
-
-// ── MSG91 SMS helper ──────────────────────────────────────────────────────────
-async function sendSms(phone, message) {
-  return axios.post(
-    'https://api.msg91.com/api/v5/sms',
-    { sender: 'SAKHI', route: '4', mobiles: phone, message },
-    { headers: { authkey: process.env.MSG91_AUTH_KEY }, timeout: 6000 }
-  );
-}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // triggerSOS
@@ -56,18 +48,34 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
   const contacts = contactsRes.data || [];
 
   const userName = userRows?.[0]?.name || 'A Sakhi user';
-  const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
-  const smsText  = `SAKHI EMERGENCY ALERT: ${userName} has triggered an SOS. Location: ${mapsUrl} — Please contact them immediately or call 112.`;
+  const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
 
-  // 4. SMS all emergency contacts
+  // Generate a 24-hour live tracking token for the SOS event
+  const trackToken = jwt.sign(
+    { ride_id: rideId || `sos:${sosId}`, type: 'live_track' },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  const trackUrl = `${baseUrl}/track/${trackToken}`;
+  const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
+
+  // SOS SMS — uses the Sakhi live tracking page (falls back to Google Maps coords)
+  const smsText  = `SAKHI MOBILITY Alert: ${userName} activated SOS during ride. Current location: ${lat},${lng} . Please track here: ${trackUrl}`;
+
+
+  // 4. SMS all emergency contacts — non-fatal per contact
   const notifiedPhones = [];
   await Promise.all(
-    (contacts || []).map(async (c) => {
+    contacts.map(async (c) => {
       try {
-        await sendSms(c.phone, smsText);
-        notifiedPhones.push(c.phone);
+        const res = await smsService.sendSMS(c.phone, smsText, smsService.FORTIUS_TEMPLATES.SAKHI_EMERGENCY);
+        if (res.sent) {
+          notifiedPhones.push(c.phone);
+        } else {
+          logger.warn('sosService.triggerSOS — SMS not delivered', { phone: c.phone, reason: res.reason });
+        }
       } catch (err) {
-        logger.warn('sosService.triggerSOS — SMS failed', { phone: c.phone, error: err.message });
+        logger.warn('sosService.triggerSOS — SMS error', { phone: c.phone, error: err.message });
       }
     })
   );
@@ -118,12 +126,24 @@ async function handleBatteryLow(userId, role, level, lat, lng) {
   const contacts = contactsRes.data || [];
 
   const userName = userRows?.[0]?.name || 'A Sakhi user';
-  const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
-  const smsText  = `SAKHI ALERT: ${userName}'s phone battery is critically low (${level}%). Last known location: ${mapsUrl}`;
+  const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
+
+  // Generate a 24-hour tracking link for battery-low alerts too
+  const trackToken = jwt.sign(
+    { ride_id: `battery:${userId}`, type: 'live_track' },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  const trackUrl = `${baseUrl}/track/${trackToken}`;
+  const smsText  = `SAKHI MOBILITY:${userName} is low on battery during ride. Please track here:${trackUrl}`;
 
   let notified = 0;
-  await Promise.all((contacts || []).map(async (c) => {
-    try { await sendSms(c.phone, smsText); notified++; } catch { /* non-fatal */ }
+  await Promise.all(contacts.map(async (c) => {
+    try {
+      const res = await smsService.sendSMS(c.phone, smsText, smsService.FORTIUS_TEMPLATES.SAKHI_LOW_BATTERY);
+      if (res.sent) notified++;
+      else logger.warn('sosService.handleBatteryLow — SMS not delivered', { phone: c.phone, reason: res.reason });
+    } catch { /* non-fatal */ }
   }));
 
   return { notified };

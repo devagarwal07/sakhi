@@ -1,13 +1,14 @@
 'use strict';
 
-const { z } = require('zod');
-const supabase = require('../config/supabase');
+const { z }      = require('zod');
+const crypto     = require('crypto');
+const supabase    = require('../config/supabase');
 const mapsService = require('../services/mapsService');
 const fareService = require('../services/fareService');
 const rideService = require('../services/rideService');
 const matchingEngine = require('../services/matchingEngine');
-const AppError = require('../utils/AppError');
-const logger = require('../utils/logger');
+const AppError    = require('../utils/AppError');
+const logger      = require('../utils/logger');
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 const latLngSchema = z.object({
@@ -34,6 +35,7 @@ const rideBookingSchema = z.object({
 const statusSchema = z.object({
   status:            z.enum(['driver_en_route', 'arrived', 'in_progress', 'completed']),
   payment_collected: z.boolean().optional(),
+  pin:               z.string().length(4).optional(), // required when status === 'in_progress'
 });
 
 const cancelSchema = z.object({
@@ -88,7 +90,9 @@ async function estimateFare(req, res, next) {
     let promo_applied = false;
 
     if (promo_code) {
-      const r = await fareService.applyPromo(finalFare, promo_code);
+      // dryRun=true so estimate never records usage
+      const userId = req.user?.userId;
+      const r = await fareService.applyPromo(finalFare, promo_code, userId, null, true);
       finalFare = r.discounted_fare;
       promo_discount = r.promo_discount;
       promo_applied = r.promo_applied;
@@ -160,9 +164,12 @@ async function createRide(req, res, next) {
     const fareConfig = await fareService.getFareConfig('auto');
     const { estimated_fare } = fareService.calculateFare(distance_km, duration_min, fareConfig);
     let finalFare = estimated_fare;
+    let promoDiscount = 0;
     if (body.promo_code) {
-      const r = await fareService.applyPromo(estimated_fare, body.promo_code);
+      // dryRun=false — will record usage once rideId is available (post-insert below)
+      const r = await fareService.applyPromo(estimated_fare, body.promo_code, riderId, null, true /* pre-insert: dry-run */);
       finalFare = r.discounted_fare;
+      promoDiscount = r.promo_discount;
     }
 
     // ── Free ride — consume the flag at booking time ────────────────────────
@@ -182,15 +189,34 @@ async function createRide(req, res, next) {
       drop_lat: body.drop_lat, drop_lng: body.drop_lng, drop_address,
       estimated_fare: finalFare, distance_km, duration_min, route_polyline,
       status: 'searching', payment_method: body.payment_method,
-    }).select('id').single();
+      ride_start_pin: String(crypto.randomInt(1000, 9999)), // 4-digit PIN for trip start
+    }).select('id, ride_start_pin').single();
 
     if (insertErr) throw new AppError('Failed to create ride.', 500, 'RIDE_CREATE_FAILED');
 
     const rideId = rideRows.id;
+    const ridePin = rideRows.ride_start_pin;
+
+    // Now record promo usage against the real rideId
+    if (body.promo_code && promoDiscount > 0) {
+      fareService.applyPromo(estimated_fare, body.promo_code, riderId, rideId, false).catch((e) =>
+        logger.warn('rideController.createRide — promo usage record failed', { error: e.message })
+      );
+    }
+
     setImmediate(() => matchingEngine.startMatching(rideId));
 
     logger.info('rideController.createRide', { rideId, riderId });
-    return res.status(201).json({ ride_id: rideId, status: 'searching', estimated_fare: finalFare, distance_km, duration_min, pickup_address, drop_address });
+    return res.status(201).json({
+      ride_id: rideId,
+      status:  'searching',
+      ride_start_pin: ridePin,   // shown to rider — share with driver at pickup
+      estimated_fare: finalFare,
+      distance_km,
+      duration_min,
+      pickup_address,
+      drop_address,
+    });
   } catch (err) {
     return handleError(err, res, next);
   }
@@ -201,9 +227,13 @@ async function createRide(req, res, next) {
 // ──────────────────────────────────────────────────────────────────────────────
 async function updateStatus(req, res, next) {
   try {
-    const { status, payment_collected } = statusSchema.parse(req.body);
+    const { status, payment_collected, pin } = statusSchema.parse(req.body);
     const io = req.app.get('io');
-    const result = await rideService.updateRideStatus(req.params.id, status, req.user.userId, { payment_collected }, io);
+    const result = await rideService.updateRideStatus(
+      req.params.id, status, req.user.userId,
+      { payment_collected, pin },
+      io
+    );
     return res.status(200).json(result);
   } catch (err) {
     return handleError(err, res, next);
@@ -280,6 +310,11 @@ async function getRide(req, res, next) {
     }
     if (ride.drivers?.phone) {
       ride.drivers.phone = '****' + ride.drivers.phone.slice(-4);
+    }
+
+    // PIN visibility: rider sees their own PIN; driver never sees it (they enter it manually)
+    if (role === 'driver') {
+      delete ride.ride_start_pin;
     }
 
     return res.status(200).json(ride);

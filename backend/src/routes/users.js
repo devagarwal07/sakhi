@@ -376,4 +376,117 @@ router.delete('/account', authMiddleware, roleGuard('rider'), async (req, res, n
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /users/referrals/share-sms (Rider only)
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/referrals/share-sms', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const parsed = z.object({
+      friend_phone: z.string().min(10).max(15)
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'friend_phone is required and must be a valid 10-15 digit string' });
+    }
+
+    const { friend_phone } = parsed.data;
+
+    // Fetch user's referral code
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('referral_code')
+      .eq('id', req.user.userId)
+      .single();
+
+    if (error || !user?.referral_code) {
+      return res.status(404).json({ error: 'Referral code not found' });
+    }
+
+    const smsService = require('../services/smsService');
+    
+    // Exact matching pattern for DLT:
+    // SAKHI MOBILITY: Your referral code is{#var#} . Please share it with friends and family.
+    const formattedMessage = `SAKHI MOBILITY: Your referral code is${user.referral_code} . Please share it with friends and family.`;
+
+    const smsResult = await smsService.sendSMS(friend_phone, formattedMessage, smsService.FORTIUS_TEMPLATES.SAKHI_REFERRAL);
+
+    if (smsResult.sent) {
+      return res.json({ success: true, message: 'Referral code sent successfully via SMS' });
+    } else {
+      return res.status(500).json({ success: false, error: smsResult.reason });
+    }
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /users/referral/apply — apply a referral code (entered by the user)
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/referral/apply', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const parsed = z.object({
+      referral_code: z.string().min(4).max(20).toUpperCase(),
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'referral_code is required (4–20 characters)', details: parsed.error.flatten() } });
+    }
+
+    const fareService = require('../services/fareService');
+    const result = await fareService.applyReferralCode(req.user.userId, parsed.data.referral_code);
+
+    return res.json({
+      success:       result.success,
+      referee_credit: result.referee_credit,
+      message:       `Referral applied! ₹${result.referee_credit} wallet credit has been added to your account.`,
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: { code: err.code, message: err.message } });
+    }
+    return next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /users/referral  — get my referral code + stats
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/referral', authMiddleware, roleGuard('rider'), async (req, res, next) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('referral_code, wallet_credits, referred_by_code')
+      .eq('id', req.user.userId)
+      .single();
+
+    if (error) throw error;
+
+    // Count how many people used this user's code
+    const { count: referralCount } = await supabase
+      .from('referrals')
+      .select('id', { count: 'exact', head: true })
+      .eq('referrer_id', req.user.userId);
+
+    // Count completed referrals (earned rewards)
+    const { count: completedCount } = await supabase
+      .from('referrals')
+      .select('id', { count: 'exact', head: true })
+      .eq('referrer_id', req.user.userId)
+      .eq('referral_status', 'completed');
+
+    return res.json({
+      referral_code:    user.referral_code,
+      wallet_credits:   parseFloat(user.wallet_credits || 0),
+      referred_by_code: user.referred_by_code || null,
+      stats: {
+        total_referred:     referralCount   || 0,
+        completed_referrals: completedCount || 0,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

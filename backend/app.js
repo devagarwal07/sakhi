@@ -21,8 +21,8 @@ const app = express();
 app.use((req, res, next) => {
   // The Rekognition liveness web component uses browser APIs that are often
   // blocked by strict CSP/COEP defaults. Keep API routes protected by Helmet,
-  // but allow the WebView liveness page to run.
-  if (req.path.startsWith('/liveness')) return next();
+  // but allow the WebView liveness page and the public /track page to run.
+  if (req.path.startsWith('/liveness') || req.path.startsWith('/track')) return next();
   return helmet()(req, res, next);
 });
 
@@ -154,13 +154,17 @@ app.use('/support', require('./src/routes/support'));
 app.use('/notifications', require('./src/routes/notifications'));
 app.use('/webhooks', require('./src/routes/webhooks'));
 app.use('/admin', require('./src/routes/admin'));
+app.use('/coupons', require('./src/routes/coupons'));
 
 // ─── Liveness Web (served to mobile WebView) ───────────────────────────────
 app.use('/liveness', express.static(path.join(__dirname, 'public', 'liveness')));
 
 // ─── Public — live trip tracking (no auth) ────────────────────────────────────
 const safetyController = require('./src/controllers/safetyController');
+// /track/:token  → HTML page (served to contacts who open the share link)
 app.get('/track/:token', safetyController.getLiveTrack);
+// /api/track/:token → JSON data polled by the tracking page's JavaScript
+app.get('/api/track/:token', safetyController.getLiveTrackData);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

@@ -133,6 +133,7 @@ export default function RideFindingScreen() {
                     drop_lng:       ride.dropoff.longitude,
                     drop_address:   ride.dropoff.address ?? '',
                     payment_method: ride.paymentMethod  ?? 'cash',
+                    ...(ride.promoCode ? { promo_code: ride.promoCode } : {}),
                 });
 
                 if (!mountedRef.current) return;
