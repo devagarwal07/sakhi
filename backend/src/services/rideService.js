@@ -15,12 +15,12 @@ const referralService = require('./referralService');
 const getAnomalyService = () => require('./anomalyService');
 
 // ── State machine ─────────────────────────────────────────────────────────────
-// Maps new_status → required current_status (driver-driven transitions only)
+// Maps new_status → allowed previous statuses
 const VALID_TRANSITIONS = {
-  driver_en_route: 'assigned',
-  arrived:         'driver_en_route',
-  in_progress:     'arrived',
-  completed:       'in_progress',
+  driver_en_route: ['assigned'],
+  arrived:         ['driver_en_route', 'assigned'], // Allow assigned to handle race conditions
+  in_progress:     ['arrived'],
+  completed:       ['in_progress'],
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -43,9 +43,9 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
   }
 
   const ride = rides[0];
-  const expectedStatus = VALID_TRANSITIONS[newStatus];
+  const allowedStatuses = VALID_TRANSITIONS[newStatus];
 
-  if (!expectedStatus) {
+  if (!allowedStatuses) {
     throw new AppError(`Status '${newStatus}' cannot be set via this endpoint.`, 403, 'TRANSITION_NOT_ALLOWED');
   }
 
@@ -54,7 +54,12 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
   }
 
   // Optimistic status check
-  if (ride.status !== expectedStatus) {
+  if (!allowedStatuses.includes(ride.status)) {
+    // If the ride is ALREADY at the desired status, just return gracefully to handle double-taps/race conditions
+    if (ride.status === newStatus) {
+      return { ok: true, message: 'Already in this state' };
+    }
+
     throw new AppError(
       `Cannot transition to '${newStatus}' from '${ride.status}'.`,
       409,
