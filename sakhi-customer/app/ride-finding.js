@@ -224,6 +224,32 @@ export default function RideFindingScreen() {
                     zoom={13}
                     scrollEnabled={false}
                     zoomEnabled={false}
+                    nearbyAutos={true}
+                    markers={[
+                        ride?.pickup && {
+                            id: 'pickup',
+                            latitude:  ride.pickup.latitude,
+                            longitude: ride.pickup.longitude,
+                            markerType: 'pickup',
+                            color: '#8031CC',
+                        },
+                        ride?.dropoff && {
+                            id: 'dropoff',
+                            latitude:  ride.dropoff.latitude,
+                            longitude: ride.dropoff.longitude,
+                            markerType: 'dropoff',
+                            color: '#1E1B2E',
+                        },
+                    ].filter(Boolean)}
+                    polylines={ride?.pickup && ride?.dropoff ? [{
+                        coords: [
+                            { latitude: ride.pickup.latitude,  longitude: ride.pickup.longitude },
+                            { latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude },
+                        ],
+                        color: '#8031CC',
+                        width: 4,
+                        animated: true,
+                    }] : []}
                 />
                 
                 {/* Desaturation overlay to match ethereal look */}

@@ -124,8 +124,19 @@ export default function DriverArrivedScreen() {
                 <SmartMapView
                     style={StyleSheet.absoluteFill}
                     center={{ latitude: pickupLat, longitude: pickupLng }}
-                    zoom={15}
-                    markers={[{ id: 'driver', latitude: pickupLat, longitude: pickupLng, color: '#BEA3D8', pulse: true }]}
+                    zoom={16}
+                    markers={[
+                        {
+                            id: 'driver', markerType: 'auto', pulse: true,
+                            latitude: pickupLat, longitude: pickupLng,
+                            color: '#8031CC',
+                        },
+                        ride?.pickup && {
+                            id: 'pickup', markerType: 'pickup',
+                            latitude: pickupLat, longitude: pickupLng,
+                            color: '#8031CC',
+                        },
+                    ].filter(Boolean)}
                     scrollEnabled={false}
                     zoomEnabled={false}
                 />

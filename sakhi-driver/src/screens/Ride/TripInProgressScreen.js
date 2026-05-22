@@ -207,13 +207,14 @@ export default function TripInProgressScreen({ navigation, route }) {
           center={myLocation ?? dropoff}
           zoom={14}
           markers={[
-            ...(myLocation ? [{ id: 'driver', latitude: myLocation.latitude, longitude: myLocation.longitude, color: '#964ADF', pulse: true }] : []),
-            { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#10B981', label: '⚑' },
+            ...(myLocation ? [{ id: 'driver', markerType: 'auto', pulse: true, latitude: myLocation.latitude, longitude: myLocation.longitude, color: '#8031CC', bearing: myLocation.bearing || 0 }] : []),
+            { id: 'dropoff', markerType: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#10B981' },
           ]}
           polylines={myLocation ? [{
             coords: [myLocation, dropoff],
-            color: '#964ADF',
-            width: 6,
+            color: '#8031CC',
+            width: 5,
+            animated: true,
           }] : []}
         />
 

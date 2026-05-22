@@ -261,14 +261,28 @@ export default function ActiveRideScreen() {
             <SmartMapView
                 ref={mapRef}
                 style={StyleSheet.absoluteFill}
-                center={ride.pickup || { latitude: 19.0760, longitude: 72.8777 }}
+                center={ride.driver?.currentLocation || ride.pickup || { latitude: 19.0760, longitude: 72.8777 }}
                 zoom={15}
                 markers={[
-                    ride.pickup          && { id: 'pickup',  latitude: ride.pickup.latitude,                    longitude: ride.pickup.longitude,                    color: '#BEA3D8', label: 'P' },
-                    ride.dropoff         && { id: 'dropoff', latitude: ride.dropoff.latitude,                   longitude: ride.dropoff.longitude,                   color: '#1E1B2E', label: 'D' },
-                    ride.driver?.currentLocation && { id: 'driver',  latitude: ride.driver.currentLocation.latitude, longitude: ride.driver.currentLocation.longitude, color: '#BEA3D8', pulse: true },
+                    ride.pickup && {
+                        id: 'pickup', markerType: 'pickup',
+                        latitude: ride.pickup.latitude, longitude: ride.pickup.longitude,
+                        color: '#8031CC',
+                    },
+                    ride.dropoff && {
+                        id: 'dropoff', markerType: 'dropoff',
+                        latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude,
+                        color: '#1E1B2E',
+                    },
+                    ride.driver?.currentLocation && {
+                        id: 'driver', markerType: 'auto', pulse: true,
+                        latitude: ride.driver.currentLocation.latitude,
+                        longitude: ride.driver.currentLocation.longitude,
+                        color: '#8031CC',
+                        bearing: ride.driver?.bearing || 0,
+                    },
                 ].filter(Boolean)}
-                polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#BEA3D8', width: 3 }] : []}
+                polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#8031CC', width: 4, animated: true }] : []}
             />
 
             {/* SOS Pill — always visible */}

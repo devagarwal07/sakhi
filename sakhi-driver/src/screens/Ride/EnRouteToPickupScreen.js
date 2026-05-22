@@ -210,13 +210,14 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
           center={myLocation ?? pickup}
           zoom={14}
           markers={[
-            ...(myLocation ? [{ id: 'driver', latitude: myLocation.latitude, longitude: myLocation.longitude, color: '#BEA3D8', pulse: true }] : []),
-            { id: 'pickup', latitude: pickup.latitude, longitude: pickup.longitude, color: '#10B981' },
+            ...(myLocation ? [{ id: 'driver', markerType: 'auto', pulse: true, latitude: myLocation.latitude, longitude: myLocation.longitude, color: '#8031CC', bearing: myLocation.bearing || 0 }] : []),
+            { id: 'pickup', markerType: 'pickup', latitude: pickup.latitude, longitude: pickup.longitude, color: '#10B981' },
           ]}
           polylines={myLocation ? [{
             coords: [myLocation, pickup],
-            color: '#BEA3D8',
-            width: 6,
+            color: '#8031CC',
+            width: 5,
+            animated: true,
           }] : []}
         />
 
