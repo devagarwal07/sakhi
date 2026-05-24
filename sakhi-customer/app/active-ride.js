@@ -357,42 +357,43 @@ export default function ActiveRideScreen() {
                             <TouchableOpacity style={styles.actionBtn} onPress={() => setChatOpen(true)}>
                                 <Feather name="message-circle" size={18} color="#1E1B2E" />
                             </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.actionBtn}
-                                    onPress={async () => {
-                                        try {
-                                            // Fetch driver phone and open direct call
-                                            const res = await getDriverPhone(ride.rideId);
-                                            const phone = res?.data?.phone;
-                                            if (phone) {
-                                                Linking.openURL(`tel:${phone}`);
-                                            } else if (ride.driver?.phone) {
-                                                Linking.openURL(`tel:${ride.driver.phone}`);
-                                            } else {
-                                                setModal({
-                                                    icon: '⚠️',
-                                                    title: 'Call Failed',
-                                                    message: 'Driver phone number is unavailable.',
-                                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                                });
-                                            }
-                                        } catch (_) {
-                                            // Fallback to ride context phone
-                                            if (ride.driver?.phone) {
-                                                Linking.openURL(`tel:${ride.driver.phone}`);
-                                            } else {
-                                                setModal({
-                                                    icon: '⚠️',
-                                                    title: 'Call Failed',
-                                                    message: 'Could not retrieve driver phone number.',
-                                                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                                                });
-                                            }
+                            <TouchableOpacity
+                                style={styles.actionBtn}
+                                onPress={async () => {
+                                    try {
+                                        // Fetch driver phone and open direct call
+                                        const res = await getDriverPhone(ride.rideId);
+                                        const phone = res?.data?.phone;
+                                        if (phone) {
+                                            Linking.openURL(`tel:${phone}`);
+                                        } else if (ride.driver?.phone) {
+                                            Linking.openURL(`tel:${ride.driver.phone}`);
+                                        } else {
+                                            setModal({
+                                                icon: '⚠️',
+                                                title: 'Call Failed',
+                                                message: 'Driver phone number is unavailable.',
+                                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                            });
                                         }
-                                    }}
-                                >
+                                    } catch (_) {
+                                        // Fallback to ride context phone
+                                        if (ride.driver?.phone) {
+                                            Linking.openURL(`tel:${ride.driver.phone}`);
+                                        } else {
+                                            setModal({
+                                                icon: '⚠️',
+                                                title: 'Call Failed',
+                                                message: 'Could not retrieve driver phone number.',
+                                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                                            });
+                                        }
+                                    }
+                                }}
+                            >
                                 <Feather name="phone-call" size={18} color="#1E1B2E" />
                             </TouchableOpacity>
+
                         </View>
                     </View>
                 )}

@@ -21,7 +21,7 @@ const MENU_ITEMS_CONFIG = [
   { id: 'SubscriptionRides',       labelKey: 'sidebar.subscriptionRides', iconName: 'rickshaw',              iconType: 'materialCommunity' },
   { id: 'MyEarnings',              labelKey: 'sidebar.myEarnings',        iconName: 'wallet-outline',        iconType: 'materialCommunity' },
   { id: 'MyDocuments',             labelKey: 'sidebar.myDocuments',       iconName: 'file-document-outline', iconType: 'materialCommunity' },
-  { id: 'Notifications',           labelKey: 'sidebar.notifications',     iconName: 'bell-outline',          iconType: 'materialCommunity', badge: '3' },
+  { id: 'Notifications',           labelKey: 'sidebar.notifications',     iconName: 'bell-outline',          iconType: 'materialCommunity' },
   { id: 'MyProfile',               labelKey: 'sidebar.myProfile',         iconName: 'account-outline',       iconType: 'materialCommunity' },
   { id: 'DriverReferrals',         labelKey: 'sidebar.referralsRewards',  iconName: 'gift-outline',          iconType: 'materialCommunity' },
 ];

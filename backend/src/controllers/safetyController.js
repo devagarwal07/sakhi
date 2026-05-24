@@ -334,12 +334,15 @@ async function getLiveTrackData(req, res, next) {
 
 // ── POST /safety/call/:ride_id ──────────────────────────────────────────────────────────────────────────────
 const callSchema = z.object({
-  direction: z.enum(['rider_to_driver', 'driver_to_rider']),
+  // direction is optional — if not provided we infer it from role
+  direction: z.enum(['rider_to_driver', 'driver_to_rider']).optional(),
 });
 
 async function initiateCall(req, res, next) {
   try {
-    const { direction } = callSchema.parse(req.body);
+    const { direction: requestedDirection } = callSchema.parse(req.body);
+    // Infer direction from the caller's role if not explicitly provided
+    const direction = requestedDirection ?? (req.user.role === 'rider' ? 'rider_to_driver' : 'driver_to_rider');
     const result = await callingService.resolveCallNumber(
       req.params.ride_id,
       req.user.userId,
