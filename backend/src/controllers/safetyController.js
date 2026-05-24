@@ -332,7 +332,7 @@ async function getLiveTrackData(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
-// ── POST /safety/call/:ride_id ────────────────────────────────────────────────
+// ── POST /safety/call/:ride_id ──────────────────────────────────────────────────────────────────────────────
 const callSchema = z.object({
   direction: z.enum(['rider_to_driver', 'driver_to_rider']),
 });
@@ -340,13 +340,14 @@ const callSchema = z.object({
 async function initiateCall(req, res, next) {
   try {
     const { direction } = callSchema.parse(req.body);
-    const result = await callingService.initiateCall(
+    const result = await callingService.resolveCallNumber(
       req.params.ride_id,
       req.user.userId,
       req.user.role,
       direction
     );
-    return res.status(200).json(result);
+    // Return the phone number — client opens tel: link directly
+    return res.status(200).json({ phone: result.phone });
   } catch (err) { return handleError(err, res, next); }
 }
 

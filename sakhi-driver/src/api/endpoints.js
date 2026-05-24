@@ -74,8 +74,8 @@ export const triggerSOS = (location = {}) => {
 };
 export const cancelSOS = () => client.post('/safety/sos/cancel');
 
-/** Masked call via Exotel — direction is always driver_to_rider for driver app */
-export const callRider = (rideId) =>
+/** Fetch rider phone for direct calling — returns { phone } */
+export const getRiderPhone = (rideId) =>
   client.post(`/safety/call/${rideId}`, { direction: 'driver_to_rider' });
 
 export const getEmergencyContacts  = () => client.get('/safety/emergency-contacts');

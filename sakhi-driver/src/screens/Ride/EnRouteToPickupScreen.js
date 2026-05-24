@@ -9,7 +9,9 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
-import { patchRideStatus, callRider, cancelRide } from '../../api/endpoints';
+import { patchRideStatus, getRiderPhone, cancelRide } from '../../api/endpoints';
+
+
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
@@ -136,24 +138,20 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
     }
     setCalling(true);
     try {
-      // Exotel masked call via driver endpoints
-      await callRider(rideId);
-      Alert.alert(
-        '📞 Calling Rider',
-        'Exotel will connect you to the rider via a masked number. Your number stays private.',
-        [{ text: 'OK' }],
-      );
-    } catch (err) {
-      const msg = err.response?.data?.error?.message;
-      if (msg === 'Calling service is not configured.') {
-        // Fallback to direct dial only if Exotel env vars are missing
-        if (ride?.rider_phone) {
-          Linking.openURL(`tel:${ride.rider_phone}`);
-        } else {
-          Alert.alert('Call Failed', 'Rider phone number is unavailable.');
-        }
+      // Fetch rider phone number and open direct call
+      const res = await getRiderPhone(rideId);
+      const phone = res?.data?.phone ?? ride?.rider_phone;
+      if (phone) {
+        Linking.openURL(`tel:${phone}`);
       } else {
-        Alert.alert('Call Failed', msg ?? 'Could not connect call. Use in-app chat instead.');
+        Alert.alert('Call Failed', 'Rider phone number is unavailable.');
+      }
+    } catch (err) {
+      // Fallback to rider phone from ride params
+      if (ride?.rider_phone) {
+        Linking.openURL(`tel:${ride.rider_phone}`);
+      } else {
+        Alert.alert('Call Failed', 'Could not retrieve rider phone number.');
       }
     } finally {
       setCalling(false);

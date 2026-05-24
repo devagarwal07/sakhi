@@ -71,9 +71,10 @@ export const triggerSOS = ({ lat, lng, ride_id } = {}) => {
 };
 export const cancelSOS = () => apiClient.post('/safety/sos/cancel');
 
-// Masked call — direction is required by backend callSchema
-export const callDriver = (rideId) =>
-    apiClient.post('/safety/call', { rideId, direction: 'rider_to_driver' });
+// Fetch driver phone for direct calling — returns { phone }
+export const getDriverPhone = (rideId) =>
+    apiClient.post(`/safety/call/${rideId}`, { direction: 'rider_to_driver' });
+
 
 export const getEmergencyContacts = () => apiClient.get('/safety/emergency-contacts');
 export const addEmergencyContact = (data) => apiClient.post('/safety/emergency-contacts', data);

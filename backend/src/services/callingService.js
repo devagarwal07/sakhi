@@ -1,16 +1,16 @@
 'use strict';
 
-const axios = require('axios');
 const supabase = require('../config/supabase');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 
 /**
- * initiateCall — proxies a call via Exotel between rider and driver.
+ * resolveCallNumber — fetches the phone number of the other party on a ride.
  * direction: 'rider_to_driver' | 'driver_to_rider'
+ * Returns { phone } so the client can open a direct tel: link.
  */
-async function initiateCall(rideId, callerId, callerRole, direction) {
-  // Fetch ride to get both phones
+async function resolveCallNumber(rideId, callerId, callerRole, direction) {
+  // Fetch ride
   const { data: rides } = await supabase
     .from('rides')
     .select('rider_id, driver_id, status')
@@ -20,71 +20,30 @@ async function initiateCall(rideId, callerId, callerRole, direction) {
   const ride = rides?.[0];
   if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
 
-  // Verify caller is on this ride
+  // Verify caller belongs to this ride
   if (callerRole === 'rider' && ride.rider_id !== callerId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
   if (callerRole === 'driver' && ride.driver_id !== callerId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
 
-  // Only allow calls on active rides
+  // Only allow on active rides
   const activeStatuses = ['assigned', 'driver_en_route', 'arrived', 'in_progress'];
   if (!activeStatuses.includes(ride.status)) {
     throw new AppError('Calls are only available during active rides.', 409, 'RIDE_NOT_ACTIVE');
   }
 
-  // Fetch phones
-  const [{ data: riders }, { data: drivers }] = await Promise.all([
-    supabase.from('users').select('phone').eq('id', ride.rider_id).limit(1),
-    supabase.from('drivers').select('phone').eq('id', ride.driver_id).limit(1),
-  ]);
-
-  const riderPhone = riders?.[0]?.phone;
-  const driverPhone = drivers?.[0]?.phone;
-
-  if (!riderPhone || !driverPhone) throw new AppError('Phone numbers not available.', 409, 'PHONE_UNAVAILABLE');
-
-  const fromPhone = direction === 'rider_to_driver' ? riderPhone : driverPhone;
-  const toPhone = direction === 'rider_to_driver' ? driverPhone : riderPhone;
-
-  const sid = process.env.EXOTEL_SID;
-  const token = process.env.EXOTEL_TOKEN;
-  // Historically this repo documented EXOTEL_APP_ID, but the Exotel Connect API
-  // needs a CallerId (your Exophone / virtual number). Support both names.
-  const callerId_ = process.env.EXOTEL_CALLER_ID || process.env.EXOTEL_APP_ID;
-
-  if (!sid || !token || !callerId_) {
-    throw new AppError('Calling service is not configured.', 503, 'CALLING_NOT_CONFIGURED');
+  // Fetch the target party's phone number
+  let phone;
+  if (direction === 'rider_to_driver') {
+    const { data: drivers } = await supabase.from('drivers').select('phone').eq('id', ride.driver_id).limit(1);
+    phone = drivers?.[0]?.phone;
+  } else {
+    const { data: riders } = await supabase.from('users').select('phone').eq('id', ride.rider_id).limit(1);
+    phone = riders?.[0]?.phone;
   }
 
-  try {
-    const baseUrl = process.env.BASE_URL;
-    const params = new URLSearchParams({
-      From: fromPhone,
-      To: toPhone,
-      CallerId: callerId_,
-    });
-    // Optional: Exotel status callbacks (safe even if you don't use it)
-    if (baseUrl) params.set('StatusCallback', `${baseUrl}/webhooks/exotel`);
+  if (!phone) throw new AppError('Phone number not available.', 409, 'PHONE_UNAVAILABLE');
 
-    const { data: exotelRes } = await axios.post(
-      `https://${sid}:${token}@api.exotel.com/v1/Accounts/${sid}/Calls/connect.json`,
-      params,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10_000 }
-    );
-
-    logger.info('callingService.initiateCall — Exotel call created', { rideId, direction, callSid: exotelRes?.Call?.Sid });
-
-    return {
-      virtual_number: callerId_,
-      call_sid: exotelRes?.Call?.Sid,
-      message: 'Call connecting...',
-    };
-  } catch (err) {
-    logger.error('callingService.initiateCall — Exotel error', { error: err?.response?.data || err.message });
-    throw new AppError(
-      'Unable to connect call right now. Please use in-app chat.',
-      503,
-      'CALL_CONNECT_FAILED'
-    );
-  }
+  logger.info('callingService.resolveCallNumber', { rideId, callerRole, direction });
+  return { phone };
 }
 
-module.exports = { initiateCall };
+module.exports = { resolveCallNumber };

@@ -11,7 +11,7 @@ import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { callDriver, cancelRide } from '../src/api/endpoints';
+import { getDriverPhone, cancelRide } from '../src/api/endpoints';
 
 const { width } = Dimensions.get('window');
 
@@ -238,23 +238,28 @@ export default function DriverArrivedScreen() {
                                     if (!ride?.rideId) return;
                                     setCalling(true);
                                     try {
-                                        // Exotel masked call — hides real phone numbers
-                                        await callDriver(ride.rideId);
-                                        setModal({
-                                            icon: '📞',
-                                            title: 'Calling Driver',
-                                            message: 'Sakhi will connect you via a masked number. Neither party sees the real number.',
-                                            buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-                                        });
+                                        // Fetch the driver's real phone number and open direct call
+                                        const res = await getDriverPhone(ride.rideId);
+                                        const phone = res?.data?.phone ?? driverPhone;
+                                        if (phone) {
+                                            Linking.openURL(`tel:${phone}`);
+                                        } else {
+                                            setModal({
+                                                icon: '⚠️',
+                                                title: 'Call Failed',
+                                                message: 'Driver phone number is unavailable.',
+                                                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                                            });
+                                        }
                                     } catch (err) {
-                                        const msg = err.response?.data?.error?.message;
-                                        if (msg === 'Calling service is not configured.' && driverPhone) {
+                                        // Fallback: use number from ride context if API fails
+                                        if (driverPhone) {
                                             Linking.openURL(`tel:${driverPhone}`);
                                         } else {
                                             setModal({
                                                 icon: '⚠️',
                                                 title: 'Call Failed',
-                                                message: msg ?? 'Could not connect call. Please try again.',
+                                                message: 'Could not retrieve driver phone number.',
                                                 buttons: [{ text: 'OK', onPress: () => setModal(null) }],
                                             });
                                         }

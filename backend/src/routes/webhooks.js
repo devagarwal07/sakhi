@@ -1,7 +1,6 @@
 'use strict';
 
 const crypto = require('crypto');
-const querystring = require('querystring');
 const { Router } = require('express');
 const kycService = require('../services/kycService');
 const logger = require('../utils/logger');
@@ -12,32 +11,7 @@ const router = Router();
 // All webhook routes: 100 req/min per IP
 router.use(webhookLimiter);
 
-// ── POST /webhooks/exotel ────────────────────────────────────────────────────
-// Exotel may POST either JSON or x-www-form-urlencoded. We capture rawBody in
-// app.js; parse best-effort and always return 200 so call flows aren't blocked.
-router.post('/exotel', (req, res) => {
-  try {
-    const raw = req.rawBody || '';
-    let payload = req.body || {};
-    if (
-      (!payload || Object.keys(payload).length === 0) &&
-      typeof raw === 'string' &&
-      raw.includes('=')
-    ) {
-      payload = querystring.parse(raw);
-    }
 
-    // Avoid logging full payload (can contain phone numbers). Keep it minimal.
-    logger.info('webhooks.exotel — received', {
-      keys: Object.keys(payload || {}),
-      callSid: payload?.CallSid || payload?.CallSid?.[0] || payload?.CallSid?.Sid,
-      status: payload?.Status || payload?.CallStatus || payload?.CallStatus?.[0],
-    });
-  } catch (err) {
-    logger.warn('webhooks.exotel — handler error', { error: err.message });
-  }
-  return res.status(200).json({ received: true });
-});
 
 // ── HMAC: Signzy ──────────────────────────────────────────────────────────────
 function validateSignzyHMAC(req, res, next) {

@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
-import { callRider } from '../../api/endpoints';
+import { getRiderPhone } from '../../api/endpoints';
 
 import {
   MoreVertical, Phone, Calendar, Sun, Moon, MapPin,
@@ -182,21 +182,29 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
   // ── Contact / Initiate ────────────────────────────────────────────────────
   const handleCall = async () => {
     const rideId = sub?.ride_id ?? sub?.id;
-    if (!rideId) {
-      Alert.alert(t('subscription.callNotAvailableTitle'), t('subscription.callNotAvailableMessage'));
-      return;
-    }
     setCalling(true);
     try {
-      // Exotel masked call — neither party sees the real phone number
-      await callRider(rideId);
-      Alert.alert(t('subscription.callingRiderTitle'), t('subscription.callingRiderMessage'));
-    } catch (err) {
-      const msg = err.response?.data?.error?.message;
-      if (msg === 'Calling service is not configured.' && sub.rider_phone) {
+      if (rideId) {
+        // Fetch rider's real phone number and open direct call
+        const res = await getRiderPhone(rideId);
+        const phone = res?.data?.phone ?? sub.rider_phone;
+        if (phone) {
+          Linking.openURL(`tel:${phone}`);
+        } else {
+          Alert.alert(t('subscription.callFailedTitle'), t('subscription.callNotAvailableMessage'));
+        }
+      } else if (sub.rider_phone) {
+        // No ride ID yet — use phone from subscription data directly
         Linking.openURL(`tel:${sub.rider_phone}`);
       } else {
-        Alert.alert(t('subscription.callFailedTitle'), msg ?? t('subscription.callFailedMessage'));
+        Alert.alert(t('subscription.callNotAvailableTitle'), t('subscription.callNotAvailableMessage'));
+      }
+    } catch (err) {
+      // Fallback to rider phone from subscription params
+      if (sub.rider_phone) {
+        Linking.openURL(`tel:${sub.rider_phone}`);
+      } else {
+        Alert.alert(t('subscription.callFailedTitle'), t('subscription.callFailedMessage'));
       }
     } finally {
       setCalling(false);
@@ -419,7 +427,7 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
           <Text style={s.callBtnText}>{calling ? 'Connecting…' : 'Contact Rider'}</Text>
         </TouchableOpacity>
         {/* Privacy note */}
-        <Text style={s.callNote}>CALLS ARE MASKED FOR PRIVACY</Text>
+        <Text style={s.callNote}>TAP TO CALL RIDER DIRECTLY</Text>
       </View>
 
     </View>
