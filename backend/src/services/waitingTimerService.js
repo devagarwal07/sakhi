@@ -24,7 +24,7 @@ async function startWaitingTimer(rideId, waitingStartAt, io) {
   }
 
   const interval = setInterval(() => {
-    const { waiting_seconds, waiting_charge } = fareService.calculateWaitingCharge(waitingStartAt, fareConfig);
+    const { waiting_seconds, waiting_charge } = fareService.calculateWaitingCharge(waitingStartAt);
     const free_wait_remaining = Math.max(0, fareConfig.free_wait_secs - waiting_seconds);
 
     emitter.emitToRide(io, rideId, 'waiting_tick', {

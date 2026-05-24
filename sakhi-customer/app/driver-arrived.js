@@ -75,7 +75,7 @@ export default function DriverArrivedScreen() {
 
     // ── Socket: ride status updates from backend ───────────────────────────────
     useEffect(() => {
-        const handleStatusUpdate = ({ status }) => {
+        const handleStatusUpdate = ({ status, message }) => {
             if (!mountedRef.current) return;
             updateStatus(status);
             if (status === 'in_progress') {
@@ -83,6 +83,35 @@ export default function DriverArrivedScreen() {
                 router.replace('/active-ride');
             } else if (status === 'completed') {
                 router.replace('/ride-summary');
+            } else if (status === 'searching') {
+                // Driver cancelled from arrived state — backend re-entered matching
+                // Navigate to ride-finding so the customer sees the "Finding Driver" UI
+                setModal({
+                    icon: '🔄',
+                    title: 'Driver Cancelled',
+                    message: message ?? 'Your driver cancelled. Finding a new driver for you…',
+                    buttons: [{
+                        text: 'OK',
+                        onPress: () => {
+                            setModal(null);
+                            router.replace('/ride-finding');
+                        },
+                    }],
+                });
+            } else if (status === 'cancelled') {
+                // Admin/system cancellation
+                setModal({
+                    icon: '❌',
+                    title: 'Ride Cancelled',
+                    message: message ?? 'This ride has been cancelled.',
+                    buttons: [{
+                        text: 'OK',
+                        onPress: () => {
+                            setModal(null);
+                            router.replace('/(tabs)/');
+                        },
+                    }],
+                });
             }
         };
 

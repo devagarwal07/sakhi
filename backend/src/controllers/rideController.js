@@ -162,7 +162,7 @@ async function createRide(req, res, next) {
     const route_polyline = await mapsService.getRoutePolyline(body.pickup_lat, body.pickup_lng, body.drop_lat, body.drop_lng);
 
     const fareConfig = await fareService.getFareConfig('auto');
-    const { estimated_fare } = fareService.calculateFare(distance_km, duration_min, fareConfig);
+    const { estimated_fare } = fareService.calculateFare(distance_km, duration_min);
     let finalFare = estimated_fare;
     let promoDiscount = 0;
     if (body.promo_code) {
@@ -408,93 +408,7 @@ async function getChatHistory(req, res, next) {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// GET /rides/:id/fare-summary  — driver fetches breakdown after trip completes
-// ──────────────────────────────────────────────────────────────────────────────
-async function fareSummary(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { data: rides } = await supabase
-      .from('rides')
-      .select('id, estimated_fare, base_fare, wait_charge, platform_commission, net_fare, payment_method, payment_status, drop_address')
-      .eq('id', id)
-      .limit(1);
 
-    const ride = rides?.[0];
-    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
-
-    const netFare = ride.net_fare ?? ride.estimated_fare ?? 0;
-    return res.status(200).json({
-      ride_id:             id,
-      base_fare:           ride.base_fare           ?? ride.estimated_fare ?? 0,
-      wait_charge:         ride.wait_charge          ?? 0,
-      platform_commission: ride.platform_commission  ?? 0,
-      net_fare:            netFare,
-      payment_method:      ride.payment_method       ?? 'cash',
-      payment_status:      ride.payment_status       ?? 'pending',
-    });
-  } catch (err) {
-    return handleError(err, res, next);
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// POST /rides/:id/cash-collected  — driver confirms cash received
-// ──────────────────────────────────────────────────────────────────────────────
-async function cashCollected(req, res, next) {
-  try {
-    const { id } = req.params;
-    const driverId = req.user.userId;
-    const io = req.app.get('io');
-
-    const { data: rides } = await supabase
-      .from('rides').select('id, driver_id, rider_id, status, payment_method')
-      .eq('id', id).limit(1);
-
-    const ride = rides?.[0];
-    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
-    if (ride.driver_id !== driverId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
-    if (ride.status !== 'completed') throw new AppError('Ride not yet completed.', 422, 'RIDE_NOT_COMPLETED');
-
-    await supabase.from('rides').update({ payment_status: 'collected' }).eq('id', id);
-
-    // Notify rider their cash payment was confirmed
-    if (io && ride.rider_id) {
-      io.to(`user:${ride.rider_id}`).emit('payment:success', { ride_id: id });
-    }
-
-    logger.info('rideController.cashCollected', { rideId: id, driverId });
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    return handleError(err, res, next);
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// POST /rides/:id/rate-rider  — driver rates the rider
-// ──────────────────────────────────────────────────────────────────────────────
-async function rateRider(req, res, next) {
-  try {
-    const { rating } = ratingSchema.parse(req.body);
-    const { id } = req.params;
-    const driverId = req.user.userId;
-
-    const { data: rides } = await supabase
-      .from('rides').select('id, driver_id, rider_id, status')
-      .eq('id', id).limit(1);
-
-    const ride = rides?.[0];
-    if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
-    if (ride.driver_id !== driverId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
-    if (ride.status !== 'completed') throw new AppError('Can only rate after completion.', 422, 'RIDE_NOT_COMPLETED');
-
-    await supabase.from('rides').update({ driver_rating_for_rider: rating }).eq('id', id);
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    return handleError(err, res, next);
-  }
-}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // POST /rides/:id/payment/order  — create a Razorpay order for online payment

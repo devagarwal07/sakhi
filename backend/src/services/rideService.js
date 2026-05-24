@@ -132,7 +132,7 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
     waitingTimerService.stopWaitingTimer(rideId);
 
     const fareConfig = await fareService.getFareConfig('auto');
-    const { waiting_seconds, waiting_charge } = fareService.calculateWaitingCharge(ride.waiting_start_at, fareConfig);
+    const { waiting_seconds, waiting_charge } = fareService.calculateWaitingCharge(ride.waiting_start_at);
     const updatedFare = parseFloat((parseFloat(ride.estimated_fare || 0) + waiting_charge).toFixed(2));
 
     await supabase.from('rides').update({
@@ -236,9 +236,7 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
         await supabase.from('subscription_rides').update({ status: 'completed' }).eq('id', subRides[0].id);
       }
 
-      await supabase.from('subscriptions').update({
-        rides_completed: supabase.rpc ? undefined : undefined, // handled below
-      }).eq('id', ride.subscription_id);
+      // rides_completed is incremented via RPC below — no-op update removed
 
       await supabase.rpc('increment_subscription_rides', { p_sub_id: ride.subscription_id }).catch(async () => {
         // Fallback
@@ -389,7 +387,7 @@ async function cancelRide(rideId, userId, role, reason, io) {
     }).eq('id', rideId);
 
     // Notify rider
-    emitter.emitToRider(ride.rider_id, ride.rider_id, 'ride:status_update', {
+    emitter.emitToRider(io, ride.rider_id, 'ride:status_update', {
       status: 'searching',
       message: 'Your driver cancelled. Finding a new driver...',
     });

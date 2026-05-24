@@ -100,10 +100,17 @@ export default function ActiveRideScreen() {
             }
         };
 
-        const handleWaitingTick  = ({ seconds, charge }) => tickWaiting({ seconds, charge });
+        const handleWaitingTick  = ({ waiting_seconds, waiting_charge }) => tickWaiting({ seconds: waiting_seconds, charge: waiting_charge });
 
         // Payment success from driver confirms cash collection on their end
         const handlePaymentSuccess = () => {
+            router.replace('/ride-summary');
+        };
+
+        // ride_completed is emitted directly by driver's ride:complete socket handler
+        // to rider:{riderId} — different from ride:status_update flow
+        const handleRideCompleted = () => {
+            updateStatus('completed');
             router.replace('/ride-summary');
         };
 
@@ -111,12 +118,14 @@ export default function ActiveRideScreen() {
         on('ride:status_update', handleStatusUpdate);
         on('waiting_tick',       handleWaitingTick);
         on('payment:success',    handlePaymentSuccess);
+        on('ride_completed',     handleRideCompleted);
 
         return () => {
             off('driver_location',    handleLocationUpdate);
             off('ride:status_update', handleStatusUpdate);
             off('waiting_tick',       handleWaitingTick);
             off('payment:success',    handlePaymentSuccess);
+            off('ride_completed',     handleRideCompleted);
         };
     }, []);
 
