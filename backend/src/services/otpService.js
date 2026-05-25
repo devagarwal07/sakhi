@@ -98,6 +98,12 @@ async function sendOTP(phone) {
   // Normalise: always store/look up by the canonical phone format
   const normalizedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
 
+  // App Store Review test account bypass
+  if (normalizedPhone === '+918888888888') {
+    logger.info('otpService.sendOTP — Apple Review test account bypass used, skipping SMS');
+    return;
+  }
+
   const otp = crypto.randomInt(100000, 999999).toString();
 
   // Store OTP (Redis primary, Supabase fallback)
@@ -136,6 +142,12 @@ async function sendOTP(phone) {
 async function verifyOTP(phone, candidateOtp) {
   // Normalise phone to match the key used in sendOTP
   const normalizedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
+
+  // App Store Review test account bypass
+  if (normalizedPhone === '+918888888888' && String(candidateOtp) === '123456') {
+    logger.info('otpService.verifyOTP — Apple Review test account bypass used');
+    return;
+  }
 
   // Retrieve stored OTP (auto-consumed)
   const storedOtp = await retrieveAndConsumeOtp(normalizedPhone);
