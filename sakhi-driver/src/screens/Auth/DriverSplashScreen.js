@@ -57,9 +57,6 @@ export default function DriverSplashScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Subtle top gradient overlay */}
-      <View style={styles.topGradient} pointerEvents="none" />
-
 
       {/* ── Center cluster: logo → FOR DRIVERS → tagline ── */}
       <View style={styles.cluster}>
@@ -103,16 +100,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1B2E',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  // Very subtle top-edge gradient tint (no solid fill)
-  topGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 130,
-    backgroundColor: 'rgba(190,163,216,0.08)',
   },
 
 

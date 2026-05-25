@@ -1,99 +1,120 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View, Image, StyleSheet, Animated, Easing,
-} from 'react-native';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
 
 /**
  * PageLoader
- * A full-screen animated loading overlay shown during navigation transitions.
- * Uses the Sakhi favicon.png as the logo with a pulse + spin animation.
+ * A minimal, on-brand loading overlay shown during navigation transitions.
+ * Three dots that wave in sequence — clean, smooth, themed.
  */
 export default function PageLoader() {
-  const pulse   = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const spin    = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    // Fade in
-    Animated.timing(opacity, {
-      toValue: 1, duration: 200, useNativeDriver: true,
-    }).start();
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
-    // Pulse loop
+  const animateDot = (dot, delay) =>
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.15, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1,    duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.delay(delay),
+        Animated.timing(dot, {
+          toValue: 1,
+          duration: 380,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot, {
+          toValue: 0,
+          duration: 380,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.delay(760 - delay),
       ])
-    ).start();
+    );
 
-    // Slow spin
-    Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true,
-      })
-    ).start();
+  useEffect(() => {
+    // Fade overlay in
+    Animated.timing(overlayOpacity, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+
+    // Staggered dot wave
+    const a1 = animateDot(dot1, 0);
+    const a2 = animateDot(dot2, 160);
+    const a3 = animateDot(dot3, 320);
+    a1.start();
+    a2.start();
+    a3.start();
+
+    return () => {
+      a1.stop();
+      a2.stop();
+      a3.stop();
+    };
   }, []);
 
-  const rotate = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+  const dotStyle = (anim) => ({
+    transform: [
+      {
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -10],
+        }),
+      },
+    ],
+    opacity: anim.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0.35, 1, 0.35],
+    }),
   });
 
   return (
-    <Animated.View style={[s.overlay, { opacity }]}>
-      {/* Outer spinning ring */}
-      <Animated.View style={[s.ring, { transform: [{ rotate }] }]} />
-
-      {/* Logo pulse */}
-      <Animated.View style={[s.logoWrap, { transform: [{ scale: pulse }] }]}>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={s.logo}
-          resizeMode="contain"
-        />
-      </Animated.View>
+    <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
+      <View style={s.card}>
+        <Animated.View style={[s.dot, dotStyle(dot1)]} />
+        <Animated.View style={[s.dot, s.dotMid, dotStyle(dot2)]} />
+        <Animated.View style={[s.dot, dotStyle(dot3)]} />
+      </View>
     </Animated.View>
   );
 }
 
-const LOGO_SIZE = 90;
-const RING_SIZE = LOGO_SIZE + 28;
+const DOT = 10;
 
 const s = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(245, 240, 255, 0.96)',
+    backgroundColor: 'rgba(245, 240, 255, 0.82)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
     elevation: 50,
   },
-  ring: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    borderWidth: 3,
-    borderColor: '#BEA3D8',
-    borderTopColor: '#5B21B6',
-    borderRightColor: '#5B21B6',
-  },
-  logoWrap: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
-    backgroundColor: '#FFFFFF',
+  card: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5B21B6',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.12,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 12,
   },
-  logo: {
-    width: LOGO_SIZE * 0.72,
-    height: LOGO_SIZE * 0.72,
+  dot: {
+    width: DOT,
+    height: DOT,
+    borderRadius: DOT / 2,
+    backgroundColor: '#BEA3D8',
+  },
+  dotMid: {
+    marginHorizontal: 10,
+    backgroundColor: '#9B72CF',
   },
 });

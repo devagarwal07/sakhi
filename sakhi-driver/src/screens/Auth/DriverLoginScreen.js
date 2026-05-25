@@ -40,7 +40,7 @@ export default function DriverLoginScreen({ navigation }) {
         ?? err.message
         ?? 'Could not send OTP. Try again.';
       console.error('[Login] sendOTP error:', err.message, err.response?.data);
-      CustomAlert.alert('Error', `${msg}\n\nAPI: ${process.env.EXPO_PUBLIC_API_URL ?? 'not set'}`);
+      CustomAlert.alert('Error', msg);
     } finally {
       setLoading(false);
     }
