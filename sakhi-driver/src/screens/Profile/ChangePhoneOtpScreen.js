@@ -1,14 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Alert, ActivityIndicator, Platform, ScrollView,
-} from 'react-native';
+   ActivityIndicator, Platform, ScrollView} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Phone, ShieldCheck, MessageSquare, ArrowRight, Delete } from 'lucide-react-native';
 import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE  = '#BEA3D8';
@@ -162,7 +162,7 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
       }, 1000);
       setOtpSent(true);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not resend OTP. Try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not resend OTP. Try again.');
     } finally {
       setResending(false);
     }
@@ -171,7 +171,7 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
   // ── Submit ────────────────────────────────────────────────────────────────
   const submitOtp = async (code = otp) => {
     if (code.length < OTP_LENGTH) {
-      Alert.alert('Incomplete', 'Please enter the 6-digit OTP.'); return;
+      CustomAlert.alert('Incomplete', 'Please enter the 6-digit OTP.'); return;
     }
     try {
       setVerifying(true);
@@ -183,12 +183,12 @@ export default function ChangePhoneOtpScreen({ navigation, route }) {
         await saveTokens(data.accessToken, data.refreshToken);
       }
       await checkAuth?.();
-      Alert.alert('Success ✓', 'Phone number updated successfully!', [
+      CustomAlert.alert('Success ✓', 'Phone number updated successfully!', [
         { text: 'OK', onPress: () => navigation?.goBack?.() },
       ]);
     } catch (err) {
       const msg = err.response?.data?.error?.message ?? err.response?.data?.message ?? 'Incorrect OTP. Please try again.';
-      Alert.alert('Verification Failed', msg);
+      CustomAlert.alert('Verification Failed', msg);
       setOtp('');
     } finally {
       setVerifying(false);

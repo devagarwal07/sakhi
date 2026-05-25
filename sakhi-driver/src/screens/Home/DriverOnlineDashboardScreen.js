@@ -16,6 +16,7 @@ import { getActiveRide } from '../../api/endpoints';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -160,7 +161,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         const settings = await notifee.getNotificationSettings();
         if (settings.android?.fullScreenIntent === false) {
           const { Alert } = require('react-native');
-          Alert.alert(
+          CustomAlert.alert(
             'Action Required',
             'To see incoming ride requests instantly, please allow full-screen notifications for Sakhi Driver.',
             [

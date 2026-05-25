@@ -10,8 +10,9 @@ import notifee, {
   AndroidStyle,
   EventType,
 } from '@notifee/react-native';
-import { DeviceEventEmitter, Platform, Alert, Linking } from 'react-native';
+import { DeviceEventEmitter, Platform,  Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert from '../utils/CustomAlert';
 
 const FCM_TOKEN_KEY = 'driver_fcm_token';
 
@@ -178,7 +179,7 @@ export async function requestOverlayPermission() {
 
   await AsyncStorage.setItem(OVERLAY_ASKED_KEY, 'true').catch(() => {});
 
-  Alert.alert(
+  CustomAlert.alert(
     '🚗 Show Ride Requests Anywhere',
     'Allow Sakhi Driver to display incoming ride requests over other apps — so you never miss a ride, even when your screen is on.',
     [

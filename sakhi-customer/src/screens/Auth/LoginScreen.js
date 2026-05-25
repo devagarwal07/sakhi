@@ -8,19 +8,19 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    Alert,
+    
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Animated,
     Dimensions,
-    StatusBar,
-} from 'react-native';
+    StatusBar} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { API_BASE_URL } from '../../utils/constants';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +58,7 @@ export default function LoginScreen() {
         const cleaned = phone.replace(/\s/g, '');
         if (cleaned.length !== 10 || !/^\d+$/.test(cleaned)) {
             shake();
-            Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
+            CustomAlert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
             return;
         }
 
@@ -73,7 +73,7 @@ export default function LoginScreen() {
                 err?.response?.data?.message ||
                 err?.message ||
                 'Failed to send OTP. Please try again.';
-            Alert.alert('Error', `${msg}\n\nAPI: ${API_BASE_URL}`);
+            CustomAlert.alert('Error', `${msg}\n\nAPI: ${API_BASE_URL}`);
         } finally {
             setLoading(false);
         }

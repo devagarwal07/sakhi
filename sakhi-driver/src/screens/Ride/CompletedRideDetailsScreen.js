@@ -1,8 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Image, Linking, Alert,
-} from 'react-native';
+  TouchableOpacity, Image, Linking} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius } from '../../utils/theme';
 import {
@@ -12,6 +11,7 @@ import {
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
@@ -171,7 +171,7 @@ export default function CompletedRideDetailsScreen({ navigation, route }) {
   const handleCall = () => {
     // Masked calling is only available during active rides (backend enforces activeStatuses check)
     // For completed rides, show a clear message instead of doing a direct dial
-    Alert.alert(
+    CustomAlert.alert(
       'Call Not Available',
       'Masked calling is only available during an active ride. To contact support about this ride, use Help & Support.',
       [{ text: 'OK' }]

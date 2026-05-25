@@ -8,14 +8,14 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
-  Alert,
+  
   Image,
-  Dimensions,
-} from 'react-native';
+  Dimensions} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import client from '../../api/client';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -40,7 +40,7 @@ export default function DriverLoginScreen({ navigation }) {
         ?? err.message
         ?? 'Could not send OTP. Try again.';
       console.error('[Login] sendOTP error:', err.message, err.response?.data);
-      Alert.alert('Error', `${msg}\n\nAPI: ${process.env.EXPO_PUBLIC_API_URL ?? 'not set'}`);
+      CustomAlert.alert('Error', `${msg}\n\nAPI: ${process.env.EXPO_PUBLIC_API_URL ?? 'not set'}`);
     } finally {
       setLoading(false);
     }

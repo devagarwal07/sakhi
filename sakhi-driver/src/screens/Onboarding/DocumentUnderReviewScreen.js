@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, ScrollView,
-} from 'react-native';
+  ActivityIndicator,  ScrollView} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 export default function DocumentUnderReviewScreen({ navigation }) {
   const { t } = useTranslation();
@@ -30,7 +30,7 @@ export default function DocumentUnderReviewScreen({ navigation }) {
         navigation.replace('DocumentReUpload', { rejections: driver?.document_rejections });
       }
     } catch {
-      Alert.alert('Network Error', 'Could not refresh status. Check your connection.');
+      CustomAlert.alert('Network Error', 'Could not refresh status. Check your connection.');
     } finally {
       setRefreshing(false);
     }

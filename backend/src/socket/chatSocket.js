@@ -6,44 +6,9 @@ const logger = require('../utils/logger');
 
 // ── Google Translate helper ───────────────────────────────────────────────────
 async function translateMessage(text) {
-  const key = process.env.GOOGLE_MAPS_KEY; // reuse same API key project
-  if (!key) return { message_en: text, message_kn: null };
-
-  const result = { message_en: null, message_kn: null };
-
-  try {
-    // 1. Detect language
-    const detectRes = await axios.post(
-      `https://translation.googleapis.com/language/translate/v2/detect`,
-      { q: text },
-      { params: { key }, timeout: 5000 }
-    );
-    const detectedLang = detectRes.data?.data?.detections?.[0]?.[0]?.language;
-
-    const targetLang = detectedLang === 'kn' ? 'en' : 'kn';
-
-    // 2. Translate
-    const translateRes = await axios.post(
-      `https://translation.googleapis.com/language/translate/v2`,
-      { q: text, target: targetLang, format: 'text' },
-      { params: { key }, timeout: 5000 }
-    );
-    const translated = translateRes.data?.data?.translations?.[0]?.translatedText;
-
-    if (detectedLang === 'kn') {
-      result.message_kn = text;
-      result.message_en = translated || null;
-    } else {
-      result.message_en = text;
-      result.message_kn = translated || null;
-    }
-  } catch (err) {
-    logger.warn('chatSocket.translateMessage — failed', { error: err.message });
-    result.message_en = text;
-    result.message_kn = null;
-  }
-
-  return result;
+  // Translation is disabled as Google APIs have been removed
+  // If translation is needed in the future, integrate Mappls translation (if available) or an alternative.
+  return { message_en: text, message_kn: null };
 }
 
 // ── Validate caller is on the ride ───────────────────────────────────────────

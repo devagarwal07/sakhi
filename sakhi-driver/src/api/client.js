@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { DeviceEventEmitter } from 'react-native';
+import CustomAlert from '../utils/CustomAlert';
 
 // ---------------------------------------------------------------------------
 // Token helpers
@@ -85,6 +86,13 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // ── Global Error UI ────────────────────────────────────────────────────
+    if (error.response?.status === 429) {
+      CustomAlert.alert('Too Many Requests', 'Please wait a moment before trying again.');
+    } else if (error.response?.status >= 500 && error.response?.status !== 502 && error.response?.status !== 503 && error.response?.status !== 504) {
+      CustomAlert.alert('Server Error', 'Our servers are experiencing issues. Please try again later.');
+    }
 
     // ── Render cold-start retry ────────────────────────────────────────────
     // If the server is waking up, silently retry up to COLD_START_RETRIES times

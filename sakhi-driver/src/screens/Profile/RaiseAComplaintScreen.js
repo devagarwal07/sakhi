@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, Image, Modal,
-  KeyboardAvoidingView,
-} from 'react-native';
+  TextInput,  ActivityIndicator, Image, Modal,
+  KeyboardAvoidingView} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -13,6 +12,7 @@ import {
 import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -120,7 +120,7 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow photo access to attach a screenshot.');
+      CustomAlert.alert('Permission needed', 'Allow photo access to attach a screenshot.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -132,7 +132,7 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
 
   const handleSubmit = async () => {
     if (description.trim().length < 10) {
-      Alert.alert('Too short', 'Please describe your issue in at least 10 characters.');
+      CustomAlert.alert('Too short', 'Please describe your issue in at least 10 characters.');
       return;
     }
     try {
@@ -149,11 +149,11 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
       await client.post('/drivers/complaints', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      Alert.alert('Submitted ✅', "We'll get back to you within 24 hours.", [
+      CustomAlert.alert('Submitted ✅', "We'll get back to you within 24 hours.", [
         { text: 'OK', onPress: () => navigation?.goBack() },
       ]);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not submit. Please try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not submit. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Vibration, Image, ActivityIndicator,
-  Animated, Dimensions, BackHandler,
-} from 'react-native';
+   Vibration, Image, ActivityIndicator,
+  Animated, Dimensions, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import * as Location from 'expo-location';
@@ -16,6 +15,7 @@ import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
 import { startLocationTracking } from '../../services/locationTask';
 import StartNavigationButton from '../../components/StartNavigationButton';
+import CustomAlert from '../../utils/CustomAlert';
 
 const MAP_STYLE = [
   { featureType: 'all', stylers: [{ saturation: -70 }] },
@@ -108,13 +108,13 @@ export default function TripInProgressScreen({ navigation, route }) {
     try {
       await acceptRide(incomingRide.ride_id);
       // Show a brief confirmation chip — driver stays on current trip
-      Alert.alert(
+      CustomAlert.alert(
         'Next Ride Queued ✓',
         `You will be navigated to ${incomingRide.pickup_address} after this trip ends.`,
         [{ text: 'OK' }],
       );
     } catch (err) {
-      Alert.alert('Could not accept', err.message);
+      CustomAlert.alert('Could not accept', err.message);
     }
   };
 
@@ -170,7 +170,7 @@ export default function TripInProgressScreen({ navigation, route }) {
   };
 
   const handleComplete = () => {
-    Alert.alert(
+    CustomAlert.alert(
       'Complete Trip?',
       'Confirm you have dropped the rider at the destination.',
       [
@@ -186,7 +186,7 @@ export default function TripInProgressScreen({ navigation, route }) {
               Vibration.vibrate(200);
               navigation.replace('PaymentDetails', { ride });
             } catch (err) {
-              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not complete trip.');
+              CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not complete trip.');
               setCompleting(false);
             }
           },

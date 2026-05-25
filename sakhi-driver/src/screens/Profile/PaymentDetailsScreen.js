@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
-} from 'react-native';
+   ActivityIndicator, Modal, TextInput, KeyboardAvoidingView} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
@@ -13,6 +12,7 @@ import {
   ArrowLeft, Pencil, Trash2, Plus, PiggyBank, Smartphone, Building2, Info,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Brand colours (local shorthand) ─────────────────────────────────────────
 const PURPLE   = '#BEA3D8';
@@ -157,7 +157,7 @@ export default function PaymentDetailsScreen({ navigation }) {
   const closeUpiModal = () => setUpiModal({ visible: false, editing: null });
 
   const saveUpi = (values) => {
-    if (!values.handle?.trim()) { Alert.alert('Error', 'Please enter a UPI ID.'); return; }
+    if (!values.handle?.trim()) { CustomAlert.alert('Error', 'Please enter a UPI ID.'); return; }
     const handle = values.handle.trim();
     if (upiModal.editing) {
       setUpiList((prev) => prev.map((u) => u.id === upiModal.editing.id ? { ...u, handle } : u));
@@ -169,7 +169,7 @@ export default function PaymentDetailsScreen({ navigation }) {
   };
 
   const deleteUpi = (id) => {
-    Alert.alert('Remove UPI ID', 'Are you sure?', [
+    CustomAlert.alert('Remove UPI ID', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => setUpiList((p) => p.filter((u) => u.id !== id)) },
     ]);
@@ -187,7 +187,7 @@ export default function PaymentDetailsScreen({ navigation }) {
   const saveBank = (values) => {
     const { bankName, accountNumber, ifsc } = values;
     if (!bankName?.trim() || !accountNumber?.trim() || !ifsc?.trim()) {
-      Alert.alert('Error', 'Please fill all fields.'); return;
+      CustomAlert.alert('Error', 'Please fill all fields.'); return;
     }
     const masked = `••••${accountNumber.trim().slice(-4)}`;
     if (bankModal.editing) {
@@ -202,7 +202,7 @@ export default function PaymentDetailsScreen({ navigation }) {
   };
 
   const deleteBank = (id) => {
-    Alert.alert('Remove Bank Account', 'Are you sure?', [
+    CustomAlert.alert('Remove Bank Account', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => setBankList((p) => p.filter((b) => b.id !== id)) },
     ]);
@@ -213,10 +213,10 @@ export default function PaymentDetailsScreen({ navigation }) {
     try {
       setSaving(true);
       await client.patch('/drivers/payment-details', { upiIds: upiList, bankAccounts: bankList });
-      Alert.alert('Saved', 'Payment details updated successfully.');
+      CustomAlert.alert('Saved', 'Payment details updated successfully.');
     } catch (err) {
       // Silently succeed in dev / offline — show success anyway
-      Alert.alert('Saved', 'Payment details saved locally.');
+      CustomAlert.alert('Saved', 'Payment details saved locally.');
     } finally {
       setSaving(false);
     }

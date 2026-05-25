@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image,
-  Alert, ActivityIndicator, ScrollView,
-} from 'react-native';
+   ActivityIndicator, ScrollView} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,6 +9,7 @@ import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 export default function DocumentReUploadScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -45,7 +45,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
 
   const handleResubmit = async () => {
     if (!requiredDone) {
-      Alert.alert('Required Documents', 'Please upload at least DL Front and DL Back to continue.');
+      CustomAlert.alert('Required Documents', 'Please upload at least DL Front and DL Back to continue.');
       return;
     }
     try {
@@ -62,7 +62,7 @@ export default function DocumentReUploadScreen({ route, navigation }) {
       updateDriver({ onboarding_status: 'kyc_submitted' });
       navigation.replace('DocumentUnderReview');
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? err.response?.data?.error?.message ?? 'Re-upload failed. Try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? err.response?.data?.error?.message ?? 'Re-upload failed. Try again.');
     } finally {
       setLoading(false);
     }

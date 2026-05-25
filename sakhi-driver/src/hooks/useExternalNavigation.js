@@ -16,9 +16,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, Alert } from 'react-native';
+import { AppState} from 'react-native';
 import navigationService from '../services/navigationService';
 import { startLocationTracking } from '../services/locationTask';
+import CustomAlert from '../utils/CustomAlert';
 
 /**
  * @param {object} params
@@ -82,7 +83,7 @@ export default function useExternalNavigation({
   const launchGoogleMaps = useCallback(async () => {
     const { lat, lng } = coords ?? {};
     if (!navigationService.isValidCoords(lat, lng)) {
-      Alert.alert('Navigation Error', 'Destination coordinates are not available yet.');
+      CustomAlert.alert('Navigation Error', 'Destination coordinates are not available yet.');
       return;
     }
 
@@ -105,14 +106,14 @@ export default function useExternalNavigation({
         setIsNavigating(true);
         onNavigationStart?.({ app: 'google_maps', method: result.method });
       } else {
-        Alert.alert(
+        CustomAlert.alert(
           'Navigation Unavailable',
           'Could not open Google Maps or a browser. Please install Google Maps and try again.',
           [{ text: 'OK' }]
         );
       }
     } catch (err) {
-      Alert.alert('Navigation Error', err?.message ?? 'An unexpected error occurred.');
+      CustomAlert.alert('Navigation Error', err?.message ?? 'An unexpected error occurred.');
     } finally {
       setLaunching(false);
     }
@@ -124,7 +125,7 @@ export default function useExternalNavigation({
   const launchWaze = useCallback(async () => {
     const { lat, lng } = coords ?? {};
     if (!navigationService.isValidCoords(lat, lng)) {
-      Alert.alert('Navigation Error', 'Destination coordinates are not available yet.');
+      CustomAlert.alert('Navigation Error', 'Destination coordinates are not available yet.');
       return;
     }
 
@@ -143,14 +144,14 @@ export default function useExternalNavigation({
         setIsNavigating(true);
         onNavigationStart?.({ app: 'waze', method: result.method });
       } else {
-        Alert.alert(
+        CustomAlert.alert(
           'Waze Unavailable',
           'Could not open Waze. Please install it and try again.',
           [{ text: 'OK' }]
         );
       }
     } catch (err) {
-      Alert.alert('Navigation Error', err?.message ?? 'An unexpected error occurred.');
+      CustomAlert.alert('Navigation Error', err?.message ?? 'An unexpected error occurred.');
     } finally {
       setLaunching(false);
     }

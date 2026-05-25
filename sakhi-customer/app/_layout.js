@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SocketProvider } from '../src/context/SocketContext';
 import { RideProvider } from '../src/context/RideContext';
+import GlobalErrorModal from '../src/components/GlobalErrorModal';
 
 // Keep the native splash visible until auth state is resolved
 SplashScreen.preventAutoHideAsync();
@@ -128,6 +129,7 @@ export default function RootLayout() {
                         </RideProvider>
                     </SocketProvider>
                 </AuthProvider>
+                <GlobalErrorModal />
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

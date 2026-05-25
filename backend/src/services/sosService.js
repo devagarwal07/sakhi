@@ -57,7 +57,7 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
     { expiresIn: '24h' }
   );
   const trackUrl = `${baseUrl}/track/${trackToken}`;
-  const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
+  const mapsUrl  = `https://mappls.com/?q=${lat},${lng}`;
 
   // SOS SMS — uses the Sakhi live tracking page (falls back to Google Maps coords)
   const smsText  = `SAKHI MOBILITY Alert: ${userName} activated SOS during ride. Current location: ${lat},${lng} . Please track here: ${trackUrl}`;

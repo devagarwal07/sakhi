@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Linking, Alert,
-} from 'react-native';
+  Linking} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const BG      = '#F5F0FF';
@@ -201,7 +201,7 @@ const SOCIALS = [
 ];
 
 function SocialRow() {
-  const handleSocial = (url) => Linking.openURL(url).catch(() => Alert.alert('Could not open link'));
+  const handleSocial = (url) => Linking.openURL(url).catch(() => CustomAlert.alert('Could not open link'));
   return (
     <View style={soc.row}>
       {SOCIALS.map((s) => (

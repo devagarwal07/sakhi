@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, Animated, Platform, Image, Modal, BackHandler,
-} from 'react-native';
+   ActivityIndicator, Animated, Platform, Image, Modal, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +11,7 @@ import { patchRideStatus, cancelRide } from '../../api/endpoints';
 import ChatModal from '../../components/ChatModal';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 const FREE_WAIT_SECONDS = 180; // 3 minutes free waiting
 
@@ -77,14 +77,14 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
       emit('ride:start', { ride_id: rideId });
       navigation.replace('TripInProgress', { ride });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not start trip.');
+      CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not start trip.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelRide = () => {
-    Alert.alert(
+    CustomAlert.alert(
       t('ride.cancelTitle', 'Cancel Ride?'),
       t('ride.cancelConfirmMsg', 'Are you sure you want to cancel/reject this ride assignment?'),
       [
@@ -97,7 +97,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
               await cancelRide(rideId, 'Driver cancelled after arriving');
               navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
             } catch (err) {
-              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
+              CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
             }
           }
         }

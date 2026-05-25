@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, TextInput, Linking, Alert, Modal
+    Dimensions, ScrollView, Platform, TextInput, Linking,  Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -12,6 +12,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { submitRating } from '../src/api/endpoints';
 import { Feather } from '@expo/vector-icons';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import CustomAlert from '../src/utils/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -67,7 +68,7 @@ export default function RideSummaryScreen() {
         if (!permission?.granted) {
             const resp = await requestPermission();
             if (!resp.granted) {
-                Alert.alert("Permission Required", "Camera access is needed to scan QR codes.");
+                CustomAlert.alert("Permission Required", "Camera access is needed to scan QR codes.");
                 return;
             }
         }
@@ -77,9 +78,9 @@ export default function RideSummaryScreen() {
     const handleBarcodeScanned = ({ type, data }) => {
         setShowScanner(false);
         if (data && data.startsWith('upi://')) {
-            Linking.openURL(data).catch(() => Alert.alert('UPI Error', 'Could not open UPI app.'));
+            Linking.openURL(data).catch(() => CustomAlert.alert('UPI Error', 'Could not open UPI app.'));
         } else {
-            Alert.alert('Invalid QR', 'Please scan a valid UPI QR code.');
+            CustomAlert.alert('Invalid QR', 'Please scan a valid UPI QR code.');
         }
     };
 
@@ -178,7 +179,7 @@ export default function RideSummaryScreen() {
                                     onPress={() => {
                                         const upiUrl = `upi://pay?pa=${ride.driver.upi_id}&pn=${encodeURIComponent(ride.driver.name)}&am=${total}&cu=INR`;
                                         Linking.openURL(upiUrl).catch(() => {
-                                            Alert.alert('UPI Failed', 'Could not open UPI app. You can pay via cash or scan QR manually.');
+                                            CustomAlert.alert('UPI Failed', 'Could not open UPI app. You can pay via cash or scan QR manually.');
                                         });
                                     }}
                                 >

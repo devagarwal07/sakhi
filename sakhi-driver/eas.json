@@ -15,8 +15,7 @@
         "EXPO_PUBLIC_RAZORPAY_KEY": "rzp_test_SYE3kLJZ16sUyz",
         "EXPO_PUBLIC_API_URL": "https://sakhi-backend-pwej.onrender.com",
         "EXPO_PUBLIC_FACE_SERVICE_URL": "https://sakhi-backend-pwej.onrender.com",
-        "EXPO_PUBLIC_OTP_BYPASS": "123456",
-        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
+        "EXPO_PUBLIC_OTP_BYPASS": "123456"
       }
     },
     "preview": {
@@ -30,8 +29,7 @@
         "EXPO_PUBLIC_RAZORPAY_KEY": "rzp_test_SYE3kLJZ16sUyz",
         "EXPO_PUBLIC_API_URL": "https://sakhi-backend-pwej.onrender.com",
         "EXPO_PUBLIC_FACE_SERVICE_URL": "https://sakhi-backend-pwej.onrender.com",
-        "EXPO_PUBLIC_OTP_BYPASS": "123456",
-        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyATvECtGCdVqUeVzOzVqzXSr84n9PnvKVE"
+        "EXPO_PUBLIC_OTP_BYPASS": "123456"
       },
       "android": {
         "buildType": "apk"

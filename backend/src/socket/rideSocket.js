@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const supabase = require('../config/supabase');
 const smsService = require('../services/smsService');
@@ -32,7 +32,7 @@ async function notifyEmergencyContacts(userId, name, lat, lng) {
 
   if (!contacts?.length) return;
 
-  const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  const mapsUrl = `https://mappls.com/?q=${lat},${lng}`;
   const smsText = `SAKHI MOBILITY:${name || 'User'} is low on battery during ride. Please track here:${mapsUrl}`;
 
   for (const contact of contacts) {

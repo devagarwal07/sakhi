@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SocketProvider } from './src/context/SocketContext';
 import { Colors } from './src/utils/theme';
 import PageLoader from './src/components/PageLoader';
+import GlobalErrorModal from './src/components/GlobalErrorModal';
 import { useRideRequestBridge } from './src/hooks/useRideRequestBridge';
 import {
   setupForegroundHandler,
@@ -314,6 +315,7 @@ export default function App() {
             {/* Global page transition loader */}
             {pageLoading && <PageLoader />}
           </NavigationContainer>
+          <GlobalErrorModal />
         </AuthProvider>
       </SafeAreaProvider>
     </I18nextProvider>

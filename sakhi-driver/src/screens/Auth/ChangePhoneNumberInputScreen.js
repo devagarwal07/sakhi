@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView,
-} from 'react-native';
+  StyleSheet,  ActivityIndicator, KeyboardAvoidingView} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 export default function ChangePhoneNumberInputScreen({ navigation }) {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export default function ChangePhoneNumberInputScreen({ navigation }) {
       await client.post('/drivers/profile/phone/send-otp', { new_phone: `+91${phone}` });
       navigation.navigate('ChangePhoneOtp', { phone: `+91${phone}` });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not send OTP. Try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not send OTP. Try again.');
     } finally {
       setLoading(false);
     }

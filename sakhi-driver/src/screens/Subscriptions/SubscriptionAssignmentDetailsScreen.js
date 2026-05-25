@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Linking, Image,
-} from 'react-native';
+   ActivityIndicator, Linking, Image} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client from '../../api/client';
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Brand tokens (shorthand) ─────────────────────────────────────────────────
 const PURPLE = '#BEA3D8';
@@ -191,20 +191,20 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
         if (phone) {
           Linking.openURL(`tel:${phone}`);
         } else {
-          Alert.alert(t('subscription.callFailedTitle'), t('subscription.callNotAvailableMessage'));
+          CustomAlert.alert(t('subscription.callFailedTitle'), t('subscription.callNotAvailableMessage'));
         }
       } else if (sub.rider_phone) {
         // No ride ID yet — use phone from subscription data directly
         Linking.openURL(`tel:${sub.rider_phone}`);
       } else {
-        Alert.alert(t('subscription.callNotAvailableTitle'), t('subscription.callNotAvailableMessage'));
+        CustomAlert.alert(t('subscription.callNotAvailableTitle'), t('subscription.callNotAvailableMessage'));
       }
     } catch (err) {
       // Fallback to rider phone from subscription params
       if (sub.rider_phone) {
         Linking.openURL(`tel:${sub.rider_phone}`);
       } else {
-        Alert.alert(t('subscription.callFailedTitle'), t('subscription.callFailedMessage'));
+        CustomAlert.alert(t('subscription.callFailedTitle'), t('subscription.callFailedMessage'));
       }
     } finally {
       setCalling(false);
@@ -212,7 +212,7 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
   };
 
   const handleInitiatePickup = () => {
-    Alert.alert(t('subscription.startPickupTitle'), t('subscription.startPickupMessage'), [
+    CustomAlert.alert(t('subscription.startPickupTitle'), t('subscription.startPickupMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.start'),
@@ -222,7 +222,7 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
             await client.post(`/rides/subscription/${sub?.id}/initiate`);
             navigation.navigate('EnRouteToPickup', { ride: { ride_id: sub?.id, ...sub } });
           } catch (err) {
-            Alert.alert(t('common.error'), err.response?.data?.message ?? t('ride.couldNotAccept'));
+            CustomAlert.alert(t('common.error'), err.response?.data?.message ?? t('ride.couldNotAccept'));
             setInitiating(false);
           }
         },

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ActivityIndicator, Pressable, Keyboard, Platform,
-    ScrollView, Alert
-} from 'react-native';
+    ScrollView} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -11,6 +10,7 @@ import { useRide } from '../src/context/RideContext';
 import { getRideHistory } from '../src/api/endpoints';
 import { isInBengaluru } from '../src/utils/bengaluruUtils';
 import { Feather } from '@expo/vector-icons';
+import CustomAlert from '../src/utils/CustomAlert';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -201,7 +201,7 @@ export default function LocationSearchScreen() {
             }
 
             if (!coords || !coords.latitude) {
-                Alert.alert('Location Error', 'Could not precisely locate this address. Please try searching with a different term.');
+                CustomAlert.alert('Location Error', 'Could not precisely locate this address. Please try searching with a different term.');
                 return;
             }
 
@@ -232,7 +232,7 @@ export default function LocationSearchScreen() {
         } catch (error) {
             console.error('Location Search Error:', error);
             Keyboard.dismiss();
-            Alert.alert('Location Error', 'An error occurred while selecting this location. Please try again.');
+            CustomAlert.alert('Location Error', 'An error occurred while selecting this location. Please try again.');
         }
     };
 

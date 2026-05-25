@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Dimensions, Alert, Animated, PanResponder, Platform
+    Dimensions,  Animated, PanResponder, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapplsMapWebView from '../../components/MapplsMapWebView';
@@ -15,6 +15,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses, getRideHistory, getActiveRide } from '../../api/endpoints';
+import CustomAlert from '../../utils/CustomAlert';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -136,7 +137,7 @@ export default function HomeScreen() {
             }
 
             if (permStatus !== 'granted') {
-                Alert.alert('Location Required', 'Sakhi needs your location to find nearby drivers.');
+                CustomAlert.alert('Location Required', 'Sakhi needs your location to find nearby drivers.');
                 return;
             }
 

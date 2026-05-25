@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  TextInput, Alert, ActivityIndicator, KeyboardAvoidingView
+  TextInput,  ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 import {
   validateRegistrationNumber,
   validateModelName,
@@ -117,7 +118,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
     });
 
     if (!regResult.ok || !modelResult.ok) {
-      Alert.alert('Fix Required', 'Please correct the highlighted fields.');
+      CustomAlert.alert('Fix Required', 'Please correct the highlighted fields.');
       return;
     }
 
@@ -132,7 +133,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
       updateDriver({ onboarding_status: 'vehicle_added' });
       navigation.navigate('VerificationLoading');
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not save vehicle details.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not save vehicle details.');
     } finally {
       setLoading(false);
     }

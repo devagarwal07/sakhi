@@ -5,15 +5,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  
   Dimensions,
-  BackHandler,
-} from 'react-native';
+  BackHandler} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width } = Dimensions.get('window');
 const OTP_LENGTH = 6;
@@ -51,7 +51,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
     // If currently loading (verification in progress), block back entirely
     if (loading) return true;
 
-    Alert.alert(
+    CustomAlert.alert(
       '⚠️ Verification Incomplete',
       'You have not verified your OTP yet. What would you like to do?',
       [
@@ -119,7 +119,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
       setOtp([]);
       setTimer(RESEND_SECS);
     } catch {
-      Alert.alert('Error', 'Could not resend OTP.');
+      CustomAlert.alert('Error', 'Could not resend OTP.');
     }
   };
 
@@ -131,7 +131,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
       console.log('[OTP] Verifying', phone, 'with code', code);
       const result = await login(phone, code);
       if (!result.success) {
-        Alert.alert('Invalid OTP', result.message ?? 'Please try again.');
+        CustomAlert.alert('Invalid OTP', result.message ?? 'Please try again.');
         setOtp([]);
         return;
       }
@@ -140,7 +140,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
       // automatically swaps AuthStack → OnboardingStack or MainStack.
     } catch (err) {
       console.error('[OTP] verify error:', err.message, err.response?.data);
-      Alert.alert('Error', err.message ?? 'Verification failed. Please try again.');
+      CustomAlert.alert('Error', err.message ?? 'Verification failed. Please try again.');
       setOtp([]);
     } finally {
       setLoading(false);

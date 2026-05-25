@@ -7,20 +7,20 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    Alert,
+    
     Animated,
     Pressable,
     Platform,
     Dimensions,
     Keyboard,
     KeyboardAvoidingView,
-    ScrollView,
-} from 'react-native';
+    ScrollView} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { API_BASE_URL } from '../../utils/constants';
+import CustomAlert from '../../utils/CustomAlert';
 
 const OTP_LENGTH = 6;
 const { width } = Dimensions.get('window');
@@ -107,7 +107,7 @@ export default function OtpScreen() {
 
         if (!isComplete) {
             shake();
-            Alert.alert('Incomplete OTP', 'Please enter the full 6-digit code.');
+            CustomAlert.alert('Incomplete OTP', 'Please enter the full 6-digit code.');
 
             // Focus the first missing digit box for faster correction
             if (digits) {
@@ -129,7 +129,7 @@ export default function OtpScreen() {
                 err?.response?.data?.message ||
                 err?.message ||
                 'Invalid OTP. Please try again.';
-            Alert.alert('Verification Failed', `${msg}\n\nAPI: ${API_BASE_URL}`);
+            CustomAlert.alert('Verification Failed', `${msg}\n\nAPI: ${API_BASE_URL}`);
             setOtp(Array(OTP_LENGTH).fill(''));
             inputRefs.current[0]?.focus();
         } finally {
@@ -146,7 +146,7 @@ export default function OtpScreen() {
             setOtp(Array(OTP_LENGTH).fill(''));
             inputRefs.current[0]?.focus();
         } catch (err) {
-            Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+            CustomAlert.alert('Error', 'Failed to resend OTP. Please try again.');
         } finally {
             setResendLoading(false);
         }

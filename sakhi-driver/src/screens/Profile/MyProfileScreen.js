@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, Alert, ActivityIndicator, TextInput,
-} from 'react-native';
+  Image,  ActivityIndicator, TextInput} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import client from '../../api/client';
@@ -11,6 +10,7 @@ import { Pencil } from 'lucide-react-native';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens — matches sakhi-customer standard palette ─────────────────
 const PURPLE  = '#BEA3D8';   // primary accent (lilac)
@@ -194,7 +194,7 @@ export default function MyProfileScreen({ navigation }) {
       await checkAuth?.();
       setEditField(null);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not save.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not save.');
     } finally {
       setSaving(false);
     }
@@ -203,7 +203,7 @@ export default function MyProfileScreen({ navigation }) {
   // ── Avatar picker ─────────────────────────────────────────────────────────
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission required', 'Allow photo access to change your avatar.'); return; }
+    if (status !== 'granted') { CustomAlert.alert('Permission required', 'Allow photo access to change your avatar.'); return; }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -217,7 +217,7 @@ export default function MyProfileScreen({ navigation }) {
       form.append('selfie', { uri: result.assets[0].uri, type: 'image/jpeg', name: 'selfie.jpg' });
       await client.post('/drivers/verify-identity', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       await checkAuth?.();
-    } catch { Alert.alert('Upload failed', 'Could not upload photo. Try again.'); }
+    } catch { CustomAlert.alert('Upload failed', 'Could not upload photo. Try again.'); }
     finally { setUploading(false); }
   };
 

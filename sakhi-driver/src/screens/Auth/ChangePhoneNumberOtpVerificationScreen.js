@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator,
-} from 'react-native';
+  StyleSheet,  ActivityIndicator} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
 import client, { saveTokens } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -50,7 +50,7 @@ export default function ChangePhoneNumberOtpVerificationScreen({ route, navigati
       setTimer(RESEND_SECONDS);
       inputRefs.current[0]?.focus();
     } catch {
-      Alert.alert('Error', 'Could not resend OTP.');
+      CustomAlert.alert('Error', 'Could not resend OTP.');
     }
   };
 
@@ -65,11 +65,11 @@ export default function ChangePhoneNumberOtpVerificationScreen({ route, navigati
       if (data?.driver?.phone) {
         updateDriver({ phone: data.driver.phone });
       }
-      Alert.alert('Success', 'Your phone number has been updated.', [
+      CustomAlert.alert('Success', 'Your phone number has been updated.', [
         { text: 'OK', onPress: () => navigation.popToTop() },
       ]);
     } catch (err) {
-      Alert.alert(
+      CustomAlert.alert(
         'Invalid OTP',
         err.response?.data?.error?.message ?? err.response?.data?.message ?? 'Please try again.',
       );

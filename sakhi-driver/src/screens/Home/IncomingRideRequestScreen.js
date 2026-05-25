@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Alert, Dimensions, Platform, ScrollView
+  Animated,  Dimensions, Platform, ScrollView
 } from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -11,6 +11,7 @@ import { useSocket } from '../../context/SocketContext';
 import MonogramAvatar from '../../components/MonogramAvatar';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -98,7 +99,7 @@ export default function IncomingRideRequestScreen({ navigationRef }) {
         navigationRef.navigate('EnRouteToPickup', { ride: incomingRide });
       }
     } catch (err) {
-      Alert.alert('Oops', err.message ?? t('ride.couldNotAccept'));
+      CustomAlert.alert('Oops', err.message ?? t('ride.couldNotAccept'));
       setAccepting(false);
     }
   };

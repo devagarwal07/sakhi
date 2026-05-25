@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image,
-  Alert, ActivityIndicator, ScrollView, TextInput,
-  KeyboardAvoidingView, Platform,
-} from 'react-native';
+   ActivityIndicator, ScrollView, TextInput,
+  KeyboardAvoidingView, Platform} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import CustomAlert from '../../utils/CustomAlert';
 import {
   validateDriverName,
   validateDLNumber,
@@ -53,7 +53,7 @@ function PhotoPicker({ label, sublabel, icon, value, onChange, hasError }) {
   const pick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Allow photo library access to upload documents.');
+      CustomAlert.alert('Permission Required', 'Allow photo library access to upload documents.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -191,7 +191,7 @@ export default function DriverKycUploadScreen({ navigation }) {
     setPhotoErr(!hasPhotos);
 
     if (!valid || !hasPhotos) {
-      Alert.alert(
+      CustomAlert.alert(
         'Fix Required',
         !hasPhotos
           ? 'Upload both sides of your Karnataka Driving Licence.'
@@ -226,7 +226,7 @@ export default function DriverKycUploadScreen({ navigation }) {
       updateDriver({ onboarding_status: 'kyc_submitted' });
       navigation.navigate('DocumentUnderReview');
     } catch (err) {
-      Alert.alert('Submission Failed', err?.response?.data?.message ?? 'Please check your connection and try again.');
+      CustomAlert.alert('Submission Failed', err?.response?.data?.message ?? 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

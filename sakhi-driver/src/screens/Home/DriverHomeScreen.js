@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Dimensions, Alert, ActivityIndicator,
+  Dimensions,  ActivityIndicator,
   PanResponder, Animated, Modal,
-  StatusBar as RNStatusBar,
-} from 'react-native';
+  StatusBar as RNStatusBar} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
@@ -27,6 +26,7 @@ import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
 import { requestOverlayPermission } from '../../services/notificationService';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -410,7 +410,7 @@ export default function DriverHomeScreen({ navigation }) {
 
   const handleDeclineDisclosure = () => {
     setShowDisclosure(false);
-    Alert.alert(
+    CustomAlert.alert(
       t('common.error', 'Permission Denied'), 
       t('home.locationRequiredMsg', 'The Sakhi Driver app requires location access to assign rides to you. Please enable it in settings.')
     );
@@ -525,7 +525,7 @@ export default function DriverHomeScreen({ navigation }) {
       setIsOnline(false);
       await stopLocationTracking();
     } catch {
-      Alert.alert(t('common.error'), t('home.couldNotGoOffline'));
+      CustomAlert.alert(t('common.error'), t('home.couldNotGoOffline'));
     } finally {
       setStatusLoading(false);
     }
@@ -553,7 +553,7 @@ export default function DriverHomeScreen({ navigation }) {
       await startLocationTracking();
     } catch (err) {
       const msg = err.response?.data?.error?.message ?? t('home.couldNotGoOnline');
-      Alert.alert(t('common.error'), msg);
+      CustomAlert.alert(t('common.error'), msg);
     } finally {
       setStatusLoading(false);
     }

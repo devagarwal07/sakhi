@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
-  ActivityIndicator, Alert, ScrollView, SafeAreaView,
-} from 'react-native';
+  ActivityIndicator,  ScrollView, SafeAreaView} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +11,7 @@ import ScreenHeader from '../../components/ScreenHeader';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ── Razorpay Checkout WebView HTML ───────────────────────────────────────────
 function buildRazorpayHtml({ key_id, order_id, amount, currency, name, description, prefill_name, prefill_contact }) {
@@ -133,7 +133,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
         const { data } = await client.get(`/rides/${rideId}/fare-summary`);
         setSummary(data);
       } catch {
-        Alert.alert('Error', 'Could not load payment details.');
+        CustomAlert.alert('Error', 'Could not load payment details.');
       } finally {
         setLoading(false);
       }
@@ -161,7 +161,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
       await client.post(`/rides/${rideId}/cash-collected`);
       setShowRatingModal(true);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Try again.');
       setCashConfirming(false);
     }
   };
@@ -184,7 +184,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
       setRzpHtml(html);
       setShowWebView(true);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message ?? 'Could not initiate payment. Try again.');
+      CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not initiate payment. Try again.');
     } finally {
       setPaymentLoading(false);
     }
@@ -207,14 +207,14 @@ export default function PaymentDetailsScreen({ navigation, route }) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           setShowRatingModal(true);
         } catch {
-          Alert.alert('Verification Failed', 'Payment was received but verification failed. Contact support.');
+          CustomAlert.alert('Verification Failed', 'Payment was received but verification failed. Contact support.');
         }
       } else if (msg.type === 'DISMISSED') {
         setShowWebView(false);
-        Alert.alert('Payment Cancelled', 'You closed before completing payment. You can try again.');
+        CustomAlert.alert('Payment Cancelled', 'You closed before completing payment. You can try again.');
       } else if (msg.type === 'FAILED' || msg.type === 'ERROR') {
         setShowWebView(false);
-        Alert.alert('Payment Failed', msg.error ?? 'Something went wrong. Please try again.');
+        CustomAlert.alert('Payment Failed', msg.error ?? 'Something went wrong. Please try again.');
       }
     } catch {
       // JSON parse error — ignore

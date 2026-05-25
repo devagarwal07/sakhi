@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, Linking, Image, Dimensions, Platform, Modal, ActivityIndicator, BackHandler,
-} from 'react-native';
+   Linking, Image, Dimensions, Platform, Modal, ActivityIndicator, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import * as Location from 'expo-location';
@@ -17,6 +16,7 @@ import MonogramAvatar from '../../components/MonogramAvatar';
 import { useTranslation } from 'react-i18next';
 import { startLocationTracking } from '../../services/locationTask';
 import StartNavigationButton from '../../components/StartNavigationButton';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -133,7 +133,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
 
   const handleCall = async () => {
     if (!rideId) {
-      Alert.alert('Call Failed', 'No active ride to make a call on.');
+      CustomAlert.alert('Call Failed', 'No active ride to make a call on.');
       return;
     }
     setCalling(true);
@@ -144,14 +144,14 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
       if (phone) {
         Linking.openURL(`tel:${phone}`);
       } else {
-        Alert.alert('Call Failed', 'Rider phone number is unavailable.');
+        CustomAlert.alert('Call Failed', 'Rider phone number is unavailable.');
       }
     } catch (err) {
       // Fallback to rider phone from ride params
       if (ride?.rider_phone) {
         Linking.openURL(`tel:${ride.rider_phone}`);
       } else {
-        Alert.alert('Call Failed', 'Could not retrieve rider phone number.');
+        CustomAlert.alert('Call Failed', 'Could not retrieve rider phone number.');
       }
     } finally {
       setCalling(false);
@@ -165,12 +165,12 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
       emit('ride:arrived', { ride_id: rideId });
       navigation.replace('ArrivedWaiting', { ride });
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not update arrival status.');
+      CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not update arrival status.');
     }
   };
 
   const handleCancelRide = () => {
-    Alert.alert(
+    CustomAlert.alert(
       t('ride.cancelTitle', 'Cancel Ride?'),
       t('ride.cancelConfirmMsg', 'Are you sure you want to cancel/reject this ride assignment?'),
       [
@@ -183,7 +183,7 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
               await cancelRide(rideId, 'Driver cancelled during en route');
               navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
             } catch (err) {
-              Alert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
+              CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not cancel ride.');
             }
           }
         }

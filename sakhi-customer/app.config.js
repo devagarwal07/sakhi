@@ -34,11 +34,6 @@ export default {
         backgroundColor: "#F5F0FF"
       },
       ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
-      config: {
-        googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY || ""
-        }
-      },
       package: "in.sakhirides.customer",
       versionCode: 2,
       permissions: [

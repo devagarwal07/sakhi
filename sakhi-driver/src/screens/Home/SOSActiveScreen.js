@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Linking, Alert,
-} from 'react-native';
+  ScrollView, Linking} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cancelSOS } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
+import CustomAlert from '../../utils/CustomAlert';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED   = '#DC2626';
@@ -35,7 +35,7 @@ export default function SOSActiveScreen({ navigation, route }) {
   const [cancelling, setCancelling] = useState(false);
 
   const handleCancel = () => {
-    Alert.alert(
+    CustomAlert.alert(
       'Cancel SOS?',
       "Are you sure you're safe? This will cancel the SOS alert.",
       [
@@ -155,7 +155,7 @@ export default function SOSActiveScreen({ navigation, route }) {
           {/* Message Sakhi */}
           <TouchableOpacity
             style={s.msgBtn}
-            onPress={() => Alert.alert('Sakhi Safety Chat', 'Our team is on standby 24/7. Opening chat…')}
+            onPress={() => CustomAlert.alert('Sakhi Safety Chat', 'Our team is on standby 24/7. Opening chat…')}
             activeOpacity={0.85}
           >
             <Feather name="message-circle" size={18} color={WHITE} />

@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { DeviceEventEmitter } from 'react-native';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
+import CustomAlert from '../utils/CustomAlert';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -59,6 +60,13 @@ apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        // ── Global Error UI ─────────────────────────────────────────────────
+        if (error.response?.status === 429) {
+            CustomCustomAlert.alert('Too Many Requests', 'Please wait a moment before trying again.');
+        } else if (error.response?.status >= 500 && error.response?.status !== 502 && error.response?.status !== 503 && error.response?.status !== 504) {
+            CustomCustomAlert.alert('Server Error', 'Our servers are experiencing issues. Please try again later.');
+        }
 
         // ── Render cold-start retry ─────────────────────────────────────────
         originalRequest._retryCount = originalRequest._retryCount ?? 0;
