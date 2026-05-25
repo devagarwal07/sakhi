@@ -96,9 +96,11 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "9664af70-e889-40d2-9b8a-de3dc0acd8f3"
+        projectId: "0a97cc51-0f56-4c17-8efe-4c555f8e842b"
       },
       router: {}
-    }
+    },
+    owner: "devagarwal07"
   }
 };
+
