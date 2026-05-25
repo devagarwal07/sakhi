@@ -40,7 +40,7 @@ export default function DriverLoginScreen({ navigation }) {
         ?? err.message
         ?? 'Could not send OTP. Try again.';
       console.error('[Login] sendOTP error:', err.message, err.response?.data);
-      CustomAlert.alert('Error', msg);
+      CustomAlert.alert('Login Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -131,9 +131,9 @@ export default function DriverLoginScreen({ navigation }) {
           {/* ── Footer ── */}
           <Text style={styles.footer}>
             By continuing, you agree to our{' '}
-            <Text style={styles.footerLink}>{t('auth.termsOfService')}</Text>
+            <Text style={styles.footerLink} onPress={() => navigation.navigate('TermsPrivacy', { initialTab: 'terms' })}>{t('auth.termsOfService')}</Text>
             {' & '}
-            <Text style={styles.footerLink}>{t('auth.privacyPolicy')}</Text>
+            <Text style={styles.footerLink} onPress={() => navigation.navigate('TermsPrivacy', { initialTab: 'privacy' })}>{t('auth.privacyPolicy')}</Text>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

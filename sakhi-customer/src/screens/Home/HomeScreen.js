@@ -160,7 +160,6 @@ export default function HomeScreen() {
                     await updateLocation(last.coords.latitude, last.coords.longitude);
                 }
             } catch (e) {
-                console.log('Error getting last location:', e);
             }
 
             // 2. Fetch current position in the background to update with accurate data

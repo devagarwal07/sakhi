@@ -103,9 +103,9 @@ const TABS = [
     { key: 'terms', label: 'Terms' },
 ];
 
-export default function TermsPrivacyScreen({ navigation }) {
+export default function TermsPrivacyScreen({ navigation, route }) {
   const { t } = useTranslation();
-    const [activeTab, setActiveTab] = useState('privacy');
+    const [activeTab, setActiveTab] = useState(route?.params?.initialTab || 'privacy');
     const scrollRef = useRef(null);
 
     const policy = POLICIES[activeTab];

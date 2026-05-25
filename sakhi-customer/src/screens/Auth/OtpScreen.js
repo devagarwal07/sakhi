@@ -7,6 +7,7 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
+    Linking,
     
     Animated,
     Pressable,
@@ -257,8 +258,8 @@ export default function OtpScreen() {
 
                 <Text style={styles.termsText}>
                     By continuing, you agree to Sakhi's{' '}
-                    <Text style={styles.termsLink}>Terms of Service</Text>
-                    {'\n'}and <Text style={styles.termsLink}>Privacy Policy</Text>
+                    <Text style={styles.termsLink} onPress={() => Linking.openURL('https://sakhirides.in/terms')}>Terms of Service</Text>
+                    {'\n'}and <Text style={styles.termsLink} onPress={() => Linking.openURL('https://sakhirides.in/privacy')}>Privacy Policy</Text>
                 </Text>
             </View>
         </View>

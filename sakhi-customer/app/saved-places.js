@@ -10,6 +10,7 @@ import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { getAddresses, saveAddress, deleteAddress } from '../src/api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
+import CustomAlert from '../src/utils/CustomAlert';
 
 export default function SavedPlacesScreen() {
     const router = useRouter();
@@ -193,7 +194,7 @@ export default function SavedPlacesScreen() {
                                 <Feather name="chevron-right" size={20} color="#CCC3D8" />
                             </TouchableOpacity>
                             <View style={styles.divider} />
-                            <TouchableOpacity style={styles.rowItem} activeOpacity={0.7}>
+                            <TouchableOpacity style={styles.rowItem} activeOpacity={0.7} onPress={() => CustomAlert.alert('Favourites', 'Scroll down to see your saved locations.')}>
                                 <View style={[styles.iconWrap, { backgroundColor: '#F5F0FF' }]}>
                                     <Feather name="heart" size={18} color="#A78BFA" />
                                 </View>

@@ -32,7 +32,6 @@ async function getNotifications() {
  */
 export async function registerForPushAsync() {
   if (IS_EXPO_GO) {
-    console.log('[FCM] Skipped in Expo Go — use a dev/production build to test push notifications.');
     return null;
   }
 
@@ -81,13 +80,11 @@ export async function registerForPushAsync() {
 
     const stored = await SecureStore.getItemAsync(FCM_TOKEN_KEY).catch(() => null);
     if (stored === fcmToken) {
-      console.log('[FCM] Token unchanged, skipping registration');
       return fcmToken;
     }
 
     await updateCustomerFcmToken(fcmToken);
     await SecureStore.setItemAsync(FCM_TOKEN_KEY, fcmToken).catch(() => { });
-    console.log('[FCM] Customer FCM token registered');
     return fcmToken;
   } catch (err) {
     console.error('[FCM] registerForPushAsync error:', err?.message || err);
@@ -103,7 +100,6 @@ export function setupForegroundHandler() {
 
   const subscription = Notifications.addNotificationReceivedListener((notification) => {
     const { title, body } = notification.request.content;
-    console.log('[FCM] Foreground notification:', title, body);
   });
   return () => subscription.remove();
 }
@@ -114,7 +110,6 @@ export function setupNotificationTapHandler(onTap) {
 
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data || {};
-    console.log('[FCM] Notification tapped:', data);
     if (onTap) onTap(data);
   });
   return () => subscription.remove();

@@ -93,6 +93,7 @@ function AuthStack() {
       <Stack.Screen name="DriverOtp" component={DriverOtpVerificationScreen} />
       <Stack.Screen name="ChangePhoneInput" component={ChangePhoneNumberInputScreen} />
       <Stack.Screen name="ChangePhoneOtp" component={ChangePhoneNumberOtpVerificationScreen} />
+      <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
     </Stack.Navigator>
   );
 }

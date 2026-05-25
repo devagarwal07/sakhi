@@ -14,6 +14,7 @@ import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-ico
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import client from '../../api/client';
 import { useTranslation } from 'react-i18next';
+import CustomAlert from '../../utils/CustomAlert';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -326,7 +327,7 @@ export default function MyDocumentsScreen({ navigation }) {
 
       {/* Sticky Bottom Action Button */}
       <View style={[styles.bottomStickyArea, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <TouchableOpacity style={styles.uploadNewBtn} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.uploadNewBtn} activeOpacity={0.8} onPress={() => CustomAlert.alert('Upload New Document', 'This feature is coming soon.')}>
           <Text style={styles.uploadNewText}>Upload New Document</Text>
         </TouchableOpacity>
       </View>

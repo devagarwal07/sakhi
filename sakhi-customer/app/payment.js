@@ -30,7 +30,6 @@ export default function PaymentMethodsScreen() {
                 const saved = await AsyncStorage.getItem('saved_upi_ids');
                 if (saved) setUpiIds(JSON.parse(saved));
             } catch (err) {
-                console.log('Error loading UPI IDs:', err);
             }
         };
         loadUpiIds();
@@ -40,7 +39,6 @@ export default function PaymentMethodsScreen() {
         try {
             await AsyncStorage.setItem('saved_upi_ids', JSON.stringify(ids));
         } catch (err) {
-            console.log('Error saving UPI IDs:', err);
         }
     };
 

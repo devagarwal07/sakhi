@@ -278,7 +278,17 @@ export default function SubscriptionAssignmentDetailsScreen({ navigation, route 
             </View>
           </View>
           {/* Chat / message button */}
-          <TouchableOpacity style={s.msgBtn} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={s.msgBtn} 
+            activeOpacity={0.8}
+            onPress={() => {
+              if (sub.rider_phone) {
+                Linking.openURL(`sms:${sub.rider_phone}`);
+              } else {
+                CustomAlert.alert(t('subscription.callNotAvailableTitle'), 'Phone number not available for messaging.');
+              }
+            }}
+          >
             <View style={s.msgIcon} />
           </TouchableOpacity>
         </View>

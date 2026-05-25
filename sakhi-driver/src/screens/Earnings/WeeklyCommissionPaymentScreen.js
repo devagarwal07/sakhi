@@ -250,7 +250,7 @@ export default function WeeklyCommissionPaymentScreen({ navigation, route }) {
                       keyboardType="email-address"
                     />
                   </View>
-                  <TouchableOpacity style={s.verifyBtn} activeOpacity={0.8}>
+                  <TouchableOpacity style={s.verifyBtn} activeOpacity={0.8} onPress={() => setModal({ icon: '✅', title: 'UPI Verification', message: 'UPI ID verification is handled automatically at checkout.', buttons: [{text: 'OK', onPress: () => setModal(null)}]})}>
                     <Text style={s.verifyBtnText}>Verify</Text>
                   </TouchableOpacity>
                 </View>

@@ -36,12 +36,10 @@ export function SocketProvider({ children }) {
 
             socket.on('connect', () => {
                 setIsConnected(true);
-                console.log('[Socket] Connected to /rides:', socket.id);
             });
 
             socket.on('disconnect', (reason) => {
                 setIsConnected(false);
-                console.log('[Socket] Disconnected:', reason);
             });
 
             socket.on('connect_error', (err) => {

@@ -17,10 +17,10 @@ const DEV_BYPASS_PHONES = new Set([
   '+919876543212',
 ]);
 
-/** 5 requests per 10 min per IP — OTP send */
+/** 50 requests per 10 min per IP — OTP send */
 const sendOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: 50,
   keyGenerator: (req) => req.ip,
   standardHeaders: true,
   legacyHeaders: false,
@@ -35,10 +35,10 @@ const sendOtpLimiter = rateLimit({
     }),
 });
 
-/** 10 attempts per 10 min keyed by phone — OTP verify */
+/** 100 attempts per 10 min keyed by phone — OTP verify */
 const verifyOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: 100,
   keyGenerator: (req) => req.body?.phone || req.ip,
   standardHeaders: true,
   legacyHeaders: false,

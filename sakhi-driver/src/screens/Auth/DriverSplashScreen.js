@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
   },
 
 
-
   // All center content in one flexbox column (no absolute positioning)
   cluster: {
     alignItems: 'center',
