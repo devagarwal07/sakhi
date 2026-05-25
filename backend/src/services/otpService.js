@@ -104,9 +104,12 @@ async function sendOTP(phone) {
   // Store OTP (Redis primary, Supabase fallback)
   await storeOtp(normalizedPhone, otp);
 
-  // Send via Fortius SMS — note the required space before the OTP number
+  // Send via Fortius SMS
+  // Message MUST match registered DLT template 1207177867777159329 exactly:
+  // "SAKHI MOBILITY: Your OTP is{#var#} . Please do not share it with anyone."
+  // NOTE: No space between 'is' and the OTP digits.
   try {
-    const formattedMsg = `SAKHI MOBILITY: Your OTP is ${otp} . Please do not share it with anyone.`;
+    const formattedMsg = `SAKHI MOBILITY: Your OTP is${otp} . Please do not share it with anyone.`;
     const res = await smsService.sendSMS(normalizedPhone, formattedMsg, smsService.FORTIUS_TEMPLATES.SAKHI_OTP);
     if (res.sent) {
       logger.info('otpService.sendOTP — OTP sent via Fortius', { phone: normalizedPhone });

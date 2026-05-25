@@ -5,26 +5,30 @@ const logger = require('../utils/logger');
 
 const FORTIUS_ENDPOINT = 'https://smsfortius.org/V2/';
 
-// Approved DLT Templates
+// ─────────────────────────────────────────────────────────────────────────────
+// DLT-Registered Template IDs — Fortius account: sakhimobility
+// All 7 templates ACTIVE as of May 2026
+// ─────────────────────────────────────────────────────────────────────────────
 const FORTIUS_TEMPLATES = {
-  SAKHI_TRACK_SHORT: '1207177867618699566',
-  SAKHI_OFFER: '1207177867977490120',
-  SAKHI_LOW_BATTERY: '1207177867323005303',
-  SAKHI_SOS_TRACK: '1207177884674043816',
-  SAKHI_EMERGENCY: '1207177867461201690',
-  SAKHI_REFERRAL: '1207177867105129353',
-  SAKHI_OTP: '1207177867777159329',
+  SAKHI_OTP:         '1207177867777159329', // ✅ SAKHI MOBILITY: Your OTP is{#var#} . Please do not share it with anyone.
+  SAKHI_TRACK_SHORT: '1207177867618699566', // ✅ SAKHI MOBILITY: {#var#} shared live ride tracking. Please track here: {#var#}
+  SAKHI_OFFER:       '1207177867977490120', // ✅ SAKHI MOBILITY:{#var#} offer. Use code {#var#} for a special ride discount. Please book now.
+  SAKHI_LOW_BATTERY: '1207177867323005303', // ✅ SAKHI MOBILITY:{#var#} is low on battery during ride. Please track here:{#var#}
+  SAKHI_SOS_TRACK:   '1207177884674043816', // ✅ SAKHI MOBILITY:{#var#} shared live ride tracking. Current location:{#var#} . Please track here:{#var#}
+  SAKHI_EMERGENCY:   '1207177867461201690', // ✅ SAKHI MOBILITY Alert: {#var#} activated SOS during ride. Current location: {#var#} . Please track here: {#var#}
+  SAKHI_REFERRAL:    '1207177867105129353', // ✅ SAKHI MOBILITY: Your referral code is{#var#} . Please share it with friends and family.
 };
 
-// Exact template formatters matching DLT registration
+// Exact template formatters — message text MUST match the DLT-registered template exactly.
+// Any deviation will cause operator scrubbing.
 const TEMPLATE_FORMATTERS = {
-  '1207177867618699566': (var1, var2) => `SAKHI MOBILITY: ${var1} shared live ride tracking. Please track here: ${var2}`,
-  '1207177867977490120': (var1, var2) => `SAKHI MOBILITY:${var1} offer. Use code ${var2} for a special ride discount. Please book now.`,
-  '1207177867323005303': (var1, var2) => `SAKHI MOBILITY:${var1} is low on battery during ride. Please track here:${var2}`,
-  '1207177884674043816': (var1, var2, var3) => `SAKHI MOBILITY:${var1} shared live ride tracking. Current location:${var2} . Please track here:${var3}`,
-  '1207177867461201690': (var1, var2, var3) => `SAKHI MOBILITY Alert: ${var1} activated SOS during ride. Current location: ${var2} . Please track here: ${var3}`,
-  '1207177867105129353': (var1) => `SAKHI MOBILITY: Your referral code is${var1} . Please share it with friends and family.`,
-  '1207177867777159329': (var1) => `SAKHI MOBILITY: Your OTP is${var1} . Please do not share it with anyone.`,
+  '1207177867777159329': (var1)               => `SAKHI MOBILITY: Your OTP is${var1} . Please do not share it with anyone.`,
+  '1207177867618699566': (var1, var2)          => `SAKHI MOBILITY: ${var1} shared live ride tracking. Please track here: ${var2}`,
+  '1207177867977490120': (var1, var2)          => `SAKHI MOBILITY:${var1} offer. Use code ${var2} for a special ride discount. Please book now.`,
+  '1207177867323005303': (var1, var2)          => `SAKHI MOBILITY:${var1} is low on battery during ride. Please track here:${var2}`,
+  '1207177884674043816': (var1, var2, var3)    => `SAKHI MOBILITY:${var1} shared live ride tracking. Current location:${var2} . Please track here:${var3}`,
+  '1207177867461201690': (var1, var2, var3)    => `SAKHI MOBILITY Alert: ${var1} activated SOS during ride. Current location: ${var2} . Please track here: ${var3}`,
+  '1207177867105129353': (var1)               => `SAKHI MOBILITY: Your referral code is${var1} . Please share it with friends and family.`,
 };
 
 /**
@@ -66,6 +70,9 @@ function resolveTemplateAndMessage(message, templateId) {
   // --- SMART AUTO-DETECT & REWRITE ---
 
   // 1. OTP / PIN
+  // Message MUST match registered DLT template 1207177867777159329 exactly:
+  // "SAKHI MOBILITY: Your OTP is{#var#} . Please do not share it with anyone."
+  // NOTE: No space between 'is' and the OTP digits — matches the DLT registration.
   const otpMatch = cleanMsg.match(/\b\d{6}\b/);
   if (otpMatch || cleanMsg.includes('OTP') || cleanMsg.includes('PIN')) {
     const otp = otpMatch ? otpMatch[0] : cleanMsg.replace(/\D/g, '').slice(0, 6);
