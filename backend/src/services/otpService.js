@@ -10,7 +10,6 @@ const smsService = require('./smsService');
 // ── Configuration ──────────────────────────────────────────────────────────────
 const OTP_TTL_SECONDS = 300;                           // 5 minutes
 const OTP_KEY_PREFIX  = 'otp:';                        // Redis key prefix
-const DEV_BYPASS_CODE = process.env.OTP_BYPASS_CODE;   // e.g. "123456"
 const IS_DEV          = process.env.NODE_ENV !== 'production';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -137,12 +136,6 @@ async function sendOTP(phone) {
 async function verifyOTP(phone, candidateOtp) {
   // Normalise phone to match the key used in sendOTP
   const normalizedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/^0/, '')}`;
-
-  // ── Dev bypass: accept OTP_BYPASS_CODE in non-production ──────────────────
-  if (IS_DEV && DEV_BYPASS_CODE && candidateOtp === DEV_BYPASS_CODE) {
-    logger.warn('otpService.verifyOTP — DEV BYPASS used', { phone: normalizedPhone });
-    return;
-  }
 
   // Retrieve stored OTP (auto-consumed)
   const storedOtp = await retrieveAndConsumeOtp(normalizedPhone);
