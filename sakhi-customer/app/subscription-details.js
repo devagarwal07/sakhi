@@ -105,7 +105,16 @@ export default function SubscriptionDetailsScreen() {
     const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
     const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
-    const scheduledDays = sub.days || [];
+    const intToDay = {
+        1: 'Mon',
+        2: 'Tue',
+        3: 'Wed',
+        4: 'Thu',
+        5: 'Fri',
+        6: 'Sat',
+        0: 'Sun'
+    };
+    const scheduledDays = sub.days || (sub.days_of_week ? sub.days_of_week.map(d => intToDay[d]).filter(Boolean) : []);
 
     return (
         <SafeAreaView style={styles.container}>

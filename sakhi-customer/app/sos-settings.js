@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEmergencyContacts } from '../src/api/endpoints';
 
 const LIVE_SHARING_KEY = 'sakhi_live_sharing_enabled';
+const SOS_PREFS_KEY = 'sakhi_sos_preferences';
 
 export default function SOSSettingsScreen({ isTab = false }) {
     const router = useRouter();
@@ -35,6 +36,11 @@ export default function SOSSettingsScreen({ isTab = false }) {
             .then(val => { if (val !== null) setLiveSharingEnabled(val === 'true'); })
             .catch(() => {});
 
+        // Load SOS alert preferences
+        AsyncStorage.getItem(SOS_PREFS_KEY)
+            .then(val => { if (val !== null) setPreferences(JSON.parse(val)); })
+            .catch(() => {});
+
         getEmergencyContacts()
             .then(({ data }) => {
                 const list = data.contacts || data || [];
@@ -49,7 +55,11 @@ export default function SOSSettingsScreen({ isTab = false }) {
     };
 
     const toggleSwitch = (key) => {
-        setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+        setPreferences(prev => {
+            const updated = { ...prev, [key]: !prev[key] };
+            AsyncStorage.setItem(SOS_PREFS_KEY, JSON.stringify(updated)).catch(() => {});
+            return updated;
+        });
     };
 
     return (

@@ -154,17 +154,12 @@ export default function SOSActiveScreen() {
 
                 {/* Primary Actions */}
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity style={styles.callSakhiBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:18001234567')}>
+                    <TouchableOpacity style={styles.callSakhiBtn} activeOpacity={0.8} onPress={() => Linking.openURL('tel:+916361933364')}>
                         <Feather name="phone-call" size={18} color="#B91C1C" />
                         <Text style={styles.callSakhiText}>Call Sakhi Team</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8} onPress={() => setModal({
-                        icon: '💬',
-                        title: 'Message Sakhi Team',
-                        message: 'Opening Sakhi safety chat. Our team is on standby 24/7.',
-                        buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-                    })}>
+                    <TouchableOpacity style={styles.msgSakhiBtn} activeOpacity={0.8} onPress={() => Linking.openURL('https://wa.me/916361933364?text=SOS%20Help%20Needed').catch(() => Linking.openURL('sms:+916361933364'))}>
                         <Feather name="message-square" size={18} color="#FFFFFF" />
                         <Text style={styles.msgSakhiText}>Message Sakhi Team</Text>
                     </TouchableOpacity>

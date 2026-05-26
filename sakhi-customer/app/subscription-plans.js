@@ -41,7 +41,7 @@ export default function SubscriptionPlansScreen() {
 
     const plans = [
         { days: 7,  rides: 7,  label: '7 Rides',  desc: '1 week · Mon–Fri' },
-        { days: 15, rides: 15, label: '15 Rides', desc: '2 weeks · Mon–Fri' },
+        { days: 14, rides: 14, label: '14 Rides', desc: '2 weeks · Mon–Fri' },
         { days: 30, rides: 30, label: '30 Rides', desc: '1 month · Mon–Fri' },
     ].map(p => {
         const fullPrice = p.rides * BASE_RIDE_PRICE;

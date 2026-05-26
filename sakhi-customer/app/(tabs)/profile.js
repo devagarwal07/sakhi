@@ -112,13 +112,15 @@ export default function ProfileScreen() {
                         
                         <View style={styles.heroInfo}>
                             <View style={styles.heroNameRow}>
-                                <Text style={styles.heroName}>{user?.name || 'Priya Sharma'}</Text>
-                                <View style={styles.verifiedBadge}>
-                                    <Feather name="check" size={10} color="#059669" />
-                                    <Text style={styles.verifiedText}>VERIFIED</Text>
-                                </View>
+                                <Text style={styles.heroName}>{user?.name || 'Sakhi User'}</Text>
+                                {user?.name && (
+                                    <View style={styles.verifiedBadge}>
+                                        <Feather name="check" size={10} color="#059669" />
+                                        <Text style={styles.verifiedText}>VERIFIED</Text>
+                                    </View>
+                                )}
                             </View>
-                            <Text style={styles.heroPhone}>{user?.phone || '+91 98765 43210'}</Text>
+                            <Text style={styles.heroPhone}>{user?.phone || ''}</Text>
                             <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
                                 <Text style={styles.editText}>Edit Profile</Text>
                                 <Feather name="chevron-right" size={14} color="#BEA3D8" />

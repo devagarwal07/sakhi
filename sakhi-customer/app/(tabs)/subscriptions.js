@@ -131,11 +131,21 @@ export default function SubscriptionsDashboard() {
     const ridesRemaining = Math.max(0, ridesTotal - ridesUsed);
     const progressPct    = ridesTotal > 0 ? (ridesRemaining / ridesTotal) * 100 : 0;
     // Each sub carries its own pickup/dropoff; fall back to ride-level for legacy
-    const pickupName  = sub.pickup?.address?.split(',')[0]  || ride?.pickup?.address?.split(',')[0]  || 'Pickup location';
-    const dropoffName = sub.dropoff?.address?.split(',')[0] || ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
-    const daysRange   = sub.days?.length > 3
-        ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
-        : (sub.days?.join(', ') || 'Mon–Fri');
+    const pickupName  = sub.pickup_address?.split(',')[0] || sub.pickup?.address?.split(',')[0]  || ride?.pickup?.address?.split(',')[0]  || 'Pickup location';
+    const dropoffName = sub.dropoff_address?.split(',')[0] || sub.dropoff?.address?.split(',')[0] || ride?.dropoff?.address?.split(',')[0] || 'Dropoff location';
+    const intToDay = {
+        1: 'Mon',
+        2: 'Tue',
+        3: 'Wed',
+        4: 'Thu',
+        5: 'Fri',
+        6: 'Sat',
+        0: 'Sun'
+    };
+    const subDays = sub.days || (sub.days_of_week ? sub.days_of_week.map(d => intToDay[d]).filter(Boolean) : []);
+    const daysRange   = subDays.length > 3
+        ? `${subDays[0]}–${subDays[subDays.length - 1]}`
+        : (subDays.join(', ') || 'Mon–Fri');
 
     const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
 
@@ -146,14 +156,15 @@ export default function SubscriptionsDashboard() {
             sub.scheduled_dates.forEach(d => set.add(d.slice(0, 10)));
         } else {
             const cur = new Date(today);
+            const activeDows = sub.days_of_week || [1, 2, 3, 4, 5];
             for (let i = 0; i < 90 && set.size < ridesRemaining; i++) {
                 cur.setDate(cur.getDate() + 1);
                 const dow = cur.getDay();
-                if (dow !== 0 && dow !== 6) set.add(cur.toISOString().slice(0, 10));
+                if (activeDows.includes(dow)) set.add(cur.toISOString().slice(0, 10));
             }
         }
         return set;
-    }, [sub.scheduled_dates, sub.id, today, ridesRemaining]);
+    }, [sub.scheduled_dates, sub.id, today, ridesRemaining, sub.days_of_week]);
 
     const selectedRide = selectedDate ? {
         date: selectedDate, time: pickupTime, from: pickupName, to: dropoffName,
@@ -179,7 +190,10 @@ export default function SubscriptionsDashboard() {
                 { text: isPaused ? 'Resume' : 'Pause', onPress: async () => {
                     setModal(null);
                     try { await toggleSubscriptionPause(sub.id, !isPaused); setIsPaused(!isPaused); }
-                    catch { setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: 'Could not update subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500); }
+                    catch (err) {
+                        const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Could not update subscription.';
+                        setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: msg, buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
+                    }
                 }},
             ],
         });
@@ -198,8 +212,9 @@ export default function SubscriptionsDashboard() {
                     try {
                         await cancelSubscription(sub.id);
                         setTimeout(() => setModal({ icon: '✅', title: 'Subscription Cancelled', message: 'Your plan has been cancelled successfully.', buttons: [{ text: 'OK', onPress: () => { setModal(null); router.replace('/(tabs)/'); } }] }), 500);
-                    } catch {
-                        setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: 'Could not cancel subscription.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
+                    } catch (err) {
+                        const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Could not cancel subscription.';
+                        setTimeout(() => setModal({ icon: '🔄', title: 'Error', message: msg, buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 500);
                     }
                 }},
             ],

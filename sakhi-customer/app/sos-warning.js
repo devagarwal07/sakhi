@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated, Vibration } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -54,6 +54,8 @@ export default function SOSWarningScreen() {
     const doTriggerSOS = async () => {
         if (triggered) return;
         setTriggered(true);
+        // Vibrate urgently: 3 pulses
+        Vibration.vibrate([0, 500, 200, 500, 200, 500]);
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             let lat = 0, lng = 0;

@@ -15,6 +15,7 @@ export default function WalletScreen() {
     const [loading, setLoading] = useState(true);
     const [wallet, setWallet] = useState(null);
     const [modal, setModal] = useState(null);
+    const [activeFilter, setActiveFilter] = useState('all');
 
     useEffect(() => {
         getWalletDetails()
@@ -87,29 +88,70 @@ export default function WalletScreen() {
                     </View>
                 </View>
 
-                {/* Transaction History (Mock representation if empty) */}
+                {/* Transaction History */}
                 <Text style={styles.sectionTitle}>Transaction History</Text>
+
+                {/* Filter Selector */}
+                <View style={styles.filterRow}>
+                    {[
+                        { key: 'all', label: 'All' },
+                        { key: 'rides', label: 'Rides' },
+                        { key: 'rewards', label: 'Rewards' }
+                    ].map((f) => (
+                        <TouchableOpacity
+                            key={f.key}
+                            style={[
+                                styles.filterPill,
+                                activeFilter === f.key && styles.filterPillActive
+                            ]}
+                            onPress={() => setActiveFilter(f.key)}
+                            activeOpacity={0.7}
+                        >
+                            <Text
+                                style={[
+                                    styles.filterPillText,
+                                    activeFilter === f.key && styles.filterPillTextActive
+                                ]}
+                            >
+                                {f.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
                 <View style={styles.historyCard}>
-                    {wallet?.history && wallet.history.length > 0 ? (
-                        wallet.history.map((tx, idx) => (
-                            <View key={idx}>
-                                {idx > 0 && <View style={styles.divider} />}
-                                <View style={styles.txRow}>
-                                    <View style={styles.txInfo}>
-                                        <Text style={styles.txTitle}>{tx.description}</Text>
-                                        <Text style={styles.txDate}>{tx.date}</Text>
+                    {(() => {
+                        const filteredHistory = (wallet?.history || []).filter(tx => {
+                            if (activeFilter === 'rides') return tx.type === 'debit';
+                            if (activeFilter === 'rewards') return tx.type === 'credit';
+                            return true;
+                        });
+
+                        if (filteredHistory.length > 0) {
+                            return filteredHistory.map((tx, idx) => (
+                                <View key={idx}>
+                                    {idx > 0 && <View style={styles.divider} />}
+                                    <View style={styles.txRow}>
+                                        <View style={styles.txInfo}>
+                                            <Text style={styles.txTitle}>{tx.description}</Text>
+                                            <Text style={styles.txDate}>{tx.date}</Text>
+                                        </View>
+                                        <Text style={[styles.txAmount, tx.type === 'credit' ? styles.txCredit : styles.txDebit]}>
+                                            {tx.type === 'credit' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
+                                        </Text>
                                     </View>
-                                    <Text style={[styles.txAmount, tx.type === 'credit' ? styles.txCredit : styles.txDebit]}>
-                                        {tx.type === 'credit' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
+                                </View>
+                            ));
+                        } else {
+                            return (
+                                <View style={styles.emptyHistory}>
+                                    <Text style={styles.emptyHistoryText}>
+                                        {activeFilter === 'rides' ? 'No rides transactions.' : activeFilter === 'rewards' ? 'No rewards transactions.' : 'No transactions yet.'}
                                     </Text>
                                 </View>
-                            </View>
-                        ))
-                    ) : (
-                        <View style={styles.emptyHistory}>
-                            <Text style={styles.emptyHistoryText}>No transactions yet.</Text>
-                        </View>
-                    )}
+                            );
+                        }
+                    })()}
                 </View>
             </ScrollView>
 
@@ -148,6 +190,34 @@ const styles = StyleSheet.create({
     },
     container: { flex: 1, backgroundColor: '#F5F0FF' },
     centered: { alignItems: 'center', justifyContent: 'center' },
+    filterRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 12,
+        marginTop: 4,
+    },
+    filterPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: Colors.surfaceContainerLowest,
+        borderWidth: 1.5,
+        borderColor: Colors.outlineVariant,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    filterPillActive: {
+        backgroundColor: Colors.primaryContainer,
+        borderColor: Colors.primaryContainer,
+    },
+    filterPillText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.outline,
+    },
+    filterPillTextActive: {
+        color: '#FFFFFF',
+    },
     
     backBtn: {
         width: 40, height: 40, borderRadius: 20,

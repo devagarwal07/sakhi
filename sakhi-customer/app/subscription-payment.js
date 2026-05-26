@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
     Dimensions, ScrollView, Platform, ActivityIndicator
@@ -8,7 +8,8 @@ import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
 import SakhiModal from '../src/components/SakhiModal';
-import { createSubscriptionOrder, verifyPayment } from '../src/api/endpoints';
+import { createSubscriptionOrder } from '../src/api/endpoints';
+import apiClient from '../src/api/client';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import RazorpayCheckout from 'react-native-razorpay';
 import { Feather } from '@expo/vector-icons';
@@ -24,6 +25,8 @@ export default function SubscriptionPaymentScreen() {
 
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(null);
+    const [intentData, setIntentData] = useState(null);
+    const [intentLoading, setIntentLoading] = useState(true);
 
     const insets = useSafeAreaInsets();
 
@@ -42,7 +45,87 @@ export default function SubscriptionPaymentScreen() {
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
         : (sub.days?.join(', ') || 'Mon–Fri');
 
+    useEffect(() => {
+        const createIntent = async () => {
+            try {
+                const dayToInt = {
+                    'Sun': 0,
+                    'Mon': 1,
+                    'Tue': 2,
+                    'Wed': 3,
+                    'Thu': 4,
+                    'Fri': 5,
+                    'Sat': 6
+                };
+
+                const formatTime24 = (timeStr) => {
+                    if (!timeStr) return '';
+                    const [time, period] = timeStr.split(' ');
+                    if (!time || !period) return '';
+                    let [h, m] = time.split(':').map(Number);
+                    if (period === 'PM' && h !== 12) h += 12;
+                    if (period === 'AM' && h === 12) h = 0;
+                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                };
+
+                const formatDateYMD = (dateStr) => {
+                    if (!dateStr) return '';
+                    const d = new Date(dateStr);
+                    if (isNaN(d.getTime())) return '';
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                };
+
+                const payload = {
+                    pickup_lat:          parseFloat(ride?.pickup?.latitude),
+                    pickup_lng:          parseFloat(ride?.pickup?.longitude),
+                    pickup_address:      ride?.pickup?.address,
+                    drop_lat:            parseFloat(ride?.dropoff?.latitude),
+                    drop_lng:            parseFloat(ride?.dropoff?.longitude),
+                    drop_address:        ride?.dropoff?.address,
+                    pickup_time:         formatTime24(sub.morningTime),
+                    return_pickup_time:  sub.isTwoWay ? formatTime24(sub.returnTime) : undefined,
+                    start_date:          formatDateYMD(sub.startDate),
+                    plan_rides:          parseInt(sub.plan),
+                    days_of_week:        (sub.days || []).map(d => dayToInt[d]).filter(v => v !== undefined),
+                    is_two_way:          !!sub.isTwoWay,
+                };
+
+                const { data } = await apiClient.post('/subscriptions/intent', payload);
+                setIntentData(data);
+            } catch (err) {
+                const msg = err?.response?.data?.error?.message || err?.message || 'Could not fetch ride estimate.';
+                setModal({
+                    icon: '⚠️',
+                    title: 'Subscription Error',
+                    message: msg,
+                    buttons: [{ text: 'Go Back', onPress: () => { setModal(null); router.back(); } }]
+                });
+            } finally {
+                setIntentLoading(false);
+            }
+        };
+
+        if (ride?.pickup && ride?.dropoff && sub.plan) {
+            createIntent();
+        } else {
+            setIntentLoading(false);
+        }
+    }, [ride, sub]);
+
     const handlePay = async () => {
+        if (!intentData?.subscription_id) {
+            setModal({
+                icon: '⚠️',
+                title: 'Error',
+                message: 'No active subscription intent found. Please try again.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+            });
+            return;
+        }
+
         if (!RAZORPAY_KEY || !RAZORPAY_KEY.startsWith('rzp_')) {
             setModal({
                 icon: '⚠️',
@@ -57,7 +140,7 @@ export default function SubscriptionPaymentScreen() {
         try {
             // Step 1: Create order on backend
             const { data } = await createSubscriptionOrder({
-                amount: (sub.price || 364) * 100, // paise
+                amount: (intentData.total_cost) * 100, // paise
                 currency: 'INR',
                 plan: sub.plan,
             });
@@ -66,20 +149,18 @@ export default function SubscriptionPaymentScreen() {
             if (!orderId) throw new Error('Order creation failed');
 
             // Step 2: Open native Razorpay in-app checkout
-            // Shows UPI QR scanner, UPI apps (GPay/PhonePe/Paytm), UPI ID, cards, etc.
             const options = {
                 description: 'Sakhi Subscription',
                 image: 'https://i.ibb.co/your-logo', // replace with Sakhi logo URL
                 currency: 'INR',
                 key: RAZORPAY_KEY,
-                amount: String((sub.price || 364) * 100),
+                amount: String(intentData.total_cost * 100),
                 order_id: orderId,
                 name: 'Sakhi',
                 prefill: {
                     email: user?.email || '',
                     contact: user?.phone || '',
                     name: user?.name || '',
-                    // Pre-select UPI method to open scanner/UPI directly
                     method: 'upi',
                 },
                 theme: { color: '#BEA3D8' },
@@ -87,13 +168,10 @@ export default function SubscriptionPaymentScreen() {
                     ondismiss: () => {
                         setLoading(false);
                     },
-                    // Show UPI apps and scanner prominently
                     animation: true,
                 },
-                // UPI-specific: show scanner + collect
                 config: {
                     display: {
-                        // Prioritise UPI options
                         preferences: { show_default_blocks: true },
                         blocks: {
                             utib: {
@@ -110,23 +188,19 @@ export default function SubscriptionPaymentScreen() {
 
             const paymentData = await RazorpayCheckout.open(options);
 
-            // Step 3: Verify payment signature on backend
+            // Step 3: Verify payment and activate subscription on backend
             setLoading(true);
-            await verifyPayment({
-                razorpay_order_id:    paymentData.razorpay_order_id,
-                razorpay_payment_id:  paymentData.razorpay_payment_id,
-                razorpay_signature:   paymentData.razorpay_signature,
-                plan:                 sub.plan,
-                subscription_id:      sub.subscriptionId,
+            await apiClient.post(`/subscriptions/${intentData.subscription_id}/activate`, {
+                order_id:    paymentData.razorpay_order_id,
+                payment_id:  paymentData.razorpay_payment_id,
+                signature:   paymentData.razorpay_signature,
             });
 
             // Step 4: Navigate to success screen
             router.replace('/payment-success');
 
         } catch (err) {
-            // User pressed back / cancelled — Razorpay throws a specific code
             if (err?.code === 0 || err?.description === 'Payment cancelled') {
-                // Silent — user dismissed, don't show error
                 return;
             }
             const msg = err?.response?.data?.error?.message
@@ -144,6 +218,16 @@ export default function SubscriptionPaymentScreen() {
         }
     };
 
+    if (intentLoading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#BEA3D8" />
+                <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 14, fontWeight: '600' }}>
+                    Configuring subscription slots...
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -163,6 +247,23 @@ export default function SubscriptionPaymentScreen() {
                 contentContainerStyle={[styles.scrollContent, { paddingTop: scrollTopPadding }]}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Driver Assignment Banner */}
+                {intentData?.driver_info ? (
+                    <View style={styles.driverBanner}>
+                        <Feather name="shield" size={18} color="#16a34a" />
+                        <Text style={styles.driverBannerText}>
+                            Dedicated Sakhi: <Text style={{fontWeight: '700'}}>{intentData.driver_info.name}</Text> is assigned to your schedule.
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.driverBanner}>
+                        <Feather name="search" size={18} color="#7C3AED" />
+                        <Text style={styles.driverBannerText}>
+                            We are finding your Sakhi driver. Complete payment to confirm slot.
+                        </Text>
+                    </View>
+                )}
+
                 {/* Order Summary Card */}
                 <View style={styles.orderCard}>
                     {/* Route Timeline */}
@@ -206,7 +307,7 @@ export default function SubscriptionPaymentScreen() {
                             <Text style={styles.totalSub}>Total Amount</Text>
                             <Text style={styles.totalGst}>GST included</Text>
                         </View>
-                        <Text style={styles.totalAmt}>₹{sub.price || 364}</Text>
+                        <Text style={styles.totalAmt}>₹{intentData ? intentData.total_cost : (sub.price || 364)}</Text>
                     </View>
                 </View>
 
@@ -258,7 +359,7 @@ export default function SubscriptionPaymentScreen() {
                 >
                     {loading
                         ? <ActivityIndicator color="#FFFFFF" />
-                        : <Text style={styles.submitText}>Pay ₹{sub.price || 364} — Open Payment</Text>
+                        : <Text style={styles.submitText}>Pay ₹{intentData ? intentData.total_cost : (sub.price || 364)} — Open Payment</Text>
                     }
                 </TouchableOpacity>
 
@@ -290,6 +391,24 @@ const styles = StyleSheet.create({
 
     scrollContent: {
         paddingHorizontal: 20,
+    },
+
+    driverBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: '#F0FDF4',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#DCFCE7',
+    },
+    driverBannerText: {
+        flex: 1,
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#15803D',
     },
 
     orderCard: {
