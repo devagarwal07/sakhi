@@ -191,7 +191,7 @@ export default function HelpSupportScreen() {
                             {/* Call Support */}
                             <TouchableOpacity
                                 style={[s.quickCard, { backgroundColor: '#ECFDF5', borderColor: '#059669' }]}
-                                onPress={() => Linking.openURL('tel:+918800000000').catch(() => {})}
+                                onPress={() => Linking.openURL('tel:+916361933364').catch(() => {})}
                                 activeOpacity={0.82}
                             >
                                 <Feather name="phone-call" size={22} color="#065F46" style={{ marginBottom: 4 }} />

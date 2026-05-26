@@ -74,7 +74,7 @@ export default function LoginScreen() {
                 err?.response?.data?.message ||
                 err?.message ||
                 'Failed to send OTP. Please try again.';
-            CustomAlert.alert('Error', `${msg}\n\nAPI: ${API_BASE_URL}`);
+            CustomAlert.alert('Error', msg);
         } finally {
             setLoading(false);
         }
@@ -174,8 +174,8 @@ export default function LoginScreen() {
                 <View style={styles.termsSection}>
                     <Text style={styles.termsText}>
                         By continuing, you agree to Sakhi's{' '}
-                        <Text style={styles.termsLink} onPress={() => Linking.openURL('https://sakhirides.in/terms')}>Terms of Service</Text>
-                        {'\n'}and <Text style={styles.termsLink} onPress={() => Linking.openURL('https://sakhirides.in/privacy')}>Privacy Policy</Text>
+                        <Text style={styles.termsLink} onPress={() => router.push('/terms')}>Terms of Service</Text>
+                        {'\n'}and <Text style={styles.termsLink} onPress={() => router.push('/terms')}>Privacy Policy</Text>
                     </Text>
                 </View>
 

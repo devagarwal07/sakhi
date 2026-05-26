@@ -30,7 +30,7 @@ export default function HelpSupportScreen() {
     const helpCategories = {
         ride: 'Please contact customer support and raise an issue. Our team will investigate and assist you shortly.',
         billing: 'Please contact customer support and raise an issue. Our team will look into your billing concern and respond within 24 hours.',
-        safety: 'If you feel unsafe, please use the SOS button or call our safety helpline at 1800-SAKHI.',
+        safety: 'If you feel unsafe, please use the SOS button or call our safety helpline at +91 63619 33364.',
         subscription: 'For subscription help, go to the Subscriptions tab to manage your plan.',
     };
 
@@ -161,19 +161,19 @@ export default function HelpSupportScreen() {
                             </TouchableOpacity>
 
                             {/* Call Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('tel:18001234567')}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('tel:+916361933364')}>
                                 <View style={styles.contactRowLeft}>
                                     <Feather name="phone" size={20} color="#A78BFA" />
                                     <View style={styles.contactTextCol}>
                                         <Text style={styles.contactLabel}>Call Support</Text>
-                                        <Text style={styles.contactSubText}>Mon-Sun, 9AM-9PM</Text>
+                                        <Text style={styles.contactSubText}>+91 63619 33364 • Mon-Sun, 9AM-9PM</Text>
                                     </View>
                                 </View>
                                 <Feather name="chevron-right" size={22} color="#CBD5E1" />
                             </TouchableOpacity>
 
                             {/* Email Row */}
-                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:support@sakhi.app?subject=Help Request')}>
+                            <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:support@sakhiwomen.com?subject=Help Request')}>
                                 <View style={styles.contactRowLeft}>
                                     <Feather name="mail" size={20} color="#A78BFA" />
                                     <Text style={styles.contactLabel}>Email Us</Text>
@@ -184,15 +184,7 @@ export default function HelpSupportScreen() {
                         </View>
                     </View>
 
-                    {/* Visit Help Centre Button */}
-                    <TouchableOpacity style={styles.visitBtn} activeOpacity={0.7} onPress={() => setModal({
-                        icon: '🌐',
-                        title: 'Help Centre',
-                        message: 'Opening help documentation. This will be available online at help.sakhi.app',
-                        buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                    })}>
-                        <Text style={styles.visitBtnText}>Visit Help Centre</Text>
-                    </TouchableOpacity>
+
 
                 </ScrollView>
             </View>

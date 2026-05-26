@@ -120,22 +120,26 @@ export default function SidebarScreen() {
                         <View style={styles.avatarContainer}>
                             <View style={styles.avatarImg}>
                                 <Text style={styles.avatarInitial}>
-                                    {user?.name ? user.name[0].toUpperCase() : 'P'}
+                                    {user?.name ? user.name[0].toUpperCase() : 'S'}
                                 </Text>
                             </View>
-                            <View style={styles.verifiedBadge}>
-                                <Feather name="check" size={10} color="#FFFFFF" />
-                            </View>
+                            {user?.name && (
+                                <View style={styles.verifiedBadge}>
+                                    <Feather name="check" size={10} color="#FFFFFF" />
+                                </View>
+                            )}
                         </View>
 
                         <View style={styles.infoContainer}>
                             <View style={styles.nameRow}>
-                                <Text style={styles.nameText}>{user?.name || 'Priya Sharma'}</Text>
-                                <View style={styles.verifiedPill}>
-                                    <Text style={styles.verifiedPillText}>VERIFIED</Text>
-                                </View>
+                                <Text style={styles.nameText}>{user?.name || 'Sakhi User'}</Text>
+                                {user?.name && (
+                                    <View style={styles.verifiedPill}>
+                                        <Text style={styles.verifiedPillText}>VERIFIED</Text>
+                                    </View>
+                                )}
                             </View>
-                            <Text style={styles.phoneText}>{user?.phone || '+91 98765 43210'}</Text>
+                            <Text style={styles.phoneText}>{user?.phone || ''}</Text>
                         </View>
                     </View>
 
