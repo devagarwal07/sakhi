@@ -33,7 +33,7 @@ export const PRICING = {
 
   SUBSCRIPTION_DISCOUNTS: {
     7:  { pct: 5,  max_saving: 100 },
-    15: { pct: 10, max_saving: 150 },
+    14: { pct: 10, max_saving: 150 },
     30: { pct: 15, max_saving: 200 },
   },
 };
@@ -116,7 +116,7 @@ export const NIGHT_FARE_MULTIPLIER = 1.5;
  * Apply a subscription discount to a base fare total.
  *
  * @param {number} baseFare   - Undiscounted total
- * @param {7|15|30} planDays
+ * @param {7|14|30} planDays
  * @returns {{ discounted: number, saving: number, pct: number }}
  */
 export function applySubscriptionDiscount(baseFare, planDays) {

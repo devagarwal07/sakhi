@@ -34,7 +34,7 @@ const updateProfileSchema = z.object({
 });
 
 const addressSchema = z.object({
-  label:   z.enum(['home', 'work', 'other']),
+  label:   z.string().min(1).max(128),
   address: z.string().min(1).max(256),
   lat:     z.number().optional(),
   lng:     z.number().optional(),
