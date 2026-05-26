@@ -71,7 +71,7 @@ function getBotReply(userText) {
       return item.answer;
     }
   }
-  return "I'm not sure about that yet. For specific issues, you can call our support line at 1800-123-4567 (Mon–Sat 8AM–8PM) or raise a complaint via the Quick Help section.";
+  return "I'm not sure about that yet. For specific issues, you can call our support line at +91 63619 33364 (Mon–Sat 8AM–8PM) or raise a complaint via the Quick Help section.";
 }
 
 // ─── Support Chatbot Modal ────────────────────────────────────────────────────
@@ -396,9 +396,9 @@ export default function HelpSupportScreen({ navigation }) {
       icon: <Phone size={18} color={PURPLE} strokeWidth={2} />,
       iconBg: 'rgba(190,163,216,0.1)',
       title: 'Call Support',
-      sub: 'Mon–Sat 8AM–8PM',
+      sub: '+91 63619 33364 • Mon–Sat 8AM–8PM',
       subColor: MUTED,
-      onPress: () => Linking.openURL('tel:18001234567'),
+      onPress: () => Linking.openURL('tel:+916361933364'),
     },
     {
       id: 'email',
@@ -406,7 +406,7 @@ export default function HelpSupportScreen({ navigation }) {
       iconBg: 'rgba(255,183,132,0.2)',
       title: 'Email Us',
       sub: null,
-      onPress: () => Linking.openURL('mailto:support@sakhi.app'),
+      onPress: () => Linking.openURL('mailto:support@sakhiwomen.com'),
     },
   ];
 

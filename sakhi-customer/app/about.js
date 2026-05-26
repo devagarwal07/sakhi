@@ -1,16 +1,16 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, TouchableOpacity, 
     Platform, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import SakhiModal from '../src/components/SakhiModal';
+
 import { Feather } from '@expo/vector-icons';
 
 export default function AboutScreen() {
     const router = useRouter();
-    const [modal, setModal] = useState(null);
+
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -88,44 +88,38 @@ export default function AboutScreen() {
 
                     {/* Social Share Icons */}
                     <View style={styles.socialRow}>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://twitter.com/sakhirides')}>
-                            <Feather name="link" size={18} color="#BEA3D8" />
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://www.instagram.com/sakhi.women?igsh=emd5MHo2OXJ4bHE2')}>
+                            <Feather name="instagram" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://sakhi.app')}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('https://sakhiwomen.com')}>
                             <Feather name="globe" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:hello@sakhi.app')}>
+                        <TouchableOpacity style={styles.socialBtn} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:support@sakhiwomen.com')}>
                             <Feather name="mail" size={18} color="#BEA3D8" />
                         </TouchableOpacity>
                     </View>
 
+                    {/* Registered Office */}
+                    <View style={styles.officeCard}>
+                        <Text style={styles.officeLabel}>Registered Office</Text>
+                        <Text style={styles.officeTradeName}>Sahi Mobility Solutions Private Limited</Text>
+                        <Text style={styles.officeAddress}>
+                            C/o Jitesh, Utsaav Park, Kkv Circle, Kalawad Road, Rajkot Sau Uni Area, Rajkot, Rajkot, Gujarat, India, 360005
+                        </Text>
+                        <View style={styles.officeContacts}>
+                            <Text style={styles.officeContactItem}>Email: <Text style={styles.officeContactValue}>support@sakhiwomen.com</Text></Text>
+                            <Text style={styles.officeContactItem}>Phone: <Text style={styles.officeContactValue}>+91 63619 33364</Text></Text>
+                        </View>
+                    </View>
+
                     {/* Legal Links */}
                     <View style={styles.legalSection}>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
-                            icon: '📄',
-                            title: 'Terms of Service',
-                            message: 'Opening terms of service at sakhi.app/terms',
-                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                        })}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => router.push('/terms')}>
                             <Text style={styles.legalLabel}>Terms of Service</Text>
                             <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
-                            icon: '🛡️',
-                            title: 'Privacy Policy',
-                            message: 'Opening privacy policy at sakhi.app/privacy',
-                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                        })}>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => router.push({ pathname: '/terms', params: { tab: 'privacy' } })}>
                             <Text style={styles.legalLabel}>Privacy Policy</Text>
-                            <Feather name="chevron-right" size={18} color="#94A3B8" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => setModal({
-                            icon: '🍪',
-                            title: 'Cookie Policy',
-                            message: 'Opening cookie policy at sakhi.app/cookies',
-                            buttons: [{ text: 'OK', onPress: () => setModal(null) }]
-                        })}>
-                            <Text style={styles.legalLabel}>Cookie Policy</Text>
                             <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
                     </View>
@@ -138,7 +132,7 @@ export default function AboutScreen() {
 
                 </ScrollView>
             </View>
-            {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
+
         </SafeAreaView>
     );
 }
@@ -219,6 +213,51 @@ const styles = StyleSheet.create({
     socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 32 },
     socialBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
     socialIcon: { fontSize: 18 },
+
+    officeCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 24,
+        gap: 12,
+        marginBottom: 24,
+        shadowColor: 'rgba(124, 58, 237, 1)',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 4
+    },
+    officeLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#BEA3D8',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase'
+    },
+    officeTradeName: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E1B2E',
+        lineHeight: 22
+    },
+    officeAddress: {
+        fontSize: 13,
+        color: '#6B7280',
+        lineHeight: 20
+    },
+    officeContacts: {
+        marginTop: 8,
+        gap: 4
+    },
+    officeContactItem: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#1E1B2E'
+    },
+    officeContactValue: {
+        fontWeight: '400',
+        color: '#6B7280'
+    },
 
     /* Legal Links */
     legalSection: { width: '100%', gap: 4, marginBottom: 32 },

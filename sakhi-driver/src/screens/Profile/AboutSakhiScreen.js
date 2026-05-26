@@ -195,9 +195,9 @@ const feat = StyleSheet.create({
 
 // ─── SOCIAL LINKS ──────────────────────────────────────────────────────────────
 const SOCIALS = [
-  { icon: 'instagram', url: 'https://instagram.com/' },
-  { icon: 'twitter',   url: 'https://twitter.com/'   },
-  { icon: 'facebook',  url: 'https://facebook.com/'  },
+  { icon: 'instagram', url: 'https://www.instagram.com/sakhi.women?igsh=emd5MHo2OXJ4bHE2' },
+  { icon: 'web',       url: 'https://sakhiwomen.com'   },
+  { icon: 'email',     url: 'mailto:support@sakhiwomen.com'  },
 ];
 
 function SocialRow() {
@@ -235,21 +235,86 @@ const soc = StyleSheet.create({
   },
 });
 
+// ─── REGISTERED OFFICE ─────────────────────────────────────────────────────────
+function RegisteredOfficeCard() {
+  return (
+    <View style={ro.card}>
+      <Text style={ro.label}>Registered Office</Text>
+      <Text style={ro.tradeName}>Sahi Mobility Solutions Private Limited</Text>
+      <Text style={ro.address}>
+        C/o Jitesh, Utsaav Park, Kkv Circle, Kalawad Road, Rajkot Sau Uni Area, Rajkot, Rajkot, Gujarat, India, 360005
+      </Text>
+      <View style={ro.contactRow}>
+        <Text style={ro.contactLabel}>Email: <Text style={ro.contactValue}>support@sakhiwomen.com</Text></Text>
+        <Text style={ro.contactLabel}>Phone: <Text style={ro.contactValue}>+91 63619 33364</Text></Text>
+      </View>
+    </View>
+  );
+}
+const ro = StyleSheet.create({
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    padding: 20,
+    gap: 8,
+    ...CARD_SHADOW,
+  },
+  label: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: PURPLE,
+  },
+  tradeName: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 15,
+    color: DARK,
+    lineHeight: 22,
+  },
+  address: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 20,
+  },
+  contactRow: {
+    marginTop: 8,
+    gap: 4,
+  },
+  contactLabel: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    color: DARK,
+  },
+  contactValue: {
+    fontWeight: '400',
+    color: MUTED,
+  },
+});
+
 // ─── LEGAL LINKS ───────────────────────────────────────────────────────────────
 const LEGAL = [
-  { label: 'Terms of Service',  url: 'https://sakhi.in/terms'   },
-  { label: 'Privacy Policy',    url: 'https://sakhi.in/privacy' },
-  { label: 'Driver Agreement',  url: 'https://sakhi.in/driver-agreement' },
-  { label: 'Cookie Policy',     url: 'https://sakhi.in/cookies' },
+  { label: 'Terms of Service',  screen: 'TermsPrivacy', params: { tab: 'terms' } },
+  { label: 'Privacy Policy',    screen: 'TermsPrivacy', params: { tab: 'privacy' } },
+  { label: 'Driver Agreement',  screen: 'TermsPrivacy', params: { tab: 'terms' } },
 ];
 
-function LegalCard() {
-  const open = (url) => Linking.openURL(url).catch(() => {});
+function LegalCard({ navigation }) {
+  const open = (item) => {
+    if (item.screen && navigation) {
+      navigation.navigate(item.screen, item.params || {});
+    }
+  };
   return (
     <View style={leg.card}>
       {LEGAL.map((l, i) => (
         <View key={l.label}>
-          <TouchableOpacity style={leg.row} onPress={() => open(l.url)} activeOpacity={0.7}>
+          <TouchableOpacity style={leg.row} onPress={() => open(l)} activeOpacity={0.7}>
             <Text style={leg.label}>{l.label}</Text>
             <ChevronRight size={16} color="#CCC3D8" strokeWidth={2} />
           </TouchableOpacity>
@@ -328,8 +393,11 @@ export default function AboutSakhiScreen({ navigation }) {
         {/* Social media */}
         <SocialRow />
 
+        {/* Registered office */}
+        <RegisteredOfficeCard />
+
         {/* Legal links */}
-        <LegalCard />
+        <LegalCard navigation={navigation} />
 
         {/* Rate CTA */}
         <TouchableOpacity style={s.rateBtn} onPress={handleRate} activeOpacity={0.8}>

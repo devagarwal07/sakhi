@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
 // ─── Policy Content ───────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ const POLICIES = {
             },
             {
                 title: '4. Refunds & Disputes',
-                body: `• Raise a dispute within 24 hours of a ride`
+                body: `• Dispute Filing: Raise a dispute within 24 hours of a ride via the Help & Support section in the app.\n• Refunds Timeframe: Approved refunds for ride payment disputes, double-deductions, or overcharges will be automatically processed and credited to your original payment method (bank account, UPI, or card) within 5–7 business days.\n• Subscription Refunds: Subscription plans are pre-paid and are non-refundable once activated. For exceptional transaction issues, please contact our support team.`
             },
             {
                 title: '5. Your Responsibilities as a Passenger',
@@ -77,7 +77,7 @@ const POLICIES = {
             },
             {
                 title: 'Contact',
-                body: `You are safe with us. Questions? We're always here.\n\nsupport@sakhiwomen.in`
+                body: `Questions or feedback? We're always here to support you.\n\nSahi Mobility Solutions Private Limited\nRegistered Address: C/o Jitesh, Utsaav Park, Kkv Circle, Kalawad Road, Rajkot Sau Uni Area, Rajkot, Rajkot, Gujarat, India, 360005\n\nEmail: support@sakhiwomen.com\nPhone: +91 63619 33364`
             }
         ]
     }
@@ -90,7 +90,8 @@ const TABS = [
 
 export default function TermsScreen() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('privacy');
+    const { tab } = useLocalSearchParams();
+    const [activeTab, setActiveTab] = useState(tab === 'terms' ? 'terms' : 'privacy');
     const scrollRef = useRef(null);
 
     const policy = POLICIES[activeTab];

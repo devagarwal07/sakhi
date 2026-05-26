@@ -91,8 +91,12 @@ const POLICIES = {
                 body: `• You are solely responsible for filing income tax returns on your Sakhi earnings\n• Sakhi will provide an annual earnings statement by May 31 each financial year\n• GST registration and filing, if applicable to your income level, is your responsibility`
             },
             {
-                title: '12. Changes to These Terms',
-                body: `We will notify you via the Driver App or SMS at least 7 days before any material change. Continuing to accept rides after that date means you agree to the updated terms.\n\nYou are not just a driver — you are a changemaker. We are with you every step of the way.\n\nsupport@sakhiwomen.in`
+                title: '12. Refund Policy & Disputes',
+                body: `• Platform Fee Refunds: Driver subscription fees, commission deductions, or platform dues debited in error or double-debited will be automatically processed and refunded to your registered bank account or UPI ID within 5–7 business days.\n• Dispute Filing: Driver partner disputes regarding fare deductions, payouts, or overcharges must be raised via the Support section in the app within 24 hours of the ride.`
+            },
+            {
+                title: '13. Changes to These Terms',
+                body: `We will notify you via the Driver App or SMS at least 7 days before any material change. Continuing to accept rides after that date means you agree to the updated terms.\n\nYou are not just a driver — you are a changemaker. We are with you every step of the way.\n\nSahi Mobility Solutions Private Limited\nRegistered Address: C/o Jitesh, Utsaav Park, Kkv Circle, Kalawad Road, Rajkot Sau Uni Area, Rajkot, Rajkot, Gujarat, India, 360005\n\nEmail: support@sakhiwomen.com\nPhone: +91 63619 33364`
             }
         ]
     }
@@ -160,7 +164,7 @@ export default function TermsPrivacyScreen({ navigation, route }) {
                     <View style={styles.footer}>
                         <View style={styles.footerDivider} />
                         <Text style={styles.footerText}>
-                            © {new Date().getFullYear()} Sakhi Technologies Private Limited.{'\n'}All rights reserved.
+                            © {new Date().getFullYear()} Sahi Mobility Solutions Private Limited.{'\n'}All rights reserved.
                         </Text>
                     </View>
                 </ScrollView>
