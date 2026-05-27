@@ -346,7 +346,7 @@ router.delete('/account', authMiddleware, roleGuard('rider'), async (req, res, n
     const { error: referralsErr } = await supabase
       .from('referrals')
       .delete()
-      .or(`referrer_id.eq.${userId},referred_id.eq.${userId}`);
+      .or(`referrer_id.eq.${userId},referee_id.eq.${userId}`);
     if (referralsErr) throw referralsErr;
 
     const { error: refreshErr } = await supabase.from('refresh_tokens').delete().eq('user_id', userId);
@@ -357,6 +357,9 @@ router.delete('/account', authMiddleware, roleGuard('rider'), async (req, res, n
 
     const { error: userDeleteErr } = await supabase.from('users').delete().eq('id', userId);
     if (userDeleteErr) throw userDeleteErr;
+
+    const { error: authDeleteErr } = await supabase.auth.admin.deleteUser(userId);
+    if (authDeleteErr) throw authDeleteErr;
 
     const supportFcm = process.env.SUPPORT_FCM_TOKEN;
     if (supportFcm) {
