@@ -18,7 +18,7 @@ export default {
   expo: {
     name: "Sakhi",
     slug: "sakhi-customer",
-    version: "1.0.2",
+    version: "1.0.3",
     orientation: "portrait",
     icon: "./assets/icon.png",
     scheme: "sakhi",
@@ -35,7 +35,7 @@ export default {
       },
       ...(androidGoogleServices && { googleServicesFile: androidGoogleServices }),
       package: "in.sakhirides.customer",
-      versionCode: 2,
+      versionCode: 3,
       permissions: [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -49,7 +49,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "in.sakhirides.customer",
-      buildNumber: "4",
+      buildNumber: "5",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
