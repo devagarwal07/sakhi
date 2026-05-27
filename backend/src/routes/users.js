@@ -358,9 +358,6 @@ router.delete('/account', authMiddleware, roleGuard('rider'), async (req, res, n
     const { error: userDeleteErr } = await supabase.from('users').delete().eq('id', userId);
     if (userDeleteErr) throw userDeleteErr;
 
-    const { error: authDeleteErr } = await supabase.auth.admin.deleteUser(userId);
-    if (authDeleteErr) throw authDeleteErr;
-
     const supportFcm = process.env.SUPPORT_FCM_TOKEN;
     if (supportFcm) {
       const userName = userRow?.name || 'Unknown';
