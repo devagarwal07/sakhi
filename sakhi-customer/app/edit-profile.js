@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Image, KeyboardAvoidingView,
-    Platform, Modal, FlatList, Pressable, ActivityIndicator
+    Platform, Modal, FlatList, Pressable, ActivityIndicator, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { updateProfile } from '../src/api/endpoints';
+import { updateProfile, deleteAccount } from '../src/api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 const LANGUAGES = [
@@ -20,10 +20,43 @@ const LANGUAGES = [
 
 export default function EditProfileScreen() {
     const router = useRouter();
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, logout } = useAuth();
     const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be erased.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Delete', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        setDeleting(true);
+                        try {
+                            await deleteAccount();
+                            await logout();
+                            setTimeout(() => {
+                                router.replace('/(auth)/login');
+                            }, 300);
+                        } catch (err) {
+                            setDeleting(false);
+                            setModal({
+                                icon: '⚠️',
+                                title: 'Error',
+                                message: err?.response?.data?.error?.message || 'Could not delete account. If you have an active ride, please complete it first.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            });
+                        }
+                    } 
+                }
+            ]
+        );
+    };
 
     const pickerSheetPaddingBottom = Math.max(insets.bottom + 10, 28);
     const footerPaddingBottom = Math.max(insets.bottom, Platform.OS === 'ios' ? 36 : 24);
@@ -302,6 +335,20 @@ export default function EditProfileScreen() {
                             )}
                         </View>
 
+                        {/* ── Delete Account ── */}
+                        <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: '#F5F0FF', paddingTop: 24 }}>
+                            <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount} disabled={deleting}>
+                                {deleting ? (
+                                    <ActivityIndicator size="small" color="#EF4444" />
+                                ) : (
+                                    <>
+                                        <Feather name="trash-2" size={18} color="#EF4444" />
+                                        <Text style={styles.deleteBtnText}>Delete Account</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
                     </View>
                 </ScrollView>
 
@@ -501,6 +548,22 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
         backgroundColor: '#F5F0FF',
         shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+    },
+    deleteBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 14,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
+    },
+    deleteBtnText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#EF4444',
     },
     actionBtn: {
         width: '100%', height: 56, backgroundColor: '#BEA3D8',
