@@ -80,6 +80,7 @@ import HelpSupportScreen from './src/screens/Profile/HelpSupportScreen';
 import AboutSakhiScreen from './src/screens/Profile/AboutSakhiScreen';
 import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
 import TermsPrivacyScreen from './src/screens/Profile/TermsPrivacyScreen';
+import RefundPolicyScreen from './src/screens/Profile/RefundPolicyScreen';
 import DriverReferralsScreen from './src/screens/Profile/DriverReferralsScreen';
 
 // ── Navigators ────────────────────────────────────────────────────────────────
@@ -160,6 +161,7 @@ function MainStack({ initialRoute = 'DriverOnlineDashboard' }) {
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
         <Stack.Screen name="TermsAndPrivacy" component={TermsPrivacyScreen} />
+        <Stack.Screen name="RefundPolicy" component={RefundPolicyScreen} />
         <Stack.Screen name="DriverReferrals" component={DriverReferralsScreen} />
         <Stack.Screen name="LogoutConfirmation" component={SakhiLogoutConfirmationSheet} options={{ presentation: 'transparentModal', animation: 'fade' }} />
       </Stack.Navigator>
@@ -305,18 +307,20 @@ export default function App() {
     <I18nextProvider i18n={i18n}>
       <SafeAreaProvider>
         <AuthProvider>
-          <NavigationContainer ref={navigationRef} onStateChange={handleNavStateChange}>
-            <StatusBar style="dark" />
-            {/* Splash screen sits outside the RootNavigator so it always
-                shows first before checkAuth completes */}
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Splash" component={DriverSplashScreen} />
-              <Stack.Screen name="RootShell" component={RootNavigator} />
-            </Stack.Navigator>
-            {/* Global page transition loader */}
+          <View style={{ flex: 1 }}>
+            <NavigationContainer ref={navigationRef} onStateChange={handleNavStateChange}>
+              <StatusBar style="dark" />
+              {/* Splash screen sits outside the RootNavigator so it always
+                  shows first before checkAuth completes */}
+              <Stack.Navigator screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="Splash" component={DriverSplashScreen} />
+                <Stack.Screen name="RootShell" component={RootNavigator} />
+              </Stack.Navigator>
+            </NavigationContainer>
+            {/* Global page transition loader placed outside NavigationContainer */}
             {pageLoading && <PageLoader />}
-          </NavigationContainer>
-          <GlobalErrorModal />
+            <GlobalErrorModal />
+          </View>
         </AuthProvider>
       </SafeAreaProvider>
     </I18nextProvider>

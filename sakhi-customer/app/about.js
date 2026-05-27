@@ -122,6 +122,10 @@ export default function AboutScreen() {
                             <Text style={styles.legalLabel}>Privacy Policy</Text>
                             <Feather name="chevron-right" size={18} color="#94A3B8" />
                         </TouchableOpacity>
+                        <TouchableOpacity style={styles.legalLink} activeOpacity={0.7} onPress={() => router.push('/refund-policy')}>
+                            <Text style={styles.legalLabel}>Refund Policy</Text>
+                            <Feather name="chevron-right" size={18} color="#94A3B8" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Rate Button */}

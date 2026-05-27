@@ -92,6 +92,10 @@ function AppNavigator() {
                 options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen
+                name="refund-policy"
+                options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
                 name="change-phone"
                 options={{ animation: 'slide_from_right' }}
             />

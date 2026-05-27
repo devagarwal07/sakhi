@@ -301,6 +301,7 @@ const ro = StyleSheet.create({
 const LEGAL = [
   { label: 'Terms of Service',  screen: 'TermsPrivacy', params: { tab: 'terms' } },
   { label: 'Privacy Policy',    screen: 'TermsPrivacy', params: { tab: 'privacy' } },
+  { label: 'Refund Policy',     screen: 'RefundPolicy',  params: {} },
   { label: 'Driver Agreement',  screen: 'TermsPrivacy', params: { tab: 'terms' } },
 ];
 

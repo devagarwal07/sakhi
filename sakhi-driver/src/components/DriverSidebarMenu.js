@@ -88,10 +88,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
     return <MaterialIcons name={name} size={size} color={color} />;
   };
 
-  // Fixed header height estimate — used to compute the scroll area height
-  const headerH  = Math.max(insets.top, 24) + 24 + 72 + 16 + 60; // paddingTop + paddingBottom + avatar + gap + driverInfo
-  const footerH  = Math.max(insets.bottom, 24) + 16 + 56 + 1 + 52 + 16; // paddingBottom + paddingTop + langBtn + divider + logoutBtn + footerBorder
-  const scrollH  = SCREEN_H - headerH - footerH;
+  // No hardcoded heights needed — sidebar uses flex layout
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
@@ -100,7 +97,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
         <Animated.View style={[styles.overlay, { opacity: opacityAnim }]} />
       </TouchableWithoutFeedback>
 
-      {/* Sidebar Drawer */}
+      {/* Sidebar Drawer — flex column so ScrollView fills remaining space */}
       <Animated.View style={[
         styles.sidebar,
         { transform: [{ translateX: slideAnim }] }
@@ -140,15 +137,13 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
           </View>
         </View>
 
-        {/* Scrollable Menu — explicit height so ScrollView knows its bounds */}
+        {/* Scrollable Menu — flex:1 fills space between fixed header and footer */}
         <ScrollView
-          style={[styles.menuScroll, { height: scrollH }]}
+          style={styles.menuScroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.menuContent}
           bounces={false}
-          nestedScrollEnabled
           keyboardShouldPersistTaps="handled"
-          scrollEnabled
         >
           {MENU_ITEMS_CONFIG.map((item) => {
             const isActive = activeRoute === item.id;
@@ -269,8 +264,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 32,
     elevation: 8,
-    // NO overflow:hidden — was clipping the Modal
-    // flexDirection column is default, no need to set
+    flexDirection: 'column',
   },
 
   // -- HEADER --
@@ -353,11 +347,12 @@ const styles = StyleSheet.create({
 
   // -- MENU LIST --
   menuScroll: {
-    // height is set dynamically via inline style
+    flex: 1,
     paddingHorizontal: 8,
   },
   menuContent: {
     paddingVertical: 16,
+    flexGrow: 1,
   },
   menuItem: {
     flexDirection: 'row',
