@@ -17,8 +17,11 @@ export default function Index() {
         return <Redirect href="/(auth)/login" />;
     }
 
-    // Verified → go to main app
+    // Verified → go to main app (but force details entry if name is missing)
     if (user?.verification_status === 'approved') {
+        if (!user?.name) {
+            return <Redirect href="/edit-profile" />;
+        }
         return <Redirect href="/(tabs)" />;
     }
 

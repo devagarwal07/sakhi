@@ -261,7 +261,11 @@ export default function FaceVerificationScreen() {
             {/* Top Navigation */}
             <View style={[styles.topNav, { paddingTop: topNavPaddingTop }]}>
                 <Pressable
-                    onPress={() => !scanning && (router.canGoBack() ? router.back() : router.replace('/'))}
+                    onPress={async () => {
+                        if (scanning) return;
+                        await logout();
+                        router.replace('/(auth)/login');
+                    }}
                     style={styles.backBtn}
                 >
                     <ArrowLeft size={18} color="#FFFFFF" strokeWidth={2.5} />

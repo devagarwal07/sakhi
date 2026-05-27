@@ -9,7 +9,7 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Linking,
-    
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -143,7 +143,10 @@ export default function LoginScreen() {
                             keyboardType="phone-pad"
                             maxLength={10}
                             value={phone}
-                            onChangeText={setPhone}
+                            onChangeText={(text) => {
+                                setPhone(text);
+                                if (text.length === 10) Keyboard.dismiss();
+                            }}
                         />
                     </Animated.View>
 

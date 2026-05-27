@@ -2,8 +2,12 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar, Platform } from 'react-native';
+import { StatusBar, Platform, LogBox } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+
+LogBox.ignoreLogs([
+    'Sending `onAnimatedValueUpdate` with no listeners registered.',
+]);
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SocketProvider } from '../src/context/SocketContext';
 import { RideProvider } from '../src/context/RideContext';

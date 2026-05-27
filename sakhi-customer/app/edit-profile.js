@@ -39,10 +39,22 @@ export default function EditProfileScreen() {
                         setDeleting(true);
                         try {
                             await deleteAccount();
-                            await logout();
-                            setTimeout(() => {
-                                router.replace('/(auth)/login');
-                            }, 300);
+                            setDeleting(false);
+                            setModal({
+                                icon: '✅',
+                                title: 'Account Deleted',
+                                message: 'Your account has been successfully deleted.',
+                                buttons: [{ 
+                                    text: 'OK', 
+                                    onPress: async () => {
+                                        setModal(null);
+                                        await logout();
+                                        setTimeout(() => {
+                                            router.replace('/(auth)/login');
+                                        }, 300);
+                                    } 
+                                }]
+                            });
                         } catch (err) {
                             setDeleting(false);
                             setModal({
