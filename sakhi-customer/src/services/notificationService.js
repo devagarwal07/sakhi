@@ -1,6 +1,7 @@
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { updateCustomerFcmToken } from '../api/endpoints';
 
@@ -40,11 +41,38 @@ export async function registerForPushAsync() {
 
   // Configure foreground notification display
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
+    handleNotification: async (notification) => {
+      // Parse notification type from the payload data
+      const type = notification.request.content.data?.type || 'general';
+      
+      // Load user preferences
+      let showAlert = true;
+      try {
+        const saved = await AsyncStorage.getItem('@sakhi_notification_prefs');
+        if (saved) {
+          const prefs = JSON.parse(saved);
+          
+          // Map backend notification types to preference toggles
+          // Assuming the backend sends types like 'driverAssigned', 'tripStarted', etc.
+          // Fallback to true if the specific type isn't found in preferences
+          if (prefs.hasOwnProperty(type)) {
+            showAlert = prefs[type];
+          } else if (type === 'general') {
+            // Let general app updates or default pushes through if unmapped, or maybe block them
+            // We'll default to true for unmapped types just in case
+            showAlert = true; 
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to read notification preferences in handler', e);
+      }
+
+      return {
+        shouldShowAlert: showAlert,
+        shouldPlaySound: showAlert,
+        shouldSetBadge: showAlert,
+      };
+    },
   });
 
   if (!Device.isDevice) {

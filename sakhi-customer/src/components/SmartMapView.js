@@ -15,12 +15,14 @@ const SmartMapView = forwardRef(function SmartMapView(
     zoomEnabled   = true,
     pointerEvents,
     showsTraffic  = false,
+    fitBounds     = false, // auto-zoom to fit all markers + route
     children,
   },
-  _ref
+  ref
 ) {
   return (
     <MapplsMapWebView
+      ref={ref}
       style={style}
       center={center}
       zoom={zoom}
@@ -30,6 +32,7 @@ const SmartMapView = forwardRef(function SmartMapView(
       scrollEnabled={scrollEnabled}
       zoomEnabled={zoomEnabled}
       pointerEvents={pointerEvents}
+      fitBounds={fitBounds}
     />
   );
 });

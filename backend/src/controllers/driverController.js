@@ -56,8 +56,8 @@ async function updateDriverStatus(req, res, next) {
 
       await supabase.from('drivers').update({ is_online: true }).eq('id', driverId);
 
-      // Upsert location
-      if (lat && lng) {
+      // Upsert location — use explicit null check so lat=0 or lng=0 still passes
+      if (lat != null && lng != null) {
         await supabase.from('driver_locations').upsert(
           { driver_id: driverId, lat, lng, heading: 0, updated_at: new Date().toISOString() },
           { onConflict: 'driver_id' }

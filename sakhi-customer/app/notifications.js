@@ -1,5 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Switch, Platform
@@ -10,8 +11,7 @@ import { Feather } from '@expo/vector-icons';
 export default function NotificationsScreen() {
     const router = useRouter();
 
-    // Default states matching the mockup
-    const [preferences, setPreferences] = useState({
+    const defaultPrefs = {
         driverAssigned: true,
         driverArrived: true,
         tripStarted: true,
@@ -22,10 +22,31 @@ export default function NotificationsScreen() {
         subExpiring: true,
         promotions: true,
         appUpdates: false,
-    });
+    };
 
-    const toggleSwitch = (key) => {
-        setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+    const [preferences, setPreferences] = useState(defaultPrefs);
+
+    // Load from local storage
+    useEffect(() => {
+        AsyncStorage.getItem('@sakhi_notification_prefs').then(saved => {
+            if (saved) {
+                try {
+                    setPreferences(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to parse saved notification prefs', e);
+                }
+            }
+        });
+    }, []);
+
+    const toggleSwitch = async (key) => {
+        const newPrefs = { ...preferences, [key]: !preferences[key] };
+        setPreferences(newPrefs);
+        try {
+            await AsyncStorage.setItem('@sakhi_notification_prefs', JSON.stringify(newPrefs));
+        } catch (e) {
+            console.error('Failed to save notification prefs', e);
+        }
     };
 
     const ToggleRow = ({ title, subtitle, stateKey, customBadge }) => (
@@ -129,13 +150,9 @@ export default function NotificationsScreen() {
                     </View>
 
                     {/* Restore Defaults Link */}
-                    <TouchableOpacity style={styles.restoreBtn} activeOpacity={0.7} onPress={() => {
-                        // Reset logic
-                        setPreferences({
-                            driverAssigned: true, driverArrived: true, tripStarted: true,
-                            tripCompleted: true, rideCancelled: true, upcomingRide: true,
-                            dailyReminder: true, subExpiring: true, promotions: true, appUpdates: false
-                        });
+                    <TouchableOpacity style={styles.restoreBtn} activeOpacity={0.7} onPress={async () => {
+                        setPreferences(defaultPrefs);
+                        await AsyncStorage.setItem('@sakhi_notification_prefs', JSON.stringify(defaultPrefs));
                     }}>
                         <Text style={styles.restoreText}>Restore Defaults</Text>
                     </TouchableOpacity>

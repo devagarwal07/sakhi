@@ -6,13 +6,18 @@ import {
     StyleSheet,
     Animated,
     Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
+// Module-level dimensions for StyleSheet (useWindowDimensions can't be used outside components)
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+
 
 export default function SplashScreen() {
+    const { width, height } = useWindowDimensions();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -144,7 +149,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        height: height * 0.5,
+        height: SCREEN_H * 0.5,
         backgroundColor: '#EDE9FE',
         opacity: 0.6,
     },
@@ -153,8 +158,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: '-10%',
         top: '-10%',
-        width: width * 0.66,
-        height: width * 0.66,
+        width: SCREEN_W * 0.66,
+        height: SCREEN_W * 0.66,
         borderRadius: 9999,
         backgroundColor: 'rgba(190,163,216,0.05)',
     },
@@ -163,8 +168,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: '-10%',
         bottom: '5%',
-        width: width * 0.82,
-        height: width * 0.82,
+        width: SCREEN_W * 0.82,
+        height: SCREEN_W * 0.82,
         borderRadius: 9999,
         backgroundColor: 'rgba(103, 75, 181, 0.1)',
     },

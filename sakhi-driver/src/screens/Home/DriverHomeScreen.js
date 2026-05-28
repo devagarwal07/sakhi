@@ -283,7 +283,7 @@ const oc = StyleSheet.create({
 export default function DriverHomeScreen({ navigation }) {
   const { t } = useTranslation();
   const { driver, updateDriver } = useAuth();
-  const { pendingSubRequests, subAlert, clearSubAlert } = useSocket();
+  const { pendingSubRequests, subAlert, clearSubAlert, socket } = useSocket();
   const insets = useSafeAreaInsets();
 
   const [isOnline, setIsOnline] = useState(driver?.is_online ?? false);
@@ -419,16 +419,31 @@ export default function DriverHomeScreen({ navigation }) {
   // ── Keep location updated ──────────────────────────────────────────────────
   useEffect(() => {
     if (!locGranted) return;
-    const sub = Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 20 },
-      (pos) => {
-        const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-        setLocation(coord);
-        mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 800);
-      }
-    );
-    return () => { sub.then(s => s.remove()); };
-  }, [locGranted]);
+    let sub;
+    const startWatch = async () => {
+      sub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 20 },
+        (pos) => {
+          const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          setLocation(coord);
+          mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 800);
+
+          // Emit live location to backend via socket whenever online
+          // This keeps driver_locations fresh so matching engine can find the driver
+          if (socket?.connected && isOnline) {
+            socket.emit('driver:location_update', {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              heading: pos.coords.heading || 0,
+              speed: pos.coords.speed || 0,
+            });
+          }
+        }
+      );
+    };
+    startWatch();
+    return () => { sub?.then(s => s?.remove()); };
+  }, [locGranted, isOnline, socket]);
 
   // ── Sync online state whenever AuthContext changes ─────────────────────────
   useEffect(() => {
@@ -541,16 +556,40 @@ export default function DriverHomeScreen({ navigation }) {
     }
     try {
       setStatusLoading(true);
+
+      // Get best available location — wait for GPS if not ready
+      let currentCoords = location;
+      if (!currentCoords) {
+        try {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 8000 });
+          currentCoords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          setLocation(currentCoords);
+        } catch (gpsErr) {
+          // GPS unavailable — go online anyway, matching engine will handle missing location
+          logger.warn?.('handleGoOnline — GPS unavailable', gpsErr?.message);
+        }
+      }
+
       // Pass current location so backend can immediately upsert driver_locations
       const body = { is_online: true };
-      if (location) {
-        body.lat = location.latitude;
-        body.lng = location.longitude;
+      if (currentCoords) {
+        body.lat = currentCoords.latitude;
+        body.lng = currentCoords.longitude;
       }
       await client.patch('/drivers/status', body);
       updateDriver({ is_online: true });
       setIsOnline(true);
       await startLocationTracking();
+
+      // Immediately emit location via socket so driver_locations is seeded right away
+      if (socket?.connected && currentCoords) {
+        socket.emit('driver:location_update', {
+          lat: currentCoords.latitude,
+          lng: currentCoords.longitude,
+          heading: 0,
+          speed: 0,
+        });
+      }
     } catch (err) {
       const msg = err.response?.data?.error?.message ?? t('home.couldNotGoOnline');
       CustomAlert.alert(t('common.error'), msg);

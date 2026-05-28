@@ -26,11 +26,30 @@ async function reverseGeocode(latitude, longitude) {
             `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/rev_geocode?lat=${latitude}&lng=${longitude}`
         );
         const data = await res.json();
-        return data?.results?.address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-    } catch {
-        return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-    }
+        // Mappls returns either data.results.address (string) or data.results[0].formattedAddress (array)
+        const address =
+            data?.results?.address ||
+            data?.results?.[0]?.formattedAddress ||
+            data?.results?.[0]?.formatted_address ||
+            null;
+        if (address) return address;
+    } catch { /* fall through */ }
+
+    // Secondary fallback: OSM Nominatim (free, no key required)
+    try {
+        const osmRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { 'User-Agent': 'SakhiCustomerApp/1.0' } }
+        );
+        const osmData = await osmRes.json();
+        const osmAddr = osmData?.display_name;
+        if (osmAddr) return osmAddr;
+    } catch { /* fall through */ }
+
+    // Final fallback: show readable coords
+    return `${parseFloat(latitude).toFixed(5)}, ${parseFloat(longitude).toFixed(5)}`;
 }
+
 
 
 export default function HomeScreen() {

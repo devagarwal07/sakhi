@@ -12,81 +12,10 @@ import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { estimateFare, validatePromoCode } from '../src/api/endpoints';
+import { fetchDirectionsPolyline } from '../src/utils/locationService';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
-
-async function fetchDirectionsPolyline(origin, destination, waypoint) {
-    // Mappls Route Advanced API — same encoded polyline format as Google
-    // Docs: https://github.com/mappls-api/mappls-rest-apis/blob/main/docs/custom/route-adv-api.md
-    const start = `${origin.longitude},${origin.latitude}`;
-    const dest  = `${destination.longitude},${destination.latitude}`;
-    const via   = waypoint ? `&viaPoints=${waypoint.longitude},${waypoint.latitude}` : '';
-    const url   = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/route_adv/driving/${start};${dest}?geometries=polyline&overview=full${via}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    const route = data?.routes?.[0];
-    if (route) {
-        const points   = decodePolylineAdaptive(route.geometry, origin, destination);
-        const distM    = route.legs?.reduce((s, l) => s + (l.distance || 0), 0) ?? 0;
-        const durS     = route.legs?.reduce((s, l) => s + (l.duration || 0), 0) ?? 0;
-        const distance = `${(distM / 1000).toFixed(1)} km`;
-        const duration = `${Math.round(durS / 60)} mins`;
-        return { points, distance, duration };
-    }
-    return { points: [], distance: null, duration: null };
-}
-
-// Decode encoded polyline (compatible with both Google & Mappls formats)
-function decodePolyline(encoded, precision = 5) {
-    const poly = [];
-    let index = 0, lat = 0, lng = 0;
-    const factor = Math.pow(10, precision);
-    while (index < encoded.length) {
-        let b, shift = 0, result = 0;
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-        lat += result & 1 ? ~(result >> 1) : result >> 1;
-        shift = 0; result = 0;
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-        lng += result & 1 ? ~(result >> 1) : result >> 1;
-        poly.push({ latitude: lat / factor, longitude: lng / factor });
-    }
-    return poly;
-}
-
-function decodePolylineAdaptive(encoded, origin, destination) {
-    const p5 = decodePolyline(encoded, 5);
-    const p6 = decodePolyline(encoded, 6);
-
-    const isValid = (points) =>
-        points.length > 1 &&
-        points.every((p) => Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180);
-
-    if (isValid(p5) && !isValid(p6)) return p5;
-    if (isValid(p6) && !isValid(p5)) return p6;
-
-    const score = (points) => {
-        if (!origin || !points.length) return Number.POSITIVE_INFINITY;
-        const head = points[0];
-        const tail = points[points.length - 1];
-        const end = destination || origin;
-        return Math.abs(head.latitude - origin.latitude) +
-            Math.abs(head.longitude - origin.longitude) +
-            Math.abs(tail.latitude - end.latitude) +
-            Math.abs(tail.longitude - end.longitude);
-    };
-
-    return score(p5) <= score(p6) ? p5 : p6;
-}
-
 
 const { width } = Dimensions.get('window');
 
@@ -166,24 +95,41 @@ export default function RideEstimateScreen() {
         return () => { active = false; };
     }, [pickup, dropoff, stop]);
 
-    // Compute midpoint for initial map region
+    // Compute midpoint for initial map region (forced to Numbers to prevent string concatenation)
     const midLat = pickup && dropoff
-        ? (pickup.latitude + dropoff.latitude) / 2
-        : (pickup?.latitude || 19.0760);
+        ? (Number(pickup.latitude) + Number(dropoff.latitude)) / 2
+        : (Number(pickup?.latitude) || 19.0760);
     const midLng = pickup && dropoff
-        ? (pickup.longitude + dropoff.longitude) / 2
-        : (pickup?.longitude || 72.8777);
+        ? (Number(pickup.longitude) + Number(dropoff.longitude)) / 2
+        : (Number(pickup?.longitude) || 72.8777);
     const latDelta = pickup && dropoff
-        ? Math.abs(pickup.latitude - dropoff.latitude) * 1.8 + 0.01
+        ? Math.abs(Number(pickup.latitude) - Number(dropoff.latitude)) * 1.8 + 0.01
         : 0.04;
     const lngDelta = pickup && dropoff
-        ? Math.abs(pickup.longitude - dropoff.longitude) * 1.8 + 0.01
+        ? Math.abs(Number(pickup.longitude) - Number(dropoff.longitude)) * 1.8 + 0.01
         : 0.04;
 
     // Derived fare values — prefer API data, fall back to local calculator
     const distKm        = parseKmText(routeDistance);
     const localFare     = distKm > 0 ? calculateFare(distKm) : null;
-    const fareResult    = fareData || (localFare ? {
+
+    // The backend returns breakdown fields nested inside fareData.breakdown.
+    // Flatten them to the top level so the UI can read billable_km, distance_charge etc.
+    const apiBreakdown = fareData?.breakdown ?? {};
+    const fareResult    = fareData ? {
+        // Top-level API fields
+        estimated_fare:   fareData.estimated_fare,
+        total:            fareData.estimated_fare,
+        distance_km:      fareData.distance_km,
+        free_ride:        fareData.free_ride,
+        // Breakdown fields (nested in API response)
+        base_fare:        apiBreakdown.base_fare        ?? apiBreakdown.base         ?? PRICING.BASE_FARE,
+        billable_km:      apiBreakdown.billable_km      ?? Math.max(0, (fareData.distance_km ?? 0) - PRICING.BASE_KM),
+        distance_charge:  apiBreakdown.distance_charge  ?? apiBreakdown.distance_fare ?? 0,
+        pickup_surcharge: apiBreakdown.pickup_surcharge ?? 0,
+        waiting_charge:   apiBreakdown.waiting_charge   ?? 0,
+        promo_discount:   apiBreakdown.promo_discount   ?? 0,
+    } : (localFare ? {
         total:            localFare.estimated_fare,
         base_fare:        localFare.base_fare,
         billable_km:      localFare.billable_km,
@@ -312,9 +258,10 @@ export default function RideEstimateScreen() {
                         center={{ latitude: midLat, longitude: midLng }}
                         latDelta={latDelta}
                         lngDelta={lngDelta}
+                        fitBounds={routePolyline.length > 1 || (pickup && dropoff)}
                         markers={[
-                            pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#10B981', label: 'P' },
-                            dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#BEA3D8', label: 'D' },
+                            pickup  && { id: 'pickup',  latitude: pickup.latitude,  longitude: pickup.longitude,  color: '#10B981', markerType: 'pickup' },
+                            dropoff && { id: 'dropoff', latitude: dropoff.latitude, longitude: dropoff.longitude, color: '#BEA3D8', markerType: 'dropoff' },
                         ].filter(Boolean)}
                         polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#BEA3D8', width: 5 }] : []}
                         scrollEnabled

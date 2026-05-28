@@ -112,13 +112,19 @@ function registerRideSocket(io) {
     });
 
     // ── ride:snooze — driver taps "See Later" on a subscription request ────────
-    // Treat as a reject for the matching engine (dispatch to next driver immediately).
-    // The driver app keeps a local copy in pendingSubRequests for the offline reminder.
+    // Re-dispatch to next driver immediately, but do NOT penalise the driver's
+    // acceptance rate (RAR). Snooze = deferred intent, not a rejection.
     socket.on('ride:snooze', async ({ ride_id } = {}) => {
       if (role !== 'driver' || !ride_id) return;
       try {
-        await matchingEngine.handleDriverReject(ride_id, userId);
-        logger.info('rideSocket — ride:snooze (re-dispatching)', { ride_id, driverId: userId });
+        // Use dedicated snooze handler if available; otherwise fall back to
+        // reject-without-RAR-penalty (pass skipRar=true flag).
+        if (typeof matchingEngine.handleDriverSnooze === 'function') {
+          await matchingEngine.handleDriverSnooze(ride_id, userId);
+        } else {
+          await matchingEngine.handleDriverReject(ride_id, userId, { skipRar: true });
+        }
+        logger.info('rideSocket — ride:snooze (re-dispatching, no RAR penalty)', { ride_id, driverId: userId });
       } catch (err) {
         logger.error('rideSocket — ride:snooze error', { ride_id, driverId: userId, error: err.message });
       }
@@ -243,7 +249,8 @@ function registerRideSocket(io) {
 
     // ── battery_low ───────────────────────────────────────────────────────────
     socket.on('battery_low', async ({ level, lat, lng }) => {
-      if (!lat || !lng) return;
+      // Explicit null check — lat=0 or lng=0 must still trigger the alert
+      if (lat == null || lng == null) return;
 
       // Update last known location
       const table = role === 'rider' ? 'users' : 'drivers';

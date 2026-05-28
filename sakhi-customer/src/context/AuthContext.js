@@ -16,24 +16,52 @@ export function AuthProvider({ children }) {
     // ── Check existing session on app load ─────────────────────────────────
     const checkAuth = useCallback(async () => {
         setIsLoading(true);
+
         try {
+            // ── Step 1: Check local token (near-instant, ~50ms) ─────────────────
+            // Hide splash as soon as we know whether user is logged in or not.
+            // We do NOT wait for the network profile fetch before hiding splash.
             const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
             if (!token) {
+                // No token → go to login. Splash hidden immediately.
                 setIsAuthenticated(false);
                 setUser(null);
+                setIsLoading(false);
                 return;
             }
-            // Fetch fresh user data (includes verification_status)
-            const { data } = await getProfile();
-            setUser(data.user || data);
+
+            // Read cached user data so routing has the correct verification status immediately
+            const cachedUserStr = await SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA);
+            if (cachedUserStr) {
+                try {
+                    setUser(JSON.parse(cachedUserStr));
+                } catch (e) {
+                    // ignore parse error
+                }
+            }
+
+            // Token exists → optimistically mark as authenticated so the home
+            // screen renders immediately (splash hides). Profile will load below.
             setIsAuthenticated(true);
+            setIsLoading(false); // ← splash hides here, not after API call
+
+            // ── Step 2: Fetch fresh profile in background ─────────────────────
+            // A 5s timeout prevents hanging if backend is slow.
+            const timeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('auth_timeout')), 5000)
+            );
+            const { data } = await Promise.race([getProfile(), timeout]);
+            
+            const freshUser = data.user || data;
+            setUser(freshUser);
+            await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(freshUser)).catch(() => {});
+
         } catch (err) {
-            // Token invalid or expired — clear storage
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+            // Token invalid, expired, or network timed out — clear storage and go to login
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
             setIsAuthenticated(false);
             setUser(null);
-        } finally {
             setIsLoading(false);
         }
     }, []);
@@ -75,6 +103,7 @@ export function AuthProvider({ children }) {
 
         await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
         await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+        await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)).catch(() => {});
 
         setUser(userData);
         setIsAuthenticated(true);

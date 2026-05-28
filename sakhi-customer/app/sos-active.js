@@ -39,9 +39,9 @@ export default function SOSActiveScreen() {
             message: 'Are you sure you are safe? This will cancel the SOS alert for all contacts.',
             buttons: [
                 { text: 'No, Keep SOS', style: 'cancel', onPress: () => setModal(null) },
-                { 
-                    text: "Yes, I'm Safe", 
-                    style: 'destructive', 
+                {
+                    text: "Yes, I'm Safe",
+                    style: 'destructive',
                     onPress: async () => {
                         setModal(null);
                         setCancelling(true);
@@ -57,16 +57,16 @@ export default function SOSActiveScreen() {
                                 router.replace('/');
                             }
                         }
-                    } 
-                },
-            ],
+                    }
+                }
+            ]
         });
     };
 
     return (
         <View style={styles.container}>
             {/* Top Navigation Bar */}
-            <SafeAreaView edges={['top']} style={styles.topNavSafe}>
+            <View style={[styles.topNavSafe, { paddingTop: insets.top }]}>
                 <View style={styles.topNav}>
                     <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
                         <Feather name="arrow-left" size={20} color="#FFFFFF" />
@@ -74,13 +74,15 @@ export default function SOSActiveScreen() {
                     <Text style={styles.navTitle}>Emergency SOS</Text>
                     <View style={{ width: 32 }} />
                 </View>
-            </SafeAreaView>
+            </View>
 
             <ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Tablet-responsive wrapper */}
+                <View style={styles.tabletWrapper}>
                 
                 {/* Siren Animation Section */}
                 <View style={styles.sirenSection}>
@@ -169,20 +171,20 @@ export default function SOSActiveScreen() {
                         <Text style={styles.authoritiesText}>Contact Authorities (112)</Text>
                     </TouchableOpacity>
                 </View>
-
+                </View>
             </ScrollView>
 
             {/* Bottom Safe Footer */}
-            <SafeAreaView edges={['bottom']} style={styles.footerSection}>
-                <TouchableOpacity style={[styles.safeBtn, { marginBottom: footerPaddingBottom }]} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
+            <View style={[styles.footerSection, { paddingBottom: footerPaddingBottom }]}>
+                <TouchableOpacity style={styles.safeBtn} onPress={handleCancel} activeOpacity={0.6} disabled={cancelling}>
                     {cancelling
                         ? <ActivityIndicator color="rgba(255,255,255,0.6)" />
                         : <Text style={styles.safeBtnText}>CANCEL SOS — I'M SAFE</Text>
                     }
                 </TouchableOpacity>
-            </SafeAreaView>
+            </View>
 
-            <SakhiModal config={modal} onClose={() => setModal(null)} />
+            <SakhiModal config={modal} onClose={() => setModal(null)} inline={true} />
         </View>
     );
 }
@@ -196,7 +198,8 @@ const styles = StyleSheet.create({
     navIcon: { fontSize: 20, color: '#FFFFFF', fontWeight: 'bold' },
     navTitle: { fontSize: 18, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.9 },
 
-    scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24, justifyContent: 'center' },
+    scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 24 },
+    tabletWrapper: { width: '100%', maxWidth: 500, alignSelf: 'center' },
 
     sirenSection: { width: '100%', height: 192, justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' },
     ringOuter: { position: 'absolute', width: 176, height: 176, borderRadius: 88, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', opacity: 0.4 },

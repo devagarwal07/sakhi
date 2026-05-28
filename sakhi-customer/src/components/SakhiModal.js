@@ -43,7 +43,7 @@ const RetryIcon = () => (
     </Svg>
 );
 
-export default function SakhiModal({ config, onClose }) {
+export default function SakhiModal({ config, onClose, inline = false }) {
     const scaleAnim = useRef(new Animated.Value(0.88)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -70,14 +70,8 @@ export default function SakhiModal({ config, onClose }) {
         else if (onClose) onClose();
     };
 
-    return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="none"
-            onRequestClose={onClose}
-            statusBarTranslucent
-        >
+    const content = (
+        <>
             {/* Backdrop */}
             <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
                 <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
@@ -194,6 +188,26 @@ export default function SakhiModal({ config, onClose }) {
                     </View>
                 </Animated.View>
             </View>
+        </>
+    );
+
+    if (inline) {
+        return (
+            <View style={[StyleSheet.absoluteFill, { zIndex: 9999, elevation: 9999 }]} pointerEvents="box-none">
+                {content}
+            </View>
+        );
+    }
+
+    return (
+        <Modal
+            visible={visible}
+            transparent
+            animationType="none"
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            {content}
         </Modal>
     );
 }

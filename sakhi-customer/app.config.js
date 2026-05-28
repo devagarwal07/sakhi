@@ -47,9 +47,9 @@ export default {
       ]
     },
     ios: {
-      supportsTablet: false,
+      supportsTablet: true,
       bundleIdentifier: "in.sakhirides.customer",
-      buildNumber: "5",
+      buildNumber: "6",
       ...(iosGoogleServices && { googleServicesFile: iosGoogleServices }),
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,

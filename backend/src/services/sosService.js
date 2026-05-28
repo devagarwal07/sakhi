@@ -60,7 +60,7 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
   const mapsUrl  = `https://mappls.com/?q=${lat},${lng}`;
 
   // SOS SMS — uses the Sakhi live tracking page (falls back to Google Maps coords)
-  const smsText  = `SAKHI MOBILITY Alert: ${userName} activated SOS during ride. Current location: ${lat},${lng} . Please track here: ${trackUrl}`;
+  const smsText  = `SAKHI MOBILITY Alert: ${userName} activated SOS during ride. Current location: ${lat},${lng} . Please track here: ${mapsUrl}`;
 
 
   // 4. SMS all emergency contacts — non-fatal per contact
@@ -128,14 +128,9 @@ async function handleBatteryLow(userId, role, level, lat, lng) {
   const userName = userRows?.[0]?.name || 'A Sakhi user';
   const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
 
-  // Generate a 24-hour tracking link for battery-low alerts too
-  const trackToken = jwt.sign(
-    { ride_id: `battery:${userId}`, type: 'live_track' },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-  const trackUrl = `${baseUrl}/track/${trackToken}`;
-  const smsText  = `SAKHI MOBILITY:${userName} is low on battery during ride. Please track here:${trackUrl}`;
+  // Generate a tracking link (using Mappls for SMS length compliance)
+  const mapsUrl  = `https://mappls.com/?q=${lat},${lng}`;
+  const smsText  = `SAKHI MOBILITY:${userName} is low on battery during ride. Please track here:${mapsUrl}`;
 
   let notified = 0;
   await Promise.all(contacts.map(async (c) => {

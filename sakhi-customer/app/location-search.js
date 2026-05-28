@@ -2,35 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ActivityIndicator, Pressable, Keyboard, Platform,
-    ScrollView} from 'react-native';
+    ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
-import { getRideHistory } from '../src/api/endpoints';
+import { getRideHistory, getAddresses } from '../src/api/endpoints';
 import { isInBengaluru } from '../src/utils/bengaluruUtils';
 import { Feather } from '@expo/vector-icons';
-import CustomAlert from '../src/utils/CustomAlert';
+import { searchPlaces, resolveCoordinates } from '../src/utils/locationService';
 
-const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
-
-// ── Mappls helpers ────────────────────────────────────────────────────────────
-// Fetch an OAuth token from Mappls (needed for Atlas / Search APIs)
-let _mapplsToken = null;
-let _tokenExpiry = 0;
-async function getMapplsToken() {
-  if (_mapplsToken && Date.now() < _tokenExpiry) return _mapplsToken;
-  const res = await fetch(
-    `https://outpost.mappls.com/api/security/oauth/token?grant_type=client_credentials` +
-    `&client_id=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_ID}` +
-    `&client_secret=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_SECRET}`,
-    { method: 'POST' }
-  );
-  const json = await res.json();
-  _mapplsToken = json.access_token;
-  _tokenExpiry = Date.now() + (json.expires_in - 60) * 1000;
-  return _mapplsToken;
-}
+// MAPPLS_KEY is handled in locationService.js
 
 
 export default function LocationSearchScreen() {
@@ -47,6 +29,8 @@ export default function LocationSearchScreen() {
     const [searching,   setSearching]     = useState(false);
     const [recentDestinations, setRecentDestinations] = useState([]);
     const [loadingRecent,      setLoadingRecent]      = useState(true);
+    const [resolving, setResolving] = useState(false);  // loading state for coordinate resolution
+    const [savedPlaces, setSavedPlaces] = useState([]);
     const searchTimer = useRef(null);
 
     const returnRoute = params?.returnRoute || '/ride-estimate';
@@ -86,6 +70,10 @@ export default function LocationSearchScreen() {
             })
             .catch(() => setRecentDestinations([]))
             .finally(() => setLoadingRecent(false));
+            
+        getAddresses()
+            .then(({ data }) => setSavedPlaces(data.addresses || data || []))
+            .catch(() => setSavedPlaces([]));
     }, []);
 
     const handleSearch = (text, type = activeInput) => {
@@ -99,26 +87,8 @@ export default function LocationSearchScreen() {
         setSearching(true);
         searchTimer.current = setTimeout(async () => {
             try {
-                const token = await getMapplsToken();
-                const lat = ride?.pickup?.latitude;
-                const lng = ride?.pickup?.longitude;
-                const biasParam = (lat && lng) ? `&location=${lat},${lng}` : '';
-                // Mappls Place Search / Autocomplete
-                const response = await fetch(
-                    `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(text)}&access_token=${token}&region=IND${biasParam}`
-                );
-                const data = await response.json();
-                // Normalise to same shape our UI expects
-                const raw = data?.suggestedLocations || [];
-                setResults(raw.map(p => ({
-                    place_id: p.eLoc,
-                    structured_formatting: {
-                        main_text:      p.placeName  || p.keywords || text,
-                        secondary_text: p.placeAddress || p.addressTokens?.city || '',
-                    },
-                    _lat: p.latitude,
-                    _lng: p.longitude,
-                })));
+                const results = await searchPlaces(text, ride?.pickup);
+                setResults(results);
             } catch {
                 setResults([]);
             } finally {
@@ -127,81 +97,46 @@ export default function LocationSearchScreen() {
         }, 350);
     };
 
+    const handleSelectSavedPlace = (place) => {
+        if (!place.lat || !place.lng) {
+            Alert.alert('Error', 'Coordinates missing for this saved place.');
+            return;
+        }
+        const coords = { latitude: place.lat, longitude: place.lng };
+        if (activeInput === 'pickup') {
+            setPickup({ ...coords, address: place.address });
+            setPickupQuery(place.address);
+            setActiveInput('dropoff');
+            setResults([]);
+        } else if (activeInput === 'stop') {
+            if (!isInBengaluru(coords.latitude, coords.longitude)) {
+                router.push({ pathname: '/bengaluru-only', params: { allowBack: 'true' } });
+                return;
+            }
+            setStop?.({ ...coords, address: place.address });
+            setStopQuery(place.address);
+            setActiveInput('dropoff');
+            setResults([]);
+        } else {
+            if (!isInBengaluru(coords.latitude, coords.longitude)) {
+                router.push({ pathname: '/bengaluru-only', params: { allowBack: 'true' } });
+                return;
+            }
+            setDropoff({ ...coords, address: place.address });
+            router.replace(returnRoute);
+        }
+    };
+
     const handleSelectPlace = async (place) => {
         Keyboard.dismiss();
+        setResolving(true);
         try {
-            let coords;
-            // If result came from our Mappls search, coords might be inline
-            if (place._lat && place._lng) {
-                coords = { latitude: parseFloat(place._lat), longitude: parseFloat(place._lng) };
-            } else if (place.lat && place.lng) {
-                // Recent destinations already have coords
-                coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lng) };
-            } 
+            console.log('[LocationSearch] Selected place:', place.place_id, '_lat:', place._lat, '_lng:', place._lng);
             
-            const newAddress = place.structured_formatting?.main_text || place.description || place.main || 'Selected Location';
-            const secondary = place.structured_formatting?.secondary_text || place.secondary || '';
-            const fullAddress = secondary ? `${newAddress}, ${secondary}` : newAddress;
-
-            // Fallbacks for missing coordinates
-            if (!coords || !coords.latitude) {
-                try {
-                    // Fallback 1: Mappls Routing API Hack
-                    // Standard Mappls APIs mask coordinates for basic tiers, but the Route API does not!
-                    const eLoc = place.eLoc || place.place_id;
-                    if (eLoc && !eLoc.startsWith('recent')) {
-                        const routeRes = await fetch(`https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/route_adv/driving/${eLoc};${eLoc}`);
-                        const routeData = await routeRes.json();
-                        if (routeData?.waypoints?.length > 0) {
-                            const [lon, lat] = routeData.waypoints[0].location;
-                            coords = { latitude: parseFloat(lat), longitude: parseFloat(lon) };
-                        }
-                    }
-                } catch(e) { console.error('Mappls Routing Hack Failed:', e); }
-            }
+            const { coords, address: newAddress } = await resolveCoordinates(place);
 
             if (!coords || !coords.latitude) {
-                try {
-                    // Fallback 2: Mappls Geocode
-                    const token = await getMapplsToken();
-                    const response = await fetch(
-                        `https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(fullAddress)}&access_token=${token}`
-                    );
-                    const data = await response.json();
-                    const loc = data?.copResults?.latitude ? data.copResults : (data?.copResults?.[0] || data?.results?.[0]);
-                    if (loc && loc.latitude && loc.longitude) {
-                        coords = { latitude: parseFloat(loc.latitude), longitude: parseFloat(loc.longitude) };
-                    }
-                } catch(e) {}
-            }
-
-            if (!coords || !coords.latitude) {
-                try {
-                    // Fallback 3: OSM Nominatim (Full Address)
-                    const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1&countrycodes=in`, {
-                        headers: { 'User-Agent': 'SakhiCustomerApp/1.0' }
-                    });
-                    const osmData = await osmRes.json();
-                    if (osmData && osmData.length > 0) {
-                        coords = { latitude: parseFloat(osmData[0].lat), longitude: parseFloat(osmData[0].lon) };
-                    }
-                } catch(e) {}
-            }
-
-            if (!coords || !coords.latitude) {
-                try {
-                    // Fallback 4: Photon Komoot API
-                    const photonRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(fullAddress)}&limit=1`);
-                    const photonData = await photonRes.json();
-                    if (photonData?.features?.length > 0) {
-                        const [lon, lat] = photonData.features[0].geometry.coordinates;
-                        coords = { latitude: parseFloat(lat), longitude: parseFloat(lon) };
-                    }
-                } catch(e) {}
-            }
-
-            if (!coords || !coords.latitude) {
-                CustomAlert.alert('Location Error', 'Could not precisely locate this address. Please try searching with a different term.');
+                Alert.alert('Location Error', 'Could not precisely locate this address. Please try searching with a different term.');
                 return;
             }
 
@@ -232,11 +167,21 @@ export default function LocationSearchScreen() {
         } catch (error) {
             console.error('Location Search Error:', error);
             Keyboard.dismiss();
-            CustomAlert.alert('Location Error', 'An error occurred while selecting this location. Please try again.');
+            Alert.alert('Location Error', 'An error occurred while selecting this location. Please try again.');
+        } finally {
+            setResolving(false);
         }
     };
 
     const handleConfirm = () => {
+        if (!ride?.pickup?.latitude) {
+            Alert.alert('Missing Location', 'Please select a pickup location from the suggestions.');
+            return;
+        }
+        if (!ride?.dropoff?.latitude) {
+            Alert.alert('Missing Location', 'Please select a drop-off location from the suggestions.');
+            return;
+        }
         router.replace(returnRoute);
     };
 
@@ -369,24 +314,26 @@ export default function LocationSearchScreen() {
                 {/* Saved Places */}
                 <View style={styles.savedSection}>
                     <Text style={styles.sectionTitle}>SAVED PLACES</Text>
-                    <View style={styles.chipsRow}>
-                        <TouchableOpacity style={styles.chip} onPress={() => handleSearch('Home')}>
-                            <Svg width="12" height="14" viewBox="0 0 12 14" fill="none" style={styles.chipIcon}>
-                                <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8"/>
-                            </Svg>
-                            <Text style={styles.chipText}>Home</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.chip} onPress={() => handleSearch('Work')}>
-                            <Svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={styles.chipIcon}>
-                                <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8"/>
-                            </Svg>
-                            <Text style={styles.chipText}>Work</Text>
-                        </TouchableOpacity>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+                        {savedPlaces.map(place => (
+                            <TouchableOpacity key={place.id} style={styles.chip} onPress={() => handleSelectSavedPlace(place)}>
+                                {place.label === 'home' ? (
+                                    <Feather name="home" size={14} color="#10B981" />
+                                ) : place.label === 'work' ? (
+                                    <Feather name="briefcase" size={14} color="#3B82F6" />
+                                ) : (
+                                    <Feather name="map-pin" size={14} color="#A78BFA" />
+                                )}
+                                <Text style={styles.chipText}>
+                                    {place.label.charAt(0).toUpperCase() + place.label.slice(1)}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                         <TouchableOpacity style={styles.chip} onPress={() => router.push('/saved-places')}>
-                            <Text style={styles.chipIcon}>+</Text>
+                            <Feather name="plus" size={14} color="#BEA3D8" />
                             <Text style={styles.chipText}>Add New</Text>
                         </TouchableOpacity>
-                    </View>
+                    </ScrollView>
                 </View>
 
                 {/* Recent / Suggestions Section */}
@@ -400,6 +347,14 @@ export default function LocationSearchScreen() {
                         <View style={styles.loadingRow}>
                             <ActivityIndicator size="small" color="#BEA3D8" />
                             <Text style={styles.loadingText}>Searching…</Text>
+                        </View>
+                    )}
+
+                    {/* Resolving coordinates spinner */}
+                    {resolving && (
+                        <View style={styles.loadingRow}>
+                            <ActivityIndicator size="small" color="#7C3AED" />
+                            <Text style={styles.loadingText}>Locating address…</Text>
                         </View>
                     )}
 

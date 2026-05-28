@@ -73,27 +73,43 @@ export function SocketProvider({ children }) {
             console.warn('[Socket] Cannot join room — not connected');
             return reject(new Error('Socket not connected'));
         }
+
+        let settled = false;
+        let timeoutHandle = null;
+
+        const cleanup = () => {
+            socketRef.current?.off('joined', onJoined);
+            socketRef.current?.off('error', onError);
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+        };
+
         const onJoined = ({ ride_id }) => {
-            if (ride_id === rideId) {
-                socketRef.current?.off('joined', onJoined);
-                socketRef.current?.off('error', onError);
+            if (ride_id === rideId && !settled) {
+                settled = true;
+                cleanup();
                 resolve();
             }
         };
         const onError = (err) => {
-            socketRef.current?.off('joined', onJoined);
-            socketRef.current?.off('error', onError);
-            reject(new Error(err?.message ?? 'Room join failed'));
+            if (!settled) {
+                settled = true;
+                cleanup();
+                reject(new Error(err?.message ?? 'Room join failed'));
+            }
         };
-        socketRef.current.once('joined', onJoined);
-        socketRef.current.once('error', onError);
+
+        socketRef.current.on('joined', onJoined);
+        socketRef.current.on('error', onError);
         socketRef.current.emit('rider:join_ride', { ride_id: rideId });
 
-        // Timeout safety — resolve anyway after 5s to not block the booking flow
-        setTimeout(() => {
-            socketRef.current?.off('joined', onJoined);
-            socketRef.current?.off('error', onError);
-            resolve();
+        // Fallback: resolve after 5s — events still arrive via rider:<userId> personal room
+        timeoutHandle = setTimeout(() => {
+            if (!settled) {
+                settled = true;
+                cleanup();
+                console.warn('[Socket] joinRideRoom timed out — relying on rider personal room for events');
+                resolve();
+            }
         }, 5000);
     });
 

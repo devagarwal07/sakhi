@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -183,7 +183,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
     function setNearbyAutos(center, autos) {
       nearbyAutoMarkers.forEach(function(m){ m.remove(); });
       nearbyAutoMarkers = [];
-      if (!map || !center) return;
+      if (!map || !center || autos === false) return;
       var offsets = [
         [-0.0025, -0.0018], [0.0020, -0.0022], [-0.0015, 0.0025],
         [0.0028, 0.0020],   [0.0005, -0.0030], [-0.0030, 0.0005]
@@ -314,11 +314,68 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
         var msg = JSON.parse(raw);
         if (!map) return;
         if (msg.type === 'SET_CENTER') {
-          map.setCenter([msg.lng, msg.lat]);
+          map.setCenter({lat: msg.lat, lng: msg.lng});
           if (msg.zoom) map.setZoom(msg.zoom);
           if (msg.markers)    updateMarkers(msg.markers);
           if (msg.polylines)  updatePolylines(msg.polylines);
           if (msg.nearbyAutos !== undefined) setNearbyAutos({ lat: msg.lat, lng: msg.lng }, msg.nearbyAutos);
+        }
+        if (msg.type === 'FIT_BOUNDS') {
+          // Update markers and polylines first
+          if (msg.markers)   updateMarkers(msg.markers);
+          if (msg.polylines) updatePolylines(msg.polylines);
+          if (msg.nearbyAutos !== undefined) setNearbyAutos(msg.markers && msg.markers[0] ? { lat: msg.markers[0].lat, lng: msg.markers[0].lng } : null, msg.nearbyAutos);
+
+          // Collect all coordinate points (polyline coords + marker positions)
+          var pts = [];
+          if (msg.polylines) {
+            msg.polylines.forEach(function(p) {
+              (p.coords || []).forEach(function(c) { 
+                var clng = Number(c.lng);
+                var clat = Number(c.lat);
+                if (!isNaN(clng) && !isNaN(clat)) pts.push({lng: clng, lat: clat}); 
+              });
+            });
+          }
+          if (msg.markers) {
+            msg.markers.forEach(function(m) { 
+              var mlng = Number(m.lng);
+              var mlat = Number(m.lat);
+              if (!isNaN(mlng) && !isNaN(mlat)) pts.push({lng: mlng, lat: mlat}); 
+            });
+          }
+
+          if (pts.length >= 2) {
+            // Compute bounding box
+            var minLat = pts[0].lat, maxLat = pts[0].lat;
+            var minLng = pts[0].lng, maxLng = pts[0].lng;
+            pts.forEach(function(p) {
+              if (p.lat < minLat) minLat = p.lat;
+              if (p.lat > maxLat) maxLat = p.lat;
+              if (p.lng < minLng) minLng = p.lng;
+              if (p.lng > maxLng) maxLng = p.lng;
+            });
+
+            // Delegate to the native map engine for perfect fitting
+            if (map.fitBounds) {
+              map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+                padding: msg.padding || 80,
+                animate: true
+              });
+            } else {
+              var midLat2 = (minLat + maxLat) / 2;
+              var midLng2 = (minLng + maxLng) / 2;
+              var dLat = maxLat - minLat;
+              var dLng = maxLng - minLng;
+              var span = Math.max(dLat, dLng);
+              var z = span > 2.0 ? 7 : span > 1.0 ? 8 : span > 0.5 ? 9 : span > 0.3 ? 10 : span > 0.15 ? 11 : span > 0.08 ? 12 : span > 0.04 ? 13 : span > 0.02 ? 14 : 15;
+              map.setCenter({lat: midLat2, lng: midLng2});
+              map.setZoom(z);
+            }
+          } else if (pts.length === 1) {
+            map.setCenter({lat: pts[0].lat, lng: pts[0].lng});
+            map.setZoom(14);
+          }
         }
         if (msg.type === 'SMOOTH_MOVE') {
           smoothMoveMarker(msg.id, msg.lat, msg.lng, msg.duration || 1200);
@@ -332,7 +389,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
     /* ── Init ─────────────────────────────────────────────────────────── */
     function initMap() {
       map = new mappls.Map('map', {
-        center:      [${DEFAULT_LNG}, ${DEFAULT_LAT}],
+        center:      {lat: ${DEFAULT_LAT}, lng: ${DEFAULT_LNG}},
         zoom:        ${zoom ?? 15},
         search:      false,
         zoomControl: ${zoomEnabled !== false},
@@ -362,7 +419,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
 </html>`;
 }
 
-export default function MapplsMapWebView({
+const MapplsMapWebView = forwardRef(function MapplsMapWebView({
   style,
   center,
   zoom = 15,
@@ -372,7 +429,8 @@ export default function MapplsMapWebView({
   scrollEnabled = true,
   zoomEnabled   = true,
   pointerEvents,
-}) {
+  fitBounds: autoFitBounds = false,  // auto-fit bounds to show full route (Ola/Uber style)
+}, ref) {
   const webViewRef = useRef(null);
   const mapReady   = useRef(false);
   const pendingMsg = useRef(null);
@@ -383,44 +441,70 @@ export default function MapplsMapWebView({
     []
   );
 
+  const serializeMarkers = (mkrs) => mkrs.map(m => ({
+    id:      m.id,
+    lat:     m.latitude,
+    lng:     m.longitude,
+    color:   m.color || '#8031CC',
+    label:   m.label || '',
+    pulse:   !!m.pulse,
+    type:    m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
+    bearing: m.bearing || 0,
+    nearby:  !!m.nearby,
+  }));
+
+  const serializePolylines = (plns) => plns.map(p => ({
+    coords:   (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
+    color:    p.color  ?? '#8031CC',
+    width:    p.width  ?? 5,
+    dashed:   !!p.dashed,
+    animated: !!p.animated,
+  }));
+
   const sendUpdate = (lat, lng, mkrs, plns, nbAutos) => {
     if (!webViewRef.current) return;
     const msg = JSON.stringify({
       type: 'SET_CENTER',
       lat, lng, zoom,
-      markers: mkrs.map(m => ({
-        id:      m.id,
-        lat:     m.latitude,
-        lng:     m.longitude,
-        color:   m.color || '#8031CC',
-        label:   m.label || '',
-        pulse:   !!m.pulse,
-        type:    m.markerType || (m.pulse ? 'auto' : 'dot'),
-        bearing: m.bearing || 0,
-        nearby:  !!m.nearby,
-      })),
-      polylines: plns.map(p => ({
-        coords:   (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
-        color:    p.color  ?? '#8031CC',
-        width:    p.width  ?? 5,
-        dashed:   !!p.dashed,
-        animated: !!p.animated,
-      })),
-      nearbyAutos: nbAutos === true ? [] : (nbAutos || null),
+      markers:  serializeMarkers(mkrs),
+      polylines: serializePolylines(plns),
+      nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
     });
     webViewRef.current.postMessage(msg);
   };
+
+  const sendFitBounds = (mkrs, plns, nbAutos, padding) => {
+    if (!webViewRef.current) return;
+    const msg = JSON.stringify({
+      type: 'FIT_BOUNDS',
+      padding: padding ?? 80,
+      markers:   serializeMarkers(mkrs),
+      polylines: serializePolylines(plns),
+      nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
+    });
+    webViewRef.current.postMessage(msg);
+  };
+
+  // Expose fitBounds() imperatively so parent screens can call mapRef.current.fitBounds()
+  useImperativeHandle(ref, () => ({
+    fitBounds: (padding) => sendFitBounds(markers, polylines, nearbyAutos, padding),
+  }), [markers, polylines, nearbyAutos]);
 
   useEffect(() => {
     const lat = center?.latitude  ?? DEFAULT_LAT;
     const lng = center?.longitude ?? DEFAULT_LNG;
     if (mapReady.current) {
-      sendUpdate(lat, lng, markers, polylines, nearbyAutos);
+      if (autoFitBounds && (polylines.length > 0 || markers.length > 1)) {
+        // Use FIT_BOUNDS whenever there is a route to show
+        sendFitBounds(markers, polylines, nearbyAutos);
+      } else {
+        sendUpdate(lat, lng, markers, polylines, nearbyAutos);
+      }
     } else {
-      pendingMsg.current = { lat, lng, markers, polylines, nearbyAutos };
+      pendingMsg.current = { lat, lng, markers, polylines, nearbyAutos, fitBounds: autoFitBounds };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines), nearbyAutos]);
+  }, [center?.latitude, center?.longitude, zoom, JSON.stringify(markers), JSON.stringify(polylines), nearbyAutos]);
 
   const onMessage = (event) => {
     try {
@@ -430,7 +514,12 @@ export default function MapplsMapWebView({
         const lat = center?.latitude  ?? DEFAULT_LAT;
         const lng = center?.longitude ?? DEFAULT_LNG;
         const p   = pendingMsg.current ?? {};
-        sendUpdate(p.lat ?? lat, p.lng ?? lng, p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+        const shouldFit = p.fitBounds || autoFitBounds;
+        if (shouldFit && ((p.polylines ?? polylines).length > 0 || (p.markers ?? markers).length > 1)) {
+          sendFitBounds(p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+        } else {
+          sendUpdate(p.lat ?? lat, p.lng ?? lng, p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+        }
         pendingMsg.current = null;
       }
     } catch (_) {}
@@ -461,7 +550,9 @@ export default function MapplsMapWebView({
       />
     </View>
   );
-}
+});
+
+export default MapplsMapWebView;
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },

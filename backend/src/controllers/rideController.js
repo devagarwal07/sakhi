@@ -28,6 +28,9 @@ const rideBookingSchema = z.object({
   drop_lat:        z.number().min(-90).max(90),
   drop_lng:        z.number().min(-180).max(180),
   drop_address:    z.string().optional(),
+  stop_lat:        z.number().min(-90).max(90).optional(),
+  stop_lng:        z.number().min(-180).max(180).optional(),
+  stop_address:    z.string().optional(),
   payment_method:  z.enum(['cash']).default('cash'),
   promo_code:      z.string().optional(),
 });

@@ -86,23 +86,6 @@ export default function CityNotAvailableScreen() {
                     {'\n\n'}We're working hard to bring safe, verified rides to more cities soon. Stay tuned!
                 </Text>
 
-                {/* City tag row */}
-                <View style={styles.cityRow}>
-                    <View style={styles.cityChip}>
-                        <View style={styles.cityDot} />
-                        <Text style={styles.cityChipText}>Bengaluru</Text>
-                        <View style={styles.cityBadge}>
-                            <Text style={styles.cityBadgeText}>Live Now</Text>
-                        </View>
-                    </View>
-                    <View style={[styles.cityChip, styles.cityChipDim]}>
-                        <View style={[styles.cityDot, styles.cityDotDim]} />
-                        <Text style={[styles.cityChipText, { color: MUTED }]}>More cities</Text>
-                        <View style={[styles.cityBadge, styles.cityBadgeSoon]}>
-                            <Text style={[styles.cityBadgeText, { color: MUTED }]}>Coming Soon</Text>
-                        </View>
-                    </View>
-                </View>
             </View>
 
             {/* ── Footer note ───────────────────────────────── */}
@@ -201,63 +184,14 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         color: MUTED,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: 4,
     },
     cityHighlight: {
         color: DARK,
         fontWeight: '700',
     },
 
-    // City chips
-    cityRow: {
-        flexDirection: 'row',
-        gap: 10,
-        width: '100%',
-    },
-    cityChip: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F5F0FF',
-        borderRadius: 12,
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-        gap: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(190,163,216,0.4)',
-    },
-    cityChipDim: {
-        backgroundColor: '#FAFAFA',
-        borderColor: '#E5E7EB',
-    },
-    cityDot: {
-        width: 8, height: 8, borderRadius: 4,
-        backgroundColor: '#22C55E',
-    },
-    cityDotDim: {
-        backgroundColor: '#CBD5E1',
-    },
-    cityChipText: {
-        flex: 1,
-        fontSize: 12,
-        fontWeight: '700',
-        color: DARK,
-    },
-    cityBadge: {
-        backgroundColor: 'rgba(34,197,94,0.12)',
-        borderRadius: 9999,
-        paddingHorizontal: 7,
-        paddingVertical: 2,
-    },
-    cityBadgeSoon: {
-        backgroundColor: '#F1F5F9',
-    },
-    cityBadgeText: {
-        fontSize: 9,
-        fontWeight: '700',
-        color: '#16A34A',
-        letterSpacing: 0.3,
-    },
+
 
     // Footer
     footer: {

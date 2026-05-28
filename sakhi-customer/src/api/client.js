@@ -32,9 +32,17 @@ function sleep(ms) {
 // ── Request Interceptor ────────────────────────────────────────────────────
 apiClient.interceptors.request.use(
     async (config) => {
-        const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        try {
+            const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            if (token) {
+                if (config.headers && typeof config.headers.set === 'function') {
+                    config.headers.set('Authorization', `Bearer ${token}`);
+                } else {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            }
+        } catch (e) {
+            console.error('[API Client] Error reading token from SecureStore:', e);
         }
         return config;
     },

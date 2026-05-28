@@ -219,28 +219,34 @@ class MatchingEngine extends EventEmitter {
   //   Both pools also carry RAR + GPS staleness penalties.
   // ──────────────────────────────────────────────────────────────────────────────
   async _queryCandidates(pickupLat, pickupLng, radiusMeters) {
-    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // extended to 10 min window
     const now = Date.now();
 
-    // ── Fetch all online, verified, active drivers with fresh GPS ───────────────
+    // ── Fetch all online, verified, active drivers ──────────────────────────────
+    // NOTE: Use a left join (no `!inner`) so drivers who just went online and
+    // haven't sent their first location ping yet are still included.
+    // Drivers without a location row get GPS staleness penalty ×1.30 (max penalty)
+    // which pushes them to the back of the queue — but they are NOT excluded.
+    // The 10-min window here is a soft DB filter; the scoring below handles staleness.
     const { data: rows, error } = await supabase
       .from('drivers')
       .select(`
         id, name, phone, fcm_token, vehicle_type, vehicle_reg_no,
         vehicle_color, vehicle_model, language_pref,
         total_accepts, total_requests,
-        driver_locations!inner(lat, lng, updated_at)
+        driver_locations(lat, lng, updated_at)
       `)
       .eq('is_online', true)
       .eq('is_active', true)
       .eq('gender_verified', true)
       .eq('verification_status', 'approved')
-      .gte('driver_locations.updated_at', fiveMinsAgo);
+      .or(`driver_locations.updated_at.gte.${tenMinsAgo},driver_locations.updated_at.is.null`);
 
     if (error || !rows) {
       logger.error('MatchingEngine._queryCandidates — DB error', { error });
       return [];
     }
+
 
     // ── Fetch active rides — split by status ────────────────────────────────────
     // Statuses that permanently block a driver from being dispatched:
@@ -282,6 +288,9 @@ class MatchingEngine extends EventEmitter {
 
       // ── SCENARIO 1 + 3: Pre-Dispatch eligible (in_progress driver) ─────────────
       if (inProgressMap.has(d.id)) {
+        // Pre-dispatch requires known location — skip if no GPS record
+        if (!loc || loc.lat == null || loc.lng == null) continue;
+
         const dropoff = inProgressMap.get(d.id);
 
         // Distance from driver's current location to THEIR dropoff
@@ -333,8 +342,18 @@ class MatchingEngine extends EventEmitter {
       }
 
       // ── POOL A: Idle driver (not on any ride) ───────────────────────────────────
-      const distance_meters = haversine(pickupLat, pickupLng, loc.lat, loc.lng);
-      if (distance_meters > radiusMeters) continue;
+      // If driver has no location record yet (just went online), use a fallback
+      // distance that puts them at the edge of the current radius so they rank
+      // last but are still reachable by the customer.
+      let distance_meters;
+      if (!loc || loc.lat == null || loc.lng == null) {
+        // No GPS yet — treat as being at radius boundary (will rank last due to gps_penalty=1.30)
+        distance_meters = radiusMeters * 0.9;
+        logger.info('MatchingEngine — driver has no location record, using fallback distance', { driverId: d.id });
+      } else {
+        distance_meters = haversine(pickupLat, pickupLng, loc.lat, loc.lng);
+        if (distance_meters > radiusMeters) continue;
+      }
 
       const score = computeDriverScore(d, distance_meters, now);
 
@@ -685,37 +704,49 @@ class MatchingEngine extends EventEmitter {
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
-  // handleDriverReject(rideId, driverId)
+  // handleDriverReject(rideId, driverId, opts?)
+  // opts.skipRar=true → re-dispatch without penalising acceptance rate (used by snooze)
   // ──────────────────────────────────────────────────────────────────────────────
-  async handleDriverReject(rideId, driverId) {
+  async handleDriverReject(rideId, driverId, { skipRar = false } = {}) {
     const session = this.activeSearches.get(rideId);
     if (!session) return;
 
-    logger.info('MatchingEngine.handleDriverReject', { rideId, driverId });
+    logger.info('MatchingEngine.handleDriverReject', { rideId, driverId, skipRar });
     if (session.timeoutHandle) clearTimeout(session.timeoutHandle);
 
     // RAR: explicit rejection — penalise acceptance rate downward
-    supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: false })
-      .catch(() => {
-        supabase
-          .from('drivers')
-          .select('total_requests, total_accepts')
-          .eq('id', driverId)
-          .single()
-          .then(({ data: d }) => {
-            if (!d) return;
-            const total_requests  = (d.total_requests || 0) + 1;
-            const total_accepts   = d.total_accepts  || 0;
-            const acceptance_rate = total_requests > 0
-              ? parseFloat((total_accepts / total_requests).toFixed(4)) : 1.0;
-            return supabase.from('drivers')
-              .update({ total_requests, acceptance_rate }).eq('id', driverId);
-          })
-          .catch((err) => logger.warn('MatchingEngine — RAR reject fallback failed', { driverId, error: err.message }));
-      });
+    // Skipped when called from snooze (skipRar=true)
+    if (!skipRar) {
+      supabase.rpc('increment_driver_rar', { p_driver_id: driverId, p_accepted: false })
+        .catch(() => {
+          supabase
+            .from('drivers')
+            .select('total_requests, total_accepts')
+            .eq('id', driverId)
+            .single()
+            .then(({ data: d }) => {
+              if (!d) return;
+              const total_requests  = (d.total_requests || 0) + 1;
+              const total_accepts   = d.total_accepts  || 0;
+              const acceptance_rate = total_requests > 0
+                ? parseFloat((total_accepts / total_requests).toFixed(4)) : 1.0;
+              return supabase.from('drivers')
+                .update({ total_requests, acceptance_rate }).eq('id', driverId);
+            })
+            .catch((err) => logger.warn('MatchingEngine — RAR reject fallback failed', { driverId, error: err.message }));
+        });
+    }
 
     const { drivers, candidateIndex } = session;
     await this._sendToCandidate(rideId, drivers, candidateIndex);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // handleDriverSnooze(rideId, driverId)
+  // Re-dispatch to next driver without any RAR penalty.
+  // ──────────────────────────────────────────────────────────────────────────────
+  async handleDriverSnooze(rideId, driverId) {
+    return this.handleDriverReject(rideId, driverId, { skipRar: true });
   }
 
   // ──────────────────────────────────────────────────────────────────────────────

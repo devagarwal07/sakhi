@@ -15,7 +15,10 @@ import {
     ScrollView,
     Animated,
     Dimensions,
+    useWindowDimensions,
     StatusBar} from 'react-native';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -23,9 +26,10 @@ import { ANDROID_STATUS_BAR_HEIGHT } from '../../utils/androidUtils';
 import { API_BASE_URL } from '../../utils/constants';
 import CustomAlert from '../../utils/CustomAlert';
 
-const { width } = Dimensions.get('window');
+
 
 export default function LoginScreen() {
+    const { width } = useWindowDimensions();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { requestOtp } = useAuth();
@@ -238,7 +242,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     heroImage: {
-        width: width - 64,
+        width: SCREEN_W - 64,
         height: 256,
         borderRadius: 48,
         backgroundColor: '#F0E8D8',

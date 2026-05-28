@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { startLocationTracking } from '../../services/locationTask';
 import client from '../../api/client';
+import * as Location from 'expo-location';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import SakhiModal from '../../components/SakhiModal';
@@ -37,15 +38,25 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
 
   const [modal, setModal] = useState(null);
 
-  const handleGoOnline = () => {
-    // 1. Optimistic context update — toggle shows ONLINE instantly
+  const handleGoOnline = async () => {
+    // 1. Fetch GPS coordinates before going online so backend can seed driver_locations
+    let gpsBody = {};
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 8000 });
+        gpsBody = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      }
+    } catch { /* GPS unavailable — go online anyway */ }
+
+    // 2. Optimistic context update — toggle shows ONLINE instantly
     updateDriver({ is_online: true });
 
-    // 2. Fire-and-forget background tasks (don't block navigation)
-    client.patch('/drivers/status', { is_online: true }).catch(() => { });
+    // 3. Fire-and-forget background tasks (don't block navigation)
+    client.patch('/drivers/status', { is_online: true, ...gpsBody }).catch(() => { });
     startLocationTracking().catch(() => { });
 
-    // 3. Navigate immediately — no waiting
+    // 4. Navigate immediately — no waiting
     navigation.reset({ index: 0, routes: [{ name: 'DriverHome' }] });
   };
 

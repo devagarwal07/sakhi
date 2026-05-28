@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, Animated, Platform, ScrollView, Alert, BackHandler
+    useWindowDimensions, Animated, Platform, ScrollView, Alert, BackHandler
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
 import { bookRide, cancelRide } from '../src/api/endpoints';
+import { fetchDirectionsPolyline } from '../src/utils/locationService';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -21,15 +22,17 @@ const RetryIcon = () => (
     </Svg>
 );
 
-const { width } = Dimensions.get('window');
+
 
 export default function RideFindingScreen() {
+    const { width } = useWindowDimensions();
     const router = useRouter();
     const { ride, setRideId, setDriver, updateStatus } = useRide();
     const { on, off, joinRideRoom } = useSocket();
     const [modal, setModal] = useState(null);
     const [bookingError, setBookingError] = useState(null);
     const [showNoDrivers, setShowNoDrivers] = useState(false);
+    const [routePolyline, setRoutePolyline] = useState([]);
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
@@ -82,6 +85,30 @@ export default function RideFindingScreen() {
         return () => { mountedRef.current = false; };
     }, []);
 
+    // ── Fetch Map Polyline ─────────────────────────────────────────────────────
+    useEffect(() => {
+        if (ride?.pickup && ride?.dropoff) {
+            fetchDirectionsPolyline(ride.pickup, ride.dropoff, ride.stop)
+                .then(res => {
+                    if (res.points && res.points.length > 1) {
+                        setRoutePolyline(res.points);
+                    } else {
+                        // fallback to straight line
+                        setRoutePolyline([
+                            { latitude: ride.pickup.latitude, longitude: ride.pickup.longitude },
+                            { latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude }
+                        ]);
+                    }
+                })
+                .catch(() => {
+                    setRoutePolyline([
+                        { latitude: ride.pickup.latitude, longitude: ride.pickup.longitude },
+                        { latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude }
+                    ]);
+                });
+        }
+    }, [ride?.pickup, ride?.dropoff, ride?.stop]);
+
     // ── Book ride + wire real-time socket listeners ───────────────────────────
     useEffect(() => {
         if ((ride?.pickup && !isWithinBengaluru(ride.pickup)) || (ride?.dropoff && !isWithinBengaluru(ride.dropoff))) {
@@ -92,7 +119,10 @@ export default function RideFindingScreen() {
 
         const handleRideAssigned = ({ ride_id, driver, status }) => {
             if (!mountedRef.current) return;
-            if (rideIdRef.current && ride_id !== rideIdRef.current) return; // stale event
+            // Only reject if we already have a rideId AND it doesn't match.
+            // Allow through if rideIdRef.current is still null (event arrived
+            // before the bookRide response — race condition window).
+            if (rideIdRef.current !== null && ride_id !== rideIdRef.current) return;
 
             // Normalise driver payload from matchingEngine
             const normalised = {
@@ -141,6 +171,12 @@ export default function RideFindingScreen() {
                     drop_address:   ride.dropoff.address ?? '',
                     payment_method: ride.paymentMethod  ?? 'cash',
                     ...(ride.promoCode ? { promo_code: ride.promoCode } : {}),
+                    // Include via/stop point if customer added one
+                    ...(ride.stop ? {
+                        stop_lat:     ride.stop.latitude,
+                        stop_lng:     ride.stop.longitude,
+                        stop_address: ride.stop.address ?? '',
+                    } : {}),
                 });
 
                 if (!mountedRef.current) return;
@@ -213,15 +249,16 @@ export default function RideFindingScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Map Area (Top 55%) */}
-            <View style={styles.mapArea}>
+            {/* Map Area (Full Width, strictly between header and bottom sheet) */}
+            <View style={[styles.mapArea, { top: topNavHeight }]}>
                 <SmartMapView
                     style={StyleSheet.absoluteFill}
                     center={{
-                        latitude:  ride?.pickup?.latitude  || 19.0760,
-                        longitude: ride?.pickup?.longitude || 72.8777,
+                        latitude:  ride?.pickup?.latitude  || 12.9716,
+                        longitude: ride?.pickup?.longitude || 77.5946,
                     }}
                     zoom={13}
+                    fitBounds={!!(ride?.pickup && ride?.dropoff)}
                     scrollEnabled={false}
                     zoomEnabled={false}
                     nearbyAutos={true}
@@ -241,11 +278,8 @@ export default function RideFindingScreen() {
                             color: '#1E1B2E',
                         },
                     ].filter(Boolean)}
-                    polylines={ride?.pickup && ride?.dropoff ? [{
-                        coords: [
-                            { latitude: ride.pickup.latitude,  longitude: ride.pickup.longitude },
-                            { latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude },
-                        ],
+                    polylines={routePolyline.length > 1 ? [{
+                        coords: routePolyline,
                         color: '#8031CC',
                         width: 4,
                         animated: true,
@@ -357,7 +391,7 @@ export default function RideFindingScreen() {
                     {/* Wait Pill */}
                     <View style={styles.waitPillContainer}>
                         <View style={styles.waitPill}>
-                            <Text style={styles.waitText}>Estimated wait: ~2 mins</Text>
+                            <Text style={styles.waitText}>Searching nearby Sakhis...</Text>
                         </View>
                     </View>
 
@@ -458,8 +492,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF',
     },
     mapArea: {
-        height: '55%',
-        width: '100%',
+        position: 'absolute',
+        bottom: '45%',
+        left: 0,
+        right: 0,
         backgroundColor: '#E2E8F0',
         justifyContent: 'center',
         alignItems: 'center',
@@ -496,7 +532,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: 'rgba(245, 240, 255, 0.9)', // #F5F0FF
+        backgroundColor: 'rgba(245, 240, 255, 0.9)',
         shadowColor: 'rgba(124, 58, 237, 1)',
         shadowOffset: { width: 0, height: 16 },
         shadowOpacity: 0.08,
