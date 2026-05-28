@@ -23,5 +23,12 @@ const BENGALURU_BOUNDS = {
  * @returns {boolean}
  */
 export function isInBengaluru(latitude, longitude) {
-    return true; // Temporarily disabled for testing outside Bengaluru
+    if (!latitude || !longitude) return false;
+
+    return (
+        latitude >= BENGALURU_BOUNDS.minLat &&
+        latitude <= BENGALURU_BOUNDS.maxLat &&
+        longitude >= BENGALURU_BOUNDS.minLng &&
+        longitude <= BENGALURU_BOUNDS.maxLng
+    );
 }

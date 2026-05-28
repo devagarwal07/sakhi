@@ -92,14 +92,8 @@ const haversineKm = (a, b) => {
 };
 
 export const isWithinBengaluru = (coords) => {
-    // Temporarily disabled geofencing so the client can test the app from outside Bengaluru
-    return true; 
-    
-    /* 
-    if (!coords) return false;
-    const { latitude, longitude } = coords;
-    if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+    if (!coords || typeof coords.latitude !== 'number' || typeof coords.longitude !== 'number') {
+        return false;
+    }
     return haversineKm(coords, BENGALURU_CENTER) <= BENGALURU_RADIUS_KM;
-    */
 };
-

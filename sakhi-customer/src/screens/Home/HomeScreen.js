@@ -248,7 +248,7 @@ export default function HomeScreen() {
             <View style={styles.mapSection}>
                 <MapplsMapWebView
                     style={StyleSheet.absoluteFill}
-                    center={currentLocation || { latitude: 19.0760, longitude: 72.8777 }}
+                    center={currentLocation || { latitude: 12.9716, longitude: 77.5946 }}
                     zoom={15}
                     scrollEnabled
                     zoomEnabled
