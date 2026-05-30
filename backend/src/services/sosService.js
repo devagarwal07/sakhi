@@ -57,10 +57,12 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
     { expiresIn: '24h' }
   );
   const trackUrl = `${baseUrl}/track/${trackToken}`;
-  const mapsUrl  = `https://mappls.com/?q=${lat},${lng}`;
+  const shortLat = Number(lat).toFixed(4);
+  const shortLng = Number(lng).toFixed(4);
+  const safeName = userName.substring(0, 20);
 
   // SOS SMS — uses the Sakhi live tracking page (falls back to Google Maps coords)
-  const smsText  = `SAKHI MOBILITY Alert: ${userName} activated SOS during ride. Current location: ${lat},${lng} . Please track here: ${mapsUrl}`;
+  const smsText  = `SAKHI MOBILITY Alert: ${safeName} activated SOS during ride. Current location: ${shortLat},${shortLng} . Please track here: SakhiApp`;
 
 
   // 4. SMS all emergency contacts — non-fatal per contact
@@ -128,9 +130,10 @@ async function handleBatteryLow(userId, role, level, lat, lng) {
   const userName = userRows?.[0]?.name || 'A Sakhi user';
   const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
 
-  // Generate a tracking link (using Mappls for SMS length compliance)
-  const mapsUrl  = `https://mappls.com/?q=${lat},${lng}`;
-  const smsText  = `SAKHI MOBILITY:${userName} is low on battery during ride. Please track here:${mapsUrl}`;
+  const safeName = userName.substring(0, 20);
+  const shortLat = Number(lat).toFixed(4);
+  const shortLng = Number(lng).toFixed(4);
+  const smsText  = `SAKHI MOBILITY:${safeName} is low on battery during ride. Please track here:SakhiApp`;
 
   let notified = 0;
   await Promise.all(contacts.map(async (c) => {

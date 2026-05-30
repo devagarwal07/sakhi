@@ -65,7 +65,7 @@ async function getEmergencyContacts(req, res, next) {
     const ownerCol = role === 'rider' ? 'user_id' : 'driver_id';
     const { data, error } = await supabase
       .from(table)
-      .select('id, name, phone, relation')
+      .select('id, name, phone, relation, auto_share')
       .eq(ownerCol, userId)
       .order('created_at', { ascending: true });
 
@@ -79,6 +79,7 @@ const contactSchema = z.object({
   name:     z.string().min(1).max(100),
   phone:    z.string().min(10).max(15),
   relation: z.string().min(1).max(50),
+  auto_share: z.boolean().optional(),
 });
 
 async function addEmergencyContact(req, res, next) {
@@ -101,7 +102,7 @@ async function addEmergencyContact(req, res, next) {
     const { data, error } = await supabase
       .from(table)
       .insert(insertPayload)
-      .select('id, name, phone, relation')
+      .select('id, name, phone, relation, auto_share')
       .single();
 
     if (error) throw new AppError('Failed to save contact.', 500, 'DB_ERROR');
@@ -122,7 +123,7 @@ async function updateEmergencyContact(req, res, next) {
       .update(body)
       .eq('id', req.params.id)
       .eq(ownerCol, userId)
-      .select('id, name, phone, relation')
+      .select('id, name, phone, relation, auto_share')
       .single();
 
     if (error) throw new AppError('Failed to update contact.', 500, 'DB_ERROR');
@@ -218,7 +219,7 @@ async function shareTrip(req, res, next) {
     ]);
 
     const userName = userRows?.[0]?.name || 'A Sakhi user';
-    const smsText  = `SAKHI MOBILITY: ${userName} shared live ride tracking. Please track here: ${shareUrl}`;
+    const smsText  = `SAKHI MOBILITY: ${userName} shared live ride tracking. Please track here: SakhiApp`;
 
     const notifiedPhones = [];
     await Promise.all(

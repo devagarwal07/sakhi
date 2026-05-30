@@ -70,8 +70,30 @@ export default function EmergencyContactsScreen() {
         }
     };
 
-    const toggleAutoShare = (id) => {
-        setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: !c.autoShare } : c));
+    const toggleAutoShare = async (id) => {
+        const contact = contacts.find(c => c.id === id);
+        if (!contact) return;
+        
+        const newAutoShare = !contact.autoShare;
+        
+        // Optimistic UI update
+        setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: newAutoShare } : c));
+        
+        try {
+            await updateEmergencyContact(id, { 
+                name: contact.name, 
+                phone: contact.phone, 
+                relation: contact.relation,
+                auto_share: newAutoShare 
+            });
+        } catch (err) {
+            // Revert on failure
+            setContacts(prev => prev.map(c => c.id === id ? { ...c, autoShare: !newAutoShare } : c));
+            setAlertModal({
+                icon: '⚠️', title: 'Error', message: 'Failed to update auto-share setting.',
+                buttons: [{ text: 'OK', onPress: () => setAlertModal(null) }]
+            });
+        }
     };
 
     const handleDelete = (id, name) => {
