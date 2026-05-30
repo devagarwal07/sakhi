@@ -18,7 +18,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const RetryIcon = () => (
     <Svg viewBox="0 0 640 640" width={18} height={18}>
-        <Path fill="#FFFFFF" d="M500.7 138.7L512 149.4L512 96C512 78.3 526.3 64 544 64C561.7 64 576 78.3 576 96L576 224C576 241.7 561.7 256 544 256L416 256C398.3 256 384 241.7 384 224C384 206.3 398.3 192 416 192L463.9 192L456.3 184.8C456.1 184.6 455.9 184.4 455.7 184.2C380.7 109.2 259.2 109.2 184.2 184.2C109.2 259.2 109.2 380.7 184.2 455.7C259.2 530.7 380.7 530.7 455.7 455.7C463.9 447.5 471.2 438.8 477.6 429.6C487.7 415.1 507.7 411.6 522.2 421.7C536.7 431.8 540.2 451.8 530.1 466.3C521.6 478.5 511.9 490.1 501 501C401 601 238.9 601 139 501C39.1 401 39 239 139 139C238.9 39.1 400.7 39 500.7 138.7z"/>
+        <Path fill="#FFFFFF" d="M500.7 138.7L512 149.4L512 96C512 78.3 526.3 64 544 64C561.7 64 576 78.3 576 96L576 224C576 241.7 561.7 256 544 256L416 256C398.3 256 384 241.7 384 224C384 206.3 398.3 192 416 192L463.9 192L456.3 184.8C456.1 184.6 455.9 184.4 455.7 184.2C380.7 109.2 259.2 109.2 184.2 184.2C109.2 259.2 109.2 380.7 184.2 455.7C259.2 530.7 380.7 530.7 455.7 455.7C463.9 447.5 471.2 438.8 477.6 429.6C487.7 415.1 507.7 411.6 522.2 421.7C536.7 431.8 540.2 451.8 530.1 466.3C521.6 478.5 511.9 490.1 501 501C401 601 238.9 601 139 501C39.1 401 39 239 139 139C238.9 39.1 400.7 39 500.7 138.7z" />
     </Svg>
 );
 
@@ -43,7 +43,7 @@ export default function RideFindingScreen() {
         insets.bottom + (Platform.OS === 'ios' ? 6 : 8),
         24
     );
-    const rideIdRef  = useRef(null);    // persists across re-renders without re-triggering effects
+    const rideIdRef = useRef(null);    // persists across re-renders without re-triggering effects
     const mountedRef = useRef(true);     // guard against setState after unmount
 
     // Reanimated pulses for the center pin
@@ -126,18 +126,18 @@ export default function RideFindingScreen() {
 
             // Normalise driver payload from matchingEngine
             const normalised = {
-                id:      driver?.id,
-                name:    driver?.name    ?? 'Your Driver',
-                phone:   driver?.phone   ?? null,
-                photo:   driver?.profile_photo_url ?? null,
-                rating:  driver?.avg_rating ?? 4.8,
+                id: driver?.id,
+                name: driver?.name ?? 'Your Driver',
+                phone: driver?.phone ?? null,
+                photo: driver?.profile_photo_url ?? null,
+                rating: driver?.avg_rating ?? 4.8,
                 vehicle: {
-                    type:  driver?.vehicle_type   ?? 'Auto',
+                    type: driver?.vehicle_type ?? 'Auto',
                     plate: driver?.vehicle_reg_no ?? '',
-                    model: driver?.vehicle_model  ?? '',
-                    color: driver?.vehicle_color  ?? '',
+                    model: driver?.vehicle_model ?? '',
+                    color: driver?.vehicle_color ?? '',
                 },
-                upi_id:  driver?.upi_id ?? null,
+                upi_id: driver?.upi_id ?? null,
             };
 
             setDriver(normalised);
@@ -152,8 +152,8 @@ export default function RideFindingScreen() {
         };
 
         // Register socket listeners BEFORE booking so we never miss the event
-        on('ride_assigned',    handleRideAssigned);
-        on('ride:no_drivers',  handleNoDrivers);
+        on('ride_assigned', handleRideAssigned);
+        on('ride:no_drivers', handleNoDrivers);
 
         const doBooking = async () => {
             try {
@@ -163,18 +163,18 @@ export default function RideFindingScreen() {
                 }
 
                 const { data } = await bookRide({
-                    pickup_lat:     ride.pickup.latitude,
-                    pickup_lng:     ride.pickup.longitude,
+                    pickup_lat: ride.pickup.latitude,
+                    pickup_lng: ride.pickup.longitude,
                     pickup_address: ride.pickup.address ?? '',
-                    drop_lat:       ride.dropoff.latitude,
-                    drop_lng:       ride.dropoff.longitude,
-                    drop_address:   ride.dropoff.address ?? '',
-                    payment_method: ride.paymentMethod  ?? 'cash',
+                    drop_lat: ride.dropoff.latitude,
+                    drop_lng: ride.dropoff.longitude,
+                    drop_address: ride.dropoff.address ?? '',
+                    payment_method: ride.paymentMethod ?? 'cash',
                     ...(ride.promoCode ? { promo_code: ride.promoCode } : {}),
                     // Include via/stop point if customer added one
                     ...(ride.stop ? {
-                        stop_lat:     ride.stop.latitude,
-                        stop_lng:     ride.stop.longitude,
+                        stop_lat: ride.stop.latitude,
+                        stop_lng: ride.stop.longitude,
                         stop_address: ride.stop.address ?? '',
                     } : {}),
                 });
@@ -194,17 +194,26 @@ export default function RideFindingScreen() {
 
             } catch (err) {
                 if (!mountedRef.current) return;
+                const errCode = err.response?.data?.error?.code;
                 const msg = err.response?.data?.error?.message ?? 'Could not book ride. Please try again.';
+
                 // Handle "already active ride" gracefully
-                if (err.response?.data?.error?.code === 'ACTIVE_RIDE_EXISTS') {
+                if (errCode === 'ACTIVE_RIDE_EXISTS') {
                     const existingId = err.response?.data?.error?.details?.ride_id;
                     if (existingId) {
                         rideIdRef.current = existingId;
                         setRideId(existingId);
-                        await joinRideRoom(existingId).catch(() => {});
+                        await joinRideRoom(existingId).catch(() => { });
                         return; // reconnected to existing ride
                     }
                 }
+
+                // Handle verification not complete — user's account not approved yet
+                if (errCode === 'VERIFICATION_REQUIRED') {
+                    setBookingError('Your identity verification is pending approval. Please complete verification to book rides.');
+                    return;
+                }
+
                 setBookingError(msg);
             }
         };
@@ -212,7 +221,7 @@ export default function RideFindingScreen() {
         doBooking();
 
         return () => {
-            off('ride_assigned',   handleRideAssigned);
+            off('ride_assigned', handleRideAssigned);
             off('ride:no_drivers', handleNoDrivers);
         };
     }, []); // run once on mount
@@ -238,7 +247,7 @@ export default function RideFindingScreen() {
                         setModal(null);
                         if (rideIdRef.current) {
                             // Fire-and-forget — don't block navigation on cancel response
-                            cancelRide(rideIdRef.current, 'Rider cancelled during search').catch(() => {});
+                            cancelRide(rideIdRef.current, 'Rider cancelled during search').catch(() => { });
                         }
                         router.replace('/(tabs)/');
                     },
@@ -254,25 +263,25 @@ export default function RideFindingScreen() {
                 <SmartMapView
                     style={StyleSheet.absoluteFill}
                     center={{
-                        latitude:  ride?.pickup?.latitude  || 12.9716,
+                        latitude: ride?.pickup?.latitude || 12.9716,
                         longitude: ride?.pickup?.longitude || 77.5946,
                     }}
                     zoom={13}
                     fitBounds={!!(ride?.pickup && ride?.dropoff)}
                     scrollEnabled={false}
                     zoomEnabled={false}
-                    nearbyAutos={true}
+                    nearbyAutos={nearbyAutosData.length > 0 ? nearbyAutosData : true}
                     markers={[
                         ride?.pickup && {
                             id: 'pickup',
-                            latitude:  ride.pickup.latitude,
+                            latitude: ride.pickup.latitude,
                             longitude: ride.pickup.longitude,
                             markerType: 'pickup',
                             color: '#8031CC',
                         },
                         ride?.dropoff && {
                             id: 'dropoff',
-                            latitude:  ride.dropoff.latitude,
+                            latitude: ride.dropoff.latitude,
                             longitude: ride.dropoff.longitude,
                             markerType: 'dropoff',
                             color: '#1E1B2E',
@@ -285,7 +294,7 @@ export default function RideFindingScreen() {
                         animated: true,
                     }] : []}
                 />
-                
+
                 {/* Desaturation overlay to match ethereal look */}
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.4)' }]} />
 
@@ -312,7 +321,7 @@ export default function RideFindingScreen() {
                         transform: [{ scale: pulse1.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }],
                         opacity: pulse1.interpolate({ inputRange: [0, 0.9, 1], outputRange: [1, 0.3, 0] })
                     }]} />
-                    
+
                     {/* Center solid pin (using emoji as placeholder for location_on) */}
                     <View style={styles.solidPin}>
                         <Feather name="map-pin" size={24} color="#8C37DD" />
@@ -322,7 +331,7 @@ export default function RideFindingScreen() {
 
             {/* Top Navigation Bar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
-                    <TouchableOpacity onPress={handleCancel} style={styles.navIconBtn}>
+                <TouchableOpacity onPress={handleCancel} style={styles.navIconBtn}>
                     <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.navIconBtn} onPress={() => setModal({
@@ -349,7 +358,7 @@ export default function RideFindingScreen() {
                 </View>
 
                 {/* Content */}
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={styles.sheetContent}
                     showsVerticalScrollIndicator={false}
                 >
@@ -396,7 +405,7 @@ export default function RideFindingScreen() {
                     </View>
 
                 </ScrollView>
-                
+
                 {/* Cancel Button */}
                 <View style={[styles.cancelBtnWrap, { paddingBottom: cancelPaddingBottom }]}>
                     <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8} onPress={handleCancel}>
@@ -460,30 +469,30 @@ const mapStyle = [
 ];
 
 const styles = StyleSheet.create({
-    header: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 20, 
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         height: 64,
-        backgroundColor: '#F5F0FF', 
+        backgroundColor: '#F5F0FF',
         zIndex: 10
     },
-    iconBtn: { 
-        width: 32, 
-        height: 32, 
-        justifyContent: 'center', 
+    iconBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'transparent'
     },
-    headerIcon: { 
-        fontSize: 24, 
-        color: '#BEA3D8', 
-        fontWeight: 'bold' 
+    headerIcon: {
+        fontSize: 24,
+        color: '#BEA3D8',
+        fontWeight: 'bold'
     },
-    headerTitle: { 
-        fontSize: 20, 
-        fontWeight: '700', 
-        color: '#1E1B2E', 
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E1B2E',
         letterSpacing: -0.5,
         marginLeft: 16
     },

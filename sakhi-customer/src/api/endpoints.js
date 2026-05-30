@@ -48,6 +48,7 @@ export const estimateFare = (pickup, dropoff, stop = null) =>
         },
     });
 export const getActiveRide = () => apiClient.get('/rides/active');
+export const getNearbyDrivers = (lat, lng) => apiClient.get('/rides/nearby-drivers', { params: { lat, lng } });
 export const bookRide = (data) => apiClient.post('/rides', data);
 export const cancelRide = (rideId, reason) => apiClient.patch(`/rides/${rideId}/cancel`, { reason });
 export const getRideDetails = (rideId) => apiClient.get(`/rides/${rideId}`);

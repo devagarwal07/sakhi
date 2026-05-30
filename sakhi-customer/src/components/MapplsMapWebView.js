@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -6,7 +7,7 @@ const API_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946;
 
-function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
+function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -103,16 +104,24 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
     /* ── Auto-rickshaw SVG ───────────────────────────────────────────── */
     function autoSVG(color, bearing) {
       bearing = bearing || 0;
-      return '<svg class="auto-svg" viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" style="transform:rotate('+bearing+'deg)">'
-        + '<rect x="2" y="8" width="36" height="18" rx="4" fill="'+color+'" />'
-        + '<rect x="6" y="4" width="24" height="12" rx="3" fill="'+color+'" opacity="0.85" />'
-        + '<rect x="8" y="6" width="10" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" />'
-        + '<rect x="20" y="6" width="7" height="7" rx="1.5" fill="rgba(255,255,255,0.55)" />'
-        + '<circle cx="10" cy="27" r="4" fill="#222" />'
-        + '<circle cx="10" cy="27" r="2" fill="#888" />'
-        + '<circle cx="30" cy="27" r="4" fill="#222" />'
-        + '<circle cx="30" cy="27" r="2" fill="#888" />'
-        + '<rect x="38" y="12" width="8" height="10" rx="2" fill="'+color+'" opacity="0.7" />'
+      return '<svg class="auto-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="transform: rotate('+bearing+'deg); transition: transform 0.3s ease;">'
+        + '<g transform="translate(0,2)">'
+        + '<ellipse cx="32" cy="54" rx="22" ry="6" fill="rgba(0,0,0,0.15)"/>'
+        + '<path d="M22 6 L42 6 C49 6, 54 14, 54 24 L54 48 C54 56, 48 60, 42 60 L22 60 C16 60, 10 56, 10 48 L10 24 C10 14, 15 6, 22 6 Z" fill="'+(color || '#BFA2DB')+'"/>'
+        + '<path d="M24 6 L40 6 C44 6, 46 10, 46 14 L18 14 C18 10, 20 6, 24 6 Z" fill="#DCC6F2"/>'
+        + '<circle cx="32" cy="10" r="3" fill="#FFFFFF" stroke="#E9DDF7" stroke-width="1"/>'
+        + '<path d="M18 17 Q32 12 46 17 L44 26 Q32 22 20 26 Z" fill="#2D3748"/>'
+        + '<path d="M20 18 Q32 15 44 18 L42 23 Q32 20 22 23 Z" fill="#94A3B8" opacity="0.65"/>'
+        + '<path d="M14 30 L50 30 C52 30, 52 48, 50 48 L14 48 C12 48, 12 30, 14 30 Z" fill="#9F7AEA"/>'
+        + '<path d="M16 32 L48 32 C49 32, 49 46, 48 46 L16 46 C15 46, 15 32, 16 32 Z" fill="#D6BCFA"/>'
+        + '<rect x="16" y="50" width="32" height="3" rx="2" fill="#F3E8FF" opacity="0.85"/>'
+        + '<rect x="8" y="17" width="4" height="7" rx="2" fill="#4A5568" transform="rotate(-18 10 20)"/>'
+        + '<rect x="52" y="17" width="4" height="7" rx="2" fill="#4A5568" transform="rotate(18 54 20)"/>'
+        + '<rect x="29" y="1" width="6" height="8" rx="3" fill="#111827"/>'
+        + '<rect x="5" y="44" width="6" height="12" rx="3" fill="#111827"/>'
+        + '<rect x="53" y="44" width="6" height="12" rx="3" fill="#111827"/>'
+        + '<path d="M22 8 Q32 4 42 8" stroke="#F5EEFF" stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none"/>'
+        + '</g>'
         + '</svg>';
     }
 
@@ -228,7 +237,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
       if (smoothRAF[id]) cancelAnimationFrame(smoothRAF[id]);
       function step(ts) {
         if (!startTime) startTime = ts;
-        var t = Math.min((ts - startTime) / (durationMs || 1200), 1);
+        var t = Math.min((ts - startTime) / (durationMs || 1000), 1);
         var ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
         var lat = fromLat + (toLat - fromLat) * ease;
         var lng = fromLng + (toLng - fromLng) * ease;
@@ -236,6 +245,38 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
         if (t < 1) smoothRAF[id] = requestAnimationFrame(step);
       }
       smoothRAF[id] = requestAnimationFrame(step);
+    }
+
+    /* ── Smooth bearing rotation for a marker ────────────────────────── */
+    var markerBearings = {}; // track current bearing per marker id
+    function smoothRotateMarker(id, toBearing, durationMs) {
+      var marker = markerObjects[id];
+      if (!marker) return;
+      var el = marker.getElement ? marker.getElement() : null;
+      if (!el) return;
+      var svgEl = el.querySelector('svg');
+      if (!svgEl) return;
+
+      var fromBearing = markerBearings[id] || 0;
+      // Shortest rotation path
+      var delta = ((toBearing - fromBearing + 540) % 360) - 180;
+      var startTime = null;
+      var rafKey = 'bearing_' + id;
+      if (smoothRAF[rafKey]) cancelAnimationFrame(smoothRAF[rafKey]);
+
+      function step(ts) {
+        if (!startTime) startTime = ts;
+        var t = Math.min((ts - startTime) / (durationMs || 400), 1);
+        var ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        var current = fromBearing + delta * ease;
+        svgEl.style.transform = 'rotate(' + current + 'deg)';
+        if (t < 1) {
+          smoothRAF[rafKey] = requestAnimationFrame(step);
+        } else {
+          markerBearings[id] = toBearing;
+        }
+      }
+      smoothRAF[rafKey] = requestAnimationFrame(step);
     }
 
     /* ── Polylines (animated + static) ─────────────────────────────── */
@@ -378,12 +419,36 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
           }
         }
         if (msg.type === 'SMOOTH_MOVE') {
-          smoothMoveMarker(msg.id, msg.lat, msg.lng, msg.duration || 1200);
+          smoothMoveMarker(msg.id, msg.lat, msg.lng, msg.duration || 1000);
+          if (msg.bearing !== undefined) {
+            smoothRotateMarker(msg.id, msg.bearing, msg.bearingDuration || 400);
+          }
+          // Pan camera smoothly to new driver position
+          if (msg.panCamera && map) {
+            map.easeTo({ center: [msg.lng, msg.lat], duration: msg.duration || 1000 });
+          }
         }
         if (msg.type === 'SET_NEARBY_AUTOS') {
           setNearbyAutos({ lat: msg.lat, lng: msg.lng }, msg.autos);
         }
       } catch(e) {}
+    }
+
+    /* ── Drag-mode: fire MAP_DRAG_END when map center changes ─────────── */
+    var dragModeEnabled = ${dragMode ? 'true' : 'false'};
+    function attachDragListener() {
+      if (!map || !dragModeEnabled) return;
+      map.on('moveend', function() {
+        if (!dragModeEnabled) return;
+        var center = map.getCenter();
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'MAP_DRAG_END',
+            lat: center.lat,
+            lng: center.lng,
+          }));
+        }
+      });
     }
 
     /* ── Init ─────────────────────────────────────────────────────────── */
@@ -399,6 +464,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
       map.on('load', function () {
         ensureLayers();
         requestAnimationFrame(animateDash);
+        attachDragListener();
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
         }
@@ -420,142 +486,186 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled }) {
 }
 
 const MapplsMapWebView = forwardRef(function MapplsMapWebView({
-  style,
-  center,
-  zoom = 15,
-  markers    = [],
-  polylines  = [],
-  nearbyAutos,        // null | [] | true  — truthy = show scattered autos around center
-  scrollEnabled = true,
-  zoomEnabled   = true,
-  pointerEvents,
-  fitBounds: autoFitBounds = false,  // auto-fit bounds to show full route (Ola/Uber style)
-}, ref) {
-  const webViewRef = useRef(null);
-  const mapReady   = useRef(false);
-  const pendingMsg = useRef(null);
+  const MapplsMapWebView = forwardRef(function MapplsMapWebView({
+    style,
+    center,
+    zoom = 15,
+    markers = [],
+    polylines = [],
+    nearbyAutos,        // null | [] | true  — truthy = show scattered autos around center
+    scrollEnabled = true,
+    zoomEnabled = true,
+    pointerEvents,
+    fitBounds: autoFitBounds = false,  // auto-fit bounds to show full route (Ola/Uber style)
+  }, ref) {
+    const webViewRef = useRef(null);
+    const mapReady = useRef(false);
+    const pendingMsg = useRef(null);
 
-  const html = useMemo(
-    () => buildMapHtml({ zoom, scrollEnabled, zoomEnabled }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+    // Expose imperative methods for smooth driver animation
+    useImperativeHandle(ref, () => ({
+      // Smoothly move + rotate the driver marker without re-rendering
+      smoothMoveDriver: (lat, lng, bearing, panCamera = true) => {
+        if (!webViewRef.current || !mapReady.current) return;
+        webViewRef.current.postMessage(JSON.stringify({
+          type: 'SMOOTH_MOVE',
+          id: 'driver',
+          lat,
+          lng,
+          bearing: bearing ?? 0,
+          duration: 1000,
+          bearingDuration: 400,
+          panCamera,
+        }));
+      },
+    }));
 
-  const serializeMarkers = (mkrs) => mkrs.map(m => ({
-    id:      m.id,
-    lat:     m.latitude,
-    lng:     m.longitude,
-    color:   m.color || '#8031CC',
-    label:   m.label || '',
-    pulse:   !!m.pulse,
-    type:    m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
-    bearing: m.bearing || 0,
-    nearby:  !!m.nearby,
-  }));
+    const html = useMemo(
+      () => buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
 
-  const serializePolylines = (plns) => plns.map(p => ({
-    coords:   (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
-    color:    p.color  ?? '#8031CC',
-    width:    p.width  ?? 5,
-    dashed:   !!p.dashed,
-    animated: !!p.animated,
-  }));
+    const serializeMarkers = (mkrs) => mkrs.map(m => ({
+      id: m.id,
+      lat: m.latitude,
+      lng: m.longitude,
+      color: m.color || '#8031CC',
+      label: m.label || '',
+      pulse: !!m.pulse,
+      type: m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
+      bearing: m.bearing || 0,
+      nearby: !!m.nearby,
+    }));
 
-  const sendUpdate = (lat, lng, mkrs, plns, nbAutos) => {
-    if (!webViewRef.current) return;
-    const msg = JSON.stringify({
-      type: 'SET_CENTER',
-      lat, lng, zoom,
-      markers:  serializeMarkers(mkrs),
-      polylines: serializePolylines(plns),
-      nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
-    });
-    webViewRef.current.postMessage(msg);
-  };
+    const serializePolylines = (plns) => plns.map(p => ({
+      coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
+      color: p.color ?? '#8031CC',
+      width: p.width ?? 5,
+      dashed: !!p.dashed,
+      animated: !!p.animated,
+    }));
 
-  const sendFitBounds = (mkrs, plns, nbAutos, padding) => {
-    if (!webViewRef.current) return;
-    const msg = JSON.stringify({
-      type: 'FIT_BOUNDS',
-      padding: padding ?? 80,
-      markers:   serializeMarkers(mkrs),
-      polylines: serializePolylines(plns),
-      nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
-    });
-    webViewRef.current.postMessage(msg);
-  };
+    const serializeMarkers = (mkrs) => mkrs.map(m => ({
+      id: m.id,
+      lat: m.latitude,
+      lng: m.longitude,
+      color: m.color || '#8031CC',
+      label: m.label || '',
+      pulse: !!m.pulse,
+      type: m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
+      bearing: m.bearing || 0,
+      nearby: !!m.nearby,
+    }));
 
-  // Expose fitBounds() imperatively so parent screens can call mapRef.current.fitBounds()
-  useImperativeHandle(ref, () => ({
-    fitBounds: (padding) => sendFitBounds(markers, polylines, nearbyAutos, padding),
-  }), [markers, polylines, nearbyAutos]);
+    const serializePolylines = (plns) => plns.map(p => ({
+      coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
+      color: p.color ?? '#8031CC',
+      width: p.width ?? 5,
+      dashed: !!p.dashed,
+      animated: !!p.animated,
+    }));
 
-  useEffect(() => {
-    const lat = center?.latitude  ?? DEFAULT_LAT;
-    const lng = center?.longitude ?? DEFAULT_LNG;
-    if (mapReady.current) {
-      if (autoFitBounds && (polylines.length > 0 || markers.length > 1)) {
-        // Use FIT_BOUNDS whenever there is a route to show
-        sendFitBounds(markers, polylines, nearbyAutos);
-      } else {
-        sendUpdate(lat, lng, markers, polylines, nearbyAutos);
-      }
-    } else {
-      pendingMsg.current = { lat, lng, markers, polylines, nearbyAutos, fitBounds: autoFitBounds };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center?.latitude, center?.longitude, zoom, JSON.stringify(markers), JSON.stringify(polylines), nearbyAutos]);
+    const sendUpdate = (lat, lng, mkrs, plns, nbAutos) => {
+      if (!webViewRef.current) return;
+      const msg = JSON.stringify({
+        type: 'SET_CENTER',
+        lat, lng, zoom,
+        markers: serializeMarkers(mkrs),
+        polylines: serializePolylines(plns),
+        nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
+      });
+      webViewRef.current.postMessage(msg);
+    };
 
-  const onMessage = (event) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'MAP_READY') {
-        mapReady.current = true;
-        const lat = center?.latitude  ?? DEFAULT_LAT;
-        const lng = center?.longitude ?? DEFAULT_LNG;
-        const p   = pendingMsg.current ?? {};
-        const shouldFit = p.fitBounds || autoFitBounds;
-        if (shouldFit && ((p.polylines ?? polylines).length > 0 || (p.markers ?? markers).length > 1)) {
-          sendFitBounds(p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+    const sendFitBounds = (mkrs, plns, nbAutos, padding) => {
+      if (!webViewRef.current) return;
+      const msg = JSON.stringify({
+        type: 'FIT_BOUNDS',
+        padding: padding ?? 80,
+        markers: serializeMarkers(mkrs),
+        polylines: serializePolylines(plns),
+        nearbyAutos: nbAutos === true ? [] : (nbAutos || false),
+      });
+      webViewRef.current.postMessage(msg);
+    };
+
+    // Expose fitBounds() imperatively so parent screens can call mapRef.current.fitBounds()
+    useImperativeHandle(ref, () => ({
+      fitBounds: (padding) => sendFitBounds(markers, polylines, nearbyAutos, padding),
+    }), [markers, polylines, nearbyAutos]);
+
+    useEffect(() => {
+      const lat = center?.latitude ?? DEFAULT_LAT;
+      const lng = center?.longitude ?? DEFAULT_LNG;
+      if (mapReady.current) {
+        if (autoFitBounds && (polylines.length > 0 || markers.length > 1)) {
+          // Use FIT_BOUNDS whenever there is a route to show
+          sendFitBounds(markers, polylines, nearbyAutos);
         } else {
-          sendUpdate(p.lat ?? lat, p.lng ?? lng, p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+          sendUpdate(lat, lng, markers, polylines, nearbyAutos);
         }
-        pendingMsg.current = null;
+      } else {
+        pendingMsg.current = { lat, lng, markers, polylines, nearbyAutos, fitBounds: autoFitBounds };
       }
-    } catch (_) {}
-  };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [center?.latitude, center?.longitude, zoom, JSON.stringify(markers), JSON.stringify(polylines), nearbyAutos]);
 
-  return (
-    <View style={[styles.container, style]} pointerEvents={pointerEvents}>
-      <WebView
-        ref={webViewRef}
-        source={{ html }}
-        style={styles.webview}
-        javaScriptEnabled
-        domStorageEnabled
-        originWhitelist={['*']}
-        mixedContentMode="always"
-        allowsInlineMediaPlayback
-        allowFileAccess
-        allowFileAccessFromFileURLs
-        allowUniversalAccessFromFileURLs
-        startInLoadingState
-        onMessage={onMessage}
-        renderLoading={() => (
-          <View style={styles.loader}>
-            <ActivityIndicator size="small" color="#8031CC" />
-          </View>
-        )}
-        onError={() => {}}
-      />
-    </View>
-  );
+    const onMessage = (event) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg.type === 'MAP_READY') {
+          mapReady.current = true;
+          const lat = center?.latitude ?? DEFAULT_LAT;
+          const lng = center?.longitude ?? DEFAULT_LNG;
+          const p = pendingMsg.current ?? {};
+          const shouldFit = p.fitBounds || autoFitBounds;
+          if (shouldFit && ((p.polylines ?? polylines).length > 0 || (p.markers ?? markers).length > 1)) {
+            sendFitBounds(p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+          } else {
+            sendUpdate(p.lat ?? lat, p.lng ?? lng, p.markers ?? markers, p.polylines ?? polylines, p.nearbyAutos ?? nearbyAutos);
+          }
+          pendingMsg.current = null;
+        } else if (msg.type === 'MAP_DRAG_END') {
+          onDragEnd?.(msg.lat, msg.lng);
+        }
+      } catch (_) { }
+    };
+
+    return (
+      <View style={[styles.container, style]} pointerEvents={pointerEvents}>
+        <WebView
+          ref={webViewRef}
+          source={{ html }}
+          style={styles.webview}
+          javaScriptEnabled
+          domStorageEnabled
+          originWhitelist={['*']}
+          mixedContentMode="always"
+          allowsInlineMediaPlayback
+          allowFileAccess
+          allowFileAccessFromFileURLs
+          allowUniversalAccessFromFileURLs
+          startInLoadingState
+          onMessage={onMessage}
+          renderLoading={() => (
+            <View style={styles.loader}>
+              <ActivityIndicator size="small" color="#8031CC" />
+            </View>
+          )}
+          onError={() => { }}
+        />
+      </View>
+    );
+  });
+
+export default MapplsMapWebView;
 });
 
 export default MapplsMapWebView;
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
-  webview:   { flex: 1, backgroundColor: '#e8e4f0' },
-  loader:    { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDE9FE' },
+  webview: { flex: 1, backgroundColor: '#e8e4f0' },
+  loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDE9FE' },
 });

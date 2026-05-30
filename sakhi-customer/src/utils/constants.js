@@ -17,7 +17,10 @@ function getDevMachineHost() {
     return isIPv4 ? host : null;
 }
 
-const FALLBACK_BASE_URL = 'http://localhost:3000';
+// ALWAYS use the production backend URL as the fallback.
+// On physical-device APKs built locally, __DEV__ is false and EXPO_PUBLIC_API_URL
+// may not be baked in — so we must NOT fall back to localhost (which is the phone itself).
+const PRODUCTION_BASE_URL = 'https://sakhi-backend-pwej.onrender.com';
 const ANDROID_EMULATOR_BASE_URL = 'http://10.0.2.2:3000';
 
 const DEV_MACHINE_HOST = getDevMachineHost();
@@ -25,7 +28,7 @@ const DEV_BASE_URL = DEV_MACHINE_HOST
     ? `http://${DEV_MACHINE_HOST}:3000`
     : Platform.OS === 'android' && Constants?.isDevice === false
         ? ANDROID_EMULATOR_BASE_URL
-        : FALLBACK_BASE_URL;
+        : PRODUCTION_BASE_URL; // dev without a LAN host → also use production
 
 const ENV_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -33,12 +36,14 @@ const isLocalEnvUrl =
     typeof ENV_BASE_URL === 'string' &&
     (ENV_BASE_URL.includes('localhost') || ENV_BASE_URL.includes('127.0.0.1'));
 
-// On a physical device, localhost/127.0.0.1 points to the phone, not your PC.
-// In that case, prefer the Expo LAN host-derived URL.
+// Selection priority:
+//   1. EXPO_PUBLIC_API_URL from EAS env (baked into APK at build time)
+//   2. LAN dev URL (only in __DEV__ mode on dev machine)
+//   3. Production URL (always safe default for physical devices)
 export const API_BASE_URL =
     ENV_BASE_URL && !(Device.isDevice && Platform.OS !== 'web' && isLocalEnvUrl)
         ? ENV_BASE_URL
-        : (__DEV__ ? DEV_BASE_URL : FALLBACK_BASE_URL);
+        : (__DEV__ ? DEV_BASE_URL : PRODUCTION_BASE_URL);
 
 // Liveness WebView requires HTTPS for camera access (getUserMedia secure context).
 // Use the dedicated HTTPS URL (e.g. ngrok) if provided, otherwise fall back to API_BASE_URL.

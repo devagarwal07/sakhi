@@ -71,9 +71,9 @@ apiClient.interceptors.response.use(
 
         // ── Global Error UI ─────────────────────────────────────────────────
         if (error.response?.status === 429) {
-            CustomCustomAlert.alert('Too Many Requests', 'Please wait a moment before trying again.');
+            CustomAlert.alert('Too Many Requests', 'Please wait a moment before trying again.');
         } else if (error.response?.status >= 500 && error.response?.status !== 502 && error.response?.status !== 503 && error.response?.status !== 504) {
-            CustomCustomAlert.alert('Server Error', 'Our servers are experiencing issues. Please try again later.');
+            CustomAlert.alert('Server Error', 'Our servers are experiencing issues. Please try again later.');
         }
 
         // ── Render cold-start retry ─────────────────────────────────────────

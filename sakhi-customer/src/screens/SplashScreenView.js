@@ -6,7 +6,7 @@ import {
     StyleSheet,
     Animated,
     StatusBar,
-    Platform,
+    ActivityIndicator,
 } from 'react-native';
 
 /**
@@ -20,17 +20,17 @@ import {
  */
 export default function SplashScreenView({ onReady, authReady }) {
     // ── Entrance animations ──────────────────────────────────────────────
-    const logoScale   = useRef(new Animated.Value(0.82)).current;
+    const logoScale = useRef(new Animated.Value(0.82)).current;
     const logoOpacity = useRef(new Animated.Value(0)).current;
-    const taglineY    = useRef(new Animated.Value(10)).current;
-    const taglineOp   = useRef(new Animated.Value(0)).current;
-    const bottomOp    = useRef(new Animated.Value(0)).current;
+    const taglineY = useRef(new Animated.Value(10)).current;
+    const taglineOp = useRef(new Animated.Value(0)).current;
+    const bottomOp = useRef(new Animated.Value(0)).current;
 
     // Progress bar: 0 → 1 (0% → 100%)
     const progressAnim = useRef(new Animated.Value(0)).current;
 
     // Track whether both the bar AND auth are ready
-    const barDone  = useRef(false);
+    const barDone = useRef(false);
     const authDone = useRef(false);
 
     const tryOpen = () => {
@@ -153,22 +153,9 @@ export default function SplashScreenView({ onReady, authReady }) {
                 Safe Rides, Every Time
             </Animated.Text>
 
-            {/* ══ BOTTOM SECTION: dots + progress bar ══ */}
-            <Animated.View style={[styles.bottomSection, { opacity: bottomOp }]}>
-                {/* Abstract 3-dot pattern */}
-                <View style={styles.dotsRow}>
-                    <View style={styles.dot} />
-                    <View style={styles.dot} />
-                    <View style={styles.dot} />
-                </View>
-
-                {/* Loading bar: animates 0% → 100% once */}
-                <View style={styles.loadingWrapper}>
-                    <View style={styles.trackBg}>
-                        <Animated.View style={[styles.trackFill, { width: barWidth }]} />
-                    </View>
-                    <Text style={styles.empoweringText}>EMPOWERING WOMEN</Text>
-                </View>
+            {/* Loading indicator */}
+            <Animated.View style={[styles.dotsRow, { opacity: dotsOpacity }]}>
+                <ActivityIndicator size="large" color="#BEA3D8" />
             </Animated.View>
         </View>
     );

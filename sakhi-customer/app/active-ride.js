@@ -42,10 +42,7 @@ export default function ActiveRideScreen() {
     const { on, off } = useSocket();
     const [chatOpen, setChatOpen] = useState(false);
     const mapRef = useRef(null);
-    const driverCoords = useRef(new Animated.ValueXY({
-        x: ride.driver?.currentLocation?.latitude || 0,
-        y: ride.driver?.currentLocation?.longitude || 0,
-    })).current;
+    const driverInitialized = useRef(false); // track if driver marker is placed on map
     const sheetSlide = useRef(new Animated.Value(300)).current;
     const [modal, setModal] = useState(null);
     const [shareShown, setShareShown] = useState(false);
@@ -87,9 +84,13 @@ export default function ActiveRideScreen() {
         // Socket listeners — registered here so they fire as long as this screen is mounted
         const handleLocationUpdate = ({ lat, lng, heading }) => {
             const coords = { latitude: lat, longitude: lng, heading };
+            // 1. Update React context (for display in UI, battery alerts, etc.)
             updateDriverLocation(coords);
-            if (mapRef.current) {
-                mapRef.current.animateCamera?.({ center: coords }, { duration: 600 });
+            // 2. Animate the driver marker smoothly via imperative map API
+            //    This avoids re-creating the marker (no jarring jump)
+            if (mapRef.current?.smoothMoveDriver) {
+                mapRef.current.smoothMoveDriver(lat, lng, heading ?? 0, true);
+                driverInitialized.current = true;
             }
         };
 
@@ -288,7 +289,8 @@ export default function ActiveRideScreen() {
                         latitude: ride.driver.currentLocation.latitude,
                         longitude: ride.driver.currentLocation.longitude,
                         color: '#8031CC',
-                        bearing: ride.driver?.bearing || 0,
+                        // bearing only set on initial placement; smooth rotation handled imperatively
+                        bearing: ride.driver?.currentLocation?.heading ?? ride.driver?.bearing ?? 0,
                     },
                 ].filter(Boolean)}
                 polylines={ride.polyline?.length > 1 ? [{ coords: ride.polyline, color: '#8031CC', width: 4, animated: true }] : []}

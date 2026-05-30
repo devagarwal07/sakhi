@@ -7,6 +7,7 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
   <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -46,24 +47,22 @@
       </intent-filter>
     </activity>
 
-    <!-- ══ Incoming Ride Native UI Activity ══════════════════════════════════
-         This is the target of Notifee's fullScreenAction.
-         • Transparent theme — appears instantly over lock screen
-         • singleTask (NOT singleInstance) — singleInstance breaks fullscreen
-           intent on Android 13+, Samsung, Xiaomi, OnePlus (Oxygen OS)
-         • showOnLockScreen — required by some OEMs (Samsung, OnePlus)
-         • No taskAffinity — required for singleTask to work correctly
+    <!-- ══ Ride Overlay Service ════════════════════════════════════════════════
+         Draws a native WindowManager bottom-sheet OVER any app using
+         TYPE_APPLICATION_OVERLAY (SYSTEM_ALERT_WINDOW). This is the
+         Rapido / Ola style floating popup — no Activity launch needed.
+
+         Started by: RideRequestBridgeModule.showOverlay() from the FCM
+         headless JS background handler when a RIDE_REQUEST arrives.
+
+         Foreground service type = dataSync (matches the permission already
+         declared: FOREGROUND_SERVICE_DATA_SYNC).
     ════════════════════════════════════════════════════════════════════════ -->
-    <activity
-      android:name=".IncomingRideActivity"
-      android:theme="@style/Theme.IncomingRide"
-      android:launchMode="singleTask"
-      android:exported="true"
-      android:showWhenLocked="true"
-      android:showOnLockScreen="true"
-      android:turnScreenOn="true"
-      android:screenOrientation="portrait"
-      android:excludeFromRecents="true" />
+    <service
+      android:name=".RideOverlayService"
+      android:foregroundServiceType="dataSync"
+      android:exported="false" />
+
     <uses-library android:name="org.apache.http.legacy" android:required="false"/>
   </application>
 </manifest>

@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useRide } from '../../context/RideContext';
 import { useAuth } from '../../context/AuthContext';
-import { getAddresses, getRideHistory, getActiveRide } from '../../api/endpoints';
+import { getAddresses, getRideHistory, getActiveRide, getNearbyDrivers } from '../../api/endpoints';
 import CustomAlert from '../../utils/CustomAlert';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
@@ -61,6 +61,7 @@ export default function HomeScreen() {
     const [savedPlaces, setSavedPlaces] = useState([]);
     const [activeTab, setActiveTab] = useState('book');
     const [isExpanded, setIsExpanded] = useState(false);
+    const [nearbyAutosData, setNearbyAutosData] = useState([]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     // Custom Bottom Sheet Animation
@@ -108,25 +109,26 @@ export default function HomeScreen() {
         // ── Active Ride Guard Check ─────────────────────────────────────────
         getActiveRide()
             .then(({ data }) => {
-                if (data && data.ride) {
-                    const activeRide = data.ride;
+                // API returns the ride object directly (not wrapped in { ride: ... })
+                if (data && data.id) {
+                    const activeRide = data;
                     const status = activeRide.status;
                     
                     // Populate ride context so pages can bind safely
-                    setRideId(activeRide.ride_id);
+                    setRideId(activeRide.id);
                     updateStatus(status);
-                    if (activeRide.driver) {
+                    if (activeRide.drivers) {
                         setDriver({
-                            id:      activeRide.driver.id,
-                            name:    activeRide.driver.name ?? 'Your Driver',
-                            phone:   activeRide.driver.phone ?? null,
-                            photo:   activeRide.driver.profile_photo_url ?? null,
-                            rating:  activeRide.driver.avg_rating ?? 4.8,
+                            id:      activeRide.drivers.id,
+                            name:    activeRide.drivers.name ?? 'Your Driver',
+                            phone:   activeRide.drivers.phone ?? null,
+                            photo:   activeRide.drivers.profile_photo_url ?? null,
+                            rating:  activeRide.drivers.avg_rating ?? 4.8,
                             vehicle: {
-                                type:  activeRide.driver.vehicle_type ?? 'Auto',
-                                plate: activeRide.driver.vehicle_reg_no ?? '',
-                                model: activeRide.driver.vehicle_model ?? '',
-                                color: activeRide.driver.vehicle_color ?? '',
+                                type:  activeRide.drivers.vehicle_type ?? 'Auto',
+                                plate: activeRide.drivers.vehicle_reg_no ?? '',
+                                model: activeRide.drivers.vehicle_model ?? '',
+                                color: activeRide.drivers.vehicle_color ?? '',
                             },
                         });
                     }
@@ -144,6 +146,7 @@ export default function HomeScreen() {
             .catch((err) => {
                 console.warn('[ActiveRideCheck] error:', err?.message);
             });
+
 
         (async () => {
             let permStatus;
@@ -224,6 +227,31 @@ export default function HomeScreen() {
         ).start();
     }, []);
 
+    // Fetch nearby drivers periodically
+    useEffect(() => {
+        if (!currentLocation) return;
+        
+        let isMounted = true;
+        const fetchDrivers = async () => {
+            try {
+                const res = await getNearbyDrivers(currentLocation.latitude, currentLocation.longitude);
+                if (isMounted && res.data) {
+                    setNearbyAutosData(res.data);
+                }
+            } catch (err) {
+                // Silently ignore network errors for polling
+            }
+        };
+
+        fetchDrivers();
+        const intervalId = setInterval(fetchDrivers, 10000); // every 10 seconds
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [currentLocation]);
+
     const greetingName = 'Sakhi';
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -252,6 +280,7 @@ export default function HomeScreen() {
                     zoom={15}
                     scrollEnabled
                     zoomEnabled
+                    nearbyAutos={nearbyAutosData}
                     markers={currentLocation ? [{
                         id: 'me',
                         latitude: currentLocation.latitude,

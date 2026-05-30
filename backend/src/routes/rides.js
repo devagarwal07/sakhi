@@ -25,6 +25,9 @@ router.post('/subscription/:id/initiate', authMiddleware, roleGuard('driver'), r
 /** GET /rides/active — fetch current active ride for driver/rider */
 router.get('/active',          authMiddleware, roleGuard('rider', 'driver'), rideController.getActiveRide);
 
+/** GET /rides/nearby-drivers — fetch nearby active drivers for map visualization */
+router.get('/nearby-drivers',  authMiddleware, roleGuard('rider'),           rideController.getNearbyDrivers);
+
 /** GET /rides/:id — fetch full ride details */
 router.get('/:id',            authMiddleware,                               rideController.getRide);
 

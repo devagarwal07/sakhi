@@ -727,10 +727,64 @@ async function getActiveRide(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /rides/nearby-drivers  — rider fetches nearby drivers for map visualization
+// ──────────────────────────────────────────────────────────────────────────────
+async function getNearbyDrivers(req, res, next) {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: 'Invalid coordinates' });
+    }
+
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    const { data: rows, error } = await supabase
+      .from('drivers')
+      .select(`
+        id,
+        driver_locations!inner(lat, lng, updated_at)
+      `)
+      .eq('is_online', true)
+      .eq('is_active', true)
+      .eq('gender_verified', true)
+      .eq('verification_status', 'approved')
+      .gte('driver_locations.updated_at', fiveMinsAgo);
+
+    if (error || !rows) {
+      logger.error('rideController.getNearbyDrivers — DB error', { error });
+      return res.status(200).json([]);
+    }
+
+    const drivers = [];
+    for (const d of rows) {
+      const loc = Array.isArray(d.driver_locations) ? d.driver_locations[0] : d.driver_locations;
+      
+      // Simple rough filter for around 5km (~0.045 degrees)
+      const latDiff = Math.abs(loc.lat - lat);
+      const lngDiff = Math.abs(loc.lng - lng);
+      
+      if (latDiff < 0.045 && lngDiff < 0.045) {
+        drivers.push({
+          id: d.id,
+          lat: loc.lat,
+          lng: loc.lng
+        });
+      }
+    }
+
+    return res.status(200).json(drivers);
+  } catch (err) {
+    return handleError(err, res, next);
+  }
+}
+
 module.exports = {
   estimateFare, createRide, updateStatus, cancelRide,
   acceptRide, rejectRide, getRide, rateRide, getChatHistory,
   fareSummary, cashCollected, rateRider,
   createRidePaymentOrder, verifyRidePayment,
-  initiateSubscriptionRide, getActiveRide,
+  initiateSubscriptionRide, getActiveRide, getNearbyDrivers,
 };

@@ -91,13 +91,9 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
   // No hardcoded heights needed — sidebar uses flex layout
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
-      {/* Overlay Background */}
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <Animated.View style={[styles.overlay, { opacity: opacityAnim }]} />
-      </TouchableWithoutFeedback>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 100, flexDirection: 'row' }]}>
 
-      {/* Sidebar Drawer — flex column so ScrollView fills remaining space */}
+      {/* ── Sidebar Drawer ──────────────────────────────────────────── */}
       <Animated.View style={[
         styles.sidebar,
         { transform: [{ translateX: slideAnim }] }
@@ -144,6 +140,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
           contentContainerStyle={styles.menuContent}
           bounces={false}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
         >
           {MENU_ITEMS_CONFIG.map((item) => {
             const isActive = activeRoute === item.id;
@@ -239,6 +236,16 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
 
       </Animated.View>
 
+      {/* ── Tap-to-close overlay — only covers the area RIGHT of the sidebar ── */}
+      <Animated.View
+        style={[styles.overlayRight, { opacity: opacityAnim }]}
+        pointerEvents="box-only"
+      >
+        <TouchableWithoutFeedback onPress={handleClose}>
+          <View style={{ flex: 1 }} />
+        </TouchableWithoutFeedback>
+      </Animated.View>
+
       {/* Language Switcher Modal — outside sidebar so it isn't clipped */}
       <LanguageSwitcher visible={showLang} onClose={() => setShowLang(false)} />
     </View>
@@ -250,12 +257,15 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(28, 26, 37, 0.4)',
   },
+  // Right-side overlay — only covers area outside the sidebar
+  overlayRight: {
+    flex: 1,
+    backgroundColor: 'rgba(28, 26, 37, 0.4)',
+  },
   sidebar: {
-    position: 'absolute',
+    width: SIDEBAR_W,
     top: 0,
     bottom: 0,
-    left: 0,
-    width: SIDEBAR_W,
     backgroundColor: '#FFFFFF',
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
