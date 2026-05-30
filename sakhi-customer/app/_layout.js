@@ -21,19 +21,9 @@ function AppNavigator() {
     const { isLoading } = useAuth();
 
     useEffect(() => {
-        // Hide splash when auth resolves
-        if (!isLoading) {
-            SplashScreen.hideAsync().catch(() => {});
-        }
-    }, [isLoading]);
-
-    // Safety net: force-hide splash after 3 seconds maximum
-    // This prevents users from ever getting stuck on the splash screen
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            SplashScreen.hideAsync().catch(() => {});
-        }, 3000);
-        return () => clearTimeout(timer);
+        // Hide the native splash immediately — our custom JS SplashScreenView
+        // (shown in index.js while isLoading is true) is the only splash users see.
+        SplashScreen.hideAsync().catch(() => {});
     }, []);
 
     return (
@@ -138,7 +128,7 @@ function AppNavigator() {
 
 export default function RootLayout() {
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F5F0FF' }}>
             <SafeAreaProvider>
                 <AuthProvider>
                     <SocketProvider>

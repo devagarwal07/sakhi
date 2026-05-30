@@ -10,16 +10,15 @@ import {
 } from 'react-native';
 
 /**
- * SplashScreenView — shown while auth token check runs (~50–200ms).
- * Built from the Figma design specs (CSS export + SVG logo).
+ * SplashScreenView — shown while auth token check runs.
+ * The loading bar animates from 0% → 100% over ~2s.
+ * Once the bar completes AND auth is resolved, onReady() is called.
  *
- * Layout (390×884 Figma frame):
- *   - Full-screen lavender gradient (#F5F0FF → #EDE9FE)
- *   - Two decorative blur glows (top-left, bottom-right)
- *   - CENTER: Sakhi logo (169×118) + "Safe Rides, Every Time" tagline
- *   - BOTTOM: 3 dots (opacity 0.2) + animated progress bar + "EMPOWERING WOMEN"
+ * Props:
+ *   onReady — callback fired when bar animation finishes (if auth also done)
+ *   authReady — boolean: true when auth state has resolved
  */
-export default function SplashScreenView() {
+export default function SplashScreenView({ onReady, authReady }) {
     // ── Entrance animations ──────────────────────────────────────────────
     const logoScale   = useRef(new Animated.Value(0.82)).current;
     const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -27,8 +26,26 @@ export default function SplashScreenView() {
     const taglineOp   = useRef(new Animated.Value(0)).current;
     const bottomOp    = useRef(new Animated.Value(0)).current;
 
-    // Animated loading bar (0 → 80%, then resets, loops)
+    // Progress bar: 0 → 1 (0% → 100%)
     const progressAnim = useRef(new Animated.Value(0)).current;
+
+    // Track whether both the bar AND auth are ready
+    const barDone  = useRef(false);
+    const authDone = useRef(false);
+
+    const tryOpen = () => {
+        if (barDone.current && authDone.current && onReady) {
+            onReady();
+        }
+    };
+
+    // When auth resolves externally, record it and try to open
+    useEffect(() => {
+        if (authReady) {
+            authDone.current = true;
+            tryOpen();
+        }
+    }, [authReady]);
 
     useEffect(() => {
         if (Platform.OS === 'android') {
@@ -36,7 +53,7 @@ export default function SplashScreenView() {
             StatusBar.setBarStyle('dark-content', false);
         }
 
-        // Sequence: logo pops in → tagline slides up → bottom section fades in
+        // Sequence: logo pops in → tagline slides up → bottom fades in → bar fills
         Animated.sequence([
             Animated.parallel([
                 Animated.spring(logoScale, {
@@ -68,25 +85,17 @@ export default function SplashScreenView() {
                 duration: 300,
                 useNativeDriver: true,
             }),
-        ]).start();
-
-        // Loading bar loop: fill to 80% in 1.8s, snap back, repeat
-        const barLoop = Animated.loop(
-            Animated.sequence([
-                Animated.timing(progressAnim, {
-                    toValue: 0.8,
-                    duration: 1800,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(progressAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: false,
-                }),
-            ])
-        );
-        barLoop.start();
-        return () => barLoop.stop();
+            // Bar fills from 0% → 100% in 1.8s, then triggers open
+            Animated.timing(progressAnim, {
+                toValue: 1,
+                duration: 1800,
+                useNativeDriver: false,
+            }),
+        ]).start(() => {
+            // Bar animation complete
+            barDone.current = true;
+            tryOpen();
+        });
     }, []);
 
     const barWidth = progressAnim.interpolate({
@@ -108,14 +117,13 @@ export default function SplashScreenView() {
                 <View style={styles.gradOverlay} />
             </View>
 
-            {/* ── Decorative luminous glow — top-left (#630ED4, 5% opacity) ── */}
+            {/* ── Decorative luminous glow — top-left ── */}
             <View style={styles.glowTopLeft} />
 
-            {/* ── Decorative luminous glow — bottom-right (#674BB5, 10% opacity) ── */}
+            {/* ── Decorative luminous glow — bottom-right ── */}
             <View style={styles.glowBottomRight} />
 
-            {/* ══ CENTER BRAND CLUSTER ══════════════════════════════════════
-                Figma: 203.16px wide, flex-grow: 1, centered vertically      */}
+            {/* ══ CENTER BRAND CLUSTER ══ */}
             <Animated.View
                 style={[
                     styles.brandCluster,
@@ -125,7 +133,6 @@ export default function SplashScreenView() {
                     },
                 ]}
             >
-                {/* Sakhi logo — 169×118px (Figma spec) */}
                 <Image
                     source={require('../../assets/sakhi.jpeg')}
                     style={styles.logo}
@@ -133,8 +140,7 @@ export default function SplashScreenView() {
                 />
             </Animated.View>
 
-            {/* Identity text: "Safe Rides, Every Time"
-                Figma: Inter Light 18px, #C0A6D6, letter-spacing 0.45px     */}
+            {/* Identity text: "Safe Rides, Every Time" */}
             <Animated.Text
                 style={[
                     styles.tagline,
@@ -147,23 +153,20 @@ export default function SplashScreenView() {
                 Safe Rides, Every Time
             </Animated.Text>
 
-            {/* ══ EDITORIAL SPACING LAYER (bottom) ═════════════════════════
-                Figma: 200px wide, flex-col, gap 16px between dot row & bar  */}
+            {/* ══ BOTTOM SECTION: dots + progress bar ══ */}
             <Animated.View style={[styles.bottomSection, { opacity: bottomOp }]}>
-                {/* Abstract 3-dot pattern — opacity 0.2, #C0A6D6, 6px circles */}
+                {/* Abstract 3-dot pattern */}
                 <View style={styles.dotsRow}>
                     <View style={styles.dot} />
                     <View style={styles.dot} />
                     <View style={styles.dot} />
                 </View>
 
-                {/* Loading indicator: 200×4px track + animated fill + label */}
+                {/* Loading bar: animates 0% → 100% once */}
                 <View style={styles.loadingWrapper}>
                     <View style={styles.trackBg}>
                         <Animated.View style={[styles.trackFill, { width: barWidth }]} />
                     </View>
-
-                    {/* "EMPOWERING WOMEN" — 10px Inter, letter-spacing 2px, #7B7487 */}
                     <Text style={styles.empoweringText}>EMPOWERING WOMEN</Text>
                 </View>
             </Animated.View>
@@ -172,7 +175,6 @@ export default function SplashScreenView() {
 }
 
 const styles = StyleSheet.create({
-    /* ── Root container ──────────────────────────────────────────── */
     root: {
         flex: 1,
         flexDirection: 'column',
@@ -184,8 +186,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF',
         overflow: 'hidden',
     },
-
-    /* ── Gradient layers ─────────────────────────────────────────── */
     gradBg: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: '#F5F0FF',
@@ -197,9 +197,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#EDE9FE',
         opacity: 0.55,
     },
-
-    /* ── Decorative blurs ────────────────────────────────────────── */
-    // Figma: left: -10%, right: 44.36%, top: -10%, bottom: 81.04%
     glowTopLeft: {
         position: 'absolute',
         left: '-10%',
@@ -209,7 +206,6 @@ const styles = StyleSheet.create({
         borderRadius: 9999,
         backgroundColor: 'rgba(99, 14, 212, 0.05)',
     },
-    // Figma: left: 27.95%, right: -10%, top: 58.8%, bottom: 5%
     glowBottomRight: {
         position: 'absolute',
         right: '-10%',
@@ -219,22 +215,16 @@ const styles = StyleSheet.create({
         borderRadius: 9999,
         backgroundColor: 'rgba(103, 75, 181, 0.10)',
     },
-
-    /* ── Brand cluster ───────────────────────────────────────────── */
     brandCluster: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         width: 204,
     },
-    // Figma: 169×118px
     logo: {
         width: 169,
         height: 118,
     },
-
-    /* ── Tagline ─────────────────────────────────────────────────── */
-    // Figma: Inter Light 18px, line-height 28px, letter-spacing 0.45px, #C0A6D6
     tagline: {
         fontWeight: '300',
         fontSize: 18,
@@ -243,17 +233,13 @@ const styles = StyleSheet.create({
         color: '#C0A6D6',
         textAlign: 'center',
         width: 204,
-        marginBottom: 48,     // space above bottom section
+        marginBottom: 48,
     },
-
-    /* ── Bottom editorial section ────────────────────────────────── */
     bottomSection: {
         width: 200,
         alignItems: 'center',
         gap: 16,
     },
-
-    // 3 dots — Figma: 6px circles, gap 8px, opacity 0.2, #C0A6D6
     dotsRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -266,8 +252,6 @@ const styles = StyleSheet.create({
         borderRadius: 9999,
         backgroundColor: '#C0A6D6',
     },
-
-    // Loading indicator — Figma: 200×4px track, fill in #C0A6D6, track in #E5E0EF
     loadingWrapper: {
         width: 200,
         alignItems: 'center',
@@ -285,8 +269,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#C0A6D6',
         borderRadius: 9999,
     },
-
-    // "EMPOWERING WOMEN" — Figma: 10px, letter-spacing 2px, uppercase, #7B7487
     empoweringText: {
         fontSize: 10,
         lineHeight: 15,

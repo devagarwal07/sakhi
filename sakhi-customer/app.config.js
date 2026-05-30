@@ -24,7 +24,6 @@ export default {
     scheme: "sakhi",
     userInterfaceStyle: "light",
     splash: {
-      image: "./assets/splash.png",
       resizeMode: "contain",
       backgroundColor: "#F5F0FF"
     },
