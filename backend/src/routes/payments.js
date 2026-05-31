@@ -24,4 +24,10 @@ router.post('/commission/verify', authMiddleware, roleGuard('driver'), paymentCo
 /** POST /payments/phonepe/callback — PhonePe server-to-server payment status webhook (no auth required) */
 router.post('/phonepe/callback', paymentController.phonePeCallback);
 
+/** POST /payments/cancellation-fine/order — rider creates a PhonePe order to pay ₹20 cancellation fine */
+router.post('/cancellation-fine/order',  authMiddleware, roleGuard('rider'), paymentController.createCancellationFineOrder);
+
+/** POST /payments/cancellation-fine/verify — rider verifies fine payment and unblocks booking */
+router.post('/cancellation-fine/verify', authMiddleware, roleGuard('rider'), paymentController.verifyCancellationFine);
+
 module.exports = router;

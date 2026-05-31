@@ -215,6 +215,12 @@ export default function RideFindingScreen() {
                     return;
                 }
 
+                // Handle cancellation fine — navigate to fine payment screen
+                if (errCode === 'CANCELLATION_FINE_PENDING') {
+                    router.replace('/cancellation-fine');
+                    return;
+                }
+
                 setBookingError(msg);
             }
         };

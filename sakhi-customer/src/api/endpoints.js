@@ -109,6 +109,12 @@ export const toggleSubscriptionPause = (id, isPaused) => apiClient.patch(`/subsc
 export const createSubscriptionOrder = (data) => apiClient.post('/payments/order', data);
 export const verifyPayment = (data) => apiClient.post('/payments/verify', data);
 
+// ── Cancellation Fine ──────────────────────────────────────────────────────────
+/** Creates a PhonePe order to pay the ₹20 cancellation fine */
+export const createCancellationFineOrder = () => apiClient.post('/payments/cancellation-fine/order');
+/** Verifies the fine payment and unblocks ride booking */
+export const verifyCancellationFine = (transaction_id) => apiClient.post('/payments/cancellation-fine/verify', { transaction_id });
+
 // ── Change Phone ───────────────────────────────────────────────────────────
 export const sendChangePhoneOtp = (newPhone) =>
     apiClient.post('/auth/change-phone/send-otp', { new_phone: newPhone });

@@ -214,4 +214,77 @@ async function phonePeCallback(req, res, next) {
   }
 }
 
-module.exports = { createOrder, verifyPayment, createCommissionOrder, verifyCommissionPayment, phonePeCallback };
+// ── POST /payments/cancellation-fine/order — rider creates a PhonePe order for ₹20 fine ────
+async function createCancellationFineOrder(req, res, next) {
+  try {
+    const riderId = req.user.userId;
+
+    // Verify fine is actually pending
+    const { data: userRows } = await supabase
+      .from('users')
+      .select('cancellation_fine_pending, cancellation_fine_amount')
+      .eq('id', riderId)
+      .limit(1);
+
+    const user = userRows?.[0];
+    if (!user?.cancellation_fine_pending) {
+      return res.status(400).json({ error: { code: 'NO_FINE_PENDING', message: 'No cancellation fine is pending.' } });
+    }
+
+    const fineAmount = user.cancellation_fine_amount || 20;
+    const merchantOrderId = `fine-${riderId.slice(0, 20)}-${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64);
+
+    const result = await paymentService.createOrder(fineAmount, merchantOrderId, null, { userId: riderId });
+
+    return res.status(200).json({
+      transaction_id:  result.transaction_id,
+      order_id:        result.order_id,
+      base64_payload:  result.base64_payload,
+      amount:          fineAmount,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ── POST /payments/cancellation-fine/verify — verify fine payment and clear flag ────────────
+async function verifyCancellationFine(req, res, next) {
+  try {
+    const { transaction_id } = req.body;
+    if (!transaction_id) {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'transaction_id is required.' } });
+    }
+    const riderId = req.user.userId;
+
+    const result = await paymentService.verifyPayment(transaction_id);
+    if (!result.success) {
+      throw new AppError(`Fine payment verification failed: state=${result.state}`, 400, 'PAYMENT_VERIFICATION_FAILED');
+    }
+
+    // Clear the fine flag — rider can now book again
+    await supabase.from('users').update({
+      cancellation_fine_pending: false,
+      cancellation_fine_amount:  0,
+    }).eq('id', riderId);
+
+    // Log fine payment for audit
+    await supabase.from('cancellation_fine_payments').insert({
+      rider_id:       riderId,
+      amount:         result.rawData?.amount ? result.rawData.amount / 100 : 20,
+      transaction_id,
+      paid_at:        new Date().toISOString(),
+    }).catch(() => {}); // non-fatal if table doesn't exist yet
+
+    logger.info('paymentController.verifyCancellationFine — fine cleared', { riderId, transaction_id });
+    return res.status(200).json({ success: true, message: 'Fine paid. You can now book rides.' });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+module.exports = {
+  createOrder,
+  verifyPayment,
+  createCommissionOrder,
+  verifyCommissionPayment,
+  phonePeCallback,
+  createCancellationFineOrder,
+  verifyCancellationFine,
+};
+

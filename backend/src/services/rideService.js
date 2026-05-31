@@ -314,7 +314,7 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
     // 11. Driver referral programme — non-blocking check
     setImmediate(() => referralService.checkDriverReferral(driverId));
 
-    // 12. Reset consecutive fail counter — successful ride resets the streak
+    // 12. Reset consecutive cancel counter on successful ride completion
     setImmediate(async () => {
       try {
         await supabase.from('users').update({ consecutive_fail_count: 0 }).eq('id', riderId);
@@ -414,7 +414,8 @@ async function cancelRide(rideId, userId, role, reason, io) {
     cancellation_reason: reason || null,
   }).eq('id', rideId);
 
-  // ── Consecutive-fail tracking (rider-cancelled only) ──────────────────────
+  // ── Cancellation fine tracking (rider-cancelled only) ──────────────────────────────────
+  // Every 3 rider cancellations → ₹20 fine must be paid before next booking
   if (role === 'rider') {
     setImmediate(async () => {
       try {
@@ -428,16 +429,25 @@ async function cancelRide(rideId, userId, role, reason, io) {
         const newCnt = prev + 1;
 
         if (newCnt >= 3) {
+          // 3rd cancellation — apply ₹20 fine and reset counter
           await supabase.from('users').update({
-            consecutive_fail_count: 0,
-            free_ride_eligible: true,
+            consecutive_fail_count:    0,
+            cancellation_fine_pending: true,
+            cancellation_fine_amount:  20,
           }).eq('id', ride.rider_id);
-          logger.info('rideService — free ride granted after 3 consecutive rider cancels', { riderId: ride.rider_id });
+          logger.info('rideService — ₹20 cancellation fine applied after 3 consecutive cancels', { riderId: ride.rider_id });
+
+          // Notify rider via FCM
+          fcmService.sendToUser(ride.rider_id, 'rider', {
+            title: 'Cancellation Fine Applied ⚠️',
+            body:  'You\'ve cancelled 3 rides. A ₹20 fine must be paid before your next booking.',
+            data:  { type: 'CANCELLATION_FINE', amount: '20' },
+          }).catch(() => {});
         } else {
           await supabase.from('users').update({ consecutive_fail_count: newCnt }).eq('id', ride.rider_id);
         }
       } catch (trackErr) {
-        logger.warn('rideService — consecutive cancel tracking error', { riderId: ride.rider_id, error: trackErr.message });
+        logger.warn('rideService — cancellation fine tracking error', { riderId: ride.rider_id, error: trackErr.message });
       }
     });
   }

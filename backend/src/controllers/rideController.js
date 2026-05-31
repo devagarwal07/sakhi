@@ -138,13 +138,26 @@ async function createRide(req, res, next) {
     const body = rideBookingSchema.parse(req.body);
     const riderId = req.user.userId;
 
-    const { data: riders } = await supabase.from('users').select('id, gender_verified, verification_status, is_active').eq('id', riderId).limit(1);
+    const { data: riders } = await supabase.from('users').select('id, gender_verified, verification_status, is_active, cancellation_fine_pending, cancellation_fine_amount').eq('id', riderId).limit(1);
     const rider = riders?.[0];
     if (!rider) throw new AppError('Rider not found.', 404, 'USER_NOT_FOUND');
 
     if (!rider.gender_verified || rider.verification_status !== 'approved' || !rider.is_active) {
       return res.status(403).json({
         error: { code: 'VERIFICATION_REQUIRED', message: 'Complete identity verification to book rides.', details: {} },
+      });
+    }
+
+    // ── Cancellation fine gate ─────────────────────────────────────────────────
+    // Block booking until the ₹20 fine is paid (applied after every 3 cancellations)
+    if (rider.cancellation_fine_pending) {
+      const fineAmount = rider.cancellation_fine_amount || 20;
+      return res.status(402).json({
+        error: {
+          code:    'CANCELLATION_FINE_PENDING',
+          message: `You have a ₹${fineAmount} cancellation fine. Please pay it to continue booking rides.`,
+          details: { fine_amount: fineAmount },
+        },
       });
     }
 
