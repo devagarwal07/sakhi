@@ -171,7 +171,7 @@ router.get('/rides', authMiddleware, roleGuard('rider'), async (req, res, next) 
 
     const { data, error, count } = await supabase
       .from('rides')
-      .select('*, drivers(name, vehicle_model, plate_number, avatar_url)', { count: 'exact' })
+      .select('*, drivers(name, vehicle_model, vehicle_reg_no, profile_photo_url)', { count: 'exact' })
       .eq('rider_id', req.user.userId)
       .in('status', ['completed', 'cancelled'])
       .order('created_at', { ascending: false })
