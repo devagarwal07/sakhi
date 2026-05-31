@@ -13,71 +13,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import CustomAlert from '../../utils/CustomAlert';
 
-// ── Razorpay Checkout WebView HTML ───────────────────────────────────────────
-function buildRazorpayHtml({ key_id, order_id, amount, currency, name, description, prefill_name, prefill_contact }) {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #F7F6F8; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .loader { text-align: center; font-family: sans-serif; color: #64748B; font-size: 14px; }
-    .spinner { width: 36px; height: 36px; border: 3px solid #EDE9FE; border-top: 3px solid #BEA3D8;
-      border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-  <div class="loader">
-    <div class="spinner"></div>
-    Opening payment…
-  </div>
-  <script>
-    var options = {
-      key:         "${key_id}",
-      order_id:    "${order_id}",
-      amount:      "${amount}",
-      currency:    "${currency}",
-      name:        "${name}",
-      description: "${description}",
-      prefill: {
-        name:    "${prefill_name}",
-        contact: "${prefill_contact}",
-      },
-      theme: { color: "#BEA3D8" },
-      modal: {
-        ondismiss: function() {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "DISMISSED" }));
-        }
-      },
-      handler: function(response) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:                  "SUCCESS",
-          razorpay_order_id:     response.razorpay_order_id,
-          razorpay_payment_id:   response.razorpay_payment_id,
-          razorpay_signature:    response.razorpay_signature,
-        }));
-      }
-    };
-    try {
-      var rzp = new Razorpay(options);
-      rzp.on("payment.failed", function(resp) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:  "FAILED",
-          error: resp.error.description,
-        }));
-      });
-      rzp.open();
-    } catch(e) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "ERROR", error: e.message }));
-    }
-  </script>
-</body>
-</html>`;
-}
+// PhonePe redirect flow is used instead of Razorpay custom HTML
 
 // ── Star rating component ────────────────────────────────────────────────────
 function StarRating({ value, onChange }) {
@@ -117,8 +53,9 @@ export default function PaymentDetailsScreen({ navigation, route }) {
   const [cashConfirming, setCashConfirming] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  // Razorpay WebView state
-  const [rzpHtml, setRzpHtml]       = useState(null);
+  // PhonePe WebView state
+  const [phonePeUrl, setPhonePeUrl] = useState(null);
+  const [transactionId, setTransactionId] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
 
   // Rating modal
@@ -166,22 +103,13 @@ export default function PaymentDetailsScreen({ navigation, route }) {
     }
   };
 
-  // ── Open Razorpay: create order → build HTML → show WebView ────────────
+  // ── Open PhonePe: create order → show WebView ───────────────────────────
   const handleOnlinePayment = async () => {
     try {
       setPaymentLoading(true);
       const { data } = await client.post(`/rides/${rideId}/payment/order`);
-      const html = buildRazorpayHtml({
-        key_id:          data.key_id,
-        order_id:        data.order_id,
-        amount:          String(data.amount),
-        currency:        data.currency || 'INR',
-        name:            'Sakhi',
-        description:     `Ride to ${dropoffLabel}`,
-        prefill_name:    riderName,
-        prefill_contact: riderPhone,
-      });
-      setRzpHtml(html);
+      setTransactionId(data.transaction_id);
+      setPhonePeUrl(data.redirect_url);
       setShowWebView(true);
     } catch (err) {
       CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not initiate payment. Try again.');
@@ -190,34 +118,23 @@ export default function PaymentDetailsScreen({ navigation, route }) {
     }
   };
 
-  // ── Handle message from Razorpay WebView ────────────────────────────────
-  const handleWebViewMessage = async (event) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-
-      if (msg.type === 'SUCCESS') {
-        setShowWebView(false);
-        // Verify signature on backend
-        try {
-          await client.post(`/rides/${rideId}/payment/verify`, {
-            razorpay_order_id:   msg.razorpay_order_id,
-            razorpay_payment_id: msg.razorpay_payment_id,
-            razorpay_signature:  msg.razorpay_signature,
-          });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-          setShowRatingModal(true);
-        } catch {
-          CustomAlert.alert('Verification Failed', 'Payment was received but verification failed. Contact support.');
-        }
-      } else if (msg.type === 'DISMISSED') {
-        setShowWebView(false);
-        CustomAlert.alert('Payment Cancelled', 'You closed before completing payment. You can try again.');
-      } else if (msg.type === 'FAILED' || msg.type === 'ERROR') {
-        setShowWebView(false);
-        CustomAlert.alert('Payment Failed', msg.error ?? 'Something went wrong. Please try again.');
+  // ── WebView Navigation State Change Handler (Intercept Callback) ───────────
+  const handleNavigationStateChange = async (navState) => {
+    const { url } = navState;
+    if (url && (url.includes('/payments/phonepe/callback') || url.includes('/payments/phonepe'))) {
+      setShowWebView(false);
+      try {
+        setPaymentLoading(true);
+        await client.post(`/rides/${rideId}/payment/verify`, {
+          transaction_id: transactionId,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        setShowRatingModal(true);
+      } catch {
+        CustomAlert.alert('Verification Failed', 'Payment was received but verification failed. Contact support.');
+      } finally {
+        setPaymentLoading(false);
       }
-    } catch {
-      // JSON parse error — ignore
     }
   };
 
@@ -338,14 +255,14 @@ export default function PaymentDetailsScreen({ navigation, route }) {
               ? <ActivityIndicator color="#FFF" />
               : <>
                   <MaterialIcons name="credit-card" size={20} color="#FFF" />
-                  <Text style={styles.btnText}>Pay ₹{netFare} via Razorpay</Text>
+                  <Text style={styles.btnText}>Pay ₹{netFare} via PhonePe</Text>
                 </>
             }
           </TouchableOpacity>
         )}
       </ScrollView>
 
-      {/* ── Razorpay WebView Modal ─────────────────────────────────────── */}
+      {/* ── PhonePe WebView Modal ─────────────────────────────────────── */}
       <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F6F8' }}>
           {/* Header bar */}
@@ -355,19 +272,21 @@ export default function PaymentDetailsScreen({ navigation, route }) {
               <Feather name="x" size={20} color="#64748B" />
             </TouchableOpacity>
           </View>
-          <WebView
-            source={{ html: rzpHtml || '' }}
-            onMessage={handleWebViewMessage}
-            javaScriptEnabled
-            domStorageEnabled
-            startInLoadingState
-            renderLoading={() => (
-              <View style={styles.webViewLoader}>
-                <ActivityIndicator size="large" color="#BEA3D8" />
-                <Text style={styles.loaderText}>Loading payment gateway…</Text>
-              </View>
-            )}
-          />
+          {phonePeUrl && (
+            <WebView
+              source={{ uri: phonePeUrl }}
+              onNavigationStateChange={handleNavigationStateChange}
+              javaScriptEnabled
+              domStorageEnabled
+              startInLoadingState
+              renderLoading={() => (
+                <View style={styles.webViewLoader}>
+                  <ActivityIndicator size="large" color="#BEA3D8" />
+                  <Text style={styles.loaderText}>Loading payment gateway…</Text>
+                </View>
+              )}
+            />
+          )}
         </SafeAreaView>
       </Modal>
 

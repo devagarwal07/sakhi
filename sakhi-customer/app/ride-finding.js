@@ -33,6 +33,7 @@ export default function RideFindingScreen() {
     const [bookingError, setBookingError] = useState(null);
     const [showNoDrivers, setShowNoDrivers] = useState(false);
     const [routePolyline, setRoutePolyline] = useState([]);
+    const nearbyAutosData = [];  // real-time autos fetched via getNearbyDrivers; empty = show default map autos
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;

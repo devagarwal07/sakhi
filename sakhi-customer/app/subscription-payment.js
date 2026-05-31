@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform, ActivityIndicator
+    Dimensions, ScrollView, Platform, ActivityIndicator, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,11 +11,14 @@ import SakhiModal from '../src/components/SakhiModal';
 import { createSubscriptionOrder } from '../src/api/endpoints';
 import apiClient from '../src/api/client';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
-import RazorpayCheckout from 'react-native-razorpay';
+import PhonePePaymentSdk from 'react-native-phonepe-pg';
 import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
-const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '';
+
+// PhonePe Production environment
+const PHONEPE_ENV       = 'PRODUCTION';
+const PHONEPE_CLIENT_ID = 'SU2605301736448889015067'; // used as merchantId in SDK init
 
 export default function SubscriptionPaymentScreen() {
     const router = useRouter();
@@ -27,6 +30,7 @@ export default function SubscriptionPaymentScreen() {
     const [modal, setModal] = useState(null);
     const [intentData, setIntentData] = useState(null);
     const [intentLoading, setIntentLoading] = useState(true);
+    const [sdkReady, setSdkReady] = useState(false);
 
     const insets = useSafeAreaInsets();
 
@@ -36,7 +40,7 @@ export default function SubscriptionPaymentScreen() {
     const scrollTopPadding = topNavHeight + (Platform.OS === 'ios' ? 16 : 8);
 
     const footerPaddingBottom = Math.max(insets.bottom, 24) + (Platform.OS === 'ios' ? 10 : 0);
-    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 64 + 24; // taller footer with UPI strip
+    const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 64 + 24;
 
     const pickupName = ride?.pickup?.address?.split(',')[0] || 'Pickup';
     const dropoffName = ride?.dropoff?.address?.split(',')[0] || 'Drop';
@@ -45,6 +49,27 @@ export default function SubscriptionPaymentScreen() {
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
         : (sub.days?.join(', ') || 'Mon–Fri');
 
+    // ── Initialize PhonePe SDK ───────────────────────────────────────────────
+    useEffect(() => {
+        const initSdk = async () => {
+            try {
+                await PhonePePaymentSdk.init(
+                    PHONEPE_ENV,         // 'PRODUCTION'
+                    PHONEPE_CLIENT_ID,   // merchant/client ID
+                    '',                  // flowId — optional, can be user ID for debugging
+                    false                // enableLogging (set true for debug builds only)
+                );
+                setSdkReady(true);
+            } catch (err) {
+                console.warn('PhonePe SDK init error:', err);
+                // Non-fatal — we can still try without the SDK
+                setSdkReady(false);
+            }
+        };
+        initSdk();
+    }, []);
+
+    // ── Fetch subscription intent (pricing) ─────────────────────────────────
     useEffect(() => {
         const createIntent = async () => {
             try {
@@ -115,6 +140,7 @@ export default function SubscriptionPaymentScreen() {
         }
     }, [ride, sub]);
 
+    // ── Handle Pay ───────────────────────────────────────────────────────────
     const handlePay = async () => {
         if (!intentData?.subscription_id) {
             setModal({
@@ -126,85 +152,83 @@ export default function SubscriptionPaymentScreen() {
             return;
         }
 
-        if (!RAZORPAY_KEY || !RAZORPAY_KEY.startsWith('rzp_')) {
-            setModal({
-                icon: '⚠️',
-                title: 'Payment Unavailable',
-                message: 'Razorpay API key is pending. Payment will be enabled once the client provides the key.',
-                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
-            });
-            return;
-        }
-
         setLoading(true);
         try {
-            // Step 1: Create order on backend
+            // Step 1: Create PhonePe order via backend (returns token + base64_payload)
             const { data } = await createSubscriptionOrder({
-                amount: (intentData.total_cost) * 100, // paise
-                currency: 'INR',
-                plan: sub.plan,
+                amount:               intentData.total_cost,  // INR
+                subscription_id_temp: intentData.subscription_id,
             });
 
-            const orderId = data?.order_id;
-            if (!orderId) throw new Error('Order creation failed');
+            const { transaction_id, base64_payload } = data;
+            if (!transaction_id || !base64_payload) {
+                throw new Error('Failed to create payment order. Please try again.');
+            }
 
-            // Step 2: Open native Razorpay in-app checkout
-            const options = {
-                description: 'Sakhi Subscription',
-                image: 'https://i.ibb.co/your-logo', // replace with Sakhi logo URL
-                currency: 'INR',
-                key: RAZORPAY_KEY,
-                amount: String(intentData.total_cost * 100),
-                order_id: orderId,
-                name: 'Sakhi',
-                prefill: {
-                    email: user?.email || '',
-                    contact: user?.phone || '',
-                    name: user?.name || '',
-                    method: 'upi',
-                },
-                theme: { color: '#BEA3D8' },
-                modal: {
-                    ondismiss: () => {
+            // Step 2: Launch PhonePe native SDK checkout
+            let transactionSuccess = false;
+
+            if (sdkReady && base64_payload) {
+                try {
+                    // PhonePe SDK v3: startTransaction(base64EncodedJsonPayload, appSchema)
+                    // Payload format (base64): { orderId, merchantId, token, paymentMode: { type: 'PAY_PAGE' } }
+                    const response = await PhonePePaymentSdk.startTransaction(
+                        base64_payload,
+                        Platform.OS === 'ios' ? 'sakhi' : null  // iOS URL scheme for callback
+                    );
+
+                    // SDK returns: { status: 'SUCCESS'|'FAILURE'|'INTERRUPTED', error?: string }
+                    if (response?.status === 'SUCCESS' || response?.code === 'PAYMENT_SUCCESS') {
+                        transactionSuccess = true;
+                    } else if (
+                        response?.status === 'INTERRUPTED' ||
+                        response?.status === 'CANCELLED' ||
+                        response?.error?.toLowerCase?.().includes('cancel')
+                    ) {
+                        // User cancelled — silently exit
                         setLoading(false);
-                    },
-                    animation: true,
-                },
-                config: {
-                    display: {
-                        preferences: { show_default_blocks: true },
-                        blocks: {
-                            utib: {
-                                name: 'Pay using UPI',
-                                instruments: [
-                                    { method: 'upi', flows: ['qr', 'collect', 'intent'] },
-                                ],
-                            },
-                        },
-                        sequence: ['block.utib'],
-                    },
-                },
-            };
+                        return;
+                    } else {
+                        throw new Error(response?.error || response?.message || 'Payment was not successful. Please try again.');
+                    }
+                } catch (sdkErr) {
+                    // Silently handle user-cancelled cases
+                    if (
+                        sdkErr?.message?.toLowerCase?.().includes('cancel') ||
+                        sdkErr?.message?.toLowerCase?.().includes('dismiss')
+                    ) {
+                        setLoading(false);
+                        return;
+                    }
+                    // Re-throw other SDK errors to outer catch
+                    throw sdkErr;
+                }
+            } else {
+                throw new Error('PhonePe SDK is not available. Please update the app and try again.');
+            }
 
-            const paymentData = await RazorpayCheckout.open(options);
+            if (transactionSuccess) {
+                // Step 3: Verify payment state on backend + activate subscription
+                setLoading(true);
+                await apiClient.post(`/subscriptions/${intentData.subscription_id}/activate`, {
+                    transaction_id,
+                });
 
-            // Step 3: Verify payment and activate subscription on backend
-            setLoading(true);
-            await apiClient.post(`/subscriptions/${intentData.subscription_id}/activate`, {
-                order_id:    paymentData.razorpay_order_id,
-                payment_id:  paymentData.razorpay_payment_id,
-                signature:   paymentData.razorpay_signature,
-            });
-
-            // Step 4: Navigate to success screen
-            router.replace('/payment-success');
+                // Step 4: Navigate to success screen
+                router.replace('/payment-success');
+            }
 
         } catch (err) {
-            if (err?.code === 0 || err?.description === 'Payment cancelled') {
+            // Silently swallow user cancellation signals
+            if (
+                err?.code === 0 ||
+                err?.message?.toLowerCase?.().includes('cancel') ||
+                err?.message?.toLowerCase?.().includes('dismiss')
+            ) {
+                setLoading(false);
                 return;
             }
             const msg = err?.response?.data?.error?.message
-                || err?.description
                 || err?.message
                 || 'Payment initiation failed.';
             setModal({
@@ -330,21 +354,21 @@ export default function SubscriptionPaymentScreen() {
                     <Text style={styles.upiStripLabel}>Pay directly using</Text>
                     <View style={styles.upiAppRow}>
                         {[
-                            { label: 'GPay', icon: 'smartphone' },
                             { label: 'PhonePe', icon: 'smartphone' },
+                            { label: 'GPay', icon: 'smartphone' },
                             { label: 'Paytm', icon: 'smartphone' },
                             { label: 'BHIM', icon: 'smartphone' },
                             { label: 'UPI QR', icon: 'camera' },
                         ].map((app) => (
                             <TouchableOpacity
                                 key={app.label}
-                                style={styles.upiAppBtn}
+                                style={[styles.upiAppBtn, app.label === 'PhonePe' && styles.upiAppBtnActive]}
                                 onPress={handlePay}
                                 disabled={loading}
                                 activeOpacity={0.75}
                             >
-                                <Feather name={app.icon} size={20} color="#BEA3D8" style={{ marginBottom: 2 }} />
-                                <Text style={styles.upiAppLabel}>{app.label}</Text>
+                                <Feather name={app.icon} size={20} color={app.label === 'PhonePe' ? '#5A2D82' : '#BEA3D8'} style={{ marginBottom: 2 }} />
+                                <Text style={[styles.upiAppLabel, app.label === 'PhonePe' && styles.upiAppLabelActive]}>{app.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -359,13 +383,13 @@ export default function SubscriptionPaymentScreen() {
                 >
                     {loading
                         ? <ActivityIndicator color="#FFFFFF" />
-                        : <Text style={styles.submitText}>Pay ₹{intentData ? intentData.total_cost : (sub.price || 364)} — Open Payment</Text>
+                        : <Text style={styles.submitText}>Pay ₹{intentData ? intentData.total_cost : (sub.price || 364)} — Open PhonePe</Text>
                     }
                 </TouchableOpacity>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: 4 }}>
                     <Feather name="lock" size={11} color="#94A3B8" />
-                    <Text style={[styles.securedNote, { paddingBottom: 0 }]}>Secured by Razorpay · 256-bit encryption</Text>
+                    <Text style={[styles.securedNote, { paddingBottom: 0 }]}>Secured by PhonePe · 256-bit encryption</Text>
                 </View>
             </View>
 
@@ -483,13 +507,19 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
+    upiAppBtnActive: {
+        backgroundColor: '#F3E8FF',
+        borderWidth: 1.5,
+        borderColor: '#5A2D82',
+    },
     upiAppEmoji: { fontSize: 20 },
     upiAppLabel: { fontSize: 9, fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
+    upiAppLabelActive: { color: '#5A2D82' },
 
     submitBtn: {
-        width: '100%', height: 56, backgroundColor: '#BEA3D8', borderRadius: 12,
+        width: '100%', height: 56, backgroundColor: '#5A2D82', borderRadius: 12,
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.2, shadowRadius: 32, elevation: 8,
+        shadowColor: 'rgba(90, 45, 130, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.25, shadowRadius: 32, elevation: 8,
     },
     submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 

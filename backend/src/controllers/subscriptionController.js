@@ -23,9 +23,7 @@ const intentSchema = z.object({
 });
 
 const activateSchema = z.object({
-  order_id:    z.string().min(1),
-  payment_id:  z.string().min(1),
-  signature:   z.string().min(1),
+  transaction_id: z.string().min(1),
 });
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
@@ -171,16 +169,16 @@ async function createIntent(req, res, next) {
 }
 
 // ── POST /subscriptions/:id/activate ─────────────────────────────────────────
-// Phase 2: Verify UPI payment and activate the subscription
+// Phase 2: Verify PhonePe payment and activate the subscription
 async function activateSubscriptionHandler(req, res, next) {
   try {
-    const { order_id, payment_id, signature } = activateSchema.parse(req.body);
-    const valid = paymentService.verifySignature(order_id, payment_id, signature);
-    if (!valid) {
-      throw new AppError('Payment verification failed.', 400, 'PAYMENT_VERIFICATION_FAILED');
+    const { transaction_id } = activateSchema.parse(req.body);
+    const result = await paymentService.verifyPayment(transaction_id);
+    if (!result.success) {
+      throw new AppError(`Payment verification failed: ${result.code}`, 400, 'PAYMENT_VERIFICATION_FAILED');
     }
-    const result = await subscriptionService.activateSubscription(req.user.userId, req.params.id, payment_id);
-    return res.status(200).json(result);
+    const activateResult = await subscriptionService.activateSubscription(req.user.userId, req.params.id, transaction_id);
+    return res.status(200).json(activateResult);
   } catch (err) { return handleError(err, res, next); }
 }
 

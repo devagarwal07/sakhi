@@ -5,6 +5,7 @@ const paymentService      = require('../services/paymentService');
 const subscriptionService = require('../services/subscriptionService');
 const AppError            = require('../utils/AppError');
 const supabase            = require('../config/supabase');
+const logger              = require('../utils/logger');
 
 const orderSchema = z.object({
   amount:               z.number().positive(),
@@ -12,9 +13,7 @@ const orderSchema = z.object({
 });
 
 const verifySchema = z.object({
-  order_id:              z.string().min(1),
-  payment_id:            z.string().min(1),
-  signature:             z.string().min(1),
+  transaction_id:        z.string().min(1),
   subscription_payload:  z.object({}).passthrough(), // full subscription payload
 });
 
@@ -32,12 +31,30 @@ function handleError(err, res, next) {
 async function createOrder(req, res, next) {
   try {
     const { amount, subscription_id_temp } = orderSchema.parse(req.body);
-    const order = await paymentService.createOrder(amount, subscription_id_temp);
+    const riderId = req.user.userId;
+
+    // merchantOrderId: alphanumeric + hyphen/underscore only, max 64 chars
+    const merchantOrderId = `sub-${subscription_id_temp}-${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64);
+
+    const { data: userRows } = await supabase
+      .from('users')
+      .select('phone, name')
+      .eq('id', riderId)
+      .limit(1);
+    const userInfo = { userId: riderId, phone: userRows?.[0]?.phone || '', name: userRows?.[0]?.name || '' };
+
+    const result = await paymentService.createOrder(
+      amount,
+      merchantOrderId,
+      null, // callback handled via PhonePe dashboard webhook config
+      userInfo
+    );
+
     return res.status(200).json({
-      order_id: order.id,
-      amount:   order.amount / 100, // back to INR
-      currency: order.currency,
-      key_id:   process.env.RAZORPAY_KEY_ID,
+      transaction_id:  result.transaction_id, // = merchantOrderId
+      order_id:        result.order_id,       // PhonePe OMO... id
+      base64_payload:  result.base64_payload,
+      amount:          amount, // INR
     });
   } catch (err) { return handleError(err, res, next); }
 }
@@ -45,21 +62,20 @@ async function createOrder(req, res, next) {
 // ── POST /payments/verify ─────────────────────────────────────────────────────
 async function verifyPayment(req, res, next) {
   try {
-    const { order_id, payment_id, signature, subscription_payload } = verifySchema.parse(req.body);
+    const { transaction_id, subscription_payload } = verifySchema.parse(req.body);
 
-    const valid = paymentService.verifySignature(order_id, payment_id, signature);
-    if (!valid) {
-      throw new AppError('Payment verification failed. Signature mismatch.', 400, 'PAYMENT_VERIFICATION_FAILED');
+    const result = await paymentService.verifyPayment(transaction_id);
+    if (!result.success) {
+      throw new AppError(`Payment verification failed: state=${result.state}`, 400, 'PAYMENT_VERIFICATION_FAILED');
     }
 
     const riderId = req.user.userId;
 
-    let result;
+    let createResult;
     try {
-      result = await subscriptionService.createSubscription(riderId, subscription_payload, payment_id);
+      createResult = await subscriptionService.createSubscription(riderId, subscription_payload, transaction_id);
     } catch (createErr) {
-      // GAP 6: Payment verified but subscription creation failed (e.g. overlap, DB error)
-      // Save a pending_payment row so the rider can retry via GET /subscriptions/pending-payment
+      // Payment verified but subscription creation failed — save pending_payment row so rider can retry
       await supabase.from('subscriptions').insert({
         rider_id:           riderId,
         pickup_lat:         subscription_payload.pickup_lat,
@@ -74,26 +90,26 @@ async function verifyPayment(req, res, next) {
         plan_rides:         subscription_payload.plan_rides,
         days_of_week:       subscription_payload.days_of_week,
         is_two_way:         subscription_payload.is_two_way || false,
-        total_cost:         0,   // unknown at this stage; will be recalculated on retry
+        total_cost:         0,
         status:             'pending_payment',
-        payment_id:         payment_id,
-        payment_order_id:   order_id,
+        payment_id:         transaction_id,
+        payment_order_id:   transaction_id,
         rides_completed:    0,
       }).catch((dbErr) =>
         require('../utils/logger').error('verifyPayment — failed to save pending_payment row', { error: dbErr.message })
       );
-      throw createErr; // propagate so client gets the real error
+      throw createErr;
     }
 
     return res.status(201).json({
-      subscription_id:  result.subscription.id,
-      status:           result.subscription.status,
-      driver_info:      result.driver_info,
+      subscription_id:  createResult.subscription.id,
+      status:           createResult.subscription.status,
+      driver_info:      createResult.driver_info,
       schedule_summary: {
         plan_rides:     subscription_payload.plan_rides,
-        per_ride_fare:  result.per_ride_fare,
-        total_cost:     result.total_cost,
-        distance_km:    result.distance_km,
+        per_ride_fare:  createResult.per_ride_fare,
+        total_cost:     createResult.total_cost,
+        distance_km:    createResult.distance_km,
         is_two_way:     subscription_payload.is_two_way,
       },
     });
@@ -103,30 +119,41 @@ async function verifyPayment(req, res, next) {
 // ── POST /payments/commission/order — driver creates platform commission order ────
 async function createCommissionOrder(req, res, next) {
   try {
-    const { amount, period, driver_id } = req.body;
+    const { amount, period } = req.body;
     if (!amount || amount <= 0) {
       return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Amount must be positive.' } });
     }
-    const receipt = `commission_${req.user.userId}_${Date.now()}`.slice(0, 40);
-    const order = await paymentService.createOrder(amount, receipt);
+    const driverId = req.user.userId;
+    // merchantOrderId: alphanumeric + hyphen/underscore only, max 64 chars
+    const merchantOrderId = `comm-${driverId.slice(0, 20)}-${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64);
+
+    const result = await paymentService.createOrder(
+      amount,
+      merchantOrderId,
+      null // webhook configured via PhonePe dashboard
+    );
+
     return res.status(200).json({
-      order_id: order.id,
-      amount:   order.amount,   // in paise
-      currency: order.currency,
-      key_id:   process.env.RAZORPAY_KEY_ID,
+      transaction_id:  result.transaction_id,
+      order_id:        result.order_id,
+      base64_payload:  result.base64_payload,
+      amount:          amount,
     });
   } catch (err) { return handleError(err, res, next); }
 }
 
-// ── POST /payments/commission/verify — driver verifies commission payment ────────
+// ── POST /payments/commission/verify — driver verifies commission payment ─────
 async function verifyCommissionPayment(req, res, next) {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, period, amount } = req.body;
+    const { transaction_id, period, amount } = req.body;
+    if (!transaction_id) {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'transaction_id is required.' } });
+    }
     const driverId = req.user.userId;
 
-    const valid = paymentService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-    if (!valid) {
-      throw new AppError('Payment signature verification failed.', 400, 'PAYMENT_VERIFICATION_FAILED');
+    const result = await paymentService.verifyPayment(transaction_id);
+    if (!result.success) {
+      throw new AppError(`Payment verification failed: state=${result.state}`, 400, 'PAYMENT_VERIFICATION_FAILED');
     }
 
     // Log the commission payment (non-fatal — table may not exist yet)
@@ -134,14 +161,57 @@ async function verifyCommissionPayment(req, res, next) {
       driver_id:           driverId,
       period:              period ?? 'daily',
       amount_inr:          amount ?? 0,
-      razorpay_order_id,
-      razorpay_payment_id,
+      razorpay_order_id:   transaction_id,   // reuse existing column to store PhonePe txn_id
+      razorpay_payment_id: transaction_id,
       status:              'paid',
       paid_at:             new Date().toISOString(),
     }).catch(() => { /* non-fatal if table doesn't exist */ });
 
-    return res.status(200).json({ success: true, payment_id: razorpay_payment_id });
+    return res.status(200).json({ success: true, payment_id: transaction_id });
   } catch (err) { return handleError(err, res, next); }
 }
 
-module.exports = { createOrder, verifyPayment, createCommissionOrder, verifyCommissionPayment };
+// ── POST /payments/phonepe/callback — PhonePe server-to-server webhook ────────
+// PhonePe new API webhook sends JSON body (not base64). Handles both old and new formats.
+async function phonePeCallback(req, res, next) {
+  try {
+    let decoded = req.body;
+
+    // Legacy format: base64-encoded body in { response } field
+    if (decoded?.response && typeof decoded.response === 'string') {
+      try {
+        decoded = JSON.parse(Buffer.from(decoded.response, 'base64').toString('utf8'));
+      } catch (_) { /* ignore parse error */ }
+    }
+
+    logger.info('phonePeCallback — received', { state: decoded?.state, type: decoded?.type });
+
+    // New API format: { orderId, state, merchantOrderId, ... }
+    const state              = decoded?.state;
+    const merchantOrderId    = decoded?.merchantOrderId || decoded?.data?.merchantTransactionId;
+    const transactionId      = decoded?.transactionId  || decoded?.data?.transactionId || merchantOrderId;
+    const amount             = decoded?.amount         || decoded?.data?.amount;
+
+    // Old API format: code === 'PAYMENT_SUCCESS'
+    const code               = decoded?.code;
+
+    const isSuccess = state === 'COMPLETED' || code === 'PAYMENT_SUCCESS';
+
+    if (isSuccess && merchantOrderId) {
+      await paymentService.handlePaymentCaptured({
+        transactionId,
+        merchantTransactionId: merchantOrderId,
+        amount,
+        code,
+        state,
+      });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    logger.error('phonePeCallback — error', { error: err.message });
+    return res.status(200).json({ success: true }); // always return 200 to PhonePe
+  }
+}
+
+module.exports = { createOrder, verifyPayment, createCommissionOrder, verifyCommissionPayment, phonePeCallback };

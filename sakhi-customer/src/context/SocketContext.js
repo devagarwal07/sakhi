@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useEffect, useState } from 'react';
+import React, { createContext, useContext, useRef, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
@@ -10,6 +10,8 @@ export function SocketProvider({ children }) {
     const { isAuthenticated } = useAuth();
     const socketRef = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
+    // Track all listeners so we can re-register them after a reconnect
+    const listenersRef = useRef({}); // { [eventName]: Set<handler> }
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -36,6 +38,10 @@ export function SocketProvider({ children }) {
 
             socket.on('connect', () => {
                 setIsConnected(true);
+                // Re-register any listeners that were added before reconnect
+                Object.entries(listenersRef.current).forEach(([event, handlers]) => {
+                    handlers.forEach((handler) => socket.on(event, handler));
+                });
             });
 
             socket.on('disconnect', (reason) => {
@@ -113,13 +119,19 @@ export function SocketProvider({ children }) {
         }, 5000);
     });
 
-    const on = (event, callback) => {
+    const on = useCallback((event, callback) => {
+        // Track in listenersRef so they survive reconnects
+        if (!listenersRef.current[event]) {
+            listenersRef.current[event] = new Set();
+        }
+        listenersRef.current[event].add(callback);
         socketRef.current?.on(event, callback);
-    };
+    }, []);
 
-    const off = (event, callback) => {
+    const off = useCallback((event, callback) => {
+        listenersRef.current[event]?.delete(callback);
         socketRef.current?.off(event, callback);
-    };
+    }, []);
 
     return (
         <SocketContext.Provider value={{ socket: socketRef, emit, on, off, joinRideRoom, isConnected }}>

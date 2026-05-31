@@ -39,7 +39,8 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [rzpHtml, setRzpHtml] = useState(null);
+  const [phonePeUrl, setPhonePeUrl] = useState(null);
+  const [transactionId, setTransactionId] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
   const [modal, setModal] = useState(null);
   const [commissionDue, setCommissionDue] = useState(amount);
@@ -53,35 +54,6 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       .catch(() => {});
   }, []);
 
-  // ── Razorpay HTML ─────────────────────────────────────────────────────────
-  function buildRzpHtml({ key_id, order_id, amount, currency }) {
-    return `<!DOCTYPE html>
-<html><head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#F5F0FF;display:flex;align-items:center;justify-content:center;min-height:100vh}
-    .loader{text-align:center;font-family:sans-serif;color:#6B7280;font-size:14px}
-    .spinner{width:36px;height:36px;border:3px solid #EDE9FE;border-top:3px solid #BEA3D8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
-    @keyframes spin{to{transform:rotate(360deg)}}
-  </style>
-</head><body>
-  <div class="loader"><div class="spinner"></div>${t('earnings.openingPayment')}</div>
-  <script>
-    var rzp = new Razorpay({
-      key:"${key_id}",order_id:"${order_id}",amount:"${amount}",currency:"${currency}",
-      name:'Sakhi',description:'Daily Platform Commission',
-      prefill:{name:'${driverName}'},theme:{color:'#BEA3D8'},
-      modal:{ondismiss:function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'DISMISSED'}))}},
-      handler:function(r){window.ReactNativeWebView.postMessage(JSON.stringify({type:'SUCCESS',razorpay_order_id:r.razorpay_order_id,razorpay_payment_id:r.razorpay_payment_id,razorpay_signature:r.razorpay_signature}))}
-    });
-    rzp.on('payment.failed',function(r){window.ReactNativeWebView.postMessage(JSON.stringify({type:'FAILED',error:r.error.description}))});
-    rzp.open();
-  </script>
-</body></html>`;
-  }
-
   // ── Pay handler ───────────────────────────────────────────────────────────
   const handlePay = async () => {
     try {
@@ -89,10 +61,8 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       const { data } = await client.post('/payments/commission/order', {
         amount: commissionDue, period: 'daily', driver_id: driver?.id,
       });
-      setRzpHtml(buildRzpHtml({
-        key_id: data.key_id, order_id: data.order_id,
-        amount: String(data.amount), currency: data.currency || 'INR',
-      }));
+      setTransactionId(data.transaction_id);
+      setPhonePeUrl(data.redirect_url);
       setShowWebView(true);
     } catch (err) {
       setModal({
@@ -103,40 +73,31 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
     } finally { setPaymentLoading(false); }
   };
 
-  // ── WebView message handler ───────────────────────────────────────────────
-  const handleWebViewMessage = async (event) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'SUCCESS') {
-        setShowWebView(false);
-        try {
-          await client.post('/payments/commission/verify', {
-            razorpay_order_id: msg.razorpay_order_id,
-            razorpay_payment_id: msg.razorpay_payment_id,
-            razorpay_signature: msg.razorpay_signature,
-            period: 'daily', amount,
-          });
-          navigation.replace('CommissionPaidConfirmation', {
-            amount, period: 'daily', method: 'Razorpay', txnId: msg.razorpay_payment_id,
-          });
-        } catch {
-          setModal({
-            icon: '⚠️', title: t('earnings.verificationFailedTitle'),
-            message: t('earnings.verificationFailedMessage'),
-            buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
-          });
-        }
-      } else if (msg.type === 'DISMISSED') {
-        setShowWebView(false);
-      } else if (msg.type === 'FAILED' || msg.type === 'ERROR') {
-        setShowWebView(false);
+  // ── WebView Navigation State Change Handler (Intercept Callback) ───────────
+  const handleNavigationStateChange = async (navState) => {
+    const { url } = navState;
+    if (url && (url.includes('/payments/phonepe/callback') || url.includes('/payments/phonepe'))) {
+      setShowWebView(false);
+      try {
+        setPaymentLoading(true);
+        await client.post('/payments/commission/verify', {
+          transaction_id: transactionId,
+          period: 'daily',
+          amount,
+        });
+        navigation.replace('CommissionPaidConfirmation', {
+          amount, period: 'daily', method: 'PhonePe', txnId: transactionId,
+        });
+      } catch {
         setModal({
-          icon: '⚠️', title: t('earnings.paymentFailedTitle'),
-          message: msg.error ?? t('earnings.paymentFailedMessage'),
+          icon: '⚠️', title: t('earnings.verificationFailedTitle'),
+          message: t('earnings.verificationFailedMessage'),
           buttons: [{ text: t('common.ok'), onPress: () => setModal(null) }],
         });
+      } finally {
+        setPaymentLoading(false);
       }
-    } catch { /* ignore */ }
+    }
   };
 
   return (
@@ -289,17 +250,17 @@ export default function DailyCommissionPaymentScreen({ navigation, route }) {
       <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>
         <View style={{ flex: 1, backgroundColor: BG }}>
           <View style={s.wvHeader}>
-            <Text style={s.wvTitle}>{t('ride.securePayment')}</Text>
+            <Text style={s.wvTitle}>{t('ride.securePayment') || 'Secure Payment'}</Text>
             <TouchableOpacity onPress={() => setShowWebView(false)}>
               <Feather name="x" size={22} color={DARK} />
             </TouchableOpacity>
           </View>
-          {rzpHtml && (
+          {phonePeUrl && (
             <WebView
-              source={{ html: rzpHtml }}
+              source={{ uri: phonePeUrl }}
               javaScriptEnabled domStorageEnabled
               originWhitelist={['*']}
-              onMessage={handleWebViewMessage}
+              onNavigationStateChange={handleNavigationStateChange}
               startInLoadingState
               renderLoading={() => (
                 <View style={s.wvLoader}>

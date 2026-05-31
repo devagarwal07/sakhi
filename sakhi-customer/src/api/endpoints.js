@@ -61,7 +61,7 @@ export const shareTrip = (rideId) => apiClient.post(`/safety/share-trip/${rideId
 
 // ── Ride Payments ──────────────────────────────────────────────────────────
 export const createRidePaymentOrder = (rideId) => apiClient.post(`/rides/${rideId}/payment/order`);
-export const verifyRidePayment = (rideId, data) => apiClient.post(`/rides/${rideId}/payment/verify`, data);
+export const verifyRidePayment = (rideId, transactionId) => apiClient.post(`/rides/${rideId}/payment/verify`, { transaction_id: transactionId });
 
 // ── Safety ─────────────────────────────────────────────────────────────────────────────
 // Backend sosSchema: { ride_id?, lat (number), lng (number) } — flat, NOT nested

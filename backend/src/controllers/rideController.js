@@ -414,7 +414,7 @@ async function getChatHistory(req, res, next) {
 
 
 // ──────────────────────────────────────────────────────────────────────────────
-// POST /rides/:id/payment/order  — create a Razorpay order for online payment
+// POST /rides/:id/payment/order  — create a PhonePe order for online payment
 // ──────────────────────────────────────────────────────────────────────────────
 async function createRidePaymentOrder(req, res, next) {
   try {
@@ -437,18 +437,25 @@ async function createRidePaymentOrder(req, res, next) {
     if (ride.payment_status === 'paid') throw new AppError('Already paid.', 409, 'ALREADY_PAID');
 
     const amount = ride.net_fare ?? ride.estimated_fare ?? 0;
-    const order  = await paymentService.createOrder(amount, `ride_${id}`);
+    // merchantOrderId: alphanumeric + hyphen/underscore, max 64 chars
+    const merchantOrderId = `ride-${id}-${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 64);
 
-    // Store order_id on the ride for verification
-    await supabase.from('rides').update({ razorpay_order_id: order.id }).eq('id', id);
+    const result = await paymentService.createOrder(
+      amount,
+      merchantOrderId,
+      null // webhook configured via PhonePe dashboard
+    );
 
-    logger.info('rideController.createRidePaymentOrder', { rideId: id, orderId: order.id });
+    // Store transaction_id on the ride for verification
+    await supabase.from('rides').update({ razorpay_order_id: result.transaction_id }).eq('id', id);
+
+    logger.info('rideController.createRidePaymentOrder', { rideId: id, transactionId: result.transaction_id });
 
     return res.status(200).json({
-      order_id:  order.id,
-      amount:    order.amount,       // in paise
-      currency:  order.currency,
-      key_id:    process.env.RAZORPAY_KEY_ID,
+      transaction_id: result.transaction_id,
+      order_id:       result.order_id,
+      base64_payload: result.base64_payload,
+      amount:         amount,  // in INR
     });
   } catch (err) {
     return handleError(err, res, next);
@@ -456,15 +463,19 @@ async function createRidePaymentOrder(req, res, next) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// POST /rides/:id/payment/verify — verify Razorpay signature, mark ride paid
+// POST /rides/:id/payment/verify — verify PhonePe payment, mark ride paid
 // ──────────────────────────────────────────────────────────────────────────────
 async function verifyRidePayment(req, res, next) {
   try {
     const { id } = req.params;
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { transaction_id } = req.body;
     const riderId = req.user.userId;
     const io = req.app.get('io');
     const paymentService = require('../services/paymentService');
+
+    if (!transaction_id) {
+      return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'transaction_id is required.' } });
+    }
 
     const { data: rides } = await supabase
       .from('rides').select('id, rider_id, driver_id, payment_status')
@@ -472,17 +483,23 @@ async function verifyRidePayment(req, res, next) {
 
     const ride = rides?.[0];
     if (!ride) throw new AppError('Ride not found.', 404, 'RIDE_NOT_FOUND');
-    if (ride.rider_id !== riderId) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    
+    const isRider  = ride.rider_id  === riderId;
+    const isDriver = ride.driver_id === riderId;
+    if (!isRider && !isDriver) throw new AppError('Forbidden.', 403, 'FORBIDDEN');
+    
     if (ride.payment_status === 'paid') return res.status(200).json({ success: true, message: 'Already paid.' });
 
-    const valid = paymentService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-    if (!valid) throw new AppError('Payment signature verification failed.', 400, 'INVALID_SIGNATURE');
+    const result = await paymentService.verifyPayment(transaction_id);
+    if (!result.success) {
+      throw new AppError(`Payment verification failed: state=${result.state}`, 400, 'INVALID_PAYMENT');
+    }
 
-    // Mark ride paid
+    // Mark ride paid (store transaction_id in existing razorpay columns for DB compatibility)
     await supabase.from('rides').update({
-      payment_status:    'paid',
-      razorpay_order_id,
-      razorpay_payment_id,
+      payment_status:      'paid',
+      razorpay_order_id:   transaction_id,
+      razorpay_payment_id: transaction_id,
     }).eq('id', id);
 
     // Notify driver
@@ -490,7 +507,7 @@ async function verifyRidePayment(req, res, next) {
       io.to(`driver:${ride.driver_id}`).emit('payment:success', { ride_id: id });
     }
 
-    logger.info('rideController.verifyRidePayment', { rideId: id, paymentId: razorpay_payment_id });
+    logger.info('rideController.verifyRidePayment', { rideId: id, transactionId: transaction_id });
     return res.status(200).json({ success: true });
   } catch (err) {
     return handleError(err, res, next);
