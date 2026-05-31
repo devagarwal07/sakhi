@@ -7,6 +7,7 @@ import {
     Animated,
     StatusBar,
     ActivityIndicator,
+    Platform,
 } from 'react-native';
 
 /**
@@ -153,9 +154,22 @@ export default function SplashScreenView({ onReady, authReady }) {
                 Safe Rides, Every Time
             </Animated.Text>
 
-            {/* Loading indicator */}
-            <Animated.View style={[styles.dotsRow, { opacity: dotsOpacity }]}>
-                <ActivityIndicator size="large" color="#BEA3D8" />
+            {/* ══ BOTTOM SECTION: dots + progress bar ══ */}
+            <Animated.View style={[styles.bottomSection, { opacity: bottomOp }]}>
+                {/* Abstract 3-dot pattern */}
+                <View style={styles.dotsRow}>
+                    <View style={styles.dot} />
+                    <View style={styles.dot} />
+                    <View style={styles.dot} />
+                </View>
+
+                {/* Loading bar: animates 0% → 100% once */}
+                <View style={styles.loadingWrapper}>
+                    <View style={styles.trackBg}>
+                        <Animated.View style={[styles.trackFill, { width: barWidth }]} />
+                    </View>
+                    <Text style={styles.empoweringText}>EMPOWERING WOMEN</Text>
+                </View>
             </Animated.View>
         </View>
     );

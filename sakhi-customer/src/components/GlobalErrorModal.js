@@ -137,8 +137,8 @@ export default function GlobalErrorModal() {
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(28, 26, 46, 0.6)', // Deep purple-tinted dark overlay
+    flex: 1,
+    backgroundColor: 'rgba(28, 26, 46, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
