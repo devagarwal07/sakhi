@@ -10,7 +10,7 @@ export async function getMapplsToken() {
     const res = await fetch(
         `https://outpost.mappls.com/api/security/oauth/token?grant_type=client_credentials` +
         `&client_id=${MAPPLS_CLIENT_ID}` +
-        `&client_secret=${MAPPLS_CLIENT_SECRET}`,
+        `&client_secret=${encodeURIComponent(MAPPLS_CLIENT_SECRET)}`,
         { method: 'POST' }
     );
     const json = await res.json();

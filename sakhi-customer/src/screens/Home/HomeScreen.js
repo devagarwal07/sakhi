@@ -18,6 +18,8 @@ import { getAddresses, getRideHistory, getActiveRide, getNearbyDrivers } from '.
 import CustomAlert from '../../utils/CustomAlert';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 
 async function reverseGeocode(latitude, longitude) {
     try {
@@ -275,7 +277,7 @@ export default function HomeScreen() {
             {/* Top Map Section — 58% */}
             <View style={styles.mapSection}>
                 <MapplsMapWebView
-                    style={StyleSheet.absoluteFill}
+                    style={{ flex: 1 }}
                     center={currentLocation || { latitude: 12.9716, longitude: 77.5946 }}
                     zoom={15}
                     scrollEnabled
@@ -491,10 +493,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F0FF',
     },
 
-    // Map section — full background
+    // Map section — fixed height so WebView gets a real measured size on Android
     mapSection: {
-        ...StyleSheet.absoluteFillObject,
+        width: '100%',
+        height: SCREEN_HEIGHT * 0.58,
         backgroundColor: '#F5F0FF',
+        overflow: 'hidden',
     },
 
     // Location pin

@@ -46,9 +46,9 @@ export function AuthProvider({ children }) {
             setIsLoading(false); // ← splash hides here, not after API call
 
             // ── Step 2: Fetch fresh profile in background ─────────────────────
-            // A 5s timeout prevents hanging if backend is slow.
+            // A 15s timeout prevents hanging if backend is slow/cold starting.
             const timeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('auth_timeout')), 5000)
+                setTimeout(() => reject(new Error('auth_timeout')), 15000)
             );
             const { data } = await Promise.race([getProfile(), timeout]);
             
@@ -57,11 +57,17 @@ export function AuthProvider({ children }) {
             await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(freshUser)).catch(() => {});
 
         } catch (err) {
-            // Token invalid, expired, or network timed out — clear storage and go to login
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-            setIsAuthenticated(false);
-            setUser(null);
+            // ONLY log out and clear storage if the API specifically rejected the token (401 Unauthorized / 403 Forbidden)
+            const isAuthError = err?.response && (err.response.status === 401 || err.response.status === 403);
+            
+            if (isAuthError) {
+                await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+                await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+                setIsAuthenticated(false);
+                setUser(null);
+            } else {
+                console.warn('[AuthContext] getProfile background sync failed (non-auth error):', err?.message);
+            }
             setIsLoading(false);
         }
     }, []);

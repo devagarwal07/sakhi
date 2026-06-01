@@ -25,7 +25,7 @@ async function getMapplsToken() {
     const res = await fetch(
         `https://outpost.mappls.com/api/security/oauth/token?grant_type=client_credentials` +
         `&client_id=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_ID}` +
-        `&client_secret=${process.env.EXPO_PUBLIC_MAPPLS_CLIENT_SECRET}`,
+        `&client_secret=${encodeURIComponent(process.env.EXPO_PUBLIC_MAPPLS_CLIENT_SECRET)}`,
         { method: 'POST' }
     );
     const json = await res.json();
@@ -34,6 +34,61 @@ async function getMapplsToken() {
     return _mapplsToken;
 }
 
+// Search places via Mappls Atlas autocomplete, fallback to Nominatim
+async function searchPlaces(query, pickupCoords) {
+    try {
+        const token = await getMapplsToken();
+        const bias = pickupCoords
+            ? `&location=${pickupCoords.latitude},${pickupCoords.longitude}&zoom=15`
+            : '';
+        const url =
+            `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(query)}` +
+            `&access_token=${token}&region=IND${bias}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const suggestions = data?.suggestedLocations || data?.copResults || [];
+        if (suggestions.length > 0) {
+            return suggestions.map((s) => ({
+                place_id: s.eLoc || s.placeId || String(Math.random()),
+                eLoc: s.eLoc || null,
+                main: s.placeName || s.orderIndex || query,
+                secondary: s.placeAddress || s.addressTokens?.district || '',
+                structured_formatting: {
+                    main_text: s.placeName || query,
+                    secondary_text: s.placeAddress || '',
+                },
+                _lat: s.latitude || null,
+                _lng: s.longitude || null,
+            }));
+        }
+    } catch (_) { }
+
+    // Fallback: Nominatim OSM
+    try {
+        const bias = pickupCoords
+            ? `&viewbox=${pickupCoords.longitude - 0.5},${pickupCoords.latitude + 0.5},${pickupCoords.longitude + 0.5},${pickupCoords.latitude - 0.5}&bounded=1`
+            : '';
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=8&countrycodes=in${bias}`,
+            { headers: { 'User-Agent': 'SakhiCustomerApp/1.0' } }
+        );
+        const data = await res.json();
+        return (data || []).map((item) => ({
+            place_id: item.place_id || String(Math.random()),
+            eLoc: null,
+            main: item.name || item.display_name?.split(',')[0] || query,
+            secondary: item.display_name || '',
+            structured_formatting: {
+                main_text: item.name || item.display_name?.split(',')[0] || query,
+                secondary_text: item.display_name?.split(',').slice(1, 3).join(',').trim() || '',
+            },
+            _lat: item.lat || null,
+            _lng: item.lon || null,
+        }));
+    } catch (_) { }
+
+    return [];
+}
 
 export default function LocationSearchScreen() {
     const router = useRouter();
