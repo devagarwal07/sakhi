@@ -278,8 +278,8 @@ const styles = StyleSheet.create({
     verifiedCheck: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
 
     infoContainer: { gap: 4 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    nameText: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+    nameText: { fontSize: 18, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.5, flexShrink: 1 },
     verifiedPill: { backgroundColor: '#DCFCE7', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 12 },
     verifiedPillText: { fontSize: 10, fontWeight: '700', color: '#15803D', letterSpacing: 0.5 },
     phoneText: { fontSize: 14, fontWeight: '500', color: '#64748B' },

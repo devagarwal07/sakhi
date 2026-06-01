@@ -372,12 +372,14 @@ const styles = StyleSheet.create({
     heroNameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        flexWrap: 'wrap',
+        gap: 6,
     },
     heroName: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '700',
         color: '#1E1B2E',
+        flexShrink: 1,
     },
     verifiedBadge: {
         flexDirection: 'row',
