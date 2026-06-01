@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    useWindowDimensions, Animated, Platform, ScrollView, Alert, BackHandler
+    useWindowDimensions, Animated, Platform, ScrollView, Alert, BackHandler, Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -422,7 +422,7 @@ export default function RideFindingScreen() {
                 <View style={styles.fadeBottom} />
             </View>
             {/* No Drivers / Booking Failed Beautiful Screen */}
-            {showNoDrivers && (
+            <Modal visible={showNoDrivers} transparent animationType="fade">
                 <View style={styles.noDriversOverlay}>
                     <View style={styles.noDriversCard}>
                         {/* Animated auto illustration */}
@@ -461,7 +461,7 @@ export default function RideFindingScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
-            )}
+            </Modal>
             <SakhiModal config={modal} onClose={() => setModal(null)} />
         </View>
     );
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
 
     // No Drivers / Booking Failed overlay
     noDriversOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        flex: 1,
         backgroundColor: 'rgba(245, 240, 255, 0.96)',
         alignItems: 'center',
         justifyContent: 'center',

@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
-import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -486,7 +485,6 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
 }
 
 const MapplsMapWebView = forwardRef(function MapplsMapWebView({
-  const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     style,
     center,
     zoom = 15,
@@ -495,6 +493,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     nearbyAutos,        // null | [] | true  — truthy = show scattered autos around center
     scrollEnabled = true,
     zoomEnabled = true,
+    dragMode = false,
     pointerEvents,
     fitBounds: autoFitBounds = false,  // auto-fit bounds to show full route (Ola/Uber style)
   }, ref) {
@@ -546,25 +545,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       animated: !!p.animated,
     }));
 
-    const serializeMarkers = (mkrs) => mkrs.map(m => ({
-      id: m.id,
-      lat: m.latitude,
-      lng: m.longitude,
-      color: m.color || '#8031CC',
-      label: m.label || '',
-      pulse: !!m.pulse,
-      type: m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
-      bearing: m.bearing || 0,
-      nearby: !!m.nearby,
-    }));
 
-    const serializePolylines = (plns) => plns.map(p => ({
-      coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
-      color: p.color ?? '#8031CC',
-      width: p.width ?? 5,
-      dashed: !!p.dashed,
-      animated: !!p.animated,
-    }));
 
     const sendUpdate = (lat, lng, mkrs, plns, nbAutos) => {
       if (!webViewRef.current) return;
@@ -636,7 +617,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       <View style={[styles.container, style]} pointerEvents={pointerEvents}>
         <WebView
           ref={webViewRef}
-          source={{ html }}
+          source={{ html, baseUrl: 'http://localhost' }}
           style={styles.webview}
           javaScriptEnabled
           domStorageEnabled
@@ -658,9 +639,6 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       </View>
     );
   });
-
-export default MapplsMapWebView;
-});
 
 export default MapplsMapWebView;
 
