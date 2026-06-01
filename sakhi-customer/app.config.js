@@ -1,16 +1,15 @@
-const { existsSync } = require('fs');
-const { resolve } = require('path');
+import { existsSync } from 'fs';
 
 // Only reference Firebase config files if they actually exist on disk.
 // This prevents "Could not parse Expo config" errors when building in
 // environments where the files haven't been added yet (e.g. Expo Go dev).
 // NOTE: google-services.json is kept for Firebase Cloud Messaging (FCM) only.
 //       All Google Maps SDKs have been removed from this app.
-const androidGoogleServices = existsSync(resolve(__dirname, 'google-services.json'))
+const androidGoogleServices = existsSync('google-services.json')
   ? './google-services.json'
   : undefined;
 
-const iosGoogleServices = existsSync(resolve(__dirname, 'GoogleService-Info.plist'))
+const iosGoogleServices = existsSync('GoogleService-Info.plist')
   ? './GoogleService-Info.plist'
   : undefined;
 
@@ -98,11 +97,11 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "9664af70-e889-40d2-9b8a-de3dc0acd8f3"
+        projectId: "f8ed9d31-5cff-48a5-9cf8-ade917f992b1"
       },
       router: {}
     },
-    owner: "shubh_up301"
+    owner: "devagarwal0178"
   }
 };
 

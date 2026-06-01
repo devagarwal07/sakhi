@@ -69,10 +69,10 @@ export default function ActiveRideScreen() {
                         setContacts(list);
                         // Auto-show prompt if they have contacts
                         if (list.length > 0) setShowContactPrompt(true);
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -101,7 +101,7 @@ export default function ActiveRideScreen() {
             }
         };
 
-        const handleWaitingTick  = ({ waiting_seconds, waiting_charge }) => tickWaiting({ seconds: waiting_seconds, charge: waiting_charge });
+        const handleWaitingTick = ({ waiting_seconds, waiting_charge }) => tickWaiting({ seconds: waiting_seconds, charge: waiting_charge });
 
         // Payment success from driver confirms cash collection on their end
         const handlePaymentSuccess = () => {
@@ -115,18 +115,18 @@ export default function ActiveRideScreen() {
             router.replace('/ride-summary');
         };
 
-        on('driver_location',    handleLocationUpdate);
+        on('driver_location', handleLocationUpdate);
         on('ride:status_update', handleStatusUpdate);
-        on('waiting_tick',       handleWaitingTick);
-        on('payment:success',    handlePaymentSuccess);
-        on('ride_completed',     handleRideCompleted);
+        on('waiting_tick', handleWaitingTick);
+        on('payment:success', handlePaymentSuccess);
+        on('ride_completed', handleRideCompleted);
 
         return () => {
-            off('driver_location',    handleLocationUpdate);
+            off('driver_location', handleLocationUpdate);
             off('ride:status_update', handleStatusUpdate);
-            off('waiting_tick',       handleWaitingTick);
-            off('payment:success',    handlePaymentSuccess);
-            off('ride_completed',     handleRideCompleted);
+            off('waiting_tick', handleWaitingTick);
+            off('payment:success', handlePaymentSuccess);
+            off('ride_completed', handleRideCompleted);
         };
     }, []);
 
@@ -190,11 +190,11 @@ export default function ActiveRideScreen() {
             const shareUrl = data?.share_url;
             if (!shareUrl) throw new Error('No share URL returned');
             setShareShown(true);
-            
+
             // Open SMS app directly with the phone number and link
             const message = `Track my Sakhi ride live: ${shareUrl}`;
             const smsUrl = Platform.OS === 'ios' ? `sms:${contact.phone}&body=${encodeURIComponent(message)}` : `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
-            
+
             Linking.canOpenURL(smsUrl)
                 .then(supported => {
                     if (supported) Linking.openURL(smsUrl);
@@ -224,7 +224,7 @@ export default function ActiveRideScreen() {
             } else {
                 setModal({ icon: '🔗', title: 'Live Trip Link', message: shareUrl, buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             }
-        } catch (err) {}
+        } catch (err) { }
     };
 
     const handleCancel = () => {
@@ -445,16 +445,16 @@ export default function ActiveRideScreen() {
                         </TouchableOpacity>
                     )}
                     {ride.driver?.upi_id && ride.paymentMethod === 'cash' && (
-                        <TouchableOpacity 
-                            style={[styles.shareBtn, { backgroundColor: '#E8F5E9', borderColor: '#22C55E' }]} 
+                        <TouchableOpacity
+                            style={[styles.shareBtn, { backgroundColor: '#E8F5E9', borderColor: '#22C55E' }]}
                             onPress={() => {
                                 const upiUrl = `upi://pay?pa=${ride.driver.upi_id}&pn=${encodeURIComponent(ride.driver.name)}&am=${ride.fare?.total || ride.fare?.estimated || ''}&cu=INR`;
                                 Linking.openURL(upiUrl).catch(() => {
                                     setModal({
-                                        icon: '⚠️', title: 'UPI Failed', message: 'Could not open UPI app.', buttons: [{ text: 'OK', onPress: () => setModal(null)}]
+                                        icon: '⚠️', title: 'UPI Failed', message: 'Could not open UPI app.', buttons: [{ text: 'OK', onPress: () => setModal(null) }]
                                     });
                                 });
-                            }} 
+                            }}
                             activeOpacity={0.85}
                         >
                             <Text style={[styles.shareBtnText, { color: '#16A34A' }]}><Feather name="smartphone" size={13} color="#16A34A" /> Pay via UPI</Text>
@@ -497,8 +497,8 @@ export default function ActiveRideScreen() {
                         ) : (
                             <ScrollView style={styles.contactList} showsVerticalScrollIndicator={false}>
                                 {contacts.map((c, i) => (
-                                    <TouchableOpacity 
-                                        key={i} 
+                                    <TouchableOpacity
+                                        key={i}
                                         style={styles.contactRow}
                                         activeOpacity={0.7}
                                         onPress={() => handleShareWithContact(c)}
@@ -517,7 +517,7 @@ export default function ActiveRideScreen() {
                                 ))}
                             </ScrollView>
                         )}
-                        
+
                         <TouchableOpacity style={styles.moreOptionsBtn} onPress={handleShareMoreOptions}>
                             <Text style={styles.moreOptionsText}>Share via More Options</Text>
                         </TouchableOpacity>
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     pickupMarker: { alignItems: 'center', justifyContent: 'center' },
     dropoffMarker: { alignItems: 'center', justifyContent: 'center' },
     carMarker: { alignItems: 'center', justifyContent: 'center' },
-    
+
     // Contact Modal Styles
     contactModalBackdrop: {
         ...StyleSheet.absoluteFillObject,
@@ -641,9 +641,9 @@ const styles = StyleSheet.create({
     contactModalSub: { fontSize: 14, color: '#64748B', lineHeight: 20, marginBottom: 20 },
     noContactsBox: { paddingVertical: 32, alignItems: 'center' },
     contactList: { maxHeight: 220, marginBottom: 16 },
-    contactRow: { 
-        flexDirection: 'row', alignItems: 'center', gap: 12, 
-        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' 
+    contactRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9'
     },
     contactAvatar: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F0FF',

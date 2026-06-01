@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -485,6 +486,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
 }
 
 const MapplsMapWebView = forwardRef(function MapplsMapWebView({
+  const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     style,
     center,
     zoom = 15,
@@ -493,8 +495,6 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     nearbyAutos,        // null | [] | true  — truthy = show scattered autos around center
     scrollEnabled = true,
     zoomEnabled = true,
-    dragMode = 'auto',  // 'auto' | 'manual'
-    onDragEnd,          // callback(lat, lng) when user drags the map
     pointerEvents,
     fitBounds: autoFitBounds = false,  // auto-fit bounds to show full route (Ola/Uber style)
   }, ref) {
@@ -502,7 +502,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     const mapReady = useRef(false);
     const pendingMsg = useRef(null);
 
-    // Expose imperative methods — merged into a single useImperativeHandle
+    // Expose imperative methods for smooth driver animation
     useImperativeHandle(ref, () => ({
       // Smoothly move + rotate the driver marker without re-rendering
       smoothMoveDriver: (lat, lng, bearing, panCamera = true) => {
@@ -518,9 +518,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
           panCamera,
         }));
       },
-      // Fit map bounds to show full route
-      fitBounds: (padding) => sendFitBounds(markers, polylines, nearbyAutos, padding),
-    }), [markers, polylines, nearbyAutos]);
+    }));
 
     const html = useMemo(
       () => buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }),
@@ -548,6 +546,25 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       animated: !!p.animated,
     }));
 
+    const serializeMarkers = (mkrs) => mkrs.map(m => ({
+      id: m.id,
+      lat: m.latitude,
+      lng: m.longitude,
+      color: m.color || '#8031CC',
+      label: m.label || '',
+      pulse: !!m.pulse,
+      type: m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
+      bearing: m.bearing || 0,
+      nearby: !!m.nearby,
+    }));
+
+    const serializePolylines = (plns) => plns.map(p => ({
+      coords: (p.coords || []).map(c => ({ lat: c.latitude, lng: c.longitude })),
+      color: p.color ?? '#8031CC',
+      width: p.width ?? 5,
+      dashed: !!p.dashed,
+      animated: !!p.animated,
+    }));
 
     const sendUpdate = (lat, lng, mkrs, plns, nbAutos) => {
       if (!webViewRef.current) return;
@@ -573,7 +590,10 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       webViewRef.current.postMessage(msg);
     };
 
-
+    // Expose fitBounds() imperatively so parent screens can call mapRef.current.fitBounds()
+    useImperativeHandle(ref, () => ({
+      fitBounds: (padding) => sendFitBounds(markers, polylines, nearbyAutos, padding),
+    }), [markers, polylines, nearbyAutos]);
 
     useEffect(() => {
       const lat = center?.latitude ?? DEFAULT_LAT;
@@ -637,6 +657,9 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
         />
       </View>
     );
+  });
+
+export default MapplsMapWebView;
 });
 
 export default MapplsMapWebView;

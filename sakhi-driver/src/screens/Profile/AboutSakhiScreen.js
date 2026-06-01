@@ -1,7 +1,8 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Linking} from 'react-native';
+  Linking
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -10,13 +11,13 @@ import { useTranslation } from 'react-i18next';
 import CustomAlert from '../../utils/CustomAlert';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const BG      = '#F5F0FF';
-const WHITE   = '#FFFFFF';
-const PURPLE  = '#BEA3D8';
-const DEEP    = '#BEA3D8';
-const DARK    = '#1E1B2E';
-const MUTED   = '#6B7280';
-const GREEN   = '#3A7D44';
+const BG = '#F5F0FF';
+const WHITE = '#FFFFFF';
+const PURPLE = '#BEA3D8';
+const DEEP = '#BEA3D8';
+const DARK = '#1E1B2E';
+const MUTED = '#6B7280';
+const GREEN = '#3A7D44';
 
 const CARD_SHADOW = {
   shadowColor: 'rgba(124, 58, 237, 1)',
@@ -117,10 +118,10 @@ const mc = StyleSheet.create({
 
 // ─── FEATURE ROW ───────────────────────────────────────────────────────────────
 const FEATURES = [
-  { iconName: 'shield', label: 'Verified women-only platform'       },
-  { iconName: 'dollar-sign', label: 'Transparent commission structure'    },
-  { iconName: 'clipboard', label: 'Subscription ride guarantees'        },
-  { iconName: 'life-buoy', label: '24/7 safety support'                 },
+  { iconName: 'shield', label: 'Verified women-only platform' },
+  { iconName: 'dollar-sign', label: 'Transparent commission structure' },
+  { iconName: 'clipboard', label: 'Subscription ride guarantees' },
+  { iconName: 'life-buoy', label: '24/7 safety support' },
 ];
 
 function FeaturesCard() {
@@ -196,8 +197,8 @@ const feat = StyleSheet.create({
 // ─── SOCIAL LINKS ──────────────────────────────────────────────────────────────
 const SOCIALS = [
   { icon: 'instagram', url: 'https://www.instagram.com/sakhi.women?igsh=emd5MHo2OXJ4bHE2' },
-  { icon: 'web',       url: 'https://sakhiwomen.com'   },
-  { icon: 'email',     url: 'mailto:support@sakhiwomen.com'  },
+  { icon: 'web', url: 'https://sakhiwomen.com' },
+  { icon: 'email', url: 'mailto:support@sakhiwomen.com' },
 ];
 
 function SocialRow() {
@@ -299,9 +300,9 @@ const ro = StyleSheet.create({
 
 // ─── LEGAL LINKS ───────────────────────────────────────────────────────────────
 const LEGAL = [
-  { label: 'Terms of Service',  screen: 'TermsPrivacy', params: { tab: 'terms' } },
-  { label: 'Privacy Policy',    screen: 'TermsPrivacy', params: { tab: 'privacy' } },
-  { label: 'Refund Policy',     screen: 'RefundPolicy',  params: {} },
+  { label: 'Terms of Service', screen: 'TermsPrivacy', params: { tab: 'terms' } },
+  { label: 'Privacy Policy', screen: 'TermsPrivacy', params: { tab: 'privacy' } },
+  { label: 'Refund Policy', screen: 'RefundPolicy', params: {} },
 ];
 
 function LegalCard({ navigation }) {
