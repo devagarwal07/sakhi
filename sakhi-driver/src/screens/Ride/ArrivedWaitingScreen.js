@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-   ActivityIndicator, Animated, Platform, Image, Modal, BackHandler} from 'react-native';
+  ScrollView, ActivityIndicator, Animated, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -179,82 +179,86 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* ── BOTTOM SHEET (38%) ── */}
+      {/* ── BOTTOM SHEET — scrollable ── */}
       <View style={s.bottomSheet}>
-        {/* Drag Handle */}
         <View style={s.dragHandleWrap}>
-           <View style={s.dragHandle} />
+          <View style={s.dragHandle} />
         </View>
 
-        {/* Rider Row */}
-        <View style={s.riderRow}>
-          <View style={s.riderLeft}>
-             <View style={s.avatarContainer}>
-               <MonogramAvatar
-                 uri={ride?.rider_photo}
-                 name={ride?.rider_name}
-                 size={56}
-                 radius={14}
-               />
-               {/* Chat Badge Overlapping Avatar */}
-               <TouchableOpacity style={s.chatBadge} onPress={() => setChatVisible(true)} activeOpacity={0.8}>
-                 <MaterialCommunityIcons name="message-text-outline" size={10} color="#FFFFFF" />
-               </TouchableOpacity>
-             </View>
-             
-             <View style={s.riderDetails}>
-                <Text style={s.riderName} numberOfLines={1} ellipsizeMode="tail">
-                  {ride?.rider_name || 'Priya S.'}
-                </Text>
-                <View style={s.ratingRow}>
-                  <MaterialIcons name="star" size={14} color="#F59E0B" />
-                  <Text style={s.riderRating}>4.7</Text>
-                </View>
-             </View>
-          </View>
-
-          {/* ARRIVED Tag */}
-          <View style={s.arrivedTag}>
-            <View style={s.arrivedDot} />
-            <Text style={s.arrivedTagText}>ARRIVED</Text>
-          </View>
-        </View>
-
-        {/* Waiting Timer Card */}
-        <View style={s.waitingTimerCard}>
-          <View style={s.waitTopRow}>
-            <Text style={[s.waitLabel, isUrgent && { color: '#EF4444' }]}>FREE WAITING REMAINING</Text>
-            <Text style={[s.waitTimeText, isUrgent && { color: '#EF4444' }]}>{formatTime(freeRemaining)}</Text>
-          </View>
-          <View style={s.depletingBarContainer}>
-            <View style={[s.depletingBar, 
-              { right: `${100 - (freeRemaining / FREE_WAIT_SECONDS * 100)}%` },
-              isUrgent && { backgroundColor: '#EF4444' }
-            ]} />
-          </View>
-        </View>
-
-        {/* Primary Action Button */}
-        <TouchableOpacity 
-          style={s.primaryBtn} 
-          onPress={handleStartTrip} 
-          disabled={loading}
-          activeOpacity={0.8}
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {loading ? (
-             <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="play" size={24} color="#FFFFFF" />
-              <Text style={s.primaryBtnText}>Start Trip</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          {/* Rider Row */}
+          <View style={s.riderCard}>
+            <View style={s.riderLeft}>
+              <View style={s.avatarContainer}>
+                <MonogramAvatar
+                  uri={ride?.rider_photo}
+                  name={ride?.rider_name}
+                  size={48}
+                  radius={12}
+                />
+                <TouchableOpacity style={s.chatBadge} onPress={() => setChatVisible(true)} activeOpacity={0.8}>
+                  <MaterialCommunityIcons name="message-text-outline" size={10} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <View style={s.riderDetails}>
+                <Text style={s.riderName} numberOfLines={1}>{ride?.rider_name || 'Rider'}</Text>
+                <View style={s.ratingRow}>
+                  <MaterialIcons name="star" size={13} color="#F59E0B" />
+                  <Text style={s.riderRating}>4.7 · Premium</Text>
+                </View>
+              </View>
+            </View>
+            <View style={s.arrivedTag}>
+              <View style={s.arrivedDot} />
+              <Text style={s.arrivedTagText}>ARRIVED</Text>
+            </View>
+          </View>
 
-        {/* Cancel Ride Button */}
-        <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
-          <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
-        </TouchableOpacity>
+          {/* Waiting Timer Card */}
+          <View style={s.waitingTimerCard}>
+            <View style={s.waitTopRow}>
+              <View>
+                <Text style={s.waitLabelSmall}>FREE WAITING</Text>
+                <Text style={[s.waitLabel, isUrgent && { color: '#EF4444' }]}>REMAINING</Text>
+              </View>
+              <Text style={[s.waitTimeText, isUrgent && { color: '#EF4444' }]}>{formatTime(freeRemaining)}</Text>
+            </View>
+            <View style={s.depletingBarContainer}>
+              <Animated.View style={[
+                s.depletingBar,
+                { right: `${100 - (freeRemaining / FREE_WAIT_SECONDS * 100)}%` },
+                isUrgent && { backgroundColor: '#EF4444' },
+              ]} />
+            </View>
+          </View>
+
+          {/* Primary Action */}
+          <TouchableOpacity
+            style={s.primaryBtn}
+            onPress={handleStartTrip}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="play" size={20} color="#FFFFFF" />
+                <Text style={s.primaryBtnText}>Start Trip</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Cancel */}
+          <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
+            <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
     </View>
@@ -434,66 +438,64 @@ const s = StyleSheet.create({
     elevation: 4,
   },
 
-  // ── BOTTOM SHEET (38%) ──
+  // ── BOTTOM SHEET ──
   bottomSheet: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.08,
-    shadowRadius: 32,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
     elevation: 20,
     alignItems: 'center',
   },
   dragHandleWrap: {
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 10,
+    paddingBottom: 4,
     width: '100%',
     alignItems: 'center',
   },
   dragHandle: {
-    width: 48, height: 6,
-    backgroundColor: '#E5E0EF',
-    borderRadius: 3,
+    width: 40, height: 4,
+    backgroundColor: '#DDD6FE',
+    borderRadius: 2,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    paddingTop: 12,
   },
 
-  // Rider Row
-  riderRow: {
+  // Rider card
+  riderCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 24, // pull down closer to timer
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F5FF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
   },
   riderLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   avatarContainer: {
-    width: 56, height: 56,
-    borderRadius: 16,
+    width: 48, height: 48,
+    borderRadius: 12,
     backgroundColor: '#EDE9FA',
     position: 'relative',
-  },
-  avatar: {
-    width: '100%', height: '100%',
-    borderRadius: 16,
-  },
-  avatarFallback: {
-    width: '100%', height: '100%',
-    borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
+    overflow: 'visible',
   },
   chatBadge: {
     position: 'absolute',
     right: -6, bottom: -6,
     width: 22, height: 22,
-    backgroundColor: '#BEA3D8',
+    backgroundColor: '#7C3AED',
     borderWidth: 2, borderColor: '#FFFFFF',
     borderRadius: 11,
     justifyContent: 'center',
@@ -506,20 +508,20 @@ const s = StyleSheet.create({
   riderName: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: 16,
     color: '#1E1B2E',
     marginBottom: 2,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   riderRating: {
     fontFamily: 'Inter',
     fontWeight: '500',
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 12,
+    color: '#6B7280',
   },
 
   // ARRIVED Tag
@@ -527,112 +529,114 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ECFDF5',
-    borderWidth: 1, borderColor: 'rgba(209, 250, 229, 0.5)',
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    gap: 6,
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    gap: 5,
   },
   arrivedDot: {
     width: 6, height: 6,
-    backgroundColor: '#BEA3D8',
+    backgroundColor: '#10B981',
     borderRadius: 3,
   },
   arrivedTagText: {
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 11,
-    color: '#BEA3D8',
-    letterSpacing: 0.3,
+    color: '#059669',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
 
   // Waiting Timer Card
   waitingTimerCard: {
     width: '100%',
-    height: 76,
-    backgroundColor: '#F5F0FF',
+    backgroundColor: '#F5F3FF',
     borderRadius: 16,
     padding: 16,
-    justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   waitTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  waitLabelSmall: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 10,
+    color: '#8B5CF6',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   waitLabel: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 12,
-    color: '#64748B',
-    letterSpacing: -0.3,
+    fontSize: 11,
+    color: '#4C1D95',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   waitTimeText: {
     fontFamily: 'Inter',
     fontWeight: '900',
-    fontSize: 18,
-    color: '#BEA3D8',
+    fontSize: 32,
+    color: '#7C3AED',
+    letterSpacing: -1,
   },
   depletingBarContainer: {
     width: '100%',
-    height: 8,
-    backgroundColor: '#E5E0EF',
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: '#DDD6FE',
+    borderRadius: 3,
     position: 'relative',
     overflow: 'hidden',
   },
   depletingBar: {
     position: 'absolute',
     left: 0, top: 0, bottom: 0,
-    backgroundColor: '#BEA3D8',
-    opacity: 0.8,
-    borderRadius: 4,
+    backgroundColor: '#7C3AED',
+    borderRadius: 3,
   },
 
   // Primary Button
   primaryBtn: {
     width: '100%',
-    height: 64,
-    backgroundColor: '#BEA3D8',
-    borderRadius: 16,
+    height: 56,
+    backgroundColor: '#7C3AED',
+    borderRadius: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
-    shadowColor: '#10B981', // green tinted shadow optionally? or map #BEA3D8
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
+    gap: 10,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 8,
-    marginTop: 16,
-    marginBottom: 0,
+    marginBottom: 10,
   },
   primaryBtnText: {
     fontFamily: 'Inter',
-    fontWeight: '800',
-    fontSize: 18,
+    fontWeight: '700',
+    fontSize: 16,
     color: '#FFFFFF',
-    letterSpacing: -0.45,
   },
   cancelBtn: {
     width: '100%',
-    height: 50,
+    height: 46,
     backgroundColor: '#FFF5F5',
-    borderWidth: 1.5,
-    borderColor: '#FEE2E2',
-    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 20,
   },
   cancelBtnText: {
     fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#DC2626',
   },
 });

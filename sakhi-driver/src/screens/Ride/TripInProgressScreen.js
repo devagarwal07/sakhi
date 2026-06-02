@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-   Vibration, Image, ActivityIndicator,
+  ScrollView, Vibration, ActivityIndicator,
   Animated, Dimensions, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
@@ -268,73 +268,76 @@ export default function TripInProgressScreen({ navigation, route }) {
 
       {/* ── BOTTOM SHEET (Bottom 38%) ── */}
       <View style={s.bottomSheet}>
-
         <View style={s.dragHandleWrap}><View style={s.dragHandle} /></View>
 
-        {/* Rider & Status Row */}
-        <View style={s.riderRow}>
-          <View style={s.riderLeft}>
-            <View style={s.avatarContainer}>
-              <MonogramAvatar uri={ride?.rider_photo} name={ride?.rider_name} size={54} radius={14} />
-              <View style={s.ratingBadge}>
-                <MaterialIcons name="star" size={9} color="#F59E0B" />
-                <Text style={s.ratingBadgeText}>{Number(ride?.rider_rating || 4.7).toFixed(1)}</Text>
-              </View>
-            </View>
-            <View style={s.riderInfo}>
-              <Text style={s.riderName} numberOfLines={1} ellipsizeMode="tail">
-                {ride?.rider_name || 'Priya S.'}
-              </Text>
-              <View style={s.tripStatusPill}>
-                <Text style={s.tripStatusText}>{t('ride.tripInProgress')}</Text>
-              </View>
-            </View>
-          </View>
-          <TouchableOpacity style={s.chatBtn} activeOpacity={0.8} onPress={() => setChatVisible(true)}>
-            <MaterialCommunityIcons name="chat-outline" size={20} color="#BEA3D8" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Trip Details Card */}
-        <View style={s.tripDetailsSection}>
-          <View style={s.destinationCard}>
-            <View style={s.destIconBox}>
-              <MaterialIcons name="location-on" size={20} color="#BEA3D8" />
-            </View>
-            <View style={s.destTextBox}>
-              <Text style={s.destLabel}>{t('ride.destination')}</Text>
-              <Text style={s.destAddress} numberOfLines={1} ellipsizeMode="tail">
-                {ride?.dropoff_address || 'MG Road Metro Station'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Start Navigation Button — launches Google Maps for drop-off */}
-        <StartNavigationButton
-          coords={dropoffNavCoords}
-          destinationLabel={ride?.dropoff_address}
-          rideId={rideId}
-          mode="d"
-          style={{ marginBottom: 12 }}
-          onNavigationStart={() => {
-            // Already handled inside the hook — tracking is kept alive
-          }}
-        />
-
-        {/* Complete Trip Button */}
-        <TouchableOpacity
-          style={[s.primaryBtn, completing && { opacity: 0.7 }]}
-          onPress={handleComplete}
-          disabled={completing}
-          activeOpacity={0.85}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {completing
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={s.primaryBtnText}>{t('ride.completeTrip')}</Text>
-          }
-        </TouchableOpacity>
+          {/* Rider & Status Row */}
+          <View style={s.riderRow}>
+            <View style={s.riderLeft}>
+              <View style={s.avatarContainer}>
+                <MonogramAvatar uri={ride?.rider_photo} name={ride?.rider_name} size={48} radius={12} />
+                <View style={s.ratingBadge}>
+                  <MaterialIcons name="star" size={9} color="#F59E0B" />
+                  <Text style={s.ratingBadgeText}>{Number(ride?.rider_rating || 4.7).toFixed(1)}</Text>
+                </View>
+              </View>
+              <View style={s.riderInfo}>
+                <Text style={s.riderName} numberOfLines={1} ellipsizeMode="tail">
+                  {ride?.rider_name || 'Rider'}
+                </Text>
+                <View style={s.tripStatusPill}>
+                  <Text style={s.tripStatusText}>{t('ride.tripInProgress', 'TRIP IN PROGRESS')}</Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity style={s.chatBtn} activeOpacity={0.8} onPress={() => setChatVisible(true)}>
+              <MaterialCommunityIcons name="chat-outline" size={20} color="#7C3AED" />
+            </TouchableOpacity>
+          </View>
 
+          {/* Trip Details Card */}
+          <View style={s.tripDetailsSection}>
+            <View style={s.destinationCard}>
+              <View style={s.destIconBox}>
+                <MaterialIcons name="location-on" size={20} color="#7C3AED" />
+              </View>
+              <View style={s.destTextBox}>
+                <Text style={s.destLabel}>{t('ride.destination', 'DESTINATION')}</Text>
+                <Text style={s.destAddress} numberOfLines={1} ellipsizeMode="tail">
+                  {ride?.dropoff_address || 'Drop-off point'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Start Navigation Button */}
+          <StartNavigationButton
+            coords={dropoffNavCoords}
+            destinationLabel={ride?.dropoff_address}
+            rideId={rideId}
+            mode="d"
+            style={{ marginBottom: 12 }}
+            onNavigationStart={() => {}}
+          />
+
+          {/* Complete Trip Button */}
+          <TouchableOpacity
+            style={[s.primaryBtn, completing && { opacity: 0.7 }]}
+            onPress={handleComplete}
+            disabled={completing}
+            activeOpacity={0.85}
+          >
+            {completing
+              ? <ActivityIndicator color="#FFFFFF" />
+              : <Text style={s.primaryBtnText}>{t('ride.completeTrip', 'Complete Trip')}</Text>
+            }
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </View>
 
@@ -546,26 +549,29 @@ const s = StyleSheet.create({
     left: 0, right: 0,
     top: '62%', bottom: 0,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.12,
-    shadowRadius: 48,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
     elevation: 20,
-    paddingHorizontal: 32,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
   },
 
   // Drag handle
   dragHandleWrap: {
     alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
   dragHandle: {
-    width: 48, height: 4,
-    backgroundColor: '#E5E0EF',
-    borderRadius: 9999,
+    width: 40, height: 4,
+    backgroundColor: '#DDD6FE',
+    borderRadius: 2,
   },
 
   // Rider Row
@@ -574,7 +580,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   riderLeft: {
     flex: 1,
@@ -583,8 +589,8 @@ const s = StyleSheet.create({
     gap: 16,
   },
   avatarContainer: {
-    width: 56, height: 56,
-    borderRadius: 16,
+    width: 48, height: 48,
+    borderRadius: 12,
     backgroundColor: '#EDE9FA',
     position: 'relative',
     overflow: 'visible',
@@ -659,7 +665,7 @@ const s = StyleSheet.create({
   // Trip Details Card
   tripDetailsSection: {
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   destinationCard: {
     width: '100%',
@@ -700,15 +706,16 @@ const s = StyleSheet.create({
   primaryBtn: {
     width: '100%',
     height: 56,
-    backgroundColor: '#BEA3D8',
-    borderRadius: 12,
+    backgroundColor: '#7C3AED',
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 8,
+    marginBottom: 8,
   },
   primaryBtnText: {
     fontFamily: 'Inter',

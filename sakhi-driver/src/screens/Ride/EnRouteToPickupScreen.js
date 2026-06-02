@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-   Linking, Image, Dimensions, Platform, Modal, ActivityIndicator, BackHandler} from 'react-native';
+  ScrollView, Linking, Dimensions, ActivityIndicator, BackHandler} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import * as Location from 'expo-location';
@@ -269,76 +269,96 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* Section - Bottom Sheet (38%) */}
+      {/* Bottom Sheet — scrollable */}
       <View style={s.bottomSheet}>
-        {/* Drag Handle */}
         <View style={s.dragHandleWrap}>
-           <View style={s.dragHandle} />
+          <View style={s.dragHandle} />
         </View>
 
-        {/* Status Pill */}
-        <View style={s.statusRow}>
-          <View style={s.statusPill}>
-            <Text style={s.statusText}>{t('ride.enRouteToPickup')}</Text>
-          </View>
-        </View>
-
-        {/* Rider Information Row */}
-        <View style={s.riderRow}>
-          <View style={s.riderLeft}>
-             <View style={s.avatarContainer}>
-               <MonogramAvatar
-                 uri={ride?.rider_photo}
-                 name={ride?.rider_name}
-                 size={52}
-                 radius={14}
-               />
-               <View style={s.starBadge}>
-                 <MaterialIcons name="star" size={10} color="#EAB308" />
-               </View>
-             </View>
-             
-             <View style={s.riderDetails}>
-                <Text style={s.riderName} numberOfLines={1} ellipsizeMode="tail">
-                  {ride?.rider_name || 'Priya S.'}
-                </Text>
-                <Text style={s.riderSubtext} numberOfLines={1} ellipsizeMode="tail">
-                  4.7 • Premium Class
-                </Text>
-             </View>
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Status pill */}
+          <View style={s.statusRow}>
+            <View style={s.statusPill}>
+              <View style={s.statusDot} />
+              <Text style={s.statusText}>{t('ride.enRouteToPickup', 'EN ROUTE TO PICKUP')}</Text>
+            </View>
           </View>
 
-          <View style={s.riderActions}>
-            <TouchableOpacity style={[s.callBtn, calling && { opacity: 0.6 }]} onPress={handleCall} activeOpacity={0.8} disabled={calling}>
-              {calling
-                ? <ActivityIndicator size="small" color="#FFFFFF" />
-                : <MaterialIcons name="call" size={20} color="#FFFFFF" />
-              }
-            </TouchableOpacity>
-            <TouchableOpacity style={s.chatBtn} onPress={() => setChatVisible(true)} activeOpacity={0.6}>
-              <Feather name="message-circle" size={24} color="#AB8FFE" />
-            </TouchableOpacity>
+          {/* Rider card */}
+          <View style={s.riderCard}>
+            <View style={s.riderLeft}>
+              <View style={s.avatarContainer}>
+                <MonogramAvatar
+                  uri={ride?.rider_photo}
+                  name={ride?.rider_name}
+                  size={48}
+                  radius={12}
+                />
+              </View>
+              <View style={s.riderDetails}>
+                <Text style={s.riderName} numberOfLines={1}>{ride?.rider_name || 'Rider'}</Text>
+                <View style={s.ratingRow}>
+                  <MaterialIcons name="star" size={13} color="#F59E0B" />
+                  <Text style={s.riderSubtext}>4.7 · Premium</Text>
+                </View>
+              </View>
+            </View>
+            <View style={s.riderActions}>
+              <TouchableOpacity style={[s.actionBtn, s.callBtnColor, calling && { opacity: 0.6 }]} onPress={handleCall} activeOpacity={0.8} disabled={calling}>
+                {calling
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <MaterialIcons name="call" size={18} color="#fff" />
+                }
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.actionBtn, s.chatBtnColor]} onPress={() => setChatVisible(true)} activeOpacity={0.8}>
+                <Feather name="message-circle" size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* Start Navigation Button — launches Google Maps to pickup */}
-        <StartNavigationButton
-          coords={pickupNavCoords}
-          destinationLabel={ride?.pickup_address}
-          rideId={rideId}
-          mode="d"
-          style={{ marginBottom: 12 }}
-        />
+          {/* Fare + distance info strip */}
+          <View style={s.infoStrip}>
+            <View style={s.infoChip}>
+              <Feather name="map-pin" size={13} color="#8B5CF6" />
+              <Text style={s.infoChipText}>{ride?.distance_km ? `${ride.distance_km} km` : '—'}</Text>
+            </View>
+            <View style={s.infoChipDivider} />
+            <View style={s.infoChip}>
+              <Feather name="clock" size={13} color="#8B5CF6" />
+              <Text style={s.infoChipText}>{ride?.duration_min ? `${Math.round(ride.duration_min)} min` : '—'}</Text>
+            </View>
+            <View style={s.infoChipDivider} />
+            <View style={s.infoChip}>
+              <MaterialIcons name="currency-rupee" size={13} color="#8B5CF6" />
+              <Text style={s.infoChipText}>{ride?.estimated_fare ? `₹${ride.estimated_fare}` : '—'}</Text>
+            </View>
+          </View>
 
-        {/* Primary Action Button */}
-        <TouchableOpacity style={s.primaryBtn} onPress={handleArrived} activeOpacity={0.8}>
-          <Text style={s.primaryBtnText}>{t('ride.arrivedAtPickup')}</Text>
-        </TouchableOpacity>
+          {/* Navigate button */}
+          <StartNavigationButton
+            coords={pickupNavCoords}
+            destinationLabel={ride?.pickup_address}
+            rideId={rideId}
+            mode="d"
+            style={{ marginBottom: 12 }}
+          />
 
-        {/* Cancel Ride Button */}
-        <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
-          <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
-        </TouchableOpacity>
+          {/* Primary CTA */}
+          <TouchableOpacity style={s.primaryBtn} onPress={handleArrived} activeOpacity={0.85}>
+            <MaterialIcons name="location-on" size={20} color="#fff" />
+            <Text style={s.primaryBtnText}>{t('ride.arrivedAtPickup', "I've Arrived at Pickup")}</Text>
+          </TouchableOpacity>
+
+          {/* Cancel */}
+          <TouchableOpacity style={s.cancelBtn} onPress={handleCancelRide} activeOpacity={0.8}>
+            <Text style={s.cancelBtnText}>{t('ride.cancelRide', 'Cancel Ride')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
     </View>
@@ -504,169 +524,186 @@ const s = StyleSheet.create({
     elevation: 4,
   },
 
-  // BOTTOM SHEET (38%)
+  // ── BOTTOM SHEET ──
   bottomSheet: {
     flex: 1,
-    backgroundColor: '#F5F0FF',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingHorizontal: 32,
-    paddingTop: 8,
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.12,
-    shadowRadius: 48,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
     elevation: 20,
     alignItems: 'center',
   },
   dragHandleWrap: {
-    paddingVertical: 12,
-    paddingBottom: 24,
+    paddingTop: 10,
+    paddingBottom: 4,
     width: '100%',
     alignItems: 'center',
   },
   dragHandle: {
-    width: 48, height: 6,
-    backgroundColor: '#E5E0EF',
-    borderRadius: 3,
+    width: 40, height: 4,
+    backgroundColor: '#DDD6FE',
+    borderRadius: 2,
   },
-  
-  // Status Pill
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    paddingTop: 12,
+  },
+
+  // Status pill
   statusRow: {
-    width: '100%',
     alignItems: 'center',
     marginBottom: 16,
   },
   statusPill: {
-    backgroundColor: 'rgba(171, 143, 254, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EDE9FE',
+    paddingVertical: 5,
+    paddingHorizontal: 14,
     borderRadius: 9999,
+  },
+  statusDot: {
+    width: 6, height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7C3AED',
   },
   statusText: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 12,
-    color: '#5A3F98',
-    letterSpacing: 1.2,
+    fontSize: 11,
+    color: '#5B21B6',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
 
-  // Rider Row
-  riderRow: {
+  // Rider card
+  riderCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F5FF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
   },
   riderLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12, // slightly tighter gap to give text more room
-    paddingRight: 8, // padding before actions
+    gap: 12,
   },
   avatarContainer: {
-    width: 52, height: 52, // slightly smaller avatar
-    borderRadius: 16,
+    width: 48, height: 48,
+    borderRadius: 12,
     backgroundColor: '#EDE9FA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
-    position: 'relative',
-  },
-  avatar: {
-    width: '100%', height: '100%',
-    borderRadius: 16,
-  },
-  avatarFallback: {
-    width: '100%', height: '100%',
-    borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  starBadge: {
-    position: 'absolute',
-    right: -4, bottom: -4,
-    width: 20, height: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    overflow: 'hidden',
   },
   riderDetails: {
-    flex: 1, // allows text to shrink gracefully instead of pushing buttons
+    flex: 1,
     justifyContent: 'center',
   },
   riderName: {
     fontFamily: 'Inter',
-    fontWeight: '800',
-    fontSize: 18, // slightly smaller font
+    fontWeight: '700',
+    fontSize: 16,
     color: '#1E1B2E',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   riderSubtext: {
     fontFamily: 'Inter',
     fontWeight: '500',
-    fontSize: 13, // slightly smaller font
-    color: '#64748B',
+    fontSize: 12,
+    color: '#6B7280',
   },
   riderActions: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  actionBtn: {
+    width: 40, height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
-  callBtn: {
-    width: 48, height: 48,
-    backgroundColor: '#AB8FFE',
-    borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
+  callBtnColor: { backgroundColor: '#7C3AED' },
+  chatBtnColor: { backgroundColor: '#A78BFA' },
+
+  // Info strip
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F3FF',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+    justifyContent: 'space-around',
   },
-  chatBtn: {
-    padding: 8,
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  infoChipText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#4C1D95',
+  },
+  infoChipDivider: {
+    width: 1, height: 16,
+    backgroundColor: '#DDD6FE',
   },
 
   // Primary Button
   primaryBtn: {
     width: '100%',
-    height: 68,
-    backgroundColor: '#BEA3D8',
-    borderRadius: 16,
+    height: 56,
+    backgroundColor: '#7C3AED',
+    borderRadius: 14,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: 'rgba(124, 58, 237, 1)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
+    gap: 8,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 8,
+    marginBottom: 10,
   },
   primaryBtnText: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: 16,
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
   cancelBtn: {
     width: '100%',
-    height: 50,
+    height: 46,
     backgroundColor: '#FFF5F5',
-    borderWidth: 1.5,
-    borderColor: '#FEE2E2',
-    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
   },
   cancelBtnText: {
     fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#DC2626',
   },
 });
