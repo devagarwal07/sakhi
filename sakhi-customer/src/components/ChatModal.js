@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TextInput,
     TouchableOpacity, KeyboardAvoidingView, Platform,
-    ActivityIndicator, Pressable,
+    ActivityIndicator, Pressable, ScrollView
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, BorderRadius, Shadows } from '../utils/theme';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
-import { getChatHistory } from '../api/endpoints';
+import { getChatHistory, getChatQuickReplies } from '../api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../utils/androidUtils';
 import { Feather } from '@expo/vector-icons';
 
@@ -23,10 +23,23 @@ export default function ChatModal({ rideId, onClose }) {
     const { on, off, emit, joinRideRoom } = useSocket();
     const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState([]);
+    const [quickReplies, setQuickReplies] = useState([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
     const listRef = useRef(null);
     const keyboardVerticalOffset = Math.max(insets.top + 56, 56);
+
+    // Load quick replies on mount
+    useEffect(() => {
+        getChatQuickReplies()
+            .then(({ data }) => {
+                if (data.replies) setQuickReplies(data.replies);
+            })
+            .catch(() => {
+                // fallback if network fails
+                setQuickReplies(['On my way 🏃', '2 minutes ⏳', 'Please wait 🙏', "I'm here ✅"]);
+            });
+    }, []);
 
     const mapToUiMessage = (m) => {
         if (!m) return null;
@@ -190,24 +203,23 @@ export default function ChatModal({ rideId, onClose }) {
             )}
 
             {/* Quick replies */}
-            <View style={styles.quickReplies}>
-                {[
-                    'On my way 🏃',
-                    '2 minutes ⏳',
-                    'Please wait 🙏',
-                    'I\'m here ✅',
-                ].map((qr) => (
-                    <TouchableOpacity
-                        key={qr}
-                        style={styles.quickReply}
-                        onPress={() => {
-                            setText((prev) => (prev ? `${prev} ${qr}` : qr));
-                        }}
-                    >
-                        <Text style={styles.quickReplyText}>{qr}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+            {quickReplies.length > 0 && (
+                <View style={styles.quickReplies}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 20 }}>
+                        {quickReplies.map((qr) => (
+                            <TouchableOpacity
+                                key={qr}
+                                style={styles.quickReply}
+                                onPress={() => {
+                                    setText((prev) => (prev ? `${prev} ${qr}` : qr));
+                                }}
+                            >
+                                <Text style={styles.quickReplyText}>{qr}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* Input bar */}
             <View style={styles.inputBar}>

@@ -96,7 +96,7 @@ export default function LocationSearchScreen() {
     const { setDropoff, setPickup, setStop, ride } = useRide();
     const insets = useSafeAreaInsets();
     const [pickupQuery, setPickupQuery] = useState(ride?.pickup?.address || '');
-    const [dropoffQuery, setDropoffQuery] = useState('');
+    const [dropoffQuery, setDropoffQuery] = useState(ride?.dropoff?.address || '');
     const [stopQuery, setStopQuery] = useState(ride?.stop?.address || '');
     const [showStop, setShowStop] = useState(!!ride?.stop?.address);
     const [activeInput, setActiveInput] = useState('dropoff');
@@ -379,12 +379,16 @@ export default function LocationSearchScreen() {
     };
 
     const handleConfirm = () => {
-        if (!ride?.pickup?.latitude) {
-            Alert.alert('Missing Location', 'Please select a pickup location from the suggestions.');
+        if (!ride?.pickup?.latitude || pickupQuery !== ride.pickup.address) {
+            Alert.alert('Missing Location', 'Please select a pickup location from the suggestions or map.');
             return;
         }
-        if (!ride?.dropoff?.latitude) {
-            Alert.alert('Missing Location', 'Please select a drop-off location from the suggestions.');
+        if (!ride?.dropoff?.latitude || dropoffQuery !== ride.dropoff.address) {
+            Alert.alert('Missing Location', 'Please select a drop-off location from the suggestions or map.');
+            return;
+        }
+        if (showStop && (!ride?.stop?.latitude || stopQuery !== ride.stop.address)) {
+            Alert.alert('Missing Location', 'Please select a stop location from the suggestions, or remove the stop.');
             return;
         }
         router.replace(returnRoute);

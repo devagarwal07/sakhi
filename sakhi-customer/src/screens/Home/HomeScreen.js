@@ -400,24 +400,38 @@ export default function HomeScreen() {
                         showsHorizontalScrollIndicator={false}
                         style={styles.chipsRow}
                     >
-                        <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
-                            <Svg width="12" height="14" viewBox="0 0 12 14" fill="none">
-                                <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8" />
-                            </Svg>
-                            <Text style={[styles.chipLabel]}>Home</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
-                            <Svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                                <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8" />
-                            </Svg>
-                            <Text style={styles.chipLabel}>Work</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
-                            <Svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <Path d="M6.75 13.5C5.025 13.5 3.52187 12.9281 2.24062 11.7844C0.959375 10.6406 0.225 9.2125 0.0375 7.5H1.575C1.75 8.8 2.32812 9.875 3.30938 10.725C4.29063 11.575 5.4375 12 6.75 12C8.2125 12 9.45312 11.4906 10.4719 10.4719C11.4906 9.45312 12 8.2125 12 6.75C12 5.2875 11.4906 4.04688 10.4719 3.02813C9.45312 2.00938 8.2125 1.5 6.75 1.5C5.8875 1.5 5.08125 1.7 4.33125 2.1C3.58125 2.5 2.95 3.05 2.4375 3.75H4.5V5.25H0V0.75H1.5V2.5125C2.1375 1.7125 2.91562 1.09375 3.83437 0.65625C4.75312 0.21875 5.725 0 6.75 0C7.6875 0 8.56562 0.178125 9.38437 0.534375C10.2031 0.890625 10.9156 1.37188 11.5219 1.97812C12.1281 2.58437 12.6094 3.29688 12.9656 4.11562C13.3219 4.93437 13.5 5.8125 13.5 6.75C13.5 7.6875 13.3219 8.56562 12.9656 9.38437C12.6094 10.2031 12.1281 10.9156 11.5219 11.5219C10.9156 12.1281 10.2031 12.6094 9.38437 12.9656C8.56562 13.3219 7.6875 13.5 6.75 13.5ZM8.85 9.9L6 7.05V3H7.5V6.45L9.9 8.85L8.85 9.9Z" fill="#BEA3D8" />
-                            </Svg>
-                            <Text style={styles.chipLabel}>Recent</Text>
-                        </TouchableOpacity>
+                        {savedPlaces && savedPlaces.length > 0 ? (
+                            savedPlaces.map((place, index) => (
+                                <TouchableOpacity 
+                                    key={place.id || index} 
+                                    style={[styles.chip, styles.chipIcon]} 
+                                    onPress={() => {
+                                        setDropoff({ latitude: place.lat, longitude: place.lng, address: place.address });
+                                        router.push('/location-search');
+                                    }}
+                                >
+                                    {place.label?.toLowerCase() === 'home' ? (
+                                        <Svg width="12" height="14" viewBox="0 0 12 14" fill="none">
+                                            <Path d="M1.5 12H3.75V7.5H8.25V12H10.5V5.25L6 1.875L1.5 5.25V12ZM0 13.5V4.5L6 0L12 4.5V13.5H6.75V9H5.25V13.5H0Z" fill="#BEA3D8" />
+                                        </Svg>
+                                    ) : place.label?.toLowerCase() === 'work' ? (
+                                        <Svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                            <Path d="M1.5 14.25C1.0875 14.25 0.734375 14.1031 0.440625 13.8094C0.146875 13.5156 0 13.1625 0 12.75V4.5C0 4.0875 0.146875 3.73438 0.440625 3.44062C0.734375 3.14687 1.0875 3 1.5 3H4.5V1.5C4.5 1.0875 4.64688 0.734375 4.94063 0.440625C5.23438 0.146875 5.5875 0 6 0H9C9.4125 0 9.76562 0.146875 10.0594 0.440625C10.3531 0.734375 10.5 1.0875 10.5 1.5V3H13.5C13.9125 3 14.2656 3.14687 14.5594 3.44062C14.8531 3.73438 15 4.0875 15 4.5V12.75C15 13.1625 14.8531 13.5156 14.5594 13.8094C14.2656 14.1031 13.9125 14.25 13.5 14.25H1.5ZM1.5 12.75H13.5V4.5H1.5V12.75ZM6 3H9V1.5H6V3ZM1.5 12.75V4.5V12.75Z" fill="#BEA3D8" />
+                                        </Svg>
+                                    ) : (
+                                        <Svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <Path d="M6.75 13.5C5.025 13.5 3.52187 12.9281 2.24062 11.7844C0.959375 10.6406 0.225 9.2125 0.0375 7.5H1.575C1.75 8.8 2.32812 9.875 3.30938 10.725C4.29063 11.575 5.4375 12 6.75 12C8.2125 12 9.45312 11.4906 10.4719 10.4719C11.4906 9.45312 12 8.2125 12 6.75C12 5.2875 11.4906 4.04688 10.4719 3.02813C9.45312 2.00938 8.2125 1.5 6.75 1.5C5.8875 1.5 5.08125 1.7 4.33125 2.1C3.58125 2.5 2.95 3.05 2.4375 3.75H4.5V5.25H0V0.75H1.5V2.5125C2.1375 1.7125 2.91562 1.09375 3.83437 0.65625C4.75312 0.21875 5.725 0 6.75 0C7.6875 0 8.56562 0.178125 9.38437 0.534375C10.2031 0.890625 10.9156 1.37188 11.5219 1.97812C12.1281 2.58437 12.6094 3.29688 12.9656 4.11562C13.3219 4.93437 13.5 5.8125 13.5 6.75C13.5 7.6875 13.3219 8.56562 12.9656 9.38437C12.6094 10.2031 12.1281 10.9156 11.5219 11.5219C10.9156 12.1281 10.2031 12.6094 9.38437 12.9656C8.56562 13.3219 7.6875 13.5 6.75 13.5ZM8.85 9.9L6 7.05V3H7.5V6.45L9.9 8.85L8.85 9.9Z" fill="#BEA3D8" />
+                                        </Svg>
+                                    )}
+                                    <Text style={styles.chipLabel}>{place.label ? (place.label.charAt(0).toUpperCase() + place.label.slice(1)) : 'Saved'}</Text>
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <TouchableOpacity style={[styles.chip, styles.chipIcon]} onPress={() => router.push('/location-search')}>
+                                <Feather name="map-pin" size={14} color="#BEA3D8" />
+                                <Text style={styles.chipLabel}>Set Destination</Text>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity style={[styles.chip, styles.chipDashed]} onPress={() => router.push('/saved-places')}>
                             <Text style={[styles.chipIcon, { color: '#BEA3D8' }]}>+</Text>
                             <Text style={[styles.chipLabel, { color: '#BEA3D8' }]}>Add New</Text>

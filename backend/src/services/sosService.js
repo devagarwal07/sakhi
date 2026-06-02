@@ -62,7 +62,7 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
   const safeName = userName.substring(0, 20);
 
   // SOS SMS — uses the Sakhi live tracking page (falls back to Google Maps coords)
-  const smsText  = `SAKHI MOBILITY Alert: ${safeName} activated SOS during ride. Current location: ${shortLat},${shortLng} . Please track here: SakhiApp`;
+  const smsText  = `SAKHI MOBILITY Alert: ${safeName} activated SOS during ride. Current location: ${shortLat},${shortLng} . Please track here: ${trackUrl}`;
 
 
   // 4. SMS all emergency contacts — non-fatal per contact

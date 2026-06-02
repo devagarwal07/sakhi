@@ -103,6 +103,7 @@ async function estimateFare(req, res, next) {
 
     // Free ride eligibility
     let free_ride = false;
+    let free_ride_reason = null;
     const riderId = req.user?.userId;
     if (riderId) {
       const { data: riderRows } = await supabase
@@ -111,6 +112,24 @@ async function estimateFare(req, res, next) {
         free_ride = true;
         promo_discount = finalFare;
         finalFare = 0;
+
+        const { data: creditRows } = await supabase
+          .from('rider_free_ride_credits')
+          .select('reason')
+          .eq('rider_id', riderId)
+          .eq('status', 'available')
+          .order('granted_at', { ascending: false })
+          .limit(1);
+          
+        if (creditRows?.[0]?.reason) {
+            if (creditRows[0].reason === 'consecutive_subscription_failure') {
+                free_ride_reason = 'You had 3 consecutive failed bookings — enjoy a complimentary ride.';
+            } else {
+                free_ride_reason = 'A complimentary ride has been applied to your account.';
+            }
+        } else {
+            free_ride_reason = 'A complimentary ride has been applied to your account.';
+        }
       }
     }
 
@@ -121,6 +140,7 @@ async function estimateFare(req, res, next) {
       breakdown:  { ...breakdown, promo_discount },
       promo_applied,
       free_ride,
+      free_ride_reason,
       is_night_fare:    night,
       night_multiplier: night ? nightMultiplier : 1,
     });
@@ -811,10 +831,40 @@ async function getNearbyDrivers(req, res, next) {
   }
 }
 
+async function getActivePromos(req, res, next) {
+  try {
+    const { data: coupons, error } = await supabase
+      .from('promo_discounts')
+      .select('code, description, discount_pct, flat_amount, max_discount_cap')
+      .eq('is_active', true)
+      .or(`valid_to.gte.${new Date().toISOString()},valid_to.is.null`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return res.json({ coupons: coupons || [] });
+  } catch (err) { return next(err); }
+}
+
+function getQuickReplies(req, res) {
+  // Option A: Global dynamic configuration returned from backend.
+  // In a full DB implementation, this could fetch from a 'global_config' table.
+  return res.json({
+    replies: [
+      "I'm at the location.",
+      "Be there in 2 minutes.",
+      "Can you come to the main gate?",
+      "I'm wearing a red jacket.",
+      "Please call me when you arrive."
+    ]
+  });
+}
+
 module.exports = {
   estimateFare, createRide, updateStatus, cancelRide,
   acceptRide, rejectRide, getRide, rateRide, getChatHistory,
   fareSummary, cashCollected, rateRider,
   createRidePaymentOrder, verifyRidePayment,
-  initiateSubscriptionRide, getActiveRide, getNearbyDrivers,
+  initiateSubscriptionRide, getActiveRide, getNearbyDrivers, getActivePromos,
+  getQuickReplies,
 };

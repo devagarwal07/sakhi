@@ -58,7 +58,9 @@ export function AuthProvider({ children }) {
 
         } catch (err) {
             // ONLY log out and clear storage if the API specifically rejected the token (401 Unauthorized / 403 Forbidden)
-            const isAuthError = err?.response && (err.response.status === 401 || err.response.status === 403);
+            const isAuthError = err?.isAxiosError 
+                ? (err.response?.status === 401 || err.response?.status === 403)
+                : false;
             
             if (isAuthError) {
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
@@ -67,6 +69,11 @@ export function AuthProvider({ children }) {
                 setUser(null);
             } else {
                 console.warn('[AuthContext] getProfile background sync failed (non-auth error):', err?.message);
+                DeviceEventEmitter.emit('SHOW_CUSTOM_ALERT', {
+                    title: 'Sync Warning',
+                    message: 'We could not refresh your profile data due to a slow connection. You may be viewing outdated information. Please check your internet.',
+                    buttons: [{ text: 'Got it', style: 'cancel' }],
+                });
             }
             setIsLoading(false);
         }
@@ -129,8 +136,8 @@ export function AuthProvider({ children }) {
         } catch (_) {
             // Swallow logout API error — clear locally anyway
         } finally {
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
             setUser(null);
             setIsAuthenticated(false);
         }

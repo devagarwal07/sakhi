@@ -119,7 +119,16 @@ export default function ChangePhoneScreen() {
             setOtp(Array(OTP_LENGTH).fill(''));
             startResendTimer();
             otpRefs.current[0]?.focus();
-        } catch { } finally { setLoading(false); }
+        } catch (err) {
+            setModal({
+                icon: '🔄',
+                title: 'Error',
+                message: err?.response?.data?.message || 'Could not resend OTP. Please try again.',
+                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+            });
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     // ── STEP: SUCCESS ─────────────────────────────────────────────────────────

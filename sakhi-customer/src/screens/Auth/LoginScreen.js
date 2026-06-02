@@ -181,8 +181,8 @@ export default function LoginScreen() {
                 <View style={styles.termsSection}>
                     <Text style={styles.termsText}>
                         By continuing, you agree to Sakhi's{' '}
-                        <Text style={styles.termsLink} onPress={() => router.push('/terms')}>Terms of Service</Text>
-                        {'\n'}and <Text style={styles.termsLink} onPress={() => router.push('/terms')}>Privacy Policy</Text>
+                        <Text style={styles.termsLink} onPress={() => router.push('/terms?tab=terms')}>Terms of Service</Text>
+                        {'\n'}and <Text style={styles.termsLink} onPress={() => router.push('/terms?tab=privacy')}>Privacy Policy</Text>
                     </Text>
                 </View>
 

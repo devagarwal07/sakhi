@@ -45,9 +45,9 @@ export default function DriverArrivedScreen() {
     const tabBarHeight = (Platform.OS === 'ios' ? 76 : 87) + tabBarPaddingBottom;
     const bottomSpacerHeight = tabBarHeight + 20;
 
-    // Use real pickup coords from RideContext; fall back to Mumbai center
-    const pickupLat = ride?.pickup?.latitude || 19.0760;
-    const pickupLng = ride?.pickup?.longitude || 72.8777;
+    // Use real pickup coords from RideContext; fall back to Bengaluru center
+    const pickupLat = ride?.pickup?.latitude || 12.9716;
+    const pickupLng = ride?.pickup?.longitude || 77.5946;
     const coords = { latitude: pickupLat, longitude: pickupLng };
 
     // Real driver info from ride context

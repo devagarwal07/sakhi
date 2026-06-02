@@ -57,6 +57,7 @@ export const rateDriver = (rideId, rating, comment) =>
     apiClient.post(`/rides/${rideId}/rating`, { rating, comment });
 export const submitRating = rateDriver; // Alias expected by UI
 export const getChatHistory = (rideId) => apiClient.get(`/rides/${rideId}/chat`);
+export const getChatQuickReplies = () => apiClient.get('/rides/chat/quick-replies');
 export const shareTrip = (rideId) => apiClient.post(`/safety/share-trip/${rideId}`);
 
 // ── Ride Payments ──────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ export const applyReferralCode = (referral_code) => apiClient.post('/users/refer
 // Validate a promo code before booking (dry-run, no usage recorded)
 export const validatePromoCode = (promo_code, fare) =>
     apiClient.post('/rides/promo/validate', { promo_code, fare });
+export const getActivePromos = () => apiClient.get('/rides/promos');
 
 
 // ── Subscriptions ─────────────────────────────────────────────────────────

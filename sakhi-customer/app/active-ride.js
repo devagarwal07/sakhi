@@ -193,7 +193,8 @@ export default function ActiveRideScreen() {
 
             // Open SMS app directly with the phone number and link
             const message = `Track my Sakhi ride live: ${shareUrl}`;
-            const smsUrl = Platform.OS === 'ios' ? `sms:${contact.phone}&body=${encodeURIComponent(message)}` : `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
+            const cleanPhone = contact.phone ? contact.phone.replace(/[\s-()]/g, '') : '';
+            const smsUrl = Platform.OS === 'ios' ? `sms:${cleanPhone}&body=${encodeURIComponent(message)}` : `sms:${cleanPhone}?body=${encodeURIComponent(message)}`;
 
             Linking.canOpenURL(smsUrl)
                 .then(supported => {
@@ -271,7 +272,7 @@ export default function ActiveRideScreen() {
             <SmartMapView
                 ref={mapRef}
                 style={StyleSheet.absoluteFill}
-                center={ride.driver?.currentLocation || ride.pickup || { latitude: 19.0760, longitude: 72.8777 }}
+                center={ride.driver?.currentLocation || ride.pickup || { latitude: 12.9716, longitude: 77.5946 }}
                 zoom={15}
                 markers={[
                     ride.pickup && {
@@ -347,13 +348,13 @@ export default function ActiveRideScreen() {
                             }
                         </View>
                         <View style={styles.driverInfo}>
-                            <Text style={styles.driverName}>{ride.driver.name || 'Your Driver'}</Text>
+                            <Text style={styles.driverName}>{ride.driver?.name || 'Driver Assigned'}</Text>
                             <View style={styles.ratingRow}>
                                 <Feather name="star" size={12} color="#F59E0B" style={{ marginRight: 2 }} />
-                                <Text style={styles.ratingText}>{ride.driver.rating?.toFixed(1) || '4.9'}</Text>
-                                <Text style={styles.vehicleText}>  •  {ride.driver.vehicle || 'Auto'}</Text>
+                                <Text style={styles.ratingText}>{ride.driver?.rating?.toFixed(1) || 'New'}</Text>
+                                <Text style={styles.vehicleText}>  •  {ride.driver?.vehicle || 'Sakhi Vehicle'}</Text>
                             </View>
-                            <Text style={styles.plateText}>{ride.driver.plate || 'KA 01 AB 1234'}</Text>
+                            <Text style={styles.plateText}>{ride.driver?.plate || 'Plate Info Unavailable'}</Text>
                         </View>
                         <View style={styles.driverActions}>
                             <TouchableOpacity style={styles.actionBtn} onPress={() => setChatOpen(true)}>
@@ -504,7 +505,7 @@ export default function ActiveRideScreen() {
                                         onPress={() => handleShareWithContact(c)}
                                     >
                                         <View style={styles.contactAvatar}>
-                                            {c.name ? <Text style={{ fontSize: 16, color: '#BEA3D8', fontWeight: 'bold' }}>{c.name[0].toUpperCase()}</Text> : <Feather name="user" size={16} color="#BEA3D8" />}
+                                            {c.name?.trim() ? <Text style={{ fontSize: 16, color: '#BEA3D8', fontWeight: 'bold' }}>{c.name.trim().charAt(0).toUpperCase()}</Text> : <Feather name="user" size={16} color="#BEA3D8" />}
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.contactName}>{c.name}</Text>

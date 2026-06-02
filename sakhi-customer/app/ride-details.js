@@ -8,14 +8,19 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { getRideById } from '../src/api/endpoints';
+import { fetchDirectionsPolyline } from '../src/utils/locationService';
+import MapplsMapWebView from '../src/components/MapplsMapWebView';
+import { useRide } from '../src/context/RideContext';
 
 export default function RideDetailsScreen() {
     const router = useRouter();
+    const { setPickup, setDropoff } = useRide();
     const params = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [rideData, setRideData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [routePolyline, setRoutePolyline] = useState([]);
 
     const footerPaddingBottom = Math.max(insets.bottom, 24);
     const scrollPaddingBottom = 24 + 60 + footerPaddingBottom + 24;
@@ -24,7 +29,20 @@ export default function RideDetailsScreen() {
         const rideId = params?.rideId || params?.id;
         if (!rideId) { setLoading(false); return; }
         getRideById(rideId)
-            .then(({ data }) => setRideData(data?.ride || data))
+            .then(({ data }) => {
+                const r = data?.ride || data;
+                setRideData(r);
+                if (r && r.pickup_lat && r.drop_lat) {
+                    fetchDirectionsPolyline(
+                        { latitude: r.pickup_lat, longitude: r.pickup_lng },
+                        { latitude: r.drop_lat, longitude: r.drop_lng }
+                    ).then(res => {
+                        if (res && res.points) {
+                            setRoutePolyline(res.points);
+                        }
+                    }).catch(() => {});
+                }
+            })
             .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
@@ -96,15 +114,21 @@ export default function RideDetailsScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     
-                    {/* Simulated Map Background Area */}
+                    {/* Real Interactive Map Section */}
                     <View style={styles.mapSection}>
-                        {/* A light placeholder for the map */}
-                        <View style={styles.mapPlaceholder}>
-                            <View style={styles.mapRouteLine}>
-                                <View style={styles.mapStartDot} />
-                                <View style={styles.mapEndPin} />
-                            </View>
-                        </View>
+                        <MapplsMapWebView
+                            style={StyleSheet.absoluteFill}
+                            center={{ latitude: rideData?.pickup_lat || 12.9716, longitude: rideData?.pickup_lng || 77.5946 }}
+                            zoom={15}
+                            scrollEnabled={false}
+                            zoomEnabled={false}
+                            autoFitBounds={true}
+                            markers={[
+                                rideData?.pickup_lat ? { id: 'pickup', latitude: rideData.pickup_lat, longitude: rideData.pickup_lng, color: '#10B981', markerType: 'pickup' } : null,
+                                rideData?.drop_lat ? { id: 'dropoff', latitude: rideData.drop_lat, longitude: rideData.drop_lng, color: '#BEA3D8', markerType: 'dropoff' } : null,
+                            ].filter(Boolean)}
+                            polylines={routePolyline.length > 1 ? [{ coords: routePolyline, color: '#AE74E6', width: 4 }] : []}
+                        />
                     </View>
 
                     {/* Central Detail Card Cluster */}
@@ -216,7 +240,27 @@ export default function RideDetailsScreen() {
                 {/* Fixed Bottom Action */}
                 <View style={[styles.bottomFixedWrap, { paddingBottom: footerPaddingBottom }]}>
                     <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.actionBtnPrimary} activeOpacity={0.7} onPress={() => router.push('/location-search')}>
+                        <TouchableOpacity 
+                            style={styles.actionBtnPrimary} 
+                            activeOpacity={0.7} 
+                            onPress={() => {
+                                if (rideData && rideData.pickup_lat && rideData.drop_lat) {
+                                    setPickup({ 
+                                        latitude: rideData.pickup_lat, 
+                                        longitude: rideData.pickup_lng, 
+                                        address: rideData.pickup_address || ride?.pickup 
+                                    });
+                                    setDropoff({ 
+                                        latitude: rideData.drop_lat, 
+                                        longitude: rideData.drop_lng, 
+                                        address: rideData.dropoff_address || ride?.dropoff 
+                                    });
+                                    router.push('/ride-estimate');
+                                } else {
+                                    router.push('/location-search');
+                                }
+                            }}
+                        >
                             <Text style={styles.actionBtnText}>Book Same Route</Text>
                         </TouchableOpacity>
                         <TouchableOpacity

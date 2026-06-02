@@ -11,7 +11,7 @@ import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { bookRide, cancelRide } from '../src/api/endpoints';
+import { bookRide, cancelRide, sendSupportMessage } from '../src/api/endpoints';
 import { fetchDirectionsPolyline } from '../src/utils/locationService';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -86,7 +86,30 @@ export default function RideFindingScreen() {
         return () => { mountedRef.current = false; };
     }, []);
 
-    // ── Fetch Map Polyline ─────────────────────────────────────────────────────
+    const handleSupport = async () => {
+        setModal(null);
+        setTimeout(async () => {
+            setModal({ icon: '⏳', title: 'Connecting...', message: 'Opening a support ticket...' });
+            try {
+                await sendSupportMessage(`Urgent: Need help while finding a ride. Ride ID: ${rideIdRef.current || 'Unknown'}`);
+                setModal({
+                    icon: '📞',
+                    title: 'Support Notified',
+                    message: 'A high-priority support ticket has been created. Our team will call you shortly.',
+                    buttons: [{ text: 'Got it', onPress: () => setModal(null) }]
+                });
+            } catch (error) {
+                setModal({
+                    icon: '⚠️',
+                    title: 'Request Failed',
+                    message: 'Could not connect to support. Please check your connection and try again.',
+                    buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                });
+            }
+        }, 300);
+    };
+
+    // ── Map effects ────────────────────────────────────────────────────────────
     useEffect(() => {
         if (ride?.pickup && ride?.dropoff) {
             fetchDirectionsPolyline(ride.pickup, ride.dropoff, ride.stop)
@@ -251,12 +274,25 @@ export default function RideFindingScreen() {
                     text: 'Cancel Ride',
                     style: 'destructive',
                     onPress: async () => {
-                        setModal(null);
-                        if (rideIdRef.current) {
-                            // Fire-and-forget — don't block navigation on cancel response
-                            cancelRide(rideIdRef.current, 'Rider cancelled during search').catch(() => { });
+                        if (!rideIdRef.current) {
+                            setModal(null);
+                            router.replace('/(tabs)/');
+                            return;
                         }
-                        router.replace('/(tabs)/');
+                        
+                        setModal({ icon: '⏳', title: 'Cancelling...', message: 'Please wait...' });
+                        try {
+                            await cancelRide(rideIdRef.current, 'Rider cancelled during search');
+                            setModal(null);
+                            router.replace('/(tabs)/');
+                        } catch (error) {
+                            setModal({
+                                icon: '⚠️',
+                                title: 'Failed to Cancel',
+                                message: error?.response?.data?.error?.message || 'Could not cancel the ride. Please check your connection and try again.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }]
+                            });
+                        }
                     },
                 },
             ],
@@ -346,7 +382,7 @@ export default function RideFindingScreen() {
                     title: 'Ride Options',
                     message: 'How can we help you?',
                     buttons: [
-                        { text: 'Contact Support', onPress: () => { setModal(null); setTimeout(() => setModal({ icon: '📞', title: 'Support', message: 'Our team will call you shortly.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] }), 300); } },
+                        { text: 'Contact Support', onPress: handleSupport },
                         { text: 'Cancel Search', style: 'destructive', onPress: () => { setModal(null); router.replace('/(tabs)/'); } },
                         { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
                     ],

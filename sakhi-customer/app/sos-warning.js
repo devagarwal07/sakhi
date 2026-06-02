@@ -6,11 +6,13 @@ import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import { triggerSOS } from '../src/api/endpoints';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
+import { useRide } from '../src/context/RideContext';
 
 const { width } = Dimensions.get('window');
 
 export default function SOSWarningScreen() {
     const router = useRouter();
+    const { ride } = useRide();
     const [timeLeft, setTimeLeft] = useState(5);
     const [triggered, setTriggered] = useState(false);
     const progressAnim = React.useRef(new Animated.Value(280)).current;
@@ -69,7 +71,7 @@ export default function SOSWarningScreen() {
                     if (last) { lat = last.coords.latitude; lng = last.coords.longitude; }
                 }
             }
-            await triggerSOS({ lat, lng });
+            await triggerSOS({ lat, lng, ride_id: ride?.id });
         } catch (_) {
             // Fire-and-forget — still navigate to SOS active even if API fails
         }

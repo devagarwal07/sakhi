@@ -16,6 +16,12 @@ router.use(apiLimiter);
 /** GET /rides/estimate — rider or driver may check fare */
 router.get('/estimate',       authMiddleware, roleGuard('rider', 'driver'), estimateLimiter, rideController.estimateFare);
 
+/** GET /rides/promos — fetch active promo codes (rider only) */
+router.get('/promos',          authMiddleware, roleGuard('rider'),           rideController.getActivePromos);
+
+/** GET /rides/chat/quick-replies — fetch dynamic chat quick replies */
+router.get('/chat/quick-replies', authMiddleware, roleGuard('rider', 'driver'), rideController.getQuickReplies);
+
 /** POST /rides — book a new ride (rider only) */
 router.post('/',              authMiddleware, roleGuard('rider'),           rideController.createRide);
 

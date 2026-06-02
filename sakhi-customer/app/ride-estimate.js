@@ -10,10 +10,12 @@ import SmartMapView from '../src/components/SmartMapView';
 import { calculateFare, parseKmText, PRICING, isNightFare, NIGHT_FARE_MULTIPLIER } from '../src/utils/fareCalculator';
 import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
+import { useAuth } from '../src/context/AuthContext';
 import SakhiModal from '../src/components/SakhiModal';
-import { estimateFare, validatePromoCode } from '../src/api/endpoints';
+import { estimateFare, validatePromoCode, getActivePromos } from '../src/api/endpoints';
 import { fetchDirectionsPolyline } from '../src/utils/locationService';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 
 const MAPPLS_KEY = process.env.EXPO_PUBLIC_MAPPLS_API_KEY ?? '';
 
@@ -98,10 +100,10 @@ export default function RideEstimateScreen() {
     // Compute midpoint for initial map region (forced to Numbers to prevent string concatenation)
     const midLat = pickup && dropoff
         ? (Number(pickup.latitude) + Number(dropoff.latitude)) / 2
-        : (Number(pickup?.latitude) || 19.0760);
+        : (Number(pickup?.latitude) || 12.9716);
     const midLng = pickup && dropoff
         ? (Number(pickup.longitude) + Number(dropoff.longitude)) / 2
-        : (Number(pickup?.longitude) || 72.8777);
+        : (Number(pickup?.longitude) || 77.5946);
     const latDelta = pickup && dropoff
         ? Math.abs(Number(pickup.latitude) - Number(dropoff.latitude)) * 1.8 + 0.01
         : 0.04;
@@ -158,6 +160,40 @@ export default function RideEstimateScreen() {
         clearTimeout(promoDebounceRef.current);
         promoDebounceRef.current = setTimeout(() => validatePromo(code), 800);
     }, [nightTotal]);
+
+    const fetchAndShowPromos = async () => {
+        try {
+            setModal({ icon: '⏳', title: 'Loading...', message: 'Fetching active offers...' });
+            const { data } = await getActivePromos();
+            const promos = data.coupons || [];
+            
+            if (promos.length === 0) {
+                setModal({
+                    icon: '🎁',
+                    title: 'Offers & Discounts',
+                    message: 'No active offers at the moment. Check back later!',
+                    buttons: [{ text: 'Got it', onPress: () => setModal(null) }]
+                });
+                return;
+            }
+
+            const promoText = promos.map(p => `• ${p.code}: ${p.description || 'Special Discount'}`).join('\n\n');
+            
+            setModal({
+                icon: '🎁',
+                title: 'Offers & Discounts',
+                message: promoText,
+                buttons: [{ text: 'Got it', onPress: () => setModal(null) }]
+            });
+        } catch (e) {
+            setModal({
+                icon: '⚠️',
+                title: 'Offers & Discounts',
+                message: 'Could not load offers at this time.',
+                buttons: [{ text: 'Got it', onPress: () => setModal(null) }]
+            });
+        }
+    };
 
     const validatePromo = async (code) => {
         if (!code || !nightTotal) return;
@@ -279,7 +315,9 @@ export default function RideEstimateScreen() {
                             <Feather name="gift" size={16} color="#065F46" />
                             <Text style={[styles.freeRideBannerTitle, { marginBottom: 0 }]}>Your next ride is FREE!</Text>
                         </View>
-                        <Text style={styles.freeRideBannerSub}>You had 3 consecutive failed bookings — enjoy a complimentary ride.</Text>
+                        <Text style={styles.freeRideBannerSub}>
+                            {fareData?.free_ride_reason || 'A complimentary ride has been applied to your account.'}
+                        </Text>
                     </View>
                 )}
 
@@ -494,16 +532,13 @@ export default function RideEstimateScreen() {
                                 {/* Offers info */}
                                 <TouchableOpacity
                                     style={styles.offersRow}
-                                    onPress={() => setModal({
-                                        icon: '🎁',
-                                        title: 'Offers & Discounts',
-                                        message: '5% off up to ₹100 on your first 3 rides\n\n10% off up to ₹150 on 15-day subscription rides\n\n15% off up to ₹200 on 30-day subscription rides',
-                                        buttons: [{ text: 'Got it', onPress: () => setModal(null) }],
-                                    })}
+                                    onPress={fetchAndShowPromos}
                                     activeOpacity={0.8}
                                 >
                                     <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                                        <Feather name="gift" size={14} color="#BEA3D8" />
+                                        <Svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                            <Path d="M11.6667 4.08333H9.275C9.72417 3.65167 10.0333 3.0625 10.0333 2.45C10.0333 1.155 8.94833 0.116669 7.64167 0.116669C6.88333 0.116669 6.20667 0.501669 5.83333 1.09667C5.46 0.501669 4.78333 0.116669 4.025 0.116669C2.71833 0.116669 1.63333 1.155 1.63333 2.45C1.63333 3.0625 1.9425 3.65167 2.39167 4.08333H0V6.41667H1.16667V12.8333H10.5V6.41667H11.6667V4.08333ZM7.64167 1.28334C8.30667 1.28334 8.86667 1.80834 8.86667 2.45C8.86667 3.09167 8.30667 3.61667 7.64167 3.61667C6.97667 3.61667 6.41667 3.09167 6.41667 2.45C6.41667 1.80834 6.97667 1.28334 7.64167 1.28334ZM4.025 1.28334C4.69 1.28334 5.25 1.80834 5.25 2.45C5.25 3.09167 4.69 3.61667 4.025 3.61667C3.36 3.61667 2.8 3.09167 2.8 2.45C2.8 1.80834 3.36 1.28334 4.025 1.28334ZM2.33333 11.6667V6.41667H5.25V11.6667H2.33333ZM6.41667 11.6667V6.41667H9.33333V11.6667H6.41667ZM10.5 5.25H1.16667V5.25H10.5V5.25Z" fill="#BEA3D8"/>
+                                        </Svg>
                                         <Text style={styles.offersRowText}>View Offers & Discounts</Text>
                                     </View>
                                 </TouchableOpacity>

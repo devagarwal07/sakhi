@@ -9,6 +9,7 @@ import {
   DeviceEventEmitter,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Colors, Typography, Shadows } from '../utils/theme';
 
 export default function GlobalErrorModal() {
   const [visible, setVisible] = useState(false);
@@ -70,7 +71,7 @@ export default function GlobalErrorModal() {
   const isError = config.title?.toLowerCase().includes('error') || 
                   config.title?.toLowerCase().includes('fail');
   const iconName = isError ? 'error-outline' : 'info-outline';
-  const iconColor = isError ? '#EF4444' : '#7C3AED';
+  const iconColor = isError ? Colors.error : Colors.primary;
 
   return (
     <Modal
@@ -90,7 +91,7 @@ export default function GlobalErrorModal() {
             { opacity: opacityAnim, transform: [{ scale: scaleAnim }] },
           ]}
         >
-          <View style={[styles.iconContainer, { backgroundColor: isError ? '#FEF2F2' : '#F5F3FF' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: isError ? Colors.errorContainer : Colors.primaryFixed }]}>
             <MaterialIcons name={iconName} size={32} color={iconColor} />
           </View>
 
@@ -146,15 +147,11 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surfaceContainerLowest,
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 24,
+    ...Shadows.card,
   },
   iconContainer: {
     width: 64,
@@ -165,18 +162,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: 'Inter',
-    fontWeight: '800',
-    fontSize: 20,
-    color: '#1E1B2E',
+    ...Typography.titleMedium,
+    color: Colors.onBackground,
     textAlign: 'center',
     marginBottom: 8,
   },
   message: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 15,
-    color: '#64748B',
+    ...Typography.bodyMedium,
+    color: Colors.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -188,44 +181,38 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButton: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: Colors.primaryContainer,
     paddingVertical: 14,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   primaryButtonText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#FFFFFF',
+    ...Typography.labelLarge,
+    color: Colors.onPrimary,
   },
   cancelButton: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.surfaceContainerLow,
     paddingVertical: 14,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 15,
-    color: '#475569',
+    ...Typography.labelLarge,
+    color: Colors.onSurface,
   },
   destructiveButton: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.errorContainer,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: Colors.error,
     paddingVertical: 14,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   destructiveButtonText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#EF4444',
+    ...Typography.labelLarge,
+    color: Colors.error,
   },
 });
