@@ -405,9 +405,9 @@ export default function LocationSearchScreen() {
 
     const handleSelectSavedPlace = (place) => {
         handleSelectPlace({
-            place_id:  place.id || place.place_id || String(Math.random()),
-            eLoc:      place.eLoc || null,
-            main:      place.name || place.label || 'Saved Place',
+            place_id: place.id || place.place_id || String(Math.random()),
+            eLoc: place.eLoc || null,
+            main: place.name || place.label || 'Saved Place',
             secondary: place.address || '',
         });
     };

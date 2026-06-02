@@ -22,7 +22,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=${scrollEnabled !== false ? 'yes' : 'no'}">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body, #map { width:100%; height:100%; background:#1a1625; }
+    html, body, #map { width:100%; height:100%; background:#E8E4F0; }
 
     .auto-wrap {
       position:relative; width:48px; height:48px;
@@ -508,6 +508,6 @@ export default MapplsMapWebView;
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
-  webview:   { flex: 1, backgroundColor: '#1a1625' },
-  loader:    { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1625' },
+  webview:   { flex: 1, backgroundColor: '#E8E4F0' },
+  loader:    { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8E4F0' },
 });

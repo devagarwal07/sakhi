@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     // Map section — fixed height so WebView gets a real measured size on Android
     mapSection: {
         width: '100%',
-        height: SCREEN_HEIGHT * 0.58,
+        height: SCREEN_HEIGHT, // Full height so it doesn't reveal the background when sheet is dragged down
         backgroundColor: '#F5F0FF',
         overflow: 'hidden',
     },
@@ -644,11 +644,7 @@ const styles = StyleSheet.create({
 
     // Interactive Bottom Sheet Overrides
     bottomSheetShadow: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -12 },
-        shadowOpacity: 0.06,
-        shadowRadius: 40,
-        elevation: 8,
+        // Completely removed shadow/elevation to prevent black lines on both iOS and Android
     },
     // Note: shadows via shadowColor only show on iOS. Android uses elevation (set above).
     sheetContent: {
