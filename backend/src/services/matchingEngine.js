@@ -219,15 +219,18 @@ class MatchingEngine extends EventEmitter {
   //   Both pools also carry RAR + GPS staleness penalties.
   // ──────────────────────────────────────────────────────────────────────────────
   async _queryCandidates(pickupLat, pickupLng, radiusMeters) {
-    const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // extended to 10 min window
+    const tenMinsAgoMs = Date.now() - 10 * 60 * 1000; // 10-min staleness cutoff in ms
     const now = Date.now();
 
     // ── Fetch all online, verified, active drivers ──────────────────────────────
     // NOTE: Use a left join (no `!inner`) so drivers who just went online and
     // haven't sent their first location ping yet are still included.
-    // Drivers without a location row get GPS staleness penalty ×1.30 (max penalty)
+    // Drivers without a location row get GPS staleness penalty x1.30 (max penalty)
     // which pushes them to the back of the queue — but they are NOT excluded.
-    // The 10-min window here is a soft DB filter; the scoring below handles staleness.
+    //
+    // IMPORTANT: Do NOT use .or() with a foreign-table column (driver_locations.*)
+    // in PostgREST — it silently excludes all rows that have a location record,
+    // resulting in zero candidates. Staleness filtering is done in JS below.
     const { data: rows, error } = await supabase
       .from('drivers')
       .select(`
@@ -239,8 +242,7 @@ class MatchingEngine extends EventEmitter {
       .eq('is_online', true)
       .eq('is_active', true)
       .eq('gender_verified', true)
-      .eq('verification_status', 'approved')
-      .or(`driver_locations.updated_at.gte.${tenMinsAgo},driver_locations.updated_at.is.null`);
+      .eq('verification_status', 'approved');
 
     if (error || !rows) {
       logger.error('MatchingEngine._queryCandidates — DB error', { error });
@@ -351,6 +353,8 @@ class MatchingEngine extends EventEmitter {
         distance_meters = radiusMeters * 0.9;
         logger.info('MatchingEngine — driver has no location record, using fallback distance', { driverId: d.id });
       } else {
+        // JS-side staleness filter: skip drivers whose GPS is older than 10 minutes
+        if (loc.updated_at && new Date(loc.updated_at).getTime() < tenMinsAgoMs) continue;
         distance_meters = haversine(pickupLat, pickupLng, loc.lat, loc.lng);
         if (distance_meters > radiusMeters) continue;
       }
