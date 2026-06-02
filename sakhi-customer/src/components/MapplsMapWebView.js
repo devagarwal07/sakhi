@@ -164,33 +164,28 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
       markerObjects = {};
       markers.forEach(function(m) {
         var el = createMarkerEl(m);
+        // Mappls SDK uses `html` (not `element`) for custom marker icons
         markerObjects[m.id || Math.random()] = new mappls.Marker({
-          map: map, position: { lat: m.lat, lng: m.lng }, element: el,
+          map: map, position: { lat: m.lat, lng: m.lng }, html: el,
         });
       });
     }
 
-    /* ── Nearby autos (customer-only addition) ────────────────────────────── */
-    var OFFSETS = [[-0.0025,-0.0018],[0.0020,-0.0022],[-0.0015,0.0025],[0.0028,0.0020],[0.0005,-0.0030],[-0.0030,0.0005]];
+    /* ── Nearby autos — only real driver locations from API ──────────────── */
     function setNearbyAutos(center, autos) {
       nearbyMarkers.forEach(function(m){ try{m.remove();}catch(e){} });
       nearbyMarkers = [];
-      if (!map || !center || autos === false) return;
-      var items = (Array.isArray(autos) && autos.length > 0) ? autos : OFFSETS;
-      items.forEach(function(a, i) {
-        var lat, lng;
-        if (Array.isArray(a)) { lat = center.lat + a[0]; lng = center.lng + a[1]; }
-        else {
-          lat = a.lat !== undefined ? a.lat : center.lat;
-          lng = a.lng !== undefined ? a.lng : center.lng;
-          if (lat === center.lat && lng === center.lng) { var fb = OFFSETS[i%OFFSETS.length]; lat = center.lat+fb[0]; lng = center.lng+fb[1]; }
-        }
-        var bearing = (a && a.bearing !== undefined) ? a.bearing : Math.floor(Math.random()*360);
-        var el = createMarkerEl({ type:'auto', color:'#8031CC', nearby:true, bearing:bearing });
-        el.style.animationDelay = (i*0.5)+'s';
-        nearbyMarkers.push(new mappls.Marker({ map:map, position:{lat:lat,lng:lng}, element:el }));
+      // No fallback — only show real online drivers returned by the API
+      if (!map || !Array.isArray(autos) || autos.length === 0) return;
+      autos.forEach(function(a, i) {
+        if (!a || !a.lat || !a.lng) return;
+        var bearing = a.bearing !== undefined ? a.bearing : Math.floor(Math.random() * 360);
+        var delay = (i * 0.3) + 's';
+        var markerHtml = '<div class="auto-wrap auto-nearby" style="animation-delay:' + delay + '">' + autoSVG('#8031CC', bearing) + '</div>';
+        nearbyMarkers.push(new mappls.Marker({ map:map, position:{lat:a.lat,lng:a.lng}, html:markerHtml }));
       });
     }
+
 
     /* ── Smooth move (driver GPS updates) ────────────────────────────────── */
     function smoothMoveMarker(id, toLat, toLng, bearing, durationMs) {
@@ -391,15 +386,16 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     animated: !!p.animated,
   }));
 
-  // API may give {latitude,longitude} — normalise to {lat,lng}
+  // API returns [{id, lat, lng}] — normalise and pass through directly
   const toNearbyAutos = (nb) => {
-    if (nb === true)           return [];    // use random offsets
-    if (!nb || !Array.isArray(nb)) return false;
-    return nb.map(a => ({
-      lat:     a.lat     ?? a.latitude  ?? 0,
-      lng:     a.lng     ?? a.longitude ?? 0,
-      bearing: a.bearing ?? 0,
-    }));
+    if (!Array.isArray(nb)) return [];  // null/undefined/false → send empty, show nothing
+    return nb
+      .filter(a => a && (a.lat || a.latitude) && (a.lng || a.longitude))
+      .map(a => ({
+        lat:     a.lat     ?? a.latitude,
+        lng:     a.lng     ?? a.longitude,
+        bearing: a.bearing ?? 0,
+      }));
   };
 
   const post = (payload) => {
