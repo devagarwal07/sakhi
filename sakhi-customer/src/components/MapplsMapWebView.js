@@ -164,7 +164,7 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
       markerObjects = {};
       markers.forEach(function(m) {
         var el = createMarkerEl(m);
-        // Mappls SDK uses `html` (not `element`) for custom marker icons
+        // Mappls SDK uses "html" property (not "element") for custom marker icons
         markerObjects[m.id || Math.random()] = new mappls.Marker({
           map: map, position: { lat: m.lat, lng: m.lng }, html: el,
         });
