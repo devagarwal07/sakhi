@@ -14,6 +14,21 @@ const referralService = require('./referralService');
 // Lazy-load anomalyService to avoid circular deps
 const getAnomalyService = () => require('./anomalyService');
 
+// ── Haversine (meters) ────────────────────────────────────────────────────────
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Geofence config ──────────────────────────────────────────────────────────
+const ARRIVED_RADIUS_METERS = 300; // driver must be within 300m of pickup
+
 // ── State machine ─────────────────────────────────────────────────────────────
 // Maps new_status → allowed previous statuses
 const VALID_TRANSITIONS = {
@@ -87,6 +102,44 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
   }
 
   else if (newStatus === 'arrived') {
+    // ── Geofence check: driver must be within ARRIVED_RADIUS_METERS of pickup ──
+    const { data: locRows } = await supabase
+      .from('driver_locations')
+      .select('lat, lng, updated_at')
+      .eq('driver_id', driverId)
+      .limit(1);
+
+    const loc = locRows?.[0];
+
+    if (loc?.lat != null && loc?.lng != null && ride.pickup_lat != null && ride.pickup_lng != null) {
+      const distMeters = haversineMeters(
+        parseFloat(loc.lat), parseFloat(loc.lng),
+        parseFloat(ride.pickup_lat), parseFloat(ride.pickup_lng),
+      );
+
+      logger.info('rideService.updateRideStatus — arrived geofence check', {
+        rideId, driverId,
+        driverLat: loc.lat, driverLng: loc.lng,
+        pickupLat: ride.pickup_lat, pickupLng: ride.pickup_lng,
+        distMeters: Math.round(distMeters),
+        radiusMeters: ARRIVED_RADIUS_METERS,
+        passed: distMeters <= ARRIVED_RADIUS_METERS,
+      });
+
+      if (distMeters > ARRIVED_RADIUS_METERS) {
+        throw new AppError(
+          `You are ${Math.round(distMeters)}m away from the pickup point. Please get within ${ARRIVED_RADIUS_METERS}m before marking arrival.`,
+          409,
+          'NOT_AT_PICKUP',
+          { distance_meters: Math.round(distMeters), required_meters: ARRIVED_RADIUS_METERS },
+        );
+      }
+    } else {
+      // No GPS data — log warning but allow (don't block driver with no GPS)
+      logger.warn('rideService.updateRideStatus — arrived geofence skipped (no GPS data)', { rideId, driverId });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const waitingStartAt = new Date().toISOString();
     await supabase.from('rides').update({ status: 'arrived', waiting_start_at: waitingStartAt }).eq('id', rideId);
 
