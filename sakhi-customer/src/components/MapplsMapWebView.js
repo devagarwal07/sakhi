@@ -480,7 +480,8 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     <View style={[styles.container, style]} pointerEvents={pointerEvents}>
       <WebView
         ref={webViewRef}
-        source={{ html }}
+        source={{ html, baseUrl: 'https://apis.mappls.com/' }}
+        bounces={false}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
