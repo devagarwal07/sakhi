@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
 
-const ACCESS_TOKEN_EXPIRY  = '7d';
+const ACCESS_TOKEN_EXPIRY  = '30d';              // 30-day access token — rarely expires in normal use
 const REFRESH_TOKEN_EXPIRY    = '90d';              // 3-month session lifetime
 const REFRESH_TOKEN_EXPIRY_MS = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
 
