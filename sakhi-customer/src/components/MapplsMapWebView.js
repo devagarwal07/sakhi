@@ -280,15 +280,18 @@ function buildMapHtml({ zoom, scrollEnabled, zoomEnabled, dragMode }) {
         var msg = JSON.parse(raw);
         if (!map) return;
         if (msg.type === 'SET_CENTER') {
-          map.setCenter([msg.lng, msg.lat]);
+          // Bug fix: Mappls setCenter expects {lat,lng} object, not [lng,lat] array
+          map.setCenter({lat: msg.lat, lng: msg.lng});
           if (msg.zoom) map.setZoom(msg.zoom);
-          if (msg.markers)     updateMarkers(msg.markers);
-          if (msg.polylines)   updatePolylines(msg.polylines);
+          if (msg.markers)   updateMarkers(msg.markers);
+          if (msg.polylines) updatePolylines(msg.polylines);
           if (msg.nearbyAutos !== undefined) setNearbyAutos({lat:msg.lat,lng:msg.lng}, msg.nearbyAutos);
         }
         if (msg.type === 'FIT_BOUNDS') {
           if (msg.markers)   updateMarkers(msg.markers);
           if (msg.polylines) updatePolylines(msg.polylines);
+          // Bug fix: also update nearby autos during fit-bounds (e.g. active ride view)
+          if (msg.nearbyAutos !== undefined) setNearbyAutos(null, msg.nearbyAutos);
           var pts = [];
           (msg.polylines||[]).forEach(function(p){(p.coords||[]).forEach(function(c){pts.push({lat:c.lat,lng:c.lng});});});
           (msg.markers||[]).forEach(function(m){pts.push({lat:m.lat,lng:m.lng});});
@@ -373,7 +376,8 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
     color:   m.color   || '#8031CC',
     label:   m.label   || '',
     pulse:   !!m.pulse,
-    type:    m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.pulse ? 'auto' : 'dot'),
+    // Bug fix: 'me' (user location) should be a pulsing dot, not an auto SVG
+    type:    m.markerType || (m.id === 'pickup' ? 'pickup' : m.id === 'dropoff' ? 'dropoff' : m.id === 'driver' ? 'auto' : 'dot'),
     bearing: m.bearing || 0,
     nearby:  !!m.nearby,
   }));
@@ -446,7 +450,8 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
       pendingMsg.current = { lat, lng, markers, polylines, nearbyAutos, fit: autoFitBounds };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines), nearbyAutos]);
+  // Bug fix: compare nearbyAutos by value (JSON) to avoid spurious re-renders on every poll
+  }, [center?.latitude, center?.longitude, JSON.stringify(markers), JSON.stringify(polylines), JSON.stringify(nearbyAutos)]);
 
   // ── onMessage — identical to driver + drag end (customer addition) ─────────
   const onMessage = (event) => {
