@@ -107,9 +107,23 @@ apiClient.interceptors.response.use(
                 const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
                 if (!refreshToken) throw new Error('No refresh token');
 
-                const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
-                    refreshToken,
-                });
+                let response;
+                let refreshRetryCount = 0;
+                while (true) {
+                    try {
+                        response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+                            refreshToken,
+                        });
+                        break;
+                    } catch (err) {
+                        if (isColdStartError(err) && refreshRetryCount < COLD_START_RETRIES) {
+                            refreshRetryCount += 1;
+                            await sleep(COLD_START_DELAY_MS);
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
 
                 const { accessToken, refreshToken: newRefresh } = response.data;
                 if (typeof accessToken !== 'string' || accessToken.length === 0) {

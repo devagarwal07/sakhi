@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DeviceEventEmitter } from 'react-native';
 import { sendOtp, verifyOtp, logout as apiLogout, getProfile } from '../api/endpoints';
 import { STORAGE_KEYS } from '../utils/constants';
@@ -27,22 +28,21 @@ export function AuthProvider({ children }) {
                 return;
             }
 
-            // Read cached user data — use this immediately so the app renders
-            const cachedUserStr = await SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA);
+            // Read cached user data from AsyncStorage — use this immediately so the app renders
+            const cachedUserStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA).catch(() => null);
             let cachedUser = null;
             if (cachedUserStr) {
                 try { cachedUser = JSON.parse(cachedUserStr); } catch (_) {}
             }
 
-            // Token exists → show home screen immediately with cached data
-            if (cachedUser) setUser(cachedUser);
-            setIsAuthenticated(true);
-            setIsLoading(false); // ← splash hides here
+            // If we have a cached user, show home screen immediately with cached data
+            if (cachedUser) {
+                setUser(cachedUser);
+                setIsAuthenticated(true);
+                setIsLoading(false); // ← splash hides here, background sync runs next
+            }
 
-            // ── Step 2: Silently refresh profile in background ──────────────
-            // If this fails for ANY reason (network, cold start, timeout), we
-            // keep the user logged in with cached data. The interceptor in
-            // client.js handles the actual token refresh + SESSION_EXPIRED.
+            // ── Step 2: Refresh profile (silent if cachedUser exists, blocking if missing)
             try {
                 const timeout = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('auth_timeout')), 15000)
@@ -50,16 +50,28 @@ export function AuthProvider({ children }) {
                 const { data } = await Promise.race([getProfile(), timeout]);
                 const freshUser = data.user || data;
                 setUser(freshUser);
-                await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(freshUser)).catch(() => {});
+                await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(freshUser)).catch(() => {});
+
+                if (!cachedUser) {
+                    setIsAuthenticated(true);
+                    setIsLoading(false);
+                }
             } catch (profileErr) {
-                // Network / timeout / cold-start → keep cached user, stay logged in
-                // SESSION_EXPIRED event (from client.js interceptor) handles real logouts
-                console.warn('[AuthContext] Background profile sync failed — keeping cached session:', profileErr?.message);
+                console.warn('[AuthContext] Background profile sync failed:', profileErr?.message);
+                if (!cachedUser) {
+                    // No cache and backend sync failed (network error, timeout, etc.)
+                    // Force logout to avoid routing user to wrong screens (like KYC face screen)
+                    await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+                    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+                    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+                    setIsAuthenticated(false);
+                    setUser(null);
+                    setIsLoading(false);
+                }
             }
 
         } catch (err) {
             // Outer catch: SecureStore read failed or catastrophic error
-            // Still don't log out — just stay with whatever state we have
             console.warn('[AuthContext] checkAuth error:', err?.message);
             setIsLoading(false);
         }
@@ -102,7 +114,7 @@ export function AuthProvider({ children }) {
 
         await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
         await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-        await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)).catch(() => {});
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)).catch(() => {});
 
         setUser(userData);
         setIsAuthenticated(true);
@@ -124,6 +136,7 @@ export function AuthProvider({ children }) {
         } finally {
             await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
             await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+            await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
             setUser(null);
             setIsAuthenticated(false);
         }
@@ -133,7 +146,7 @@ export function AuthProvider({ children }) {
     const updateUser = useCallback((updates) => {
         setUser((prev) => {
             const updated = prev ? { ...prev, ...updates } : updates;
-            SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(updated)).catch(() => {});
+            AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updated)).catch(() => {});
             return updated;
         });
     }, []);
