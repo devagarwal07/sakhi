@@ -468,9 +468,9 @@ export default function RideFindingScreen() {
                             <MaterialCommunityIcons name="rickshaw" size={48} color="#BEA3D8" />
                         </View>
 
-                        <Text style={styles.noDriversTitle}>All Sakhis Are Busy</Text>
+                        <Text style={styles.noDriversTitle}>{bookingError ? 'Booking Failed' : 'All Sakhis Are Busy'}</Text>
                         <Text style={styles.noDriversMsg}>
-                            We regret to inform you that all Sakhis are currently serving your other sisters. Please book us again soon!
+                            {bookingError || 'We regret to inform you that all Sakhis are currently serving your other sisters. Please book us again soon!'}
                         </Text>
 
                         <TouchableOpacity

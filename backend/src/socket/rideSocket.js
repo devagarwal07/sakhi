@@ -304,8 +304,9 @@ function registerRideSocket(io) {
         const activeRide = activeRides?.[0];
 
         if (!activeRide) {
-          // No active ride — mark driver offline immediately
-          await supabase.from('drivers').update({ is_online: false }).eq('id', userId);
+          // No active ride — do NOT mark driver offline immediately anymore
+          // The DriverTimeoutWorker will clean up zombie drivers if location pings stop.
+          logger.info('rideSocket — driver disconnected, keeping online state (DriverTimeoutWorker will clean up if inactive)', { driverId: userId });
         } else {
           // GAP 8 — Grace period: notify rider and give driver 30s to reconnect
           const riderRoom = `rider:${activeRide.rider_id}`;

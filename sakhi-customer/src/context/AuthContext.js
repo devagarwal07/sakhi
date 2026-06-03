@@ -130,9 +130,13 @@ export function AuthProvider({ children }) {
     };
 
     // ── Update user locally after profile edits ────────────────────────────
-    const updateUser = (updates) => {
-        setUser((prev) => ({ ...prev, ...updates }));
-    };
+    const updateUser = useCallback((updates) => {
+        setUser((prev) => {
+            const updated = prev ? { ...prev, ...updates } : updates;
+            SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(updated)).catch(() => {});
+            return updated;
+        });
+    }, []);
 
     const value = {
         user,
