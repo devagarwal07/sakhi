@@ -102,7 +102,8 @@ router.post('/:id/share-sms', authMiddleware, roleGuard('rider'), async (req, re
       : 'active-ride';
     
     // Generate tracking URL
-    const trackUrl = `https://sakhimobility.org/track/${rideId}`;
+    const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
+    const trackUrl = `${baseUrl}/track/${rideId}`;
 
     const smsService = require('../services/smsService');
     

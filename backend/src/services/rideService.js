@@ -329,9 +329,10 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
 
         if (contacts?.length) {
           const riderName = ride.users?.name || 'Your family member';
-          const destination = ride.drop_address || 'their destination';
+          const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
+          const trackUrl = `${baseUrl}/track/${rideId}`;
           const phones = contacts.map((c) => c.phone);
-          const message = `SAKHI MOBILITY: ${riderName} shared live ride tracking. Please track here: ${destination}`;
+          const message = `SAKHI MOBILITY: ${riderName} shared live ride tracking. Please track here: ${trackUrl}`;
           await smsService.sendBulkSMS(phones, message, smsService.FORTIUS_TEMPLATES.SAKHI_TRACK_SHORT);
           logger.info('rideService — Safe Drop SMS sent', { rideId, recipientCount: phones.length });
         }

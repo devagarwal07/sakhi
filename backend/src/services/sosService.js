@@ -127,7 +127,28 @@ async function handleBatteryLow(userId, role, level, lat, lng) {
   const safeName = userName.substring(0, 20);
   const shortLat = Number(lat).toFixed(4);
   const shortLng = Number(lng).toFixed(4);
-  const smsText  = `SAKHI MOBILITY:${safeName} is low on battery during ride. Please track here:SakhiApp`;
+
+  // Try to find active ride for user to provide real tracking link
+  let trackUrl = `https://mappls.com/?q=${lat},${lng}`;
+  try {
+    const activeStatuses = ['assigned', 'driver_en_route', 'arrived', 'in_progress'];
+    const colName = role === 'rider' ? 'rider_id' : 'driver_id';
+    const { data: activeRides } = await supabase
+      .from('rides')
+      .select('id')
+      .eq(colName, userId)
+      .in('status', activeStatuses)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (activeRides?.[0]) {
+      trackUrl = `${baseUrl}/track/${activeRides[0].id}`;
+    }
+  } catch (err) {
+    logger.warn('sosService.handleBatteryLow — failed to resolve active ride tracking link', { error: err.message });
+  }
+
+  const smsText  = `SAKHI MOBILITY:${safeName} is low on battery during ride. Please track here:${trackUrl}`;
 
   let notified = 0;
   await Promise.all(contacts.map(async (c) => {

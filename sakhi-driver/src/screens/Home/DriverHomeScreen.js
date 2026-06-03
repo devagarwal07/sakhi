@@ -25,7 +25,7 @@ import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
-import { requestOverlayPermission } from '../../services/notificationService';
+import { requestOverlayPermission, requestBatteryOptimizationExemption } from '../../services/notificationService';
 import CustomAlert from '../../utils/CustomAlert';
 import { useServerWarmup } from '../../hooks/useServerWarmup';
 
@@ -395,16 +395,21 @@ export default function DriverHomeScreen({ navigation }) {
 
   const requestAndStartLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== 'granted') return;
       
       setLocGranted(true);
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
       setLocation(coord);
 
-    } catch {
-      // ignore
+      // Request background location permission after foreground is granted
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+      if (bgStatus !== 'granted') {
+        console.log('[Location] Background location permission not granted');
+      }
+    } catch (e) {
+      console.warn('[Location] Failed to request permissions:', e?.message);
     }
   };
 
@@ -459,6 +464,8 @@ export default function DriverHomeScreen({ navigation }) {
       // Ask for "Display over other apps" permission — shown once, naturally
       // timed to when the driver first goes online and needs ride popups.
       requestOverlayPermission();
+      // Prompt to disable battery optimization to prevent background app sleep
+      requestBatteryOptimizationExemption();
     }
   }, [driver?.is_online]);
 

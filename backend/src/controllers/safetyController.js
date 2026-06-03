@@ -213,7 +213,7 @@ async function shareTrip(req, res, next) {
     ]);
 
     const userName = userRows?.[0]?.name || 'A Sakhi user';
-    const smsText  = `SAKHI MOBILITY: ${userName} shared live ride tracking. Please track here: SakhiApp`;
+    const smsText  = `SAKHI MOBILITY: ${userName} shared live ride tracking. Please track here: ${shareUrl}`;
 
     const notifiedPhones = [];
     await Promise.all(

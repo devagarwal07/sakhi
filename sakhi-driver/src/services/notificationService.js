@@ -156,6 +156,53 @@ export async function requestOverlayPermission() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// REQUEST BATTERY OPTIMIZATION EXEMPTION
+//
+// Prompts the driver to disable battery optimization for the app, directing them
+// to the system battery optimization settings so the OS does not kill background location.
+// ─────────────────────────────────────────────────────────────────────────────
+const BATTERY_ASKED_KEY = 'sakhi_battery_permission_asked';
+
+export async function requestBatteryOptimizationExemption() {
+  if (Platform.OS !== 'android') return;
+
+  const alreadyAsked = await AsyncStorage.getItem(BATTERY_ASKED_KEY).catch(() => null);
+  if (alreadyAsked === 'true') return;
+
+  await AsyncStorage.setItem(BATTERY_ASKED_KEY, 'true').catch(() => {});
+
+  CustomAlert.alert(
+    '🔋 Prevent App Shutdowns',
+    'To make sure you stay online and receive ride requests when the screen is locked, please disable battery optimization for Sakhi Driver.',
+    [
+      {
+        text: 'Not Now',
+        style: 'cancel',
+      },
+      {
+        text: 'Configure',
+        style: 'default',
+        onPress: () => {
+          // Attempt to open direct prompt
+          Linking.sendIntent(
+            'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+            [{ key: 'package', value: APP_PACKAGE }]
+          ).catch(() => {
+            // Fallback: open general ignore battery optimization settings
+            Linking.sendIntent(
+              'android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS'
+            ).catch(() => {
+              Linking.openSettings();
+            });
+          });
+        },
+      },
+    ],
+    { cancelable: true }
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ANDROID NOTIFICATION CHANNELS (must exist before first notification)
 // ─────────────────────────────────────────────────────────────────────────────
 async function createNotificationChannels() {

@@ -49,6 +49,17 @@ function withManifestFixes(config) {
       console.warn('MainActivity not found in manifest — could not apply showWhenLocked');
     }
 
+    // ── Fix 3: Ensure Foreground Service Location type is declared for LocationTaskService ──
+    if (application.service) {
+      for (const service of application.service) {
+        const name = service.$['android:name'];
+        if (name && name.includes('LocationTaskService')) {
+          service.$['android:foregroundServiceType'] = 'location';
+          console.log(`Ensured foregroundServiceType="location" on ${name}`);
+        }
+      }
+    }
+
     return config;
   });
 }
