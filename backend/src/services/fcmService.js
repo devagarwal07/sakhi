@@ -101,7 +101,7 @@ async function sendToUser(userId, role, { title, body, data = {} }) {
     );
 
     const message = {
-      // NO notification key — data-only so the JS background handler runs
+      notification: { title, body },
       data: stringData,
       token,
       android: { priority: 'high' },
@@ -150,7 +150,7 @@ async function sendToMultiple(tokens, { title, body, data = {} }) {
   const invalidTokens = [];
 
   const stringData = Object.fromEntries(
-    Object.entries({ type: '', ...data }).map(([k, v]) => [k, String(v)])
+    Object.entries({ type: '', notification_title: title, notification_body: body, ...data }).map(([k, v]) => [k, String(v)])
   );
 
   for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
@@ -158,7 +158,7 @@ async function sendToMultiple(tokens, { title, body, data = {} }) {
     try {
       const response = await messaging.sendEachForMulticast({
         tokens: chunk,
-        // Data-only — no notification key (same reason as sendToUser above)
+        notification: { title, body },
         data: stringData,
         android: { priority: 'high' },
       });

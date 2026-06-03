@@ -203,14 +203,8 @@ async function shareTrip(req, res, next) {
       throw new AppError('Can only share an active ride.', 409, 'RIDE_NOT_ACTIVE');
     }
 
-    const token = jwt.sign(
-      { ride_id, type: 'live_track' },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
-    const shareUrl = `${baseUrl}/track/${token}`;
+    const shareUrl = `${baseUrl}/track/${ride_id}`;
 
     // ── SMS the tracking link to all emergency contacts ───────────────────────
     const [{ data: userRows }, { data: contacts }] = await Promise.all([
@@ -249,8 +243,14 @@ async function shareTrip(req, res, next) {
 async function getLiveTrack(req, res, next) {
   try {
     const { token } = req.params;
-    // Lightly validate the token; expired tokens still get the page
-    // (the page's JS will show the expired UI via the /api/track endpoint).
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (uuidRegex.test(token)) {
+      // Valid UUID format. Serve page.
+      return res.sendFile(path.join(__dirname, '../../public/track.html'));
+    }
+
+    // Try verifying as JWT
     try {
       const p = jwt.verify(token, process.env.JWT_SECRET);
       if (p.type !== 'live_track') {
@@ -270,66 +270,163 @@ async function getLiveTrack(req, res, next) {
 async function getLiveTrackData(req, res, next) {
   try {
     const { token } = req.params;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    let payload;
-    try {
-      payload = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(410).json({ error: { code: 'LINK_EXPIRED', message: 'This tracking link has expired.' } });
-      }
-      return res.status(400).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid tracking link.' } });
-    }
+    let rideId = null;
+    let sosId = null;
+    let isExpired = false;
 
-    if (payload.type !== 'live_track') {
-      return res.status(400).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid tracking link.' } });
-    }
-
-    const { ride_id } = payload;
-
-    const { data: rides } = await supabase
-      .from('rides')
-      .select(`
-        id, status, pickup_address, drop_address,
-        pickup_lat, pickup_lng, drop_lat, drop_lng,
-        drivers(id, name, vehicle_type, vehicle_model, vehicle_reg_no, vehicle_color, profile_photo_url)
-      `)
-      .eq('id', ride_id)
-      .limit(1);
-
-    const ride = rides?.[0];
-    if (!ride) return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Ride not found.' } });
-
-    // Get latest driver location
-    let driverLocation = null;
-    if (ride.drivers?.id) {
-      const { data: loc } = await supabase
-        .from('driver_locations')
-        .select('lat, lng, updated_at')
-        .eq('driver_id', ride.drivers.id)
+    if (uuidRegex.test(token)) {
+      // 1. Try to find in rides table
+      const { data: rideRows } = await supabase
+        .from('rides')
+        .select('id, created_at')
+        .eq('id', token)
         .limit(1);
-      driverLocation = loc?.[0] || null;
+
+      if (rideRows && rideRows.length > 0) {
+        rideId = rideRows[0].id;
+        const createdAt = new Date(rideRows[0].created_at);
+        if (Date.now() - createdAt.getTime() > 24 * 60 * 60 * 1000) {
+          isExpired = true;
+        }
+      } else {
+        // 2. Try to find in sos_events table
+        const { data: sosRows } = await supabase
+          .from('sos_events')
+          .select('id, ride_id, created_at')
+          .eq('id', token)
+          .limit(1);
+
+        if (sosRows && sosRows.length > 0) {
+          sosId = sosRows[0].id;
+          rideId = sosRows[0].ride_id;
+          const createdAt = new Date(sosRows[0].created_at);
+          if (Date.now() - createdAt.getTime() > 24 * 60 * 60 * 1000) {
+            isExpired = true;
+          }
+        }
+      }
+
+      if (!rideId && !sosId) {
+        return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Tracking link not found.' } });
+      }
+    } else {
+      // Try verifying as JWT
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+          return res.status(410).json({ error: { code: 'LINK_EXPIRED', message: 'This tracking link has expired.' } });
+        }
+        return res.status(400).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid tracking link.' } });
+      }
+
+      if (payload.type !== 'live_track') {
+        return res.status(400).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid tracking link.' } });
+      }
+
+      rideId = payload.ride_id;
+      if (rideId && typeof rideId === 'string' && rideId.startsWith('sos:')) {
+        sosId = rideId.substring(4);
+        rideId = null;
+
+        // Resolve ride_id from sos_events
+        const { data: sosRows } = await supabase
+          .from('sos_events')
+          .select('ride_id')
+          .eq('id', sosId)
+          .limit(1);
+        if (sosRows && sosRows.length > 0) {
+          rideId = sosRows[0].ride_id;
+        }
+      }
     }
 
-    return res.status(200).json({
-      ride_id:         ride.id,
-      status:          ride.status,
-      driver_location: driverLocation,
-      pickup_address:  ride.pickup_address,
-      drop_address:    ride.drop_address,
-      pickup_lat:      ride.pickup_lat  || null,
-      pickup_lng:      ride.pickup_lng  || null,
-      drop_lat:        ride.drop_lat    || null,
-      drop_lng:        ride.drop_lng    || null,
-      driver_name:     ride.drivers?.name || null,
-      vehicle_details: ride.drivers ? {
-        type:   ride.drivers.vehicle_type,
-        model:  ride.drivers.vehicle_model,
-        reg_no: ride.drivers.vehicle_reg_no,
-        color:  ride.drivers.vehicle_color,
-        photo:  ride.drivers.profile_photo_url,
-      } : null,
-    });
+    if (isExpired) {
+      return res.status(410).json({ error: { code: 'LINK_EXPIRED', message: 'This tracking link has expired.' } });
+    }
+
+    if (rideId) {
+      const { data: rides } = await supabase
+        .from('rides')
+        .select(`
+          id, status, pickup_address, drop_address,
+          pickup_lat, pickup_lng, drop_lat, drop_lng,
+          drivers(id, name, vehicle_type, vehicle_model, vehicle_reg_no, vehicle_color, profile_photo_url)
+        `)
+        .eq('id', rideId)
+        .limit(1);
+
+      const ride = rides?.[0];
+      if (!ride) return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Ride not found.' } });
+
+      // Get latest driver location
+      let driverLocation = null;
+      if (ride.drivers?.id) {
+        const { data: loc } = await supabase
+          .from('driver_locations')
+          .select('lat, lng, updated_at')
+          .eq('driver_id', ride.drivers.id)
+          .limit(1);
+        driverLocation = loc?.[0] || null;
+      }
+
+      return res.status(200).json({
+        ride_id:         ride.id,
+        status:          ride.status,
+        driver_location: driverLocation,
+        pickup_address:  ride.pickup_address,
+        drop_address:    ride.drop_address,
+        pickup_lat:      ride.pickup_lat  || null,
+        pickup_lng:      ride.pickup_lng  || null,
+        drop_lat:        ride.drop_lat    || null,
+        drop_lng:        ride.drop_lng    || null,
+        driver_name:     ride.drivers?.name || null,
+        vehicle_details: ride.drivers ? {
+          type:   ride.drivers.vehicle_type,
+          model:  ride.drivers.vehicle_model,
+          reg_no: ride.drivers.vehicle_reg_no,
+          color:  ride.drivers.vehicle_color,
+          photo:  ride.drivers.profile_photo_url,
+        } : null,
+      });
+    } else if (sosId) {
+      const { data: sosRows } = await supabase
+        .from('sos_events')
+        .select('id, lat, lng, created_at, user_id, user_role, resolved')
+        .eq('id', sosId)
+        .limit(1);
+
+      const sos = sosRows?.[0];
+      if (!sos) return res.status(404).json({ error: { code: 'SOS_NOT_FOUND', message: 'SOS event not found.' } });
+
+      // Fetch user name
+      const userTable = sos.user_role === 'driver' ? 'drivers' : 'users';
+      const { data: userRows } = await supabase
+        .from(userTable)
+        .select('name')
+        .eq('id', sos.user_id)
+        .limit(1);
+      const userName = userRows?.[0]?.name || 'Sakhi User';
+
+      return res.status(200).json({
+        ride_id:         null,
+        status:          sos.resolved ? 'completed' : 'in_progress',
+        driver_location: { lat: sos.lat, lng: sos.lng, updated_at: sos.created_at },
+        pickup_address:  'SOS Triggered Location',
+        drop_address:    null,
+        pickup_lat:      sos.lat,
+        pickup_lng:      sos.lng,
+        drop_lat:        null,
+        drop_lng:        null,
+        driver_name:     userName,
+        vehicle_details: null,
+      });
+    } else {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Invalid track configuration.' } });
+    }
   } catch (err) { return handleError(err, res, next); }
 }
 

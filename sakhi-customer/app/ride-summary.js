@@ -48,6 +48,7 @@ export default function RideSummaryScreen() {
     const distText = ride?.routeDistance || '';
     const total = ride?.fare?.total ?? (typeof baseFare === 'number' && typeof distFare === 'number' ? baseFare + distFare + waitFare : '—');
     const paymentMethod = ride?.paymentMethod || 'Cash';
+    const isCashPayment = (paymentMethod || '').toLowerCase() === 'cash';
     const driverFirstName = ride?.driver?.name ? ride.driver.name.split(' ')[0] : 'your driver';
     const userName = user?.name ? user.name.split(' ')[0] : 'there';
 
@@ -111,7 +112,10 @@ export default function RideSummaryScreen() {
                         </View>
                     </View>
                     
-                    <Text style={styles.headerTitle}>Ride Complete! <Feather name="award" size={22} color="#BEA3D8" /></Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <Text style={styles.headerTitle}>Ride Complete!</Text>
+                        <Feather name="award" size={22} color="#BEA3D8" />
+                    </View>
                     <Text style={styles.headerSub}>Hope you had a safe journey, {userName}</Text>
                 </View>
 
@@ -171,7 +175,7 @@ export default function RideSummaryScreen() {
                     </View>
 
                     {/* Pay via UPI App Action */}
-                    {paymentMethod === 'Cash' && (
+                    {isCashPayment && (
                         <View style={{ gap: 8, marginTop: 12 }}>
                             {ride?.driver?.upi_id && (
                                 <TouchableOpacity
@@ -183,14 +187,20 @@ export default function RideSummaryScreen() {
                                         });
                                     }}
                                 >
-                                    <Text style={[styles.paymentText, { color: '#16A34A', fontWeight: '700' }]}><Feather name="smartphone" size={13} color="#16A34A" /> Pay Directly (UPI Intent)</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <Feather name="smartphone" size={13} color="#16A34A" />
+                                        <Text style={[styles.paymentText, { color: '#16A34A', fontWeight: '700' }]}>Pay Directly (UPI Intent)</Text>
+                                    </View>
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity
                                 style={[styles.paymentRow, { backgroundColor: '#F3E8FF', justifyContent: 'center' }]}
                                 onPress={handleOpenScanner}
                             >
-                                <Text style={[styles.paymentText, { color: '#9333EA', fontWeight: '700' }]}><Feather name="camera" size={13} color="#9333EA" /> Scan Driver QR to Pay</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Feather name="camera" size={13} color="#9333EA" />
+                                    <Text style={[styles.paymentText, { color: '#9333EA', fontWeight: '700' }]}>Scan Driver QR to Pay</Text>
+                                </View>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -305,7 +315,6 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#1E1B2E', 
         letterSpacing: -0.5,
-        marginLeft: 16
     },
     container: { flex: 1, backgroundColor: '#F5F0FF' },
 
@@ -365,14 +374,14 @@ const styles = StyleSheet.create({
     addressLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280', letterSpacing: 0.6, textTransform: 'uppercase' },
     addressTitle: { fontSize: 14, fontWeight: '600', color: '#1E1B2E', marginTop: 2 },
 
-    dividerLight: { height: 1, backgroundColor: '#F1F5F9', marginHorizontal: -24, marginBottom: 24 }, // Extends to edges? CSS says left: 24, right: 24 within the card. Assuming it fills width. Let's make it 100%
+    dividerLight: { height: 1, backgroundColor: '#F1F5F9', marginBottom: 24, width: '100%' },
     
     breakdownBox: { gap: 16, marginBottom: 24 },
     breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     breakdownLabel: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
     breakdownValue: { fontSize: 14, fontWeight: '500', color: '#1E1B2E' },
 
-    dividerBold: { height: 2, backgroundColor: '#E2E8F0', marginHorizontal: -24, marginBottom: 16 },
+    dividerBold: { height: 2, backgroundColor: '#E2E8F0', marginBottom: 16, width: '100%' },
 
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
     totalLabel: { fontSize: 18, fontWeight: '700', color: '#1E1B2E' },
@@ -431,7 +440,7 @@ const styles = StyleSheet.create({
     },
     scannerCloseBtn: { padding: 8 },
     scannerCloseText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-    scannerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginLeft: 'auto', marginRight: 'auto', paddingRight: 50 },
+    scannerTitle: { flex: 1, color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
     scannerOverlay: {
         ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)',
     },

@@ -228,7 +228,7 @@ export default function TripInProgressScreen({ navigation, route }) {
                 <Feather name="navigation" size={16} color="#BEA3D8" style={{ transform: [{ rotate: '45deg' }] }} />
               </View>
               <View style={s.topNavTextBox}>
-                <Text style={s.topNavTitle} numberOfLines={2}>
+                <Text style={s.topNavTitle} numberOfLines={1} ellipsizeMode="tail">
                   {ride?.dropoff_address || 'Navigating to Destination'}
                 </Text>
                 {/* Pre-dispatch chip — shown when <1.7 km from dropoff */}
@@ -243,7 +243,7 @@ export default function TripInProgressScreen({ navigation, route }) {
                 )}
               </View>
             </View>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtnBox}>
+            <TouchableOpacity onPress={handleComplete} style={s.closeBtnBox}>
               <Feather name="x" size={14} color="#64748B" />
             </TouchableOpacity>
           </View>
@@ -467,13 +467,14 @@ const s = StyleSheet.create({
   topNavBanner: {
     position: 'absolute',
     left: 16, right: 16,
-    height: 104,
+    minHeight: 90,
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     shadowColor: '#8B5CF6',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
@@ -485,6 +486,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    marginRight: 8,
   },
   topNavIconBg: {
     width: 40, height: 40,

@@ -147,7 +147,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
                 {ride?.pickup_address || 'Arrived at Pickup Point'}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtn}>
+            <TouchableOpacity onPress={handleCancelRide} style={s.closeBtn}>
               <Feather name="x" size={18} color="#BEA3D8" />
             </TouchableOpacity>
           </View>
@@ -239,9 +239,9 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
               <Text style={[s.waitTimeText, isUrgent && { color: '#EF4444' }]}>{formatTime(freeRemaining)}</Text>
             </View>
             <View style={s.depletingBarContainer}>
-              <Animated.View style={[
+              <View style={[
                 s.depletingBar,
-                { right: `${100 - (freeRemaining / FREE_WAIT_SECONDS * 100)}%` },
+                { width: `${(freeRemaining / FREE_WAIT_SECONDS * 100).toFixed(1)}%` },
                 isUrgent && { backgroundColor: '#EF4444' },
               ]} />
             </View>

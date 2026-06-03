@@ -145,7 +145,7 @@ export default function SOSActiveScreen({ navigation, route }) {
           {/* Call Sakhi */}
           <TouchableOpacity
             style={s.callBtn}
-            onPress={() => Linking.openURL('tel:18001234567')}
+            onPress={() => Linking.openURL('tel:+916361933364')}
             activeOpacity={0.85}
           >
             <Feather name="phone" size={18} color={RED} />
@@ -155,7 +155,7 @@ export default function SOSActiveScreen({ navigation, route }) {
           {/* Message Sakhi */}
           <TouchableOpacity
             style={s.msgBtn}
-            onPress={() => CustomAlert.alert('Sakhi Safety Chat', 'Our team is on standby 24/7. Opening chat…')}
+            onPress={() => Linking.openURL('https://wa.me/916361933364?text=SOS%20Help%20Needed%20(Driver)').catch(() => Linking.openURL('sms:+916361933364?body=SOS%20Help%20Needed%20(Driver)'))}
             activeOpacity={0.85}
           >
             <Feather name="message-circle" size={18} color={WHITE} />

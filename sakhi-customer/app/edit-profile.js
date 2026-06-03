@@ -102,6 +102,24 @@ export default function EditProfileScreen() {
     const [language, setLanguage] = useState(user?.preferred_language || 'English');
     const [showLangPicker, setShowLangPicker] = useState(false);
 
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setEmail(user.email || '');
+            setAvatarUri(user.avatar_url || user.avatar || null);
+            const d = parseDobPart('day', '01');
+            const m = parseDobPart('month', '01');
+            const y = parseDobPart('year', '1995');
+            setDobDay(d);
+            setDobMonth(m);
+            setDobYear(y);
+            setTempDay(d);
+            setTempMonth(m);
+            setTempYear(y);
+            setLanguage(user.preferred_language || 'English');
+        }
+    }, [user]);
+
     // ── Avatar Picker ──────────────────────────────────────────
     const handlePickAvatar = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

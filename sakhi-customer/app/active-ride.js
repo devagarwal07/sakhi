@@ -394,9 +394,9 @@ export default function ActiveRideScreen() {
                             <View style={styles.ratingRow}>
                                 <Feather name="star" size={12} color="#F59E0B" style={{ marginRight: 2 }} />
                                 <Text style={styles.ratingText}>{ride.driver?.rating?.toFixed(1) || 'New'}</Text>
-                                <Text style={styles.vehicleText}>  •  {ride.driver?.vehicle || 'Sakhi Vehicle'}</Text>
+                                <Text style={styles.vehicleText}>  •  {ride.driver?.vehicle?.type || ride.driver?.vehicle || 'Sakhi Auto'}</Text>
                             </View>
-                            <Text style={styles.plateText}>{ride.driver?.plate || 'Plate Info Unavailable'}</Text>
+                            <Text style={styles.plateText}>{ride.driver?.vehicle?.plate || ride.driver?.plate || 'Plate Info Unavailable'}</Text>
                         </View>
                         <View style={styles.driverActions}>
                             <TouchableOpacity style={styles.actionBtn} onPress={() => setChatOpen(true)}>
@@ -446,9 +446,10 @@ export default function ActiveRideScreen() {
                 {/* Waiting timer (if applicable) */}
                 {ride.waitingSeconds > 0 && (
                     <View style={styles.waitingBanner}>
-                        <Text style={styles.waitingText}>
-                            <Text style={styles.waitingTimerText}><Feather name="clock" size={13} color="#1E1B2E" /> Driver waiting: {Math.floor(ride.waitingSeconds / 60)}m {ride.waitingSeconds % 60}s</Text>
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Feather name="clock" size={13} color="#1E1B2E" />
+                            <Text style={styles.waitingTimerText}>Driver waiting: {Math.floor(ride.waitingSeconds / 60)}m {ride.waitingSeconds % 60}s</Text>
+                        </View>
                         {ride.waitingCharge > 0 && (
                             <Text style={styles.waitingCharge}>+₹{ride.waitingCharge.toFixed(1)} waiting</Text>
                         )}
@@ -473,7 +474,7 @@ export default function ActiveRideScreen() {
                 </View>
 
                 {/* Cancel + Share Trip row */}
-                <View style={[styles.bottomActionRow, { flexWrap: 'wrap', gap: 8 }]}>
+                <View style={[styles.bottomActionRow, { flexWrap: 'wrap', gap: 8, rowGap: 8 }]}>
                     {ride.status !== 'in_progress' && (
                         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.85}>
                             <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -500,7 +501,10 @@ export default function ActiveRideScreen() {
                             }}
                             activeOpacity={0.85}
                         >
-                            <Text style={[styles.shareBtnText, { color: '#16A34A' }]}><Feather name="smartphone" size={13} color="#16A34A" /> Pay via UPI</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Feather name="smartphone" size={13} color="#16A34A" />
+                                <Text style={[styles.shareBtnText, { color: '#16A34A' }]}>Pay via UPI</Text>
+                            </View>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -636,6 +640,7 @@ const styles = StyleSheet.create({
         borderLeftWidth: 3, borderLeftColor: Colors.warning,
     },
     waitingText: { fontSize: 13, color: Colors.warning, fontWeight: '600' },
+    waitingTimerText: { fontSize: 13, color: Colors.warning, fontWeight: '600' },
     waitingCharge: { fontSize: 13, color: Colors.warning, fontWeight: '700' },
     tripInfoRow: {
         flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16,
@@ -649,14 +654,16 @@ const styles = StyleSheet.create({
     tripInfoText: { flex: 1, fontSize: 11, color: Colors.onSurface, fontWeight: '500' },
     tripInfoArrow: { fontSize: 14, color: Colors.outline },
     cancelBtn: {
-        flex: 1,
+        minWidth: '45%',
+        flexGrow: 1,
         borderWidth: 1.5, borderColor: '#fca5a5',
         borderRadius: BorderRadius.md, paddingVertical: 12,
         alignItems: 'center',
     },
     cancelBtnText: { color: '#dc2626', fontWeight: '600', fontSize: 14 },
     shareBtn: {
-        flex: 1,
+        minWidth: '45%',
+        flexGrow: 1,
         backgroundColor: '#F5F0FF',
         borderRadius: BorderRadius.md, paddingVertical: 12,
         alignItems: 'center',

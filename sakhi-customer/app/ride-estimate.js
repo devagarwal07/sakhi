@@ -586,9 +586,10 @@ export default function RideEstimateScreen() {
                     }}
                     activeOpacity={0.88}
                 >
-                    <Text style={styles.bookText}>
-                        <Text style={styles.actionBtnText}>Book {ride?.vehicleType || ride?.vehicle_type || 'Auto'}</Text> <Feather name="chevron-right" size={20} color="#FFFFFF" />
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Text style={styles.bookText}>Book {ride?.vehicleType || ride?.vehicle_type || 'Auto'}</Text>
+                        <Feather name="chevron-right" size={20} color="#FFFFFF" />
+                    </View>
                 </TouchableOpacity>
             </View>
 

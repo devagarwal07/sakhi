@@ -50,13 +50,7 @@ async function triggerSOS(userId, role, rideId, lat, lng) {
   const userName = userRows?.[0]?.name || 'A Sakhi user';
   const baseUrl  = process.env.BASE_URL || 'https://sakhirides.in';
 
-  // Generate a 24-hour live tracking token for the SOS event
-  const trackToken = jwt.sign(
-    { ride_id: rideId || `sos:${sosId}`, type: 'live_track' },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-  const trackUrl = `${baseUrl}/track/${trackToken}`;
+  const trackUrl = `${baseUrl}/track/${rideId || sosId}`;
   const shortLat = Number(lat).toFixed(4);
   const shortLng = Number(lng).toFixed(4);
   const safeName = userName.substring(0, 20);

@@ -226,11 +226,11 @@ export default function EnRouteToPickupScreen({ navigation, route }) {
           <View style={[s.topNavShell, { marginTop: Math.max(insets.top, 16) }]}>
             <View style={s.topNavLeft}>
               <Feather name="navigation" size={16} color="#BEA3D8" style={{ transform: [{ rotate: '45deg' }] }} />
-              <Text style={s.topNavTitle} numberOfLines={1}>
+              <Text style={s.topNavTitle} numberOfLines={1} ellipsizeMode="tail">
                 {ride?.pickup_address || 'Navigating to Pickup'}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtn}>
+            <TouchableOpacity onPress={handleCancelRide} style={s.closeBtn}>
               <Feather name="x" size={18} color="#64748B" />
             </TouchableOpacity>
           </View>
@@ -422,9 +422,11 @@ const s = StyleSheet.create({
     elevation: 4,
   },
   topNavLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginRight: 8,
   },
   topNavTitle: {
     fontFamily: 'Inter',

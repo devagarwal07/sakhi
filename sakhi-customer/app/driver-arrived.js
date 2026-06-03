@@ -243,7 +243,7 @@ export default function DriverArrivedScreen() {
 
             {/* Top Navigation AppBar */}
             <View style={[styles.topNav, { height: topNavHeight, paddingTop: topNavPaddingTop }]}>
-                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.navIconBtn}>
+                <TouchableOpacity onPress={() => {/* Locked: active ride in progress */}} style={styles.navIconBtn}>
                     <Feather name="arrow-left" size={24} color="#BEA3D8" />
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
@@ -255,7 +255,7 @@ export default function DriverArrivedScreen() {
                     message: 'How can we help you?',
                     buttons: [
                         { text: 'Report Issue', onPress: () => { setModal(null); router.push('/complaint'); } },
-                        { text: 'Contact Support', onPress: () => { setModal(null); Linking.openURL('tel:18001234567'); } },
+                        { text: 'Contact Support', onPress: () => { setModal(null); Linking.openURL('tel:+916361933364'); } },
                         { text: 'Close', style: 'cancel', onPress: () => setModal(null) },
                     ],
                 })}>
@@ -271,12 +271,12 @@ export default function DriverArrivedScreen() {
                     bounces={false}
                 >
                     {/* Status Badge */}
-                    <TouchableOpacity style={styles.statusBadge} onPress={() => router.push('/active-ride')} activeOpacity={0.8}>
+                    <View style={styles.statusBadge}>
                         <View style={styles.checkIconWrapper}>
                             <Feather name="check" size={12} color="#FFFFFF" />
                         </View>
                         <Text style={styles.statusBadgeText}>Your Driver Has Arrived!</Text>
-                    </TouchableOpacity>
+                    </View>
 
                     {/* Driver Row */}
                     <View style={styles.driverRow}>
@@ -613,9 +613,9 @@ const styles = StyleSheet.create({
     timerHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
     timerLabel: { fontSize: 10, fontWeight: '700', color: '#1E1B2E', letterSpacing: 1 },
     timerDisplay: { alignItems: 'center', marginVertical: 8 },
-    timerBigText: { fontSize: 56, fontWeight: '800', color: '#1E1B2E', letterSpacing: -2.8, lineHeight: 56 },
+    timerBigText: { fontSize: 52, fontWeight: '800', color: '#1E1B2E', letterSpacing: -2.5, lineHeight: 64, includeFontPadding: false },
     progressBarBg: { height: 6, backgroundColor: '#F5F0FF', borderRadius: 3, marginVertical: 12 },
-    progressBarActive: { width: '80%', height: '100%', backgroundColor: '#BEA3D8', borderRadius: 3 }, // Fixed width to match 2:34 mockup state
+    progressBarActive: { height: '100%', backgroundColor: '#BEA3D8', borderRadius: 3 },
     timerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, gap: 6 },
     infoIconWrapper: {
         width: 12, height: 12, borderRadius: 6, borderWidth: 1, borderColor: '#10B981',

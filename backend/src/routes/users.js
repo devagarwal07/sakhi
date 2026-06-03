@@ -31,6 +31,8 @@ const updateProfileSchema = z.object({
   name:               z.string().min(1).max(128).optional(),
   email:              z.string().email().optional(),
   accessibility_notes:z.string().max(512).optional(),
+  dob:                z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional(),
+  preferred_language: z.string().max(64).optional(),
 });
 
 const addressSchema = z.object({
@@ -67,6 +69,8 @@ router.put('/profile', authMiddleware, roleGuard('rider'), upload.single('avatar
       name:               req.body.name,
       email:              req.body.email,
       accessibility_notes:req.body.accessibility_notes,
+      dob:                req.body.dob,
+      preferred_language: req.body.preferred_language,
     });
     if (!parsed.success) {
       return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid fields', details: parsed.error.flatten() } });
@@ -77,6 +81,8 @@ router.put('/profile', authMiddleware, roleGuard('rider'), upload.single('avatar
     if (parsed.data.email)              updates.email               = parsed.data.email;
     if (parsed.data.accessibility_notes !== undefined) 
                                         updates.accessibility_notes = parsed.data.accessibility_notes;
+    if (parsed.data.dob)                updates.dob                 = parsed.data.dob;
+    if (parsed.data.preferred_language) updates.preferred_language  = parsed.data.preferred_language;
 
     // Handle avatar upload to Supabase Storage if file was attached
     if (req.file) {

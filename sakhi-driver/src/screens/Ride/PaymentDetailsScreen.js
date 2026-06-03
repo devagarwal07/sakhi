@@ -217,7 +217,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
                 color={isCash ? '#D97706' : '#BEA3D8'}
               />
               <Text style={[styles.methodBadgeText, isCash ? styles.cashText : styles.onlineText]}>
-                {isCash ? 'Cash' : 'CASH'}
+                {isCash ? 'Cash' : 'Online'}
               </Text>
             </View>
           </View>
@@ -240,7 +240,7 @@ export default function PaymentDetailsScreen({ navigation, route }) {
               ? <ActivityIndicator color="#FFF" />
               : <>
                   <Feather name="check" size={20} color="#FFF" />
-                  <Text style={styles.btnText}>Confirm Cash Collected (₹{netFare})</Text>
+                  <Text style={styles.btnText} numberOfLines={1} adjustsFontSizeToFit>Confirm Cash Received (₹{netFare})</Text>
                 </>
             }
           </TouchableOpacity>

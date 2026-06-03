@@ -121,9 +121,11 @@ export default function SubscriptionPlansScreen() {
                         <View style={styles.dotGreen} />
                         <Feather name="arrow-right" size={12} color="#BEA3D8" />
                         <View style={styles.pinPurple}><View style={styles.pinHole} /></View>
-                        <Text style={styles.routeText} numberOfLines={1}>
-                            {pickupName}  <Feather name="arrow-right" size={13} color="#BEA3D8" />  {dropoffName}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4 }}>
+                            <Text style={styles.routeText} numberOfLines={1}>{pickupName}</Text>
+                            <Feather name="arrow-right" size={13} color="#BEA3D8" />
+                            <Text style={styles.routeText} numberOfLines={1}>{dropoffName}</Text>
+                        </View>
                     </View>
                 </View>
 

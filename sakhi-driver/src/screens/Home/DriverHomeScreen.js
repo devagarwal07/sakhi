@@ -674,14 +674,24 @@ export default function DriverHomeScreen({ navigation }) {
           {/* Commission expiry pill */}
           {daysLeft !== null && (
             <TouchableOpacity
-              style={[s.earningsPill, subscriptionExpired && s.earningsPillExpired, subscriptionExpiring && s.earningsPillWarning]}
+              style={[s.earningsPill, subscriptionExpired && s.earningsPillExpired, subscriptionExpiring && s.earningsPillWarning, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
               onPress={() => subscriptionExpired ? navigation.navigate('PaymentPlans') : navigation.navigate('MyEarnings')}
               activeOpacity={0.85}
             >
-              <Text style={[s.earningsPillLabel, (subscriptionExpired || subscriptionExpiring) && { color: subscriptionExpired ? '#991B1B' : '#92400E' }]}>
-                {subscriptionExpired ? <Text><Feather name="alert-circle" size={11} color="#991B1B" /> Expired — </Text> : subscriptionExpiring ? <Text><Feather name="clock" size={11} color="#92400E" /> {daysLeft}d left · </Text> : `${daysLeft}d · `}
-              </Text>
-              <Text style={[s.earningsPillValue, subscriptionExpired && { color: '#DC2626' }, subscriptionExpiring && { color: '#B45309' }]}>
+              {subscriptionExpired ? (
+                <>
+                  <Feather name="alert-circle" size={11} color="#991B1B" />
+                  <Text style={[s.earningsPillLabel, { color: '#991B1B' }]} numberOfLines={1}>Expired — </Text>
+                </>
+              ) : subscriptionExpiring ? (
+                <>
+                  <Feather name="clock" size={11} color="#92400E" />
+                  <Text style={[s.earningsPillLabel, { color: '#92400E' }]} numberOfLines={1}>{daysLeft}d left · </Text>
+                </>
+              ) : (
+                <Text style={s.earningsPillLabel} numberOfLines={1}>{daysLeft}d · </Text>
+              )}
+              <Text style={[s.earningsPillValue, subscriptionExpired && { color: '#DC2626' }, subscriptionExpiring && { color: '#B45309' }]} numberOfLines={1}>
                 {subscriptionExpired ? 'Renew Now' : `₹${earnings.today}`}
               </Text>
             </TouchableOpacity>
@@ -921,7 +931,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingBottom: 12, zIndex: 10,
   },
   hamburgerBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
-  earningsPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 9999, shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+  earningsPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 9999, maxWidth: 220, shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
   earningsPillLabel: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
   earningsPillValue: { fontSize: 16, fontWeight: '800', color: '#5B21B6' },
 

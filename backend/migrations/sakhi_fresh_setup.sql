@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS users (
     consecutive_fail_count INT        NOT NULL DEFAULT 0,
     free_ride_eligible    BOOLEAN     NOT NULL DEFAULT false,
     is_active             BOOLEAN     DEFAULT true,
+    dob                   DATE,
+    preferred_language    TEXT,
     updated_at            TIMESTAMPTZ DEFAULT NOW(),
     created_at            TIMESTAMPTZ DEFAULT NOW()
 );
