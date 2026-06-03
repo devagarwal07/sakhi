@@ -17,7 +17,7 @@ const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
-    const { ride, updateStatus, updateDriverLocation } = useRide();
+    const { ride, updateStatus, updateDriverLocation, setPin } = useRide();
     const { on, off, isConnected, joinRideRoom } = useSocket();
     const TOTAL_WAIT = 3 * 60;
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
@@ -156,6 +156,9 @@ export default function DriverArrivedScreen() {
                     if (!mountedRef.current) return;
                     if (data && data.status) {
                         console.log('[DriverArrived] Active ride status synced:', data.status);
+                        if (data.ride_start_pin) {
+                            setPin(data.ride_start_pin);
+                        }
                         
                         if (data.status !== ride.status) {
                             updateStatus(data.status);
@@ -342,6 +345,19 @@ export default function DriverArrivedScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    {/* Start PIN Card */}
+                    {ride?.pin ? (
+                        <View style={styles.pinCard}>
+                            <View style={styles.pinTextContainer}>
+                                <Text style={styles.pinLabel}>TRIP START PIN</Text>
+                                <Text style={styles.pinValue}>{ride.pin}</Text>
+                            </View>
+                            <Text style={styles.pinDescription}>
+                                Share this PIN with your driver to start the trip.
+                            </Text>
+                        </View>
+                    ) : null}
 
                     {/* Waiting Timer Card */}
                     <View style={styles.timerCard}>
@@ -546,6 +562,47 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     msgIconText: { fontSize: 20 }, // placeholder for white icon
+
+    // Start PIN Card
+    pinCard: {
+        marginTop: 24,
+        backgroundColor: '#F5F0FF',
+        borderWidth: 1.5,
+        borderColor: '#BEA3D8',
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: '#8031CC',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 4,
+    },
+    pinTextContainer: {
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    pinLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#8031CC',
+        letterSpacing: 1.5,
+        marginBottom: 4,
+    },
+    pinValue: {
+        fontSize: 36,
+        fontWeight: '850',
+        color: '#8031CC',
+        letterSpacing: 8,
+        paddingLeft: 8, // offset letter spacing
+    },
+    pinDescription: {
+        fontSize: 12,
+        fontWeight: '550',
+        color: '#1E1B2E',
+        textAlign: 'center',
+        opacity: 0.7,
+    },
 
     // Waiting Timer Card
     timerCard: {

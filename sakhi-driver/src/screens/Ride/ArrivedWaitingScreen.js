@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Animated, BackHandler} from 'react-native';
+  ScrollView, ActivityIndicator, Animated, BackHandler, Modal, TextInput} from 'react-native';
 
 import SmartMapView from '../../components/SmartMapView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,9 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
+  const [pinModalVisible, setPinModalVisible] = useState(false);
+  const [enteredPin, setEnteredPin] = useState('');
+  const [pinError, setPinError] = useState('');
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -70,14 +73,21 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
   const waitProgressString = `${Math.max(0, (freeRemaining / FREE_WAIT_SECONDS) * 100)}%`;
 
   const handleStartTrip = async () => {
+    if (enteredPin.length !== 4) {
+      setPinError('Please enter a 4-digit PIN');
+      return;
+    }
     try {
       setLoading(true);
+      setPinError('');
       // REST PATCH — backend records in_progress, broadcasts ride:status_update to rider
-      await patchRideStatus(rideId, 'in_progress');
+      await patchRideStatus(rideId, 'in_progress', { pin: enteredPin });
+      setPinModalVisible(false);
       emit('ride:start', { ride_id: rideId });
       navigation.replace('TripInProgress', { ride });
     } catch (err) {
-      CustomAlert.alert('Error', err.response?.data?.error?.message ?? 'Could not start trip.');
+      const errorMsg = err.response?.data?.error?.message ?? 'Could not start trip.';
+      setPinError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -240,7 +250,7 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
           {/* Primary Action */}
           <TouchableOpacity
             style={s.primaryBtn}
-            onPress={handleStartTrip}
+            onPress={() => { setPinModalVisible(true); setEnteredPin(''); setPinError(''); }}
             disabled={loading}
             activeOpacity={0.85}
           >
@@ -271,6 +281,71 @@ export default function ArrivedWaitingScreen({ navigation, route }) {
           riderName={ride?.rider_name}
        />
     )}
+
+    {/* ── PIN VERIFICATION MODAL ── */}
+    <Modal
+      visible={pinModalVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setPinModalVisible(false)}
+    >
+      <View style={s.modalOverlay}>
+        <View style={s.modalContainer}>
+          <TouchableOpacity 
+            style={s.modalCloseBtn} 
+            onPress={() => setPinModalVisible(false)}
+          >
+            <Feather name="x" size={20} color="#6B7280" />
+          </TouchableOpacity>
+
+          <View style={s.modalHeader}>
+            <View style={s.modalIconBg}>
+              <MaterialCommunityIcons name="shield-check" size={28} color="#7C3AED" />
+            </View>
+            <Text style={s.modalTitle}>{t('ride.enterPinTitle', 'Enter Start PIN')}</Text>
+            <Text style={s.modalSubtitle}>
+              {t('ride.enterPinDesc', 'Ask the rider for the 4-digit PIN shown on their screen to start the trip.')}
+            </Text>
+          </View>
+
+          <TextInput
+            style={[s.pinTextInput, pinError !== '' && { borderColor: '#EF4444', color: '#EF4444' }]}
+            value={enteredPin}
+            onChangeText={(text) => {
+              const cleaned = text.replace(/[^0-9]/g, '').slice(0, 4);
+              setEnteredPin(cleaned);
+              if (cleaned.length === 4) {
+                setPinError('');
+              }
+            }}
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholder="0 0 0 0"
+            placeholderTextColor="#DDD6FE"
+            secureTextEntry={false}
+            autoFocus={true}
+          />
+
+          {pinError !== '' && (
+            <Text style={s.pinErrorText}>{pinError}</Text>
+          )}
+
+          <View style={s.modalActions}>
+            <TouchableOpacity
+              style={[s.modalSubmitBtn, loading && { opacity: 0.6 }]}
+              onPress={handleStartTrip}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={s.modalSubmitBtnText}>{t('ride.startTripBtn', 'Verify & Start Trip')}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </>
   );
 }
@@ -638,5 +713,114 @@ const s = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
     color: '#DC2626',
+  },
+  
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(30, 27, 46, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContainer: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    position: 'relative',
+    shadowColor: '#1E1B2E',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 32,
+    elevation: 10,
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  modalIconBg: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F5F3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontFamily: 'Inter',
+    fontWeight: '800',
+    fontSize: 20,
+    color: '#1E1B2E',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 12,
+  },
+  pinTextInput: {
+    width: '70%',
+    height: 64,
+    backgroundColor: '#F9F8FF',
+    borderWidth: 2,
+    borderColor: '#E9D5FF',
+    borderRadius: 16,
+    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#7C3AED',
+    letterSpacing: 12,
+    paddingLeft: 12,
+    marginVertical: 16,
+    alignSelf: 'center',
+  },
+  pinErrorText: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalActions: {
+    width: '100%',
+  },
+  modalSubmitBtn: {
+    width: '100%',
+    height: 56,
+    backgroundColor: '#7C3AED',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalSubmitBtnText: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#FFFFFF',
   },
 });

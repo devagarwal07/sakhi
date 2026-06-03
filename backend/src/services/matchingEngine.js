@@ -620,7 +620,7 @@ class MatchingEngine extends EventEmitter {
       const session = this.activeSearches.get(rideId);
 
       const { data: rides } = await supabase
-        .from('rides').select('status, rider_id').eq('id', rideId).limit(1);
+        .from('rides').select('status, rider_id, ride_start_pin').eq('id', rideId).limit(1);
       const ride = rides?.[0];
       if (!ride || ride.status !== 'searching') {
         this._emitToDriver(driverId, 'ride_already_assigned', { ride_id: rideId });
@@ -687,8 +687,8 @@ class MatchingEngine extends EventEmitter {
         .eq('id', driverId).limit(1);
       const driver = drivers?.[0] || { id: driverId };
 
-      this._emitToRide(rideId, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned' });
-      this._emitToRider(ride.rider_id, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned' });
+      this._emitToRide(rideId, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned', ride_start_pin: ride.ride_start_pin });
+      this._emitToRider(ride.rider_id, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned', ride_start_pin: ride.ride_start_pin });
 
       fcmService.sendToUser(ride.rider_id, 'rider', {
         title: 'Driver Found! 🚗',

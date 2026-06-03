@@ -27,7 +27,7 @@ const RetryIcon = () => (
 export default function RideFindingScreen() {
     const { width } = useWindowDimensions();
     const router = useRouter();
-    const { ride, setRideId, setDriver, updateStatus } = useRide();
+    const { ride, setRideId, setDriver, updateStatus, setPin } = useRide();
     const { on, off, joinRideRoom, isConnected } = useSocket();
     const [modal, setModal] = useState(null);
     const [bookingError, setBookingError] = useState(null);
@@ -141,7 +141,7 @@ export default function RideFindingScreen() {
         }
         let booked = false;
 
-        const handleRideAssigned = ({ ride_id, driver, status }) => {
+        const handleRideAssigned = ({ ride_id, driver, status, ride_start_pin }) => {
             if (!mountedRef.current) return;
             // Only reject if we already have a rideId AND it doesn't match.
             // Allow through if rideIdRef.current is still null (event arrived
@@ -166,6 +166,9 @@ export default function RideFindingScreen() {
 
             setDriver(normalised);
             updateStatus(status ?? 'assigned');
+            if (ride_start_pin) {
+                setPin(ride_start_pin);
+            }
             router.replace('/driver-arrived');
         };
 
@@ -209,6 +212,9 @@ export default function RideFindingScreen() {
                 const rideId = data.ride_id;
                 rideIdRef.current = rideId;
                 setRideId(rideId);
+                if (data.ride_start_pin) {
+                    setPin(data.ride_start_pin);
+                }
 
                 // Join the ride room — backend will now forward ride_assigned to us
                 await joinRideRoom(rideId).catch(() => {
@@ -290,6 +296,9 @@ export default function RideFindingScreen() {
 
                         setDriver(normalised);
                         updateStatus(data.status);
+                        if (data.ride_start_pin) {
+                            setPin(data.ride_start_pin);
+                        }
 
                         // Route to appropriate screen
                         if (['assigned', 'driver_en_route', 'arrived'].includes(data.status)) {

@@ -17,6 +17,7 @@ const initialState = {
     polyline: [],
     promoCode: null,  // promo code string applied
     promoData: null,  // { promo_discount, discounted_fare, promo_data }
+    pin: null,        // 4-digit PIN generated at booking
 };
 
 
@@ -30,6 +31,7 @@ export function RideProvider({ children }) {
     const setDriver = useCallback((driver) => setRide((r) => ({ ...r, driver })), []);
     const setFare   = useCallback((fare)   => setRide((r) => ({ ...r, fare })), []);
     const setPaymentMethod = useCallback((paymentMethod) => setRide((r) => ({ ...r, paymentMethod })), []);
+    const setPin   = useCallback((pin)   => setRide((r) => ({ ...r, pin })), []);
 
     const startRide = useCallback((rideId, driver, fare) => {
         setRide((r) => ({ ...r, rideId, driver, fare, status: 'assigned' }));
@@ -74,6 +76,7 @@ export function RideProvider({ children }) {
                 setDriver,
                 setFare,
                 setPaymentMethod,
+                setPin,
                 startRide,
                 updateStatus,
                 updateDriverLocation,
