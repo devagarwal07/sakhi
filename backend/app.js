@@ -98,6 +98,9 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
+// ─── Ping (instant — no DB — for cold-start warmup) ──────────────────────────
+app.get('/ping', (_req, res) => res.status(200).json({ ok: true, ts: Date.now() }));
+
 // ─── Health Check (Enhanced) ──────────────────────────────────────────────────
 const { version } = require('./package.json');
 const START_TIME = Date.now();
