@@ -688,6 +688,7 @@ class MatchingEngine extends EventEmitter {
       const driver = drivers?.[0] || { id: driverId };
 
       this._emitToRide(rideId, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned' });
+      this._emitToRider(ride.rider_id, 'ride_assigned', { ride_id: rideId, driver, status: 'assigned' });
 
       fcmService.sendToUser(ride.rider_id, 'rider', {
         title: 'Driver Found! 🚗',

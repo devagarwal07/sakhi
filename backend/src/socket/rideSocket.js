@@ -62,6 +62,35 @@ function registerRideSocket(io) {
     if (role === 'rider') socket.join(`rider:${userId}`);
     if (role === 'admin') socket.join('admin:monitoring');
 
+    // Auto-join active ride rooms on connection/reconnection
+    (async () => {
+      try {
+        let activeRideQuery = supabase
+          .from('rides')
+          .select('id')
+          .in('status', ['searching', 'assigned', 'driver_en_route', 'arrived', 'in_progress']);
+        
+        if (role === 'rider') {
+          activeRideQuery = activeRideQuery.eq('rider_id', userId);
+        } else if (role === 'driver') {
+          activeRideQuery = activeRideQuery.eq('driver_id', userId);
+        } else {
+          activeRideQuery = null;
+        }
+
+        if (activeRideQuery) {
+          const { data: activeRides } = await activeRideQuery.limit(1);
+          if (activeRides && activeRides.length > 0) {
+            const activeRideId = activeRides[0].id;
+            socket.join(`ride:${activeRideId}`);
+            logger.info('rideSocket — auto-joined active ride room on connection', { userId, role, rideId: activeRideId });
+          }
+        }
+      } catch (err) {
+        logger.warn('rideSocket — auto-join active ride error', { userId, role, error: err.message });
+      }
+    })();
+
     // ── rider:join_ride ───────────────────────────────────────────────────────
     socket.on('rider:join_ride', async ({ ride_id }) => {
       if (!ride_id) return;

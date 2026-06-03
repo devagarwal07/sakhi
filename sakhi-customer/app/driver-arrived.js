@@ -11,14 +11,14 @@ import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { getDriverPhone, cancelRide } from '../src/api/endpoints';
+import { getDriverPhone, cancelRide, getRideDetails } from '../src/api/endpoints';
 
 const { width } = Dimensions.get('window');
 
 export default function DriverArrivedScreen() {
     const router = useRouter();
     const { ride, updateStatus, updateDriverLocation } = useRide();
-    const { on, off } = useSocket();
+    const { on, off, isConnected, joinRideRoom } = useSocket();
     const TOTAL_WAIT = 3 * 60;
     const [secondsLeft, setSecondsLeft] = useState(TOTAL_WAIT);
     const intervalRef = useRef(null);
@@ -142,6 +142,64 @@ export default function DriverArrivedScreen() {
         };
     }, []);
 
+    // ── Sync ride status from database when socket reconnects ──────────────────
+    useEffect(() => {
+        if (isConnected && ride?.rideId) {
+            console.log('[DriverArrived] Socket connected/reconnected. Verifying ride status...');
+            
+            // Rejoin ride room
+            joinRideRoom(ride.rideId).catch(() => {});
+
+            // Fetch latest ride details to see if status updated while offline
+            getRideDetails(ride.rideId)
+                .then(({ data }) => {
+                    if (!mountedRef.current) return;
+                    if (data && data.status) {
+                        console.log('[DriverArrived] Active ride status synced:', data.status);
+                        
+                        if (data.status !== ride.status) {
+                            updateStatus(data.status);
+                            
+                            if (data.status === 'in_progress') {
+                                router.replace('/active-ride');
+                            } else if (data.status === 'completed') {
+                                router.replace('/ride-summary');
+                            } else if (data.status === 'searching') {
+                                setModal({
+                                    icon: '🔄',
+                                    title: 'Driver Cancelled',
+                                    message: 'Your driver cancelled. Finding a new driver for you…',
+                                    buttons: [{
+                                        text: 'OK',
+                                        onPress: () => {
+                                            setModal(null);
+                                            router.replace('/ride-finding');
+                                        },
+                                    }],
+                                });
+                            } else if (data.status === 'cancelled') {
+                                setModal({
+                                    icon: '❌',
+                                    title: 'Ride Cancelled',
+                                    message: 'This ride has been cancelled.',
+                                    buttons: [{
+                                        text: 'OK',
+                                        onPress: () => {
+                                            setModal(null);
+                                            router.replace('/(tabs)/');
+                                        },
+                                    }],
+                                });
+                            }
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.warn('[DriverArrived] Sync error:', err?.message);
+                });
+        }
+    }, [isConnected]);
+
     const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
     const secs = String(secondsLeft % 60).padStart(2, '0');
     const progress = secondsLeft / TOTAL_WAIT; // 1.0 → 0.0
@@ -152,12 +210,18 @@ export default function DriverArrivedScreen() {
             <View style={styles.mapArea}>
                 <SmartMapView
                     style={StyleSheet.absoluteFill}
-                    center={{ latitude: pickupLat, longitude: pickupLng }}
-                    zoom={16}
+                    center={{
+                        latitude: ride?.driver?.currentLocation?.latitude ?? pickupLat,
+                        longitude: ride?.driver?.currentLocation?.longitude ?? pickupLng,
+                    }}
+                    zoom={15}
+                    fitBounds={!!ride?.driver?.currentLocation}
                     markers={[
                         {
                             id: 'driver', markerType: 'auto', pulse: true,
-                            latitude: pickupLat, longitude: pickupLng,
+                            latitude: ride?.driver?.currentLocation?.latitude ?? pickupLat,
+                            longitude: ride?.driver?.currentLocation?.longitude ?? pickupLng,
+                            bearing: ride?.driver?.currentLocation?.heading ?? 0,
                             color: '#8031CC',
                         },
                         ride?.pickup && {
@@ -166,8 +230,8 @@ export default function DriverArrivedScreen() {
                             color: '#8031CC',
                         },
                     ].filter(Boolean)}
-                    scrollEnabled={false}
-                    zoomEnabled={false}
+                    scrollEnabled={true}
+                    zoomEnabled={true}
                 />
                 
                 {/* Gradient fade at the bottom of the map */}

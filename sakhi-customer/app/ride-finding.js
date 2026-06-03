@@ -11,7 +11,7 @@ import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { isWithinBengaluru } from '../src/utils/constants';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { bookRide, cancelRide, sendSupportMessage } from '../src/api/endpoints';
+import { bookRide, cancelRide, sendSupportMessage, getRideDetails } from '../src/api/endpoints';
 import { fetchDirectionsPolyline } from '../src/utils/locationService';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ export default function RideFindingScreen() {
     const { width } = useWindowDimensions();
     const router = useRouter();
     const { ride, setRideId, setDriver, updateStatus } = useRide();
-    const { on, off, joinRideRoom } = useSocket();
+    const { on, off, joinRideRoom, isConnected } = useSocket();
     const [modal, setModal] = useState(null);
     const [bookingError, setBookingError] = useState(null);
     const [showNoDrivers, setShowNoDrivers] = useState(false);
@@ -255,6 +255,57 @@ export default function RideFindingScreen() {
             off('ride:no_drivers', handleNoDrivers);
         };
     }, []); // run once on mount
+
+    // ── Sync ride status from database when socket reconnects ──────────────────
+    useEffect(() => {
+        if (isConnected && rideIdRef.current) {
+            console.log('[RideFinding] Socket connected/reconnected. Verifying active ride status...');
+            
+            // Rejoin ride room
+            joinRideRoom(rideIdRef.current).catch(() => {});
+
+            // Fetch latest ride details to see if status updated while offline
+            getRideDetails(rideIdRef.current)
+                .then(({ data }) => {
+                    if (!mountedRef.current) return;
+                    if (data && data.status && data.status !== 'searching') {
+                        console.log('[RideFinding] Active ride status synced:', data.status);
+                        
+                        // Normalise driver payload
+                        const driver = data.drivers || data.driver;
+                        const normalised = {
+                            id: driver?.id,
+                            name: driver?.name ?? 'Your Driver',
+                            phone: driver?.phone ?? null,
+                            photo: driver?.profile_photo_url ?? null,
+                            rating: driver?.avg_rating ?? 4.8,
+                            vehicle: {
+                                type: driver?.vehicle_type ?? 'Auto',
+                                plate: driver?.vehicle_reg_no ?? '',
+                                model: driver?.vehicle_model ?? '',
+                                color: driver?.vehicle_color ?? '',
+                            },
+                            upi_id: driver?.upi_id ?? null,
+                        };
+
+                        setDriver(normalised);
+                        updateStatus(data.status);
+
+                        // Route to appropriate screen
+                        if (['assigned', 'driver_en_route', 'arrived'].includes(data.status)) {
+                            router.replace('/driver-arrived');
+                        } else if (data.status === 'in_progress') {
+                            router.replace('/active-ride');
+                        } else if (data.status === 'completed') {
+                            router.replace('/ride-summary');
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.warn('[RideFinding] Sync error:', err?.message);
+                });
+        }
+    }, [isConnected]);
 
     // ── Show booking error ─────────────────────────────────────────────────────
     useEffect(() => {

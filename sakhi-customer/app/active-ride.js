@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, BorderRadius, Shadows } from '../src/utils/theme';
 import { useRide } from '../src/context/RideContext';
 import { useSocket } from '../src/context/SocketContext';
-import { cancelRide, getDriverPhone, sendBatteryAlert, shareTrip, getEmergencyContacts } from '../src/api/endpoints';
+import { cancelRide, getDriverPhone, sendBatteryAlert, shareTrip, getEmergencyContacts, getRideDetails } from '../src/api/endpoints';
 
 import * as Battery from 'expo-battery';
 import * as Sharing from 'expo-sharing';
@@ -39,7 +39,7 @@ export default function ActiveRideScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { ride, updateStatus, updateDriverLocation, tickWaiting, clearRide } = useRide();
-    const { on, off } = useSocket();
+    const { on, off, isConnected, joinRideRoom } = useSocket();
     const [chatOpen, setChatOpen] = useState(false);
     const mapRef = useRef(null);
     const driverInitialized = useRef(false); // track if driver marker is placed on map
@@ -129,6 +129,48 @@ export default function ActiveRideScreen() {
             off('ride_completed', handleRideCompleted);
         };
     }, []);
+
+    // ── Sync ride status from database when socket reconnects ──────────────────
+    useEffect(() => {
+        if (isConnected && ride?.rideId) {
+            console.log('[ActiveRide] Socket connected/reconnected. Verifying ride status...');
+            
+            // Rejoin ride room
+            joinRideRoom(ride.rideId).catch(() => {});
+
+            // Fetch latest ride details to see if status updated while offline
+            getRideDetails(ride.rideId)
+                .then(({ data }) => {
+                    if (data && data.status) {
+                        console.log('[ActiveRide] Active ride status synced:', data.status);
+                        
+                        if (data.status !== ride.status) {
+                            updateStatus(data.status);
+                            
+                            if (data.status === 'completed') {
+                                router.replace('/ride-summary');
+                            } else if (data.status === 'cancelled') {
+                                setModal({
+                                    icon: '❌',
+                                    title: 'Ride Cancelled',
+                                    message: 'This ride has been cancelled.',
+                                    buttons: [{
+                                        text: 'OK',
+                                        onPress: () => {
+                                            setModal(null);
+                                            router.replace('/(tabs)/');
+                                        },
+                                    }],
+                                });
+                            }
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.warn('[ActiveRide] Sync error:', err?.message);
+                });
+        }
+    }, [isConnected]);
 
     // Battery alert logic
     useEffect(() => {
