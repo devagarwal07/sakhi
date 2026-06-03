@@ -396,61 +396,66 @@ export default function EditProfileScreen() {
 
             {/* ════ DOB Picker Modal ════ */}
             <Modal visible={showDobPicker} transparent animationType="slide">
-                <Pressable style={styles.modalBackdrop} onPress={() => setShowDobPicker(false)} />
-                <View style={[styles.pickerSheet, { paddingBottom: pickerSheetPaddingBottom }]}>
-                    <View style={styles.pickerHandle} />
-                    <Text style={styles.pickerTitle}>Select Date of Birth</Text>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <Pressable style={styles.modalBackdrop} onPress={() => setShowDobPicker(false)} />
+                    <View style={[styles.pickerSheet, { paddingBottom: pickerSheetPaddingBottom }]}>
+                        <View style={styles.pickerHandle} />
+                        <Text style={styles.pickerTitle}>Select Date of Birth</Text>
 
-                    <View style={styles.dobRow}>
-                        <View style={styles.dobFieldWrap}>
-                            <Text style={styles.dobFieldLabel}>Day</Text>
-                            <TextInput
-                                style={styles.dobInput}
-                                value={tempDay}
-                                onChangeText={setTempDay}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                                placeholder="DD"
-                                placeholderTextColor="#AAA"
-                            />
+                        <View style={styles.dobRow}>
+                            <View style={styles.dobFieldWrap}>
+                                <Text style={styles.dobFieldLabel}>Day</Text>
+                                <TextInput
+                                    style={styles.dobInput}
+                                    value={tempDay}
+                                    onChangeText={setTempDay}
+                                    keyboardType="number-pad"
+                                    maxLength={2}
+                                    placeholder="DD"
+                                    placeholderTextColor="#AAA"
+                                />
+                            </View>
+                            <Text style={styles.dobSep}>/</Text>
+                            <View style={styles.dobFieldWrap}>
+                                <Text style={styles.dobFieldLabel}>Month</Text>
+                                <TextInput
+                                    style={styles.dobInput}
+                                    value={tempMonth}
+                                    onChangeText={setTempMonth}
+                                    keyboardType="number-pad"
+                                    maxLength={2}
+                                    placeholder="MM"
+                                    placeholderTextColor="#AAA"
+                                />
+                            </View>
+                            <Text style={styles.dobSep}>/</Text>
+                            <View style={[styles.dobFieldWrap, { flex: 2 }]}>
+                                <Text style={styles.dobFieldLabel}>Year</Text>
+                                <TextInput
+                                    style={styles.dobInput}
+                                    value={tempYear}
+                                    onChangeText={setTempYear}
+                                    keyboardType="number-pad"
+                                    maxLength={4}
+                                    placeholder="YYYY"
+                                    placeholderTextColor="#AAA"
+                                />
+                            </View>
                         </View>
-                        <Text style={styles.dobSep}>/</Text>
-                        <View style={styles.dobFieldWrap}>
-                            <Text style={styles.dobFieldLabel}>Month</Text>
-                            <TextInput
-                                style={styles.dobInput}
-                                value={tempMonth}
-                                onChangeText={setTempMonth}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                                placeholder="MM"
-                                placeholderTextColor="#AAA"
-                            />
-                        </View>
-                        <Text style={styles.dobSep}>/</Text>
-                        <View style={[styles.dobFieldWrap, { flex: 2 }]}>
-                            <Text style={styles.dobFieldLabel}>Year</Text>
-                            <TextInput
-                                style={styles.dobInput}
-                                value={tempYear}
-                                onChangeText={setTempYear}
-                                keyboardType="number-pad"
-                                maxLength={4}
-                                placeholder="YYYY"
-                                placeholderTextColor="#AAA"
-                            />
+
+                        <View style={styles.pickerActions}>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowDobPicker(false)}>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.confirmBtn} onPress={confirmDob}>
+                                <Text style={styles.confirmBtnText}>Confirm</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
-
-                    <View style={styles.pickerActions}>
-                        <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowDobPicker(false)}>
-                            <Text style={styles.cancelBtnText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.confirmBtn} onPress={confirmDob}>
-                            <Text style={styles.confirmBtnText}>Confirm</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
 
             {/* ════ Language Picker Modal ════ */}
