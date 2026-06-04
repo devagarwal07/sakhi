@@ -117,7 +117,7 @@
 
 ### `app/sos-warning.js`
 - **Issues Found:**
-  - **Silent failures:** `triggerSOS` is wrapped in empty catch block. Location functions silently fail defaulting to 0,0.
+  - **Silent failures:** `triggerSOS` is wrapped in an empty catch block.
   - **Unsafe UI logic:** `router.replace('/(tabs)/')` trailing slash can cause issues.
 
 ### `app/subscription-details.js`
@@ -201,8 +201,6 @@
 
 ### `src/context/SocketContext.js`
 - **Issues Found:**
-  - **Silent failures**: Inside `connectSocket`, `SecureStore.getItemAsync` is called without a `try/catch` block.
-  - **Unsafe UI logic**: Inside `connectSocket`, `socket.on('connect', ...)` re-registers all listeners from `listenersRef.current`, causing duplicate listener execution.
   - **Disconnected APIs**: The `joinRideRoom` function relies on a fallback 5000ms timeout if the backend doesn't explicitly respond.
 
 ## API & Services (`src/api/` & `src/services/`)
@@ -210,11 +208,10 @@
 ### `src/api/client.js`
 - **Issues Found:**
   - **Unsafe UI logic**: Calling `CustomAlert.alert()` inside the Axios response interceptor for global errors could cause issues if multiple requests fail simultaneously.
-  - **Silent failures**: In the request interceptor, `SecureStore.getItemAsync` errors are caught and logged, but the request proceeds anyway without a token.
 
 ### `src/api/endpoints.js`
 - **Issues Found:**
-  - **Unsafe UI logic**: The `triggerSOS` and `sendBatteryAlert` functions explicitly default `lat` and `lng` to `0` if the values are missing, sending coordinates to "Null Island".
+  - **[FIXED] Unsafe UI logic**: The `triggerSOS` and `sendBatteryAlert` functions explicitly default `lat` and `lng` to `0` if the values are missing, sending coordinates to "Null Island".
 
 ### `src/services/notificationService.js`
 - **Issues Found:**
