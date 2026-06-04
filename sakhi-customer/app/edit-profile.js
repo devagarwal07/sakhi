@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import SakhiModal from '../src/components/SakhiModal';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { updateProfile, deleteAccount } from '../src/api/endpoints';
+import { updateProfile } from '../src/api/endpoints';
 import { KEYBOARD_BEHAVIOR } from '../src/utils/androidUtils';
 
 const LANGUAGES = [
@@ -20,41 +20,29 @@ const LANGUAGES = [
 
 export default function EditProfileScreen() {
     const router = useRouter();
-    const { user, updateUser, logout } = useAuth();
+    const { user, updateUser, deleteUserAccount } = useAuth();
     const insets = useSafeAreaInsets();
     const [modal, setModal] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
     const handleDeleteAccount = () => {
-        Alert.alert(
-            'Delete Account',
-            'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be erased.',
-            [
-                { text: 'Cancel', style: 'cancel' },
+        setModal({
+            icon: '🗑️',
+            title: 'Delete Account',
+            message: 'This will permanently delete your account and all related data. This action cannot be undone.',
+            buttons: [
+                { text: 'Cancel', style: 'cancel', onPress: () => setModal(null) },
                 { 
                     text: 'Delete', 
-                    style: 'destructive',
+                    style: 'destructive', 
                     onPress: async () => {
+                        setModal(null);
+                        if (deleting) return;
                         setDeleting(true);
                         try {
-                            await deleteAccount();
-                            setDeleting(false);
-                            setModal({
-                                icon: '✅',
-                                title: 'Account Deleted',
-                                message: 'Your account has been successfully deleted.',
-                                buttons: [{ 
-                                    text: 'OK', 
-                                    onPress: async () => {
-                                        setModal(null);
-                                        await logout();
-                                        setTimeout(() => {
-                                            router.replace('/(auth)/login');
-                                        }, 300);
-                                    } 
-                                }]
-                            });
+                            await deleteUserAccount();
+                            router.replace('/(auth)/login');
                         } catch (err) {
                             setDeleting(false);
                             setModal({
@@ -65,9 +53,9 @@ export default function EditProfileScreen() {
                             });
                         }
                     } 
-                }
-            ]
-        );
+                },
+            ],
+        });
     };
 
     const pickerSheetPaddingBottom = Math.max(insets.bottom + 10, 28);

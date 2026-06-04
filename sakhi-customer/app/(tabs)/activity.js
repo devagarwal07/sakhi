@@ -9,7 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getRideHistory } from '../../src/api/endpoints';
-import { format, parseISO, isWithinInterval, startOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const FILTERS = ['All', 'This Week', 'This Month', 'Last Month'];
 
@@ -26,56 +26,21 @@ export default function RideHistoryScreen() {
     const [activeFilter, setActiveFilter] = useState('All');
 
     useEffect(() => {
-        fetchRides(1);
-    }, []);
+        fetchRides(1, activeFilter);
+    }, [activeFilter]);
 
-    const fetchRides = async (pageNum) => {
+    const fetchRides = async (pageNum, filter = activeFilter) => {
         pageNum === 1 ? setLoading(true) : setLoadingMore(true);
         try {
-            const { data } = await getRideHistory(pageNum);
+            const { data } = await getRideHistory(pageNum, filter);
             const fetched = data.rides || [];
             setRides((prev) => pageNum === 1 ? fetched : [...prev, ...fetched]);
-            setHasMore(fetched.length === 10);
+            setHasMore(fetched.length === (data.limit || 20));
             setPage(pageNum);
         } catch (_) { } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
-
-    // Filter rides client-side based on the selected chip
-    const applyFilter = (rideList, filter) => {
-        if (filter === 'All') return rideList;
-        
-        const now = new Date();
-        return rideList.filter((item) => {
-            if (!item.created_at) return false;
-            try {
-                const rideDate = parseISO(item.created_at);
-                if (filter === 'This Week') {
-                    return isWithinInterval(rideDate, {
-                        start: startOfWeek(now, { weekStartsOn: 1 }), // Monday
-                        end: now,
-                    });
-                }
-                if (filter === 'This Month') {
-                    return isWithinInterval(rideDate, {
-                        start: startOfMonth(now),
-                        end: now,
-                    });
-                }
-                if (filter === 'Last Month') {
-                    const lastMonth = subMonths(now, 1);
-                    return isWithinInterval(rideDate, {
-                        start: startOfMonth(lastMonth),
-                        end: endOfMonth(lastMonth),
-                    });
-                }
-                return true;
-            } catch {
-                return false;
-            }
-        });
     };
 
     const RideCard = ({ item }) => {
@@ -161,9 +126,7 @@ export default function RideHistoryScreen() {
         );
     };
 
-    // Apply active filter to ride list
-    const filteredRides = applyFilter(rides, activeFilter);
-    const dataToRender = filteredRides;
+    const dataToRender = rides;
 
     return (
         <SafeAreaView style={styles.safeArea}>

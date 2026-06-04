@@ -127,6 +127,22 @@ export function AuthProvider({ children }) {
         return userData;
     };
 
+    // ── Delete Account ───────────────────────────────────────────────────────
+    const deleteUserAccount = async () => {
+        const { deleteAccount } = require('../api/endpoints');
+        try {
+            await deleteAccount();
+        } catch (e) {
+            console.error('[Auth] deleteAccount failed:', e);
+            throw e; // We want the caller to handle the error UI
+        }
+        await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+        await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+        await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+        setUser(null);
+        setIsAuthenticated(false);
+    };
+
     // ── Logout ─────────────────────────────────────────────────────────────
     const logout = async () => {
         try {
@@ -158,6 +174,7 @@ export function AuthProvider({ children }) {
         requestOtp,
         login,
         logout,
+        deleteUserAccount,
         updateUser,
         checkAuth,
     };

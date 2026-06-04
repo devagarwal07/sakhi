@@ -10,6 +10,8 @@ const logger              = require('../utils/logger');
 const orderSchema = z.object({
   amount:               z.number().positive(),
   subscription_id_temp: z.string().min(1),
+  paymentMode:          z.string().optional(),
+  targetApp:            z.string().optional(),
 });
 
 const verifySchema = z.object({
@@ -30,7 +32,7 @@ function handleError(err, res, next) {
 // ── POST /payments/order ──────────────────────────────────────────────────────
 async function createOrder(req, res, next) {
   try {
-    const { amount, subscription_id_temp } = orderSchema.parse(req.body);
+    const { amount, subscription_id_temp, paymentMode, targetApp } = orderSchema.parse(req.body);
     const riderId = req.user.userId;
 
     // merchantOrderId: alphanumeric + hyphen/underscore only, max 64 chars
@@ -43,11 +45,14 @@ async function createOrder(req, res, next) {
       .limit(1);
     const userInfo = { userId: riderId, phone: userRows?.[0]?.phone || '', name: userRows?.[0]?.name || '' };
 
+    const paymentModeOptions = { type: paymentMode, targetApp };
+
     const result = await paymentService.createOrder(
       amount,
       merchantOrderId,
       null, // callback handled via PhonePe dashboard webhook config
-      userInfo
+      userInfo,
+      paymentModeOptions
     );
 
     return res.status(200).json({

@@ -171,17 +171,39 @@ router.delete('/addresses/:id', authMiddleware, roleGuard('rider'), async (req, 
 router.get('/rides', authMiddleware, roleGuard('rider'), async (req, res, next) => {
   try {
     const page  = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const timeframe = req.query.timeframe || 'All';
     const limit = 20;
     const from  = (page - 1) * limit;
     const to    = from + limit - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('rides')
       .select('*, drivers(name, vehicle_model, vehicle_reg_no, profile_photo_url)', { count: 'exact' })
       .eq('rider_id', req.user.userId)
-      .in('status', ['completed', 'cancelled'])
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      .in('status', ['completed', 'cancelled']);
+
+    if (timeframe !== 'All') {
+      const now = new Date();
+      if (timeframe === 'This Week') {
+        const start = new Date(now);
+        const day = start.getDay();
+        const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+        start.setDate(diff);
+        start.setHours(0, 0, 0, 0);
+        query = query.gte('created_at', start.toISOString());
+      } else if (timeframe === 'This Month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        query = query.gte('created_at', start.toISOString());
+      } else if (timeframe === 'Last Month') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+      }
+    }
+
+    query = query.order('created_at', { ascending: false }).range(from, to);
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
     return res.json({ rides: data, total: count, page, limit });

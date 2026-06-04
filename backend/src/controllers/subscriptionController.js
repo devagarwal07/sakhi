@@ -45,6 +45,7 @@ const createSubSchema = z.object({
 
 function handleError(err, res, next) {
   if (err.name === 'ZodError') {
+    console.error('[Validation Error]:', err.flatten());
     return res.status(422).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid input.', details: err.flatten() } });
   }
   if (err instanceof AppError) {

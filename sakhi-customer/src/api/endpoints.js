@@ -33,7 +33,7 @@ export const deleteAccount = () => apiClient.delete('/users/account');
 export const getAddresses = () => apiClient.get('/users/addresses');
 export const saveAddress = (data) => apiClient.post('/users/addresses', data);
 export const deleteAddress = (id) => apiClient.delete(`/users/addresses/${id}`);
-export const getRideHistory = (page = 1) => apiClient.get(`/users/rides?page=${page}`);
+export const getRideHistory = (page = 1, timeframe = 'All') => apiClient.get(`/users/rides?page=${page}&timeframe=${encodeURIComponent(timeframe)}`);
 export const getTransactionHistory = (page = 1) => apiClient.get(`/users/transactions?page=${page}`);
 
 // ── Rides ─────────────────────────────────────────────────────────────────

@@ -271,7 +271,7 @@ export default function SubscriptionRideScreen() {
                 <View style={styles.pickerOverlay}>
                     <TouchableOpacity style={styles.pickerBackdrop} onPress={() => setActivePicker(null)} />
                     <View style={[styles.pickerContent, { paddingBottom: pickerPaddingBottom }]}>
-                        <ScrollView style={styles.pickerScroll} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+                        <View style={{ paddingBottom: 24 }}>
                             <Text style={styles.pickerTitle}>
                                 {activePicker === 'date' ? 'Select Start Date' : 'Select Time'}
                             </Text>
@@ -298,7 +298,7 @@ export default function SubscriptionRideScreen() {
                         <TouchableOpacity style={styles.pickerCloseBtn} onPress={() => setActivePicker(null)}>
                             <Text style={styles.pickerCloseText}>Cancel</Text>
                         </TouchableOpacity>
-                        </ScrollView>
+                        </View>
                     </View>
                 </View>
             </Modal>

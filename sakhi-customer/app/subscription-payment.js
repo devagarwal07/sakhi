@@ -31,6 +31,7 @@ export default function SubscriptionPaymentScreen() {
     const [intentData, setIntentData] = useState(null);
     const [intentLoading, setIntentLoading] = useState(true);
     const [sdkReady, setSdkReady] = useState(false);
+    const [selectedApp, setSelectedApp] = useState(null);
 
     const insets = useSafeAreaInsets();
 
@@ -56,7 +57,7 @@ export default function SubscriptionPaymentScreen() {
                 await PhonePePaymentSdk.init(
                     PHONEPE_ENV,         // 'PRODUCTION'
                     PHONEPE_CLIENT_ID,   // merchant/client ID
-                    '',                  // flowId — optional, can be user ID for debugging
+                    user?.id ? String(user.id) : 'sakhi_payment_flow', // flowId — required by latest SDK
                     false                // enableLogging (set true for debug builds only)
                 );
                 setSdkReady(true);
@@ -95,12 +96,19 @@ export default function SubscriptionPaymentScreen() {
 
                 const formatDateYMD = (dateStr) => {
                     if (!dateStr) return '';
-                    const d = new Date(dateStr);
-                    if (isNaN(d.getTime())) return '';
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${y}-${m}-${day}`;
+                    // Hermes engine fails on new Date("Jun 03, 2026"), so parse manually
+                    const parts = dateStr.replace(',', '').split(' ');
+                    if (parts.length === 3) {
+                        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                        const mIndex = months.indexOf(parts[0]);
+                        if (mIndex !== -1) {
+                            const y = parts[2];
+                            const m = String(mIndex + 1).padStart(2, '0');
+                            const day = String(parts[1]).padStart(2, '0');
+                            return `${y}-${m}-${day}`;
+                        }
+                    }
+                    return '';
                 };
 
                 const payload = {
@@ -121,7 +129,14 @@ export default function SubscriptionPaymentScreen() {
                 const { data } = await apiClient.post('/subscriptions/intent', payload);
                 setIntentData(data);
             } catch (err) {
-                const msg = err?.response?.data?.error?.message || err?.message || 'Could not fetch ride estimate.';
+                let msg = err?.response?.data?.error?.message || err?.message || 'Could not fetch ride estimate.';
+                
+                // If there are detailed validation errors from Zod, append them so we can see what's wrong!
+                const details = err?.response?.data?.error?.details;
+                if (details && details.fieldErrors) {
+                    msg += '\n\n' + JSON.stringify(details.fieldErrors, null, 2);
+                }
+
                 setModal({
                     icon: '⚠️',
                     title: 'Subscription Error',
@@ -140,8 +155,16 @@ export default function SubscriptionPaymentScreen() {
         }
     }, [ride, sub]);
 
+    // App packages for Android targetApp checks
+    const UPI_APPS = {
+        'PhonePe': 'com.phonepe.app',
+        'GPay': 'com.google.android.apps.nbu.paisa.user',
+        'Paytm': 'net.one97.paytm',
+        'BHIM': 'in.org.npci.upiapp',
+    };
+
     // ── Handle Pay ───────────────────────────────────────────────────────────
-    const handlePay = async () => {
+    const handlePay = async (methodLabel = 'PhonePe') => {
         if (!intentData?.subscription_id) {
             setModal({
                 icon: '⚠️',
@@ -153,11 +176,44 @@ export default function SubscriptionPaymentScreen() {
         }
 
         setLoading(true);
+
+        // --- App Installation Check for Native intents ---
+        let paymentMode = 'UPI_INTENT';
+        let targetApp = UPI_APPS[methodLabel];
+
+        if (methodLabel === 'Pay using Gateway') {
+            paymentMode = 'PAY_PAGE';
+            targetApp = undefined;
+        } else if (Platform.OS === 'android' && sdkReady) {
+            try {
+                const appsJson = await PhonePePaymentSdk.getUpiAppsForAndroid();
+                if (appsJson && typeof appsJson === 'string') {
+                    const installedApps = JSON.parse(appsJson);
+                    const isInstalled = installedApps.some(a => a.packageName === targetApp);
+                    if (!isInstalled) {
+                        setLoading(false);
+                        setModal({
+                            icon: '⚠️',
+                            title: 'App Not Installed',
+                            message: `Please install ${methodLabel} to pay using that.`,
+                            buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                        });
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('[PhonePe] Could not fetch installed apps:', err);
+                // Proceed optimistically
+            }
+        }
+
         try {
             // Step 1: Create PhonePe order via backend (returns token + base64_payload)
             const { data } = await createSubscriptionOrder({
                 amount:               intentData.total_cost,  // INR
                 subscription_id_temp: intentData.subscription_id,
+                paymentMode,
+                targetApp,
             });
 
             const { transaction_id, base64_payload } = data;
@@ -349,6 +405,27 @@ export default function SubscriptionPaymentScreen() {
             {/* Footer: UPI + Pay Button */}
             <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
 
+                {/* Gateway Box */}
+                <TouchableOpacity
+                    style={styles.gatewayBtn}
+                    onPress={() => handlePay('Pay using Gateway')}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Feather name="credit-card" size={18} color="#7C3AED" />
+                        <Text style={styles.gatewayBtnText}>Pay using Gateway</Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color="#BEA3D8" />
+                </TouchableOpacity>
+
+                {/* OR Divider */}
+                <View style={styles.orDividerRow}>
+                    <View style={styles.orDividerLine} />
+                    <Text style={styles.orDividerText}>OR</Text>
+                    <View style={styles.orDividerLine} />
+                </View>
+
                 {/* UPI Apps Strip */}
                 <View style={styles.upiStrip}>
                     <Text style={styles.upiStripLabel}>Pay directly using</Text>
@@ -358,17 +435,16 @@ export default function SubscriptionPaymentScreen() {
                             { label: 'GPay', icon: 'smartphone' },
                             { label: 'Paytm', icon: 'smartphone' },
                             { label: 'BHIM', icon: 'smartphone' },
-                            { label: 'UPI QR', icon: 'camera' },
                         ].map((app) => (
                             <TouchableOpacity
                                 key={app.label}
-                                style={[styles.upiAppBtn, app.label === 'PhonePe' && styles.upiAppBtnActive]}
-                                onPress={handlePay}
+                                style={[styles.upiAppBtn, app.label === selectedApp && styles.upiAppBtnActive]}
+                                onPress={() => setSelectedApp(app.label)}
                                 disabled={loading}
                                 activeOpacity={0.75}
                             >
-                                <Feather name={app.icon} size={20} color={app.label === 'PhonePe' ? '#5A2D82' : '#BEA3D8'} style={{ marginBottom: 2 }} />
-                                <Text style={[styles.upiAppLabel, app.label === 'PhonePe' && styles.upiAppLabelActive]}>{app.label}</Text>
+                                <Feather name={app.icon} size={20} color={app.label === selectedApp ? '#5A2D82' : '#BEA3D8'} style={{ marginBottom: 2 }} />
+                                <Text style={[styles.upiAppLabel, app.label === selectedApp && styles.upiAppLabelActive]}>{app.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -376,14 +452,27 @@ export default function SubscriptionPaymentScreen() {
 
                 {/* Main Pay Button */}
                 <TouchableOpacity
-                    style={[styles.submitBtn, loading && { opacity: 0.7 }]}
-                    onPress={handlePay}
-                    disabled={loading}
+                    style={[styles.submitBtn, (loading || !selectedApp) && { opacity: 0.7 }]}
+                    onPress={() => {
+                        if (!selectedApp) {
+                            setModal({
+                                icon: '⚠️',
+                                title: 'Select Payment Method',
+                                message: 'Please select an app from above to continue.',
+                                buttons: [{ text: 'OK', onPress: () => setModal(null) }],
+                            });
+                            return;
+                        }
+                        handlePay(selectedApp);
+                    }}
+                    disabled={loading || !selectedApp}
                     activeOpacity={0.88}
                 >
                     {loading
                         ? <ActivityIndicator color="#FFFFFF" />
-                        : <Text style={styles.submitText}>Pay ₹{intentData ? intentData.total_cost : (sub.price || 364)} — Open PhonePe</Text>
+                        : <Text style={styles.submitText}>
+                            {selectedApp ? `Pay ₹${intentData ? intentData.total_cost : (sub.price || 364)} — Open ${selectedApp}` : `Pay ₹${intentData ? intentData.total_cost : (sub.price || 364)}`}
+                          </Text>
                     }
                 </TouchableOpacity>
 
@@ -477,9 +566,43 @@ const styles = StyleSheet.create({
     },
 
     // UPI app strip
+    gatewayBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 4,
+    },
+    gatewayBtnText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1E1B2E',
+    },
+    orDividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        paddingVertical: 8,
+    },
+    orDividerLine: {
+        height: 1,
+        backgroundColor: '#E2E8F0',
+        flex: 1,
+    },
+    orDividerText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#94A3B8',
+    },
     upiStrip: {
         alignItems: 'center',
         gap: 8,
+        marginBottom: 8,
     },
     upiStripLabel: {
         fontSize: 11,

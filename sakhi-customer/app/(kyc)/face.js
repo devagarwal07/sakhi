@@ -12,11 +12,30 @@ import { verifyFacePhoto } from '../../src/api/endpoints';
 import { useAuth } from '../../src/context/AuthContext';
 import SakhiModal from '../../src/components/SakhiModal';
 
-// Retry messages per reason code
-const RETRY_MESSAGES = {
-    no_face_detected:   "No face detected. Make sure your face is clearly visible within the frame.",
-    multiple_faces:     "Multiple faces detected. Please ensure only your face is in frame.",
-    gender_low_confidence: "We couldn't confirm your identity clearly. Try better lighting and keep your face centred.",
+// Removed hardcoded RETRY_MESSAGES mapping. We now rely on the API response.
+
+const ProgressBar = ({ progressAnim }) => {
+    const [pct, setPct] = useState(0);
+    useEffect(() => {
+        const id = progressAnim.addListener((v) => setPct(Math.round(v.value)));
+        return () => progressAnim.removeListener(id);
+    }, [progressAnim]);
+    
+    const progressWidth = progressAnim.interpolate({
+        inputRange: [0, 100],
+        outputRange: ['0%', '100%']
+    });
+
+    return (
+        <View style={styles.progressSection}>
+            <View style={styles.progressLabelRow}>
+                <Text style={styles.progressPercent}>{pct}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+                <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+            </View>
+        </View>
+    );
 };
 
 export default function FaceVerificationScreen() {
@@ -25,12 +44,11 @@ export default function FaceVerificationScreen() {
     const [permission, requestPermission] = useCameraPermissions();
 
     const [scanning, setScanning]     = useState(false);  // true while capturing + waiting for AWS
-    const [scanProgress, setScanProgress] = useState(0);
     const [modal, setModal]           = useState(null);
     const [statusMsg, setStatusMsg]   = useState('');      // live status text during scan
 
     const cameraRef    = useRef(null);
-    const progressRef  = useRef(null);                     // interval ref for progress animation
+    const progressAnim = useRef(new Animated.Value(0)).current;
     const scanLineAnim = useRef(new Animated.Value(0)).current;
 
     const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -50,24 +68,25 @@ export default function FaceVerificationScreen() {
 
     // ── Animated progress bar during scanning ─────────────────────────────
     const startProgressAnimation = () => {
-        setScanProgress(0);
-        let p = 0;
-        progressRef.current = setInterval(() => {
-            p += 1;
-            // Slow to 90 and wait — final 10% only after backend responds
-            if (p <= 90) setScanProgress(p);
-            else clearInterval(progressRef.current);
-        }, 40);
+        progressAnim.setValue(0);
+        Animated.timing(progressAnim, {
+            toValue: 90,
+            duration: 3600,
+            useNativeDriver: false,
+        }).start();
     };
 
     const finishProgress = () => {
-        clearInterval(progressRef.current);
-        setScanProgress(100);
+        Animated.timing(progressAnim, {
+            toValue: 100,
+            duration: 300,
+            useNativeDriver: false,
+        }).start();
     };
 
     const resetProgress = () => {
-        clearInterval(progressRef.current);
-        setScanProgress(0);
+        progressAnim.stopAnimation();
+        progressAnim.setValue(0);
     };
 
     // ── Layout calculations ────────────────────────────────────────────────
@@ -192,8 +211,8 @@ export default function FaceVerificationScreen() {
             resetProgress();
             setScanning(false);
             setStatusMsg('');
-            const reason  = data?.reason ?? 'unknown';
-            const message = RETRY_MESSAGES[reason] ?? 'Please try again with better lighting and your face centred in the frame.';
+            // Backend should return a message or we use a fallback
+            const message = data?.message ?? data?.error?.message ?? 'Please try again with better lighting and your face centred in the frame.';
             setModal({
                 icon: '🔄',
                 title: 'Try again',
@@ -317,14 +336,7 @@ export default function FaceVerificationScreen() {
             {/* Bottom controls */}
             <View style={[styles.bottomControls, { paddingBottom: bottomCtrlPaddingBottom }]}>
                 {/* Progress bar */}
-                <View style={styles.progressSection}>
-                    <View style={styles.progressLabelRow}>
-                        <Text style={styles.progressPercent}>{scanProgress}%</Text>
-                    </View>
-                    <View style={styles.progressTrack}>
-                        <Animated.View style={[styles.progressFill, { width: `${scanProgress}%` }]} />
-                    </View>
-                </View>
+                <ProgressBar progressAnim={progressAnim} />
 
                 {/* Shutter / Play button — centered */}
                 <View style={styles.controlsRow}>

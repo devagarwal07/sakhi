@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { deleteAccount } from '../../src/api/endpoints';
 import SakhiModal from '../../src/components/SakhiModal';
 import LogoutBottomSheet from '../../src/components/LogoutBottomSheet';
 import Svg, { Path } from 'react-native-svg';
@@ -14,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { user, logout } = useAuth();
+    const { user, logout, deleteUserAccount } = useAuth();
     const [modal, setModal] = useState(null);
     const [showLogoutSheet, setShowLogoutSheet] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -29,8 +28,7 @@ export default function ProfileScreen() {
         if (isDeleting) return;
         setIsDeleting(true);
         try {
-            await deleteAccount();
-            await logout();
+            await deleteUserAccount();
             router.replace('/(auth)/login');
         } catch (err) {
             const message = err?.response?.data?.error?.message || 'Unable to delete your account right now. Please try again.';

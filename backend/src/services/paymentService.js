@@ -76,7 +76,7 @@ async function getAuthToken() {
  * @param {object} [userInfo]             Optional: { phone, name, userId }
  * @returns {{ transaction_id, order_id, token, amount_paise, expires_at }}
  */
-async function createOrder(amountInr, merchantOrderId, _callbackUrl, userInfo = {}) {
+async function createOrder(amountInr, merchantOrderId, _callbackUrl, userInfo = {}, paymentModeOptions = {}) {
   try {
     const token = await getAuthToken();
 
@@ -111,13 +111,17 @@ async function createOrder(amountInr, merchantOrderId, _callbackUrl, userInfo = 
       throw new AppError('Failed to create payment order. Please try again.', 502, 'PAYMENT_ORDER_FAILED');
     }
 
+    const pMode = paymentModeOptions?.type === 'UPI_INTENT'
+      ? { type: 'UPI_INTENT', targetApp: paymentModeOptions.targetApp }
+      : { type: 'PAY_PAGE' };
+
     // Build the SDK payload (JSON stringified) for react-native-phonepe-pg startTransaction()
     // Per docs: { orderId, merchantId (clientId), token, paymentMode: { type: 'PAY_PAGE' } }
     const sdkPayload = JSON.stringify({
       orderId:     data.orderId,
       merchantId:  PHONEPE_CLIENT_ID,
       token:       data.token,
-      paymentMode: { type: 'PAY_PAGE' },
+      paymentMode: pMode,
     });
     const base64SdkPayload = Buffer.from(sdkPayload).toString('base64');
 
