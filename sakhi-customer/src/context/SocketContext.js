@@ -24,7 +24,14 @@ export function SocketProvider({ children }) {
         }
 
         const connectSocket = async () => {
-            const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            let token = null;
+            try {
+                token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            } catch (e) {
+                if (!e.message?.includes('User interaction is not allowed')) {
+                    console.error('[Socket] Error reading token:', e);
+                }
+            }
             if (!token) return;
 
             // ── Connect to /rides namespace — matches backend socket server ──

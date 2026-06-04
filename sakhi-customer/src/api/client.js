@@ -42,7 +42,9 @@ apiClient.interceptors.request.use(
                 }
             }
         } catch (e) {
-            console.error('[API Client] Error reading token from SecureStore:', e);
+            if (!e.message?.includes('User interaction is not allowed')) {
+                console.error('[API Client] Error reading token from SecureStore:', e);
+            }
         }
         return config;
     },

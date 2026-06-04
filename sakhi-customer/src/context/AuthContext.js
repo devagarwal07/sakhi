@@ -20,7 +20,14 @@ export function AuthProvider({ children }) {
 
         try {
             // ── Step 1: Check local token (~50ms, instant) ──────────────────
-            const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            let token = null;
+            try {
+                token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            } catch (e) {
+                if (!e.message?.includes('User interaction is not allowed')) {
+                    console.error('[Auth] Error reading local token:', e);
+                }
+            }
             if (!token) {
                 setIsAuthenticated(false);
                 setUser(null);
@@ -112,8 +119,9 @@ export function AuthProvider({ children }) {
             throw new Error('Login failed: invalid refresh token from server');
         }
 
-        await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+        const options = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+        await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken, options);
+        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, options);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)).catch(() => {});
 
         setUser(userData);
