@@ -8,7 +8,7 @@ import {
   Animated,
   DeviceEventEmitter,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 
 export default function GlobalErrorModal() {
   const [visible, setVisible] = useState(false);
@@ -19,41 +19,85 @@ export default function GlobalErrorModal() {
     options: {},
   });
 
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(20)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const triggerShake = () => {
+    shakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 12, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -12, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  };
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('SHOW_CUSTOM_ALERT', (alertConfig) => {
       setConfig(alertConfig);
       setVisible(true);
 
+      // Reset animation values
+      scaleAnim.setValue(0.95);
+      opacityAnim.setValue(0);
+      translateYAnim.setValue(20);
+      shakeAnim.setValue(0);
+
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
-          tension: 65,
-          friction: 7,
+          tension: 70,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 220,
           useNativeDriver: true,
         }),
-      ]).start();
+        Animated.spring(translateYAnim, {
+          toValue: 0,
+          tension: 70,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Trigger shake if it's an error or invalid entry modal
+        const lowerTitle = alertConfig.title?.toLowerCase() || '';
+        const isErrorAlert = lowerTitle.includes('error') || 
+                             lowerTitle.includes('fail') || 
+                             lowerTitle.includes('invalid') || 
+                             lowerTitle.includes('wrong') || 
+                             lowerTitle.includes('incorrect') ||
+                             lowerTitle.includes('denied');
+        if (isErrorAlert) {
+          triggerShake();
+        }
+      });
     });
 
     return () => subscription.remove();
-  }, [scaleAnim, opacityAnim]);
+  }, [scaleAnim, opacityAnim, translateYAnim]);
 
   const closeModal = (onPress) => {
     Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 0.9,
+        toValue: 0.95,
         duration: 150,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: 15,
         duration: 150,
         useNativeDriver: true,
       }),
@@ -67,10 +111,38 @@ export default function GlobalErrorModal() {
 
   if (!visible) return null;
 
-  const isError = config.title?.toLowerCase().includes('error') || 
-                  config.title?.toLowerCase().includes('fail');
-  const iconName = isError ? 'error-outline' : 'info-outline';
-  const iconColor = isError ? '#EF4444' : '#7C3AED';
+  const lowerTitle = config.title?.toLowerCase() || '';
+  
+  let iconName = 'info';
+  let iconColor = '#7C3AED'; // default violet
+  let iconBg = '#F5F3FF';
+  
+  if (lowerTitle.includes('error') || 
+      lowerTitle.includes('fail') || 
+      lowerTitle.includes('invalid') || 
+      lowerTitle.includes('wrong') || 
+      lowerTitle.includes('incorrect') ||
+      lowerTitle.includes('denied')) {
+    iconName = 'x-circle';
+    iconColor = '#EF4444'; // Red
+    iconBg = '#FEF2F2';
+  } else if (lowerTitle.includes('warning') || 
+             lowerTitle.includes('incomplete') || 
+             lowerTitle.includes('alert') ||
+             lowerTitle.includes('caution') ||
+             lowerTitle.includes('attention')) {
+    iconName = 'alert-triangle';
+    iconColor = '#F59E0B'; // Amber
+    iconBg = '#FFFBEB';
+  } else if (lowerTitle.includes('success') || 
+             lowerTitle.includes('verified') || 
+             lowerTitle.includes('complete') ||
+             lowerTitle.includes('confirm') ||
+             lowerTitle.includes('saved')) {
+    iconName = 'check-circle';
+    iconColor = '#10B981'; // Emerald
+    iconBg = '#F0FDF4';
+  }
 
   return (
     <Modal
@@ -87,11 +159,18 @@ export default function GlobalErrorModal() {
         <Animated.View
           style={[
             styles.modalContainer,
-            { opacity: opacityAnim, transform: [{ scale: scaleAnim }] },
+            { 
+              opacity: opacityAnim, 
+              transform: [
+                { scale: scaleAnim }, 
+                { translateY: translateYAnim },
+                { translateX: shakeAnim }
+              ] 
+            },
           ]}
         >
-          <View style={[styles.iconContainer, { backgroundColor: isError ? '#FEF2F2' : '#F5F3FF' }]}>
-            <MaterialIcons name={iconName} size={32} color={iconColor} />
+          <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
+            <Feather name={iconName} size={30} color={iconColor} />
           </View>
 
           <Text style={styles.title}>{config.title}</Text>
@@ -102,19 +181,21 @@ export default function GlobalErrorModal() {
               const isDestructive = btn.style === 'destructive';
               const isCancel = btn.style === 'cancel';
               
-              let buttonStyle = styles.primaryButton;
-              let textStyle = styles.primaryButtonText;
+              let buttonStyle = [styles.primaryButton];
+              let textStyle = [styles.primaryButtonText];
 
               if (isCancel) {
-                buttonStyle = styles.cancelButton;
-                textStyle = styles.cancelButtonText;
+                buttonStyle.push(styles.cancelButton);
+                textStyle.push(styles.cancelButtonText);
               } else if (isDestructive) {
-                buttonStyle = styles.destructiveButton;
-                textStyle = styles.destructiveButtonText;
+                buttonStyle.push(styles.destructiveButton);
+                textStyle.push(styles.destructiveButtonText);
+              } else {
+                // Style primary button to match the alert context color
+                buttonStyle.push({ backgroundColor: iconColor });
               }
 
-              // If there's only one button, make it span full width.
-              // If two buttons, put them side by side.
+              // Determine width based on button count
               const btnWidth = config.buttons.length === 1 ? '100%' : '48%';
 
               return (

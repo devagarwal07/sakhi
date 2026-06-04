@@ -25,7 +25,7 @@ import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
-import { requestOverlayPermission, requestBatteryOptimizationExemption } from '../../services/notificationService';
+import { requestOverlayPermission } from '../../services/notificationService';
 import CustomAlert from '../../utils/CustomAlert';
 import { useServerWarmup } from '../../hooks/useServerWarmup';
 
@@ -460,12 +460,13 @@ export default function DriverHomeScreen({ navigation }) {
   useEffect(() => {
     setIsOnline(driver?.is_online ?? false);
     if (driver?.is_online) {
-      startLocationTracking('Sakhi Driver', 'Searching for nearby rides...');
-      // Ask for "Display over other apps" permission — shown once, naturally
-      // timed to when the driver first goes online and needs ride popups.
-      requestOverlayPermission();
-      // Prompt to disable battery optimization to prevent background app sleep
-      requestBatteryOptimizationExemption();
+      // Safely start location tracking
+      startLocationTracking('Sakhi Driver', 'Searching for nearby rides...')
+        .catch(err => console.warn('[Location] Failed to start location tracking:', err));
+
+      // Safely request overlay permissions
+      requestOverlayPermission()
+        .catch(err => console.warn('[Overlay] Failed to request overlay permission:', err));
     }
   }, [driver?.is_online]);
 

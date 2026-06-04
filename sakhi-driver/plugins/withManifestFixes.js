@@ -50,15 +50,46 @@ function withManifestFixes(config) {
     }
 
     // ── Fix 3: Ensure Foreground Service Location type is declared for LocationTaskService ──
-    if (application.service) {
-      for (const service of application.service) {
-        const name = service.$['android:name'];
-        if (name && name.includes('LocationTaskService')) {
-          service.$['android:foregroundServiceType'] = 'location';
-          console.log(`Ensured foregroundServiceType="location" on ${name}`);
-        }
-      }
+    if (!application.service) {
+      application.service = [];
     }
+
+    let locationService = application.service.find(s => 
+      s.$['android:name'] === 'expo.modules.location.services.LocationTaskService'
+    );
+
+    if (!locationService) {
+      locationService = {
+        $: {
+          'android:name': 'expo.modules.location.services.LocationTaskService',
+          'android:exported': 'false',
+        }
+      };
+      application.service.push(locationService);
+      console.log('Injected missing LocationTaskService into application services');
+    }
+
+    locationService.$['android:foregroundServiceType'] = 'location';
+    console.log('Ensured foregroundServiceType="location" on LocationTaskService');
+
+    // ── Fix 4: Ensure Foreground Service Location type is declared for NotifeeForegroundService ──
+    let notifeeService = application.service.find(s => 
+      s.$['android:name'] === 'io.invertase.notifee.NotifeeForegroundService'
+    );
+
+    if (!notifeeService) {
+      notifeeService = {
+        $: {
+          'android:name': 'io.invertase.notifee.NotifeeForegroundService',
+          'android:exported': 'false',
+        }
+      };
+      application.service.push(notifeeService);
+      console.log('Injected missing NotifeeForegroundService into application services');
+    }
+
+    notifeeService.$['android:foregroundServiceType'] = 'location';
+    console.log('Ensured foregroundServiceType="location" on NotifeeForegroundService');
 
     return config;
   });

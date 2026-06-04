@@ -47,22 +47,39 @@ export async function requestLocationPermissions() {
  * Start background location tracking with a dynamic notification message.
  */
 export async function startLocationTracking(title = 'Sakhi Driver', body = 'Sharing location while online') {
-  const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
-  if (running) {
-    // Stop and restart to update the notification text
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+  try {
+    const { status: fg } = await Location.getForegroundPermissionsAsync();
+    if (fg !== 'granted') {
+      console.warn('[LocationTask] Foreground location permission not granted');
+      return;
+    }
+
+    const { status: bg } = await Location.getBackgroundPermissionsAsync();
+    if (bg !== 'granted') {
+      console.warn('[LocationTask] Background location permission not granted');
+      return;
+    }
+
+    const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
+    if (running) {
+      // Stop and restart to update the notification text
+      await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+    }
+    await Location.startLocationUpdatesAsync(LOCATION_TASK, {
+      accuracy: Location.Accuracy.High,
+      timeInterval: 10000,       // every 10 seconds
+      distanceInterval: 30,      // or every 30 metres
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: title,
+        notificationBody: body,
+        notificationColor: '#BEA3D8',
+      },
+    });
+    console.log('[LocationTask] Background location tracking started successfully.');
+  } catch (err) {
+    console.error('[LocationTask] Failed to start location tracking:', err?.message);
   }
-  await Location.startLocationUpdatesAsync(LOCATION_TASK, {
-    accuracy: Location.Accuracy.High,
-    timeInterval: 10000,       // every 10 seconds
-    distanceInterval: 30,      // or every 30 metres
-    showsBackgroundLocationIndicator: true,
-    foregroundService: {
-      notificationTitle: title,
-      notificationBody: body,
-      notificationColor: '#BEA3D8',
-    },
-  });
 }
 
 /**
