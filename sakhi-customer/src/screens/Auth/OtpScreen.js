@@ -130,7 +130,7 @@ export default function OtpScreen() {
                 err?.response?.data?.message ||
                 err?.message ||
                 'Invalid OTP. Please try again.';
-            CustomAlert.alert('Verification Failed', `${msg}\n\nAPI: ${API_BASE_URL}`);
+            CustomAlert.alert('Verification Failed', msg);
             setOtp(Array(OTP_LENGTH).fill(''));
             inputRefs.current[0]?.focus();
         } finally {

@@ -61,7 +61,7 @@ export default function ChangePhoneScreen() {
             setModal({
                 icon: '⚠️',
                 title: 'Error',
-                message: err?.response?.data?.message || 'Could not send OTP. Try again.',
+                message: err?.response?.data?.error?.message || err?.response?.data?.message || 'Could not send OTP. Try again.',
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]
             });
         } finally {
@@ -99,7 +99,7 @@ export default function ChangePhoneScreen() {
             setModal({
                 icon: '⚠️',
                 title: 'Incorrect OTP',
-                message: err?.response?.data?.message || 'The code you entered is wrong. Try again.',
+                message: err?.response?.data?.error?.message || err?.response?.data?.message || 'The code you entered is wrong. Try again.',
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]
             });
             setOtp(Array(OTP_LENGTH).fill(''));
@@ -123,7 +123,7 @@ export default function ChangePhoneScreen() {
             setModal({
                 icon: '🔄',
                 title: 'Error',
-                message: err?.response?.data?.message || 'Could not resend OTP. Please try again.',
+                message: err?.response?.data?.error?.message || err?.response?.data?.message || 'Could not resend OTP. Please try again.',
                 buttons: [{ text: 'OK', onPress: () => setModal(null) }]
             });
         } finally { 
