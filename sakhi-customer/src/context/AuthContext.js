@@ -64,16 +64,27 @@ export function AuthProvider({ children }) {
                     setIsLoading(false);
                 }
             } catch (profileErr) {
-                console.warn('[AuthContext] Background profile sync failed:', profileErr?.message);
+                const httpStatus = profileErr?.response?.status;
+                const isAuthRejection = httpStatus === 401 || httpStatus === 403;
+
+                console.warn('[AuthContext] Background profile sync failed:', profileErr?.message, '| status:', httpStatus);
+
                 if (!cachedUser) {
-                    // No cache and backend sync failed (network error, timeout, etc.)
-                    // Force logout to avoid routing user to wrong screens (like KYC face screen)
-                    await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-                    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-                    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
-                    setIsAuthenticated(false);
-                    setUser(null);
-                    setIsLoading(false);
+                    if (isAuthRejection) {
+                        // Backend explicitly rejected the session — token is dead. Force logout.
+                        await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+                        await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+                        await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+                        setIsAuthenticated(false);
+                        setUser(null);
+                        setIsLoading(false);
+                    } else {
+                        // Network error / timeout / server error — tokens are likely still valid.
+                        // Don't log the user out. Show them as authenticated so they can retry.
+                        // The token will be refreshed automatically on the next API call.
+                        setIsAuthenticated(true);
+                        setIsLoading(false);
+                    }
                 }
             }
 

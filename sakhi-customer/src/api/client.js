@@ -88,7 +88,6 @@ apiClient.interceptors.response.use(
 
         if (
             error.response?.status === 401 &&
-            (error.response?.data?.code === 'TOKEN_EXPIRED' || error.response?.data?.error?.code === 'TOKEN_EXPIRED') &&
             !originalRequest._retry
         ) {
             if (isRefreshing) {
@@ -145,9 +144,13 @@ apiClient.interceptors.response.use(
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
-                // Clear tokens — AuthContext listener will handle logout navigation
-                await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-                await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+                // Clear ALL local auth state — AuthContext listener will handle logout navigation
+                await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
+                await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+                try {
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+                } catch (_) {}
                 // Notify the app to log the user out and redirect to login
                 DeviceEventEmitter.emit('SESSION_EXPIRED');
                 return Promise.reject(refreshError);
