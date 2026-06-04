@@ -17,7 +17,7 @@ import { Feather } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 // PhonePe Production environment
-const PHONEPE_ENV       = 'PRODUCTION';
+const PHONEPE_ENV = 'PRODUCTION';
 const PHONEPE_CLIENT_ID = 'SU2605301736448889015067'; // used as merchantId in SDK init
 
 export default function SubscriptionPaymentScreen() {
@@ -99,7 +99,7 @@ export default function SubscriptionPaymentScreen() {
                     // Hermes engine fails on new Date("Jun 03, 2026"), so parse manually
                     const parts = dateStr.replace(',', '').split(' ');
                     if (parts.length === 3) {
-                        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                         const mIndex = months.indexOf(parts[0]);
                         if (mIndex !== -1) {
                             const y = parts[2];
@@ -112,25 +112,25 @@ export default function SubscriptionPaymentScreen() {
                 };
 
                 const payload = {
-                    pickup_lat:          parseFloat(ride?.pickup?.latitude),
-                    pickup_lng:          parseFloat(ride?.pickup?.longitude),
-                    pickup_address:      ride?.pickup?.address,
-                    drop_lat:            parseFloat(ride?.dropoff?.latitude),
-                    drop_lng:            parseFloat(ride?.dropoff?.longitude),
-                    drop_address:        ride?.dropoff?.address,
-                    pickup_time:         formatTime24(sub.morningTime),
-                    return_pickup_time:  sub.isTwoWay ? formatTime24(sub.returnTime) : undefined,
-                    start_date:          formatDateYMD(sub.startDate),
-                    plan_rides:          parseInt(sub.plan),
-                    days_of_week:        (sub.days || []).map(d => dayToInt[d]).filter(v => v !== undefined),
-                    is_two_way:          !!sub.isTwoWay,
+                    pickup_lat: parseFloat(ride?.pickup?.latitude),
+                    pickup_lng: parseFloat(ride?.pickup?.longitude),
+                    pickup_address: ride?.pickup?.address,
+                    drop_lat: parseFloat(ride?.dropoff?.latitude),
+                    drop_lng: parseFloat(ride?.dropoff?.longitude),
+                    drop_address: ride?.dropoff?.address,
+                    pickup_time: formatTime24(sub.morningTime),
+                    return_pickup_time: sub.isTwoWay ? formatTime24(sub.returnTime) : undefined,
+                    start_date: formatDateYMD(sub.startDate),
+                    plan_rides: parseInt(sub.plan),
+                    days_of_week: (sub.days || []).map(d => dayToInt[d]).filter(v => v !== undefined),
+                    is_two_way: !!sub.isTwoWay,
                 };
 
                 const { data } = await apiClient.post('/subscriptions/intent', payload);
                 setIntentData(data);
             } catch (err) {
                 let msg = err?.response?.data?.error?.message || err?.message || 'Could not fetch ride estimate.';
-                
+
                 // If there are detailed validation errors from Zod, append them so we can see what's wrong!
                 const details = err?.response?.data?.error?.details;
                 if (details && details.fieldErrors) {
@@ -210,7 +210,7 @@ export default function SubscriptionPaymentScreen() {
         try {
             // Step 1: Create PhonePe order via backend (returns token + base64_payload)
             const { data } = await createSubscriptionOrder({
-                amount:               intentData.total_cost,  // INR
+                amount: intentData.total_cost,  // INR
                 subscription_id_temp: intentData.subscription_id,
                 paymentMode,
                 targetApp,
@@ -332,7 +332,7 @@ export default function SubscriptionPaymentScreen() {
                     <View style={styles.driverBanner}>
                         <Feather name="shield" size={18} color="#16a34a" />
                         <Text style={styles.driverBannerText}>
-                            Dedicated Sakhi: <Text style={{fontWeight: '700'}}>{intentData.driver_info.name}</Text> is assigned to your schedule.
+                            Dedicated Sakhi: <Text style={{ fontWeight: '700' }}>{intentData.driver_info.name}</Text> is assigned to your schedule.
                         </Text>
                     </View>
                 ) : (
@@ -407,16 +407,16 @@ export default function SubscriptionPaymentScreen() {
 
                 {/* Gateway Box */}
                 <TouchableOpacity
-                    style={styles.gatewayBtn}
-                    onPress={() => handlePay('Pay using Gateway')}
+                    style={[styles.gatewayBtn, selectedApp === 'Pay using Gateway' && styles.gatewayBtnActive]}
+                    onPress={() => setSelectedApp('Pay using Gateway')}
                     disabled={loading}
                     activeOpacity={0.85}
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Feather name="credit-card" size={18} color="#7C3AED" />
-                        <Text style={styles.gatewayBtnText}>Pay using Gateway</Text>
+                        <Feather name="credit-card" size={18} color={selectedApp === 'Pay using Gateway' ? '#BEA3D8' : '#94A3B8'} />
+                        <Text style={[styles.gatewayBtnText, selectedApp === 'Pay using Gateway' && styles.gatewayBtnTextActive]}>Pay using Gateway</Text>
                     </View>
-                    <Feather name="chevron-right" size={18} color="#BEA3D8" />
+                    <Feather name="chevron-right" size={18} color={selectedApp === 'Pay using Gateway' ? '#BEA3D8' : '#E2E8F0'} />
                 </TouchableOpacity>
 
                 {/* OR Divider */}
@@ -443,7 +443,7 @@ export default function SubscriptionPaymentScreen() {
                                 disabled={loading}
                                 activeOpacity={0.75}
                             >
-                                <Feather name={app.icon} size={20} color={app.label === selectedApp ? '#5A2D82' : '#BEA3D8'} style={{ marginBottom: 2 }} />
+                                <Feather name={app.icon} size={20} color={app.label === selectedApp ? '#BEA3D8' : '#94A3B8'} style={{ marginBottom: 2 }} />
                                 <Text style={[styles.upiAppLabel, app.label === selectedApp && styles.upiAppLabelActive]}>{app.label}</Text>
                             </TouchableOpacity>
                         ))}
@@ -472,7 +472,7 @@ export default function SubscriptionPaymentScreen() {
                         ? <ActivityIndicator color="#FFFFFF" />
                         : <Text style={styles.submitText}>
                             {selectedApp ? `Pay ₹${intentData ? intentData.total_cost : (sub.price || 364)} — Open ${selectedApp}` : `Pay ₹${intentData ? intentData.total_cost : (sub.price || 364)}`}
-                          </Text>
+                        </Text>
                     }
                 </TouchableOpacity>
 
@@ -577,10 +577,18 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 4,
     },
+    gatewayBtnActive: {
+        backgroundColor: '#F3E8FF',
+        borderColor: '#BEA3D8',
+        borderWidth: 1.5,
+    },
     gatewayBtnText: {
         fontSize: 14,
         fontWeight: '600',
         color: '#1E1B2E',
+    },
+    gatewayBtnTextActive: {
+        color: '#BEA3D8',
     },
     orDividerRow: {
         flexDirection: 'row',
@@ -633,16 +641,16 @@ const styles = StyleSheet.create({
     upiAppBtnActive: {
         backgroundColor: '#F3E8FF',
         borderWidth: 1.5,
-        borderColor: '#5A2D82',
+        borderColor: '#BEA3D8',
     },
     upiAppEmoji: { fontSize: 20 },
     upiAppLabel: { fontSize: 9, fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
-    upiAppLabelActive: { color: '#5A2D82' },
+    upiAppLabelActive: { color: '#BEA3D8' },
 
     submitBtn: {
-        width: '100%', height: 56, backgroundColor: '#5A2D82', borderRadius: 12,
+        width: '100%', height: 56, backgroundColor: '#BEA3D8', borderRadius: 12,
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: 'rgba(90, 45, 130, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.25, shadowRadius: 32, elevation: 8,
+        shadowColor: 'rgba(190, 163, 216, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.25, shadowRadius: 32, elevation: 8,
     },
     submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 
