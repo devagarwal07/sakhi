@@ -23,8 +23,8 @@ function handleError(err, res, next) {
 // ── POST /safety/sos ──────────────────────────────────────────────────────────
 const sosSchema = z.object({
   ride_id: z.string().uuid().optional(),
-  lat:     z.number().min(-90).max(90),
-  lng:     z.number().min(-180).max(180),
+  lat:     z.number().min(-90).max(90).optional().nullable(),
+  lng:     z.number().min(-180).max(180).optional().nullable(),
 });
 
 async function triggerSOS(req, res, next) {
@@ -455,8 +455,8 @@ async function initiateCall(req, res, next) {
 // ── POST /safety/battery-low ──────────────────────────────────────────────────
 const batterySchema = z.object({
   level: z.number().int().min(0).max(100),
-  lat:   z.number().min(-90).max(90),
-  lng:   z.number().min(-180).max(180),
+  lat:   z.number().min(-90).max(90).optional().nullable(),
+  lng:   z.number().min(-180).max(180).optional().nullable(),
 });
 
 async function batteryLow(req, res, next) {

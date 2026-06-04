@@ -36,12 +36,13 @@ export function SocketProvider({ children }) {
                 reconnectionDelay: 2000,
             });
 
+            // Register any listeners that were added before socket was initialized
+            Object.entries(listenersRef.current).forEach(([event, handlers]) => {
+                handlers.forEach((handler) => socket.on(event, handler));
+            });
+
             socket.on('connect', () => {
                 setIsConnected(true);
-                // Re-register any listeners that were added before reconnect
-                Object.entries(listenersRef.current).forEach(([event, handlers]) => {
-                    handlers.forEach((handler) => socket.on(event, handler));
-                });
             });
 
             socket.on('disconnect', (reason) => {

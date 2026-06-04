@@ -67,7 +67,9 @@ export const verifyRidePayment = (rideId, transactionId) => apiClient.post(`/rid
 // ── Safety ─────────────────────────────────────────────────────────────────────────────
 // Backend sosSchema: { ride_id?, lat (number), lng (number) } — flat, NOT nested
 export const triggerSOS = ({ lat, lng, ride_id } = {}) => {
-    const body = { lat: lat ?? 0, lng: lng ?? 0 };
+    const body = {};
+    if (lat !== undefined && lat !== 0) body.lat = lat;
+    if (lng !== undefined && lng !== 0) body.lng = lng;
     if (ride_id) body.ride_id = ride_id;
     return apiClient.post('/safety/sos', body);
 };
@@ -84,12 +86,12 @@ export const updateEmergencyContact = (id, data) => apiClient.put(`/safety/emerg
 export const deleteEmergencyContact = (id) => apiClient.delete(`/safety/emergency-contacts/${id}`);
 
 // Backend batterySchema: { level (int 0-100), lat, lng } — NOT { location, batteryLevel }
-export const sendBatteryAlert = ({ lat, lng } = {}, batteryLevel = 0) =>
-    apiClient.post('/safety/battery-alert', {
-        level: Math.round(batteryLevel),
-        lat: lat ?? 0,
-        lng: lng ?? 0,
-    });
+export const sendBatteryAlert = ({ lat, lng } = {}, batteryLevel = 0) => {
+    const body = { level: Math.round(batteryLevel) };
+    if (lat !== undefined && lat !== 0) body.lat = lat;
+    if (lng !== undefined && lng !== 0) body.lng = lng;
+    return apiClient.post('/safety/battery-alert', body);
+};
 
 
 // ── Wallet & Referrals ────────────────────────────────────────────────

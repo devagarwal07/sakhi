@@ -60,7 +60,7 @@ export default function SOSWarningScreen() {
         Vibration.vibrate([0, 500, 200, 500, 200, 500]);
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
-            let lat = 0, lng = 0;
+            let lat, lng;
             if (status === 'granted') {
                 try {
                     const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
