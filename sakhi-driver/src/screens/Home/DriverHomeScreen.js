@@ -552,8 +552,12 @@ export default function DriverHomeScreen({ navigation }) {
       await client.patch('/drivers/status', { is_online: false });
       updateDriver({ is_online: false });
       setIsOnline(false);
-      await stopLocationTracking();
-    } catch {
+      // Safely stop location tracking without crashing if it fails
+      stopLocationTracking().catch(err =>
+        console.warn('[Location] stopLocationTracking error:', err?.message)
+      );
+    } catch (err) {
+      console.warn('[GoOffline] error:', err?.message);
       CustomAlert.alert(t('common.error'), t('home.couldNotGoOffline'));
     } finally {
       setStatusLoading(false);
@@ -569,10 +573,15 @@ export default function DriverHomeScreen({ navigation }) {
       return;
     }
 
-    // If server is not yet confirmed ready, trigger warmup and wait
+    // Block toggle while server warmup is still in progress (null = pinging)
+    // or if warmup explicitly failed (false = unreachable)
+    if (serverReady === null) {
+      // Still pinging — do nothing, UI shows spinner
+      return;
+    }
     if (serverReady === false) {
       retryWarmup();
-      return; // warmupMsg will update; driver can tap again once ready
+      return;
     }
 
     try {
@@ -582,11 +591,15 @@ export default function DriverHomeScreen({ navigation }) {
       let currentCoords = location;
       if (!currentCoords) {
         try {
-          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 8000 });
+          const pos = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+            timeout: 5000,
+          });
           currentCoords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
           setLocation(currentCoords);
         } catch (gpsErr) {
-          // GPS unavailable — go online anyway
+          // GPS unavailable — proceed without coords
+          console.warn('[GoOnline] GPS unavailable:', gpsErr?.message);
         }
       }
 
@@ -596,32 +609,18 @@ export default function DriverHomeScreen({ navigation }) {
         body.lng = currentCoords.longitude;
       }
 
-      // Retry loop — handles residual cold start (server may still be waking)
-      const MAX_RETRIES = 3;
-      const RETRY_DELAY = 8000;
-      let lastErr;
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          await client.patch('/drivers/status', body);
-          lastErr = null;
-          break; // success
-        } catch (err) {
-          lastErr = err;
-          const status = err.response?.status;
-          const isNetworkOrGateway = !status || status === 502 || status === 503 || status === 504;
-          if (isNetworkOrGateway && attempt < MAX_RETRIES) {
-            // Server still cold — wait and retry
-            await new Promise(r => setTimeout(r, RETRY_DELAY));
-            continue;
-          }
-          throw err; // non-retryable error
-        }
-      }
-      if (lastErr) throw lastErr;
+      // Single attempt — no blocking retry loop.
+      // The server is already warmed up by useServerWarmup before the driver
+      // can tap Go Online, so a long retry loop is not needed and blocks the
+      // JS thread long enough to trigger Android ANR (app shutdown).
+      await client.patch('/drivers/status', body);
 
       updateDriver({ is_online: true });
       setIsOnline(true);
-      await startLocationTracking();
+
+      // Safely start location tracking — errors are caught internally
+      startLocationTracking('Sakhi Driver', 'Sharing location while online')
+        .catch(err => console.warn('[GoOnline] startLocationTracking:', err?.message));
 
       // Seed location immediately via socket
       if (socket?.connected && currentCoords) {
@@ -633,7 +632,9 @@ export default function DriverHomeScreen({ navigation }) {
         });
       }
     } catch (err) {
-      const msg = err.response?.data?.error?.message ?? t('home.couldNotGoOnline', 'Could not go online. Please try again.');
+      console.warn('[GoOnline] error:', err?.message, err?.response?.status);
+      const msg = err.response?.data?.error?.message
+        ?? t('home.couldNotGoOnline', 'Could not go online. Please try again.');
       CustomAlert.alert(t('common.error', 'Error'), msg);
     } finally {
       setStatusLoading(false);

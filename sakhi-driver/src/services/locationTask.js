@@ -86,6 +86,10 @@ export async function startLocationTracking(title = 'Sakhi Driver', body = 'Shar
  * Stop background location tracking.
  */
 export async function stopLocationTracking() {
-  const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
-  if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+  try {
+    const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
+    if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+  } catch (err) {
+    console.warn('[LocationTask] stopLocationTracking error:', err?.message);
+  }
 }

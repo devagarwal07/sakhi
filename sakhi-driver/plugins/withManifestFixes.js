@@ -88,8 +88,8 @@ function withManifestFixes(config) {
       console.log('Injected missing NotifeeForegroundService into application services');
     }
 
-    notifeeService.$['android:foregroundServiceType'] = 'location';
-    console.log('Ensured foregroundServiceType="location" on NotifeeForegroundService');
+    notifeeService.$['android:foregroundServiceType'] = 'dataSync';
+    console.log('Ensured foregroundServiceType="dataSync" on NotifeeForegroundService');
 
     return config;
   });

@@ -19,15 +19,39 @@ export function AuthProvider({ children }) {
         setIsLoading(true);
 
         try {
-            // ── Step 1: Check local token (~50ms, instant) ──────────────────
+        // ── Step 1: Check local token (~50ms, instant) ──────────────────
             let token = null;
+            let secureStoreUnavailable = false;
             try {
                 token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
             } catch (e) {
-                if (!e.message?.includes('User interaction is not allowed')) {
+                if (e.message?.includes('User interaction is not allowed')) {
+                    // Device is locked / booted before first unlock.
+                    // We cannot read the keychain yet — but this does NOT mean
+                    // the token is gone. Treat as a temporary unavailability:
+                    // keep the user authenticated so they aren't force-logged out.
+                    console.warn('[Auth] SecureStore locked (device not yet unlocked) — skipping logout');
+                    secureStoreUnavailable = true;
+                } else {
                     console.error('[Auth] Error reading local token:', e);
                 }
             }
+
+            if (secureStoreUnavailable) {
+                // Try cached user so home screen can show immediately;
+                // all API calls will still carry the token once device is unlocked.
+                const cachedUserStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA).catch(() => null);
+                if (cachedUserStr) {
+                    try {
+                        const cachedUser = JSON.parse(cachedUserStr);
+                        setUser(cachedUser);
+                        setIsAuthenticated(true);
+                    } catch (_) {}
+                }
+                setIsLoading(false);
+                return;
+            }
+
             if (!token) {
                 setIsAuthenticated(false);
                 setUser(null);

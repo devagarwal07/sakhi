@@ -41,8 +41,8 @@ const client = axios.create({
 // after idle gets a network error or 502/503 while the server wakes up (~30-50s).
 // We retry up to 2 times with a 5-second pause before each retry.
 // ---------------------------------------------------------------------------
-const COLD_START_RETRIES = 2;
-const COLD_START_DELAY_MS = 5000;
+const COLD_START_RETRIES = 1;   // was 2 — server is pre-warmed, extra retries just block JS thread
+const COLD_START_DELAY_MS = 2000; // was 5000 — 2s is enough for a lingering network hiccup
 
 function isColdStartError(error) {
   if (!error.response) return true; // network error / no response = server is sleeping

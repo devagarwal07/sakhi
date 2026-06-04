@@ -374,7 +374,7 @@ export function SocketProvider({ children }) {
   // ── Auto-connect while authenticated + online, disconnect on logout ────
   useEffect(() => {
     if (isAuthenticated && driver?.is_online) {
-      connect();
+      connect().catch(err => console.warn('[Socket] auto-connect error:', err?.message));
       startDriverForegroundService();
     } else {
       disconnect();

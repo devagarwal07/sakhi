@@ -86,8 +86,16 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
         }
 
+        // ── Token Refresh — only attempt if backend explicitly says TOKEN_EXPIRED ──
+        // (Matching driver app pattern: don't burn the refresh token on a plain
+        //  UNAUTHORIZED rejection, which means the token is already dead/revoked)
+        const is401 = error.response?.status === 401;
+        const errCode = error.response?.data?.error?.code ?? error.response?.data?.code;
+        const isTokenExpired = errCode === 'TOKEN_EXPIRED';
+
         if (
-            error.response?.status === 401 &&
+            is401 &&
+            isTokenExpired &&
             !originalRequest._retry
         ) {
             if (isRefreshing) {
@@ -135,8 +143,11 @@ apiClient.interceptors.response.use(
                     console.error('[Auth] Invalid refreshToken from /auth/refresh-token:', response.data);
                     throw new Error('Session refresh failed: invalid refresh token from server');
                 }
-                await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-                await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefresh);
+                // Use AFTER_FIRST_UNLOCK so tokens survive device restarts without requiring
+                // interactive unlock — same accessibility level used at initial login.
+                const secureStoreOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+                await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken, secureStoreOptions);
+                await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefresh, secureStoreOptions);
 
                 apiClient.defaults.headers.Authorization = `Bearer ${accessToken}`;
                 processQueue(null, accessToken);
