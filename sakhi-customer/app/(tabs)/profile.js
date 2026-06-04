@@ -253,7 +253,7 @@ export default function ProfileScreen() {
 
                     {/* Delete Account Button */}
                     <TouchableOpacity 
-                        style={[styles.logoutCard, isDeleting && styles.logoutCardDisabled, { marginBottom: 16 }]} 
+                        style={[styles.logoutCard, isDeleting && styles.logoutCardDisabled]} 
                         onPress={confirmDeleteAccount}
                         disabled={isDeleting}
                         activeOpacity={0.8}
