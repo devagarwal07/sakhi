@@ -59,6 +59,7 @@ async function createOrder(req, res, next) {
       transaction_id:  result.transaction_id, // = merchantOrderId
       order_id:        result.order_id,       // PhonePe OMO... id
       base64_payload:  result.base64_payload,
+      sdk_payload:     result.sdk_payload,
       amount:          amount, // INR
     });
   } catch (err) { return handleError(err, res, next); }

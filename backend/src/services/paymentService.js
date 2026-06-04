@@ -136,6 +136,7 @@ async function createOrder(amountInr, merchantOrderId, _callbackUrl, userInfo = 
       order_id:        data.orderId,       // PhonePe's orderId (OMO...)
       token:           data.token,
       base64_payload:  base64SdkPayload,   // passed to PhonePe SDK on mobile
+      sdk_payload:     sdkPayload,         // raw JSON string for PhonePe SDK v2
       amount_paise:    Math.round(amountInr * 100),
       expires_at:      data.expireAt,
     };
