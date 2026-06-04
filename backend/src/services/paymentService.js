@@ -13,7 +13,7 @@ const PHONEPE_ENV            = (process.env.PHONEPE_ENV || 'PRODUCTION').toUpper
 
 // Production API base (no sandbox for these credentials)
 const PHONEPE_AUTH_URL  = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
-const PHONEPE_ORDER_URL = 'https://api.phonepe.com/apis/pg/checkout/v2/order';
+const PHONEPE_ORDER_URL = 'https://api.phonepe.com/apis/pg/checkout/v2/sdk/order';
 const PHONEPE_STATUS_URL_BASE = 'https://api.phonepe.com/apis/pg/checkout/v2/order';
 
 // ── In-memory token cache ─────────────────────────────────────────────────────
