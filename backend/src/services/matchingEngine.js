@@ -131,7 +131,7 @@ class MatchingEngine extends EventEmitter {
     try {
       const { data: rides } = await supabase
         .from('rides')
-        .select('*, users!rides_rider_id_fkey(name)')
+        .select('*, users!rides_rider_id_fkey(name, rating, profile_photo_url)')
         .eq('id', rideId)
         .limit(1);
 
@@ -141,7 +141,9 @@ class MatchingEngine extends EventEmitter {
         return;
       }
 
-      ride.rider_name = ride.users?.name || 'Rider';
+      ride.rider_name   = ride.users?.name              || 'Rider';
+      ride.rider_rating = ride.users?.rating             || null;
+      ride.rider_photo  = ride.users?.profile_photo_url  || null;
 
       const globalTimeout = setTimeout(async () => {
         await this._noDriversAvailable(rideId, ride.rider_id);
@@ -506,15 +508,21 @@ class MatchingEngine extends EventEmitter {
 
     // ── Build request payload ──────────────────────────────────────────────────
     const requestPayload = {
-      ride_id:           rideId,
-      pickup_address:    ride.pickup_address,
-      drop_address:      ride.drop_address,
-      distance_km:       ride.distance_km,
-      estimated_fare:    ride.estimated_fare,
-      rider_name:        ride.rider_name,
-      pickup_lat:        ride.pickup_lat,
-      pickup_lng:        ride.pickup_lng,
-      timeout_seconds:   30,
+      ride_id:              rideId,
+      pickup_address:       ride.pickup_address,
+      drop_address:         ride.drop_address,
+      distance_km:          ride.distance_km,
+      estimated_fare:       ride.estimated_fare,
+      rider_name:           ride.rider_name,
+      rider_rating:         ride.rider_rating ?? null,
+      rider_photo:          ride.rider_photo  ?? null,
+      pickup_lat:           ride.pickup_lat,
+      pickup_lng:           ride.pickup_lng,
+      drop_lat:             ride.drop_lat,
+      drop_lng:             ride.drop_lng,
+      distance_to_pickup_km: parseFloat((driver.distance_meters / 1000).toFixed(1)),
+      eta_to_pickup_min:    driver.total_wait_min ?? Math.round((driver.distance_meters / 1000 / 20) * 60),
+      timeout_seconds:      30,
       // ── Dispatch quality + pre-dispatch metadata ──────────────────────────
       driver_distance_m:    Math.round(driver.distance_meters),
       driver_rar:           parseFloat((driver.rar || 1).toFixed(2)),

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
+import { getAccessToken } from '../api/client';
+import { API_BASE_URL } from '../utils/constants';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
@@ -24,14 +24,7 @@ export function SocketProvider({ children }) {
         }
 
         const connectSocket = async () => {
-            let token = null;
-            try {
-                token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-            } catch (e) {
-                if (!e.message?.includes('User interaction is not allowed')) {
-                    console.error('[Socket] Error reading token:', e);
-                }
-            }
+            const token = await getAccessToken();
             if (!token) return;
 
             // ── Connect to /rides namespace — matches backend socket server ──

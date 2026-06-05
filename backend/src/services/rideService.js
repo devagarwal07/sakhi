@@ -368,12 +368,15 @@ async function updateRideStatus(rideId, newStatus, driverId, body, io) {
     // 11. Driver referral programme — non-blocking check
     setImmediate(() => referralService.checkDriverReferral(driverId));
 
-    // 12. Reset consecutive cancel counter on successful ride completion
+    // 12. Reset consecutive counters on successful ride completion
     setImmediate(async () => {
       try {
-        await supabase.from('users').update({ consecutive_fail_count: 0 }).eq('id', riderId);
+        await supabase.from('users').update({ 
+          consecutive_fail_count: 0,
+          consecutive_cancel_count: 0
+        }).eq('id', riderId);
       } catch (e) {
-        logger.warn('rideService — failed to reset consecutive_fail_count', { riderId, error: e.message });
+        logger.warn('rideService — failed to reset consecutive counters', { riderId, error: e.message });
       }
     });
 
@@ -469,39 +472,70 @@ async function cancelRide(rideId, userId, role, reason, io) {
   }).eq('id', rideId);
 
   // ── Cancellation fine tracking (rider-cancelled only) ──────────────────────────────────
-  // Every 3 rider cancellations → ₹20 fine must be paid before next booking
+  // Every 3 cancellations of accepted rides → ₹20 fine must be paid before next booking
   if (role === 'rider') {
     setImmediate(async () => {
       try {
-        const { data: riderRows } = await supabase
-          .from('users')
-          .select('consecutive_fail_count')
-          .eq('id', ride.rider_id)
-          .limit(1);
+        if (prevStatus !== 'searching') {
+          // Cancelled an accepted ride -> counts towards the cancellation fine
+          const { data: riderRows } = await supabase
+            .from('users')
+            .select('consecutive_cancel_count')
+            .eq('id', ride.rider_id)
+            .limit(1);
 
-        const prev   = riderRows?.[0]?.consecutive_fail_count ?? 0;
-        const newCnt = prev + 1;
+          const prev   = riderRows?.[0]?.consecutive_cancel_count ?? 0;
+          const newCnt = prev + 1;
 
-        if (newCnt >= 3) {
-          // 3rd cancellation — apply ₹20 fine and reset counter
-          await supabase.from('users').update({
-            consecutive_fail_count:    0,
-            cancellation_fine_pending: true,
-            cancellation_fine_amount:  20,
-          }).eq('id', ride.rider_id);
-          logger.info('rideService — ₹20 cancellation fine applied after 3 consecutive cancels', { riderId: ride.rider_id });
+          if (newCnt >= 3) {
+            // 3rd cancellation — apply ₹20 fine and reset counter
+            await supabase.from('users').update({
+              consecutive_cancel_count:  0,
+              cancellation_fine_pending: true,
+              cancellation_fine_amount:  20,
+            }).eq('id', ride.rider_id);
+            logger.info('rideService — ₹20 cancellation fine applied after 3 consecutive cancels', { riderId: ride.rider_id });
 
-          // Notify rider via FCM
-          fcmService.sendToUser(ride.rider_id, 'rider', {
-            title: 'Cancellation Fine Applied ⚠️',
-            body:  'You\'ve cancelled 3 rides. A ₹20 fine must be paid before your next booking.',
-            data:  { type: 'CANCELLATION_FINE', amount: '20' },
-          }).catch(() => {});
+            // Notify rider via FCM
+            fcmService.sendToUser(ride.rider_id, 'rider', {
+              title: 'Cancellation Fine Applied ⚠️',
+              body:  'You\'ve cancelled 3 accepted rides. A ₹20 fine must be paid before your next booking.',
+              data:  { type: 'CANCELLATION_FINE', amount: '20' },
+            }).catch(() => {});
+          } else {
+            await supabase.from('users').update({ consecutive_cancel_count: newCnt }).eq('id', ride.rider_id);
+          }
         } else {
-          await supabase.from('users').update({ consecutive_fail_count: newCnt }).eq('id', ride.rider_id);
+          // Cancelled while searching (booking phase) -> counts towards consecutive failed bookings for free ride
+          const { data: riderRows } = await supabase
+            .from('users')
+            .select('consecutive_fail_count')
+            .eq('id', ride.rider_id)
+            .limit(1);
+
+          const prev   = riderRows?.[0]?.consecutive_fail_count ?? 0;
+          const newCnt = prev + 1;
+
+          if (newCnt >= 3) {
+            // 3rd failed booking — grant free ride and reset counter
+            await supabase.from('users').update({
+              consecutive_fail_count: 0,
+              free_ride_eligible:     true,
+            }).eq('id', ride.rider_id);
+            logger.info('rideService — free ride granted after 3 consecutive failed bookings', { riderId: ride.rider_id });
+
+            // Notify rider via FCM
+            fcmService.sendToUser(ride.rider_id, 'rider', {
+              title: '🎁 Your Next Ride is FREE!',
+              body:  "We're sorry for the consecutive failed bookings. Enjoy a complimentary ride!",
+              data:  { type: 'FREE_RIDE_GRANTED' },
+            }).catch(() => {});
+          } else {
+            await supabase.from('users').update({ consecutive_fail_count: newCnt }).eq('id', ride.rider_id);
+          }
         }
       } catch (trackErr) {
-        logger.warn('rideService — cancellation fine tracking error', { riderId: ride.rider_id, error: trackErr.message });
+        logger.warn('rideService — cancellation tracking error', { riderId: ride.rider_id, error: trackErr.message });
       }
     });
   }

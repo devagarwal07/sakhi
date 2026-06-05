@@ -1,12 +1,35 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DeviceEventEmitter } from 'react-native';
+import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from '../api/client';
 import { sendOtp, verifyOtp, logout as apiLogout, getProfile } from '../api/endpoints';
 import { STORAGE_KEYS } from '../utils/constants';
 import { registerForPushAsync } from '../services/notificationService';
 
 
+
+async function readCachedUser() {
+    try {
+        const str = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+        return str ? JSON.parse(str) : null;
+    } catch {
+        return null;
+    }
+}
+
+async function writeCachedUser(user) {
+    try {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+    } catch {}
+}
+
+async function deleteCachedUser() {
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -15,106 +38,78 @@ export function AuthProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     // ── Check existing session on app load ─────────────────────────────────
+    //
+    // Strategy (mirrors driver app):
+    //   1. Read token from SecureStore
+    //   2. If no token → not authenticated
+    //   3. If token exists → show cached user immediately (instant UX)
+    //   4. Background-sync fresh profile from server
+    //      • Success → update cached user
+    //      • 401/403 → real auth rejection → force logout
+    //      • Any other error (network, timeout, 5xx) → keep user logged in,
+    //        the token refresh interceptor in client.js will handle expiry
+    //
     const checkAuth = useCallback(async () => {
         setIsLoading(true);
-
         try {
-        // ── Step 1: Check local token (~50ms, instant) ──────────────────
-            let token = null;
-            let secureStoreUnavailable = false;
-            try {
-                token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-            } catch (e) {
-                if (e.message?.includes('User interaction is not allowed')) {
-                    // Device is locked / booted before first unlock.
-                    // We cannot read the keychain yet — but this does NOT mean
-                    // the token is gone. Treat as a temporary unavailability:
-                    // keep the user authenticated so they aren't force-logged out.
-                    console.warn('[Auth] SecureStore locked (device not yet unlocked) — skipping logout');
-                    secureStoreUnavailable = true;
-                } else {
-                    console.error('[Auth] Error reading local token:', e);
-                }
-            }
-
-            if (secureStoreUnavailable) {
-                // Try cached user so home screen can show immediately;
-                // all API calls will still carry the token once device is unlocked.
-                const cachedUserStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA).catch(() => null);
-                if (cachedUserStr) {
-                    try {
-                        const cachedUser = JSON.parse(cachedUserStr);
-                        setUser(cachedUser);
-                        setIsAuthenticated(true);
-                    } catch (_) {}
-                }
-                setIsLoading(false);
-                return;
-            }
+            const token = await getAccessToken();
 
             if (!token) {
-                setIsAuthenticated(false);
+                // No token at all — definite logged-out state
                 setUser(null);
+                setIsAuthenticated(false);
                 setIsLoading(false);
                 return;
             }
 
-            // Read cached user data from AsyncStorage — use this immediately so the app renders
-            const cachedUserStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA).catch(() => null);
-            let cachedUser = null;
-            if (cachedUserStr) {
-                try { cachedUser = JSON.parse(cachedUserStr); } catch (_) {}
-            }
-
-            // If we have a cached user, show home screen immediately with cached data
+            // Token exists — load cached user immediately so the app doesn't
+            // stall on a network round-trip before showing the home screen.
+            const cachedUser = await readCachedUser();
             if (cachedUser) {
                 setUser(cachedUser);
                 setIsAuthenticated(true);
-                setIsLoading(false); // ← splash hides here, background sync runs next
+                setIsLoading(false); // ← splash hides here; profile sync continues below
             }
 
-            // ── Step 2: Refresh profile (silent if cachedUser exists, blocking if missing)
+            // Background profile sync — refresh from server
             try {
-                const timeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('auth_timeout')), 15000)
-                );
-                const { data } = await Promise.race([getProfile(), timeout]);
-                const freshUser = data.user || data;
+                const { data } = await getProfile();
+                const freshUser = data.user ?? data;
                 setUser(freshUser);
-                await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(freshUser)).catch(() => {});
+                setIsAuthenticated(true);
+                await writeCachedUser(freshUser);
 
                 if (!cachedUser) {
-                    setIsAuthenticated(true);
+                    // First launch with no cache — only mark done after fresh profile
                     setIsLoading(false);
                 }
             } catch (profileErr) {
                 const httpStatus = profileErr?.response?.status;
                 const isAuthRejection = httpStatus === 401 || httpStatus === 403;
 
-                console.warn('[AuthContext] Background profile sync failed:', profileErr?.message, '| status:', httpStatus);
+                console.warn(
+                    '[Auth] Profile sync failed:',
+                    profileErr?.message,
+                    '| status:', httpStatus
+                );
 
-                if (!cachedUser) {
-                    if (isAuthRejection) {
-                        // Backend explicitly rejected the session — token is dead. Force logout.
-                        await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-                        await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-                        await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
-                        setIsAuthenticated(false);
-                        setUser(null);
-                        setIsLoading(false);
-                    } else {
-                        // Network error / timeout / server error — tokens are likely still valid.
-                        // Don't log the user out. Show them as authenticated so they can retry.
-                        // The token will be refreshed automatically on the next API call.
-                        setIsAuthenticated(true);
-                        setIsLoading(false);
-                    }
+                if (isAuthRejection) {
+                    // Backend explicitly rejected the session — clear everything
+                    await clearTokens();
+                    await deleteCachedUser();
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    setIsLoading(false);
+                } else if (!cachedUser) {
+                    // Network/server error with no cached user — tokens are likely still valid.
+                    // Keep the user authenticated; the refresh interceptor in
+                    // client.js will handle TOKEN_EXPIRED on the next API call.
+                    setIsAuthenticated(true);
+                    setIsLoading(false);
                 }
             }
-
         } catch (err) {
-            // Outer catch: SecureStore read failed or catastrophic error
-            console.warn('[AuthContext] checkAuth error:', err?.message);
+            console.warn('[Auth] checkAuth unexpected error:', err?.message);
             setIsLoading(false);
         }
     }, []);
@@ -123,9 +118,14 @@ export function AuthProvider({ children }) {
         checkAuth();
     }, [checkAuth]);
 
-    // ── Auto-logout when session expires (refresh token dead) ──────────────
+    // ── Auto-logout when refresh token dies ───────────────────────────────
+    // The axios interceptor in client.js fires SESSION_EXPIRED after both the
+    // access token AND the refresh token have been rejected. This is the only
+    // reliable signal that the session is truly dead.
     useEffect(() => {
-        const sub = DeviceEventEmitter.addListener('SESSION_EXPIRED', () => {
+        const sub = DeviceEventEmitter.addListener('SESSION_EXPIRED', async () => {
+            await clearTokens();
+            await deleteCachedUser();
             setUser(null);
             setIsAuthenticated(false);
         });
@@ -143,8 +143,6 @@ export function AuthProvider({ children }) {
         const { data } = await verifyOtp(phone, otp);
         const { accessToken, refreshToken, user: userData } = data;
 
-        // SecureStore requires string values. If tokens are missing/invalid, fail fast
-        // with a clear error rather than throwing the SecureStore type error.
         if (typeof accessToken !== 'string' || accessToken.length === 0) {
             console.error('[Auth] Invalid accessToken from /auth/verify-otp:', data);
             throw new Error('Login failed: invalid access token from server');
@@ -154,10 +152,8 @@ export function AuthProvider({ children }) {
             throw new Error('Login failed: invalid refresh token from server');
         }
 
-        const options = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
-        await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken, options);
-        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, options);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)).catch(() => {});
+        await saveTokens(accessToken, refreshToken);
+        await writeCachedUser(userData);
 
         setUser(userData);
         setIsAuthenticated(true);
@@ -170,18 +166,17 @@ export function AuthProvider({ children }) {
         return userData;
     };
 
-    // ── Delete Account ───────────────────────────────────────────────────────
+    // ── Delete Account ─────────────────────────────────────────────────────
     const deleteUserAccount = async () => {
         const { deleteAccount } = require('../api/endpoints');
         try {
             await deleteAccount();
         } catch (e) {
             console.error('[Auth] deleteAccount failed:', e);
-            throw e; // We want the caller to handle the error UI
+            throw e;
         }
-        await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-        await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-        await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+        await clearTokens();
+        await deleteCachedUser();
         setUser(null);
         setIsAuthenticated(false);
     };
@@ -190,12 +185,11 @@ export function AuthProvider({ children }) {
     const logout = async () => {
         try {
             await apiLogout();
-        } catch (_) {
+        } catch {
             // Swallow logout API error — clear locally anyway
         } finally {
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-            await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA).catch(() => {});
+            await clearTokens();
+            await deleteCachedUser();
             setUser(null);
             setIsAuthenticated(false);
         }
@@ -205,7 +199,7 @@ export function AuthProvider({ children }) {
     const updateUser = useCallback((updates) => {
         setUser((prev) => {
             const updated = prev ? { ...prev, ...updates } : updates;
-            AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updated)).catch(() => {});
+            writeCachedUser(updated);
             return updated;
         });
     }, []);

@@ -27,7 +27,6 @@ import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
 import { requestOverlayPermission } from '../../services/notificationService';
 import CustomAlert from '../../utils/CustomAlert';
-import { useServerWarmup } from '../../hooks/useServerWarmup';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -295,12 +294,7 @@ export default function DriverHomeScreen({ navigation }) {
   const [location, setLocation] = useState(null);
   const [locGranted, setLocGranted] = useState(false);
   const [sessionSecs, setSessionSecs] = useState(0);
-  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
-
-  // ── Server warmup ──────────────────────────────────────────────────────────────────────
-  // Pings /ping on mount so Render wakes up before driver taps Go Online.
-  // serverReady: null = pending | true = alive | false = unreachable
-  const { serverReady, warmupMsg, retryWarmup } = useServerWarmup();
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null); // Date | null
 
   const mapRef = useRef(null);
 
@@ -402,12 +396,6 @@ export default function DriverHomeScreen({ navigation }) {
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
       setLocation(coord);
-
-      // Request background location permission after foreground is granted
-      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (bgStatus !== 'granted') {
-        console.log('[Location] Background location permission not granted');
-      }
     } catch (e) {
       console.warn('[Location] Failed to request permissions:', e?.message);
     }
@@ -565,25 +553,13 @@ export default function DriverHomeScreen({ navigation }) {
   };
 
 
-  // ── Mark ONLINE (stays on this screen, rejoins ride pool) ────────────────────
+  // ── Mark ONLINE (stays on this screen, rejoins ride pool) ─────────────────
   const handleGoOnline = async () => {
     // If subscription has expired, send to payment
     if (subscriptionExpiry && new Date() > subscriptionExpiry) {
       navigation.navigate('PaymentPlans');
       return;
     }
-
-    // Block toggle while server warmup is still in progress (null = pinging)
-    // or if warmup explicitly failed (false = unreachable)
-    if (serverReady === null) {
-      // Still pinging — do nothing, UI shows spinner
-      return;
-    }
-    if (serverReady === false) {
-      retryWarmup();
-      return;
-    }
-
     try {
       setStatusLoading(true);
 
@@ -598,31 +574,22 @@ export default function DriverHomeScreen({ navigation }) {
           currentCoords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
           setLocation(currentCoords);
         } catch (gpsErr) {
-          // GPS unavailable — proceed without coords
-          console.warn('[GoOnline] GPS unavailable:', gpsErr?.message);
+          // GPS unavailable — go online anyway, matching engine will handle missing location
+          console.warn('handleGoOnline — GPS unavailable', gpsErr?.message);
         }
       }
 
+      // Pass current location so backend can immediately upsert driver_locations
       const body = { is_online: true };
       if (currentCoords) {
         body.lat = currentCoords.latitude;
         body.lng = currentCoords.longitude;
       }
-
-      // Single attempt — no blocking retry loop.
-      // The server is already warmed up by useServerWarmup before the driver
-      // can tap Go Online, so a long retry loop is not needed and blocks the
-      // JS thread long enough to trigger Android ANR (app shutdown).
       await client.patch('/drivers/status', body);
-
       updateDriver({ is_online: true });
       setIsOnline(true);
 
-      // Safely start location tracking — errors are caught internally
-      startLocationTracking('Sakhi Driver', 'Sharing location while online')
-        .catch(err => console.warn('[GoOnline] startLocationTracking:', err?.message));
-
-      // Seed location immediately via socket
+      // Immediately emit location via socket so driver_locations is seeded right away
       if (socket?.connected && currentCoords) {
         socket.emit('driver:location_update', {
           lat: currentCoords.latitude,
@@ -632,10 +599,8 @@ export default function DriverHomeScreen({ navigation }) {
         });
       }
     } catch (err) {
-      console.warn('[GoOnline] error:', err?.message, err?.response?.status);
-      const msg = err.response?.data?.error?.message
-        ?? t('home.couldNotGoOnline', 'Could not go online. Please try again.');
-      CustomAlert.alert(t('common.error', 'Error'), msg);
+      const msg = err.response?.data?.error?.message ?? t('home.couldNotGoOnline');
+      CustomAlert.alert(t('common.error'), msg);
     } finally {
       setStatusLoading(false);
     }
@@ -769,45 +734,21 @@ export default function DriverHomeScreen({ navigation }) {
               }
             </TouchableOpacity>
 
-            {/* Online button — shows warmup state when server is cold */}
             <TouchableOpacity
-              style={[
-                s.toggleBtn,
-                isOnline && s.toggleBtnActive,
-                isOnline && s.toggleBtnOnline,
-                // Dim when server is pending warmup and not yet online
-                !isOnline && serverReady === null && s.toggleBtnWarmup,
-              ]}
+              style={[s.toggleBtn, isOnline && s.toggleBtnActive, isOnline && s.toggleBtnOnline]}
               onPress={!isOnline ? handleGoOnline : undefined}
               disabled={statusLoading || isOnline}
               activeOpacity={0.9}
             >
-              {statusLoading && isOnline ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : statusLoading && !isOnline ? (
-                // Going online with retry in progress
-                <>
-                  <ActivityIndicator size="small" color="#5B21B6" />
-                  <Text style={s.toggleTextWarmup} numberOfLines={1}>Connecting…</Text>
-                </>
-              ) : !isOnline && serverReady === null ? (
-                // Server still waking up
-                <>
-                  <ActivityIndicator size="small" color="#8B5CF6" />
-                  <Text style={s.toggleTextWarmup} numberOfLines={1}>{warmupMsg}</Text>
-                </>
-              ) : !isOnline && serverReady === false ? (
-                // Warmup failed — let them retry
-                <>
-                  <View style={[s.toggleDot, { backgroundColor: '#F59E0B' }]} />
-                  <Text style={[s.toggleText, { color: '#B45309' }]} numberOfLines={1}>Tap to retry</Text>
-                </>
-              ) : (
-                <>
-                  <View style={[s.toggleDot, isOnline && s.toggleDotOnline]} />
-                  <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>{t('home.online')}</Text>
-                </>
-              )}
+              {statusLoading && isOnline
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : (
+                  <>
+                    <View style={[s.toggleDot, isOnline && s.toggleDotOnline]} />
+                    <Text style={isOnline ? s.toggleTextOnline : s.toggleText}>{t('home.online')}</Text>
+                  </>
+                )
+              }
             </TouchableOpacity>
           </View>
 
@@ -993,8 +934,6 @@ const s = StyleSheet.create({
   toggleText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5 },
   toggleTextActive: { fontSize: 12, fontWeight: '800', color: '#1E1B2E', letterSpacing: 0.5 },
   toggleTextOnline: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
-  toggleBtnWarmup: { backgroundColor: '#F5F3FF' },
-  toggleTextWarmup: { fontSize: 10, fontWeight: '600', color: '#7C3AED', flexShrink: 1 },
 
   // Status
   statusHeading: { fontSize: 26, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },

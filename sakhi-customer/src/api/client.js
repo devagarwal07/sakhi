@@ -4,6 +4,47 @@ import { DeviceEventEmitter } from 'react-native';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import CustomAlert from '../utils/CustomAlert';
 
+// ---------------------------------------------------------------------------
+// Token helpers — aligned with driver app client.js pattern
+// ---------------------------------------------------------------------------
+export const TOKEN_KEYS = {
+    access: STORAGE_KEYS.ACCESS_TOKEN,
+    refresh: STORAGE_KEYS.REFRESH_TOKEN,
+};
+
+export async function getAccessToken() {
+    try {
+        return await SecureStore.getItemAsync(TOKEN_KEYS.access);
+    } catch (e) {
+        if (!e.message?.includes('User interaction is not allowed')) {
+            console.error('[API Client] Error reading access token:', e);
+        }
+        return null;
+    }
+}
+
+export async function getRefreshToken() {
+    try {
+        return await SecureStore.getItemAsync(TOKEN_KEYS.refresh);
+    } catch (e) {
+        if (!e.message?.includes('User interaction is not allowed')) {
+            console.error('[API Client] Error reading refresh token:', e);
+        }
+        return null;
+    }
+}
+
+export async function saveTokens(accessToken, refreshToken) {
+    const secureStoreOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+    await SecureStore.setItemAsync(TOKEN_KEYS.access, accessToken, secureStoreOptions);
+    await SecureStore.setItemAsync(TOKEN_KEYS.refresh, refreshToken, secureStoreOptions);
+}
+
+export async function clearTokens() {
+    await SecureStore.deleteItemAsync(TOKEN_KEYS.access).catch(() => {});
+    await SecureStore.deleteItemAsync(TOKEN_KEYS.refresh).catch(() => {});
+}
+
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 60000,  // 60s — Render cold start can take up to ~50s
@@ -33,7 +74,7 @@ function sleep(ms) {
 apiClient.interceptors.request.use(
     async (config) => {
         try {
-            const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            const token = await getAccessToken();
             if (token) {
                 if (config.headers && typeof config.headers.set === 'function') {
                     config.headers.set('Authorization', `Bearer ${token}`);
@@ -42,9 +83,7 @@ apiClient.interceptors.request.use(
                 }
             }
         } catch (e) {
-            if (!e.message?.includes('User interaction is not allowed')) {
-                console.error('[API Client] Error reading token from SecureStore:', e);
-            }
+            console.error('[API Client] Error attaching authorization header:', e);
         }
         return config;
     },
@@ -113,7 +152,7 @@ apiClient.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+                const refreshToken = await getRefreshToken();
                 if (!refreshToken) throw new Error('No refresh token');
 
                 let response;
@@ -143,11 +182,8 @@ apiClient.interceptors.response.use(
                     console.error('[Auth] Invalid refreshToken from /auth/refresh-token:', response.data);
                     throw new Error('Session refresh failed: invalid refresh token from server');
                 }
-                // Use AFTER_FIRST_UNLOCK so tokens survive device restarts without requiring
-                // interactive unlock — same accessibility level used at initial login.
-                const secureStoreOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
-                await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken, secureStoreOptions);
-                await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefresh, secureStoreOptions);
+                
+                await saveTokens(accessToken, newRefresh);
 
                 apiClient.defaults.headers.Authorization = `Bearer ${accessToken}`;
                 processQueue(null, accessToken);
@@ -156,8 +192,7 @@ apiClient.interceptors.response.use(
             } catch (refreshError) {
                 processQueue(refreshError, null);
                 // Clear ALL local auth state — AuthContext listener will handle logout navigation
-                await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
-                await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+                await clearTokens();
                 try {
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                     await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);

@@ -98,7 +98,7 @@ async function tryStartNativeOverlay(payload) {
       return false;
     }
 
-    const token  = await SecureStore.getItemAsync('driver_access_token').catch(() => '') || '';
+    const token  = await SecureStore.getItemAsync('sakhi_driver_access_token').catch(() => '') || '';
     const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://sakhi-backend-pwej.onrender.com';
 
     await NativeModules.RideRequestBridge.showOverlay(

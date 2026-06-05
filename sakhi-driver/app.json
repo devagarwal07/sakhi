@@ -24,6 +24,7 @@
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.CAMERA",
@@ -70,9 +71,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "40fcb58d-0bed-4945-a919-e3d9ebd88d23"
+        "projectId": "30600045-9556-49be-b2c0-89653781213c"
       }
     },
-    "owner": "devagarwal0178"
+    "owner": "devaga1"
   }
 }

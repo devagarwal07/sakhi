@@ -90,18 +90,20 @@ export default {
           "cameraPermission": "Sakhi needs camera access for face verification."
         }
       ],
-      "./plugins/withAdiRegistration"
+      "./plugins/withAdiRegistration",
+      "./plugins/withUpiQueries",
+      "./plugins/withPhonePeMaven"
     ],
     experiments: {
       typedRoutes: false
     },
     extra: {
       eas: {
-        projectId: "f8ed9d31-5cff-48a5-9cf8-ade917f992b1"
+        projectId: "1a722a17-8f46-42ac-b695-2eb21da2d324"
       },
       router: {}
     },
-    owner: "devagarwal0178"
+    owner: "devaga1"
   }
 };
 

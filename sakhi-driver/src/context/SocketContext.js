@@ -29,6 +29,7 @@ async function startDriverForegroundService() {
       android: {
         channelId,
         asForegroundService: true,
+        foregroundServiceTypes: ['dataSync'],
         importance: AndroidImportance.LOW,
         ongoing: true,
         autoCancel: false,
@@ -124,8 +125,15 @@ export function SocketProvider({ children }) {
 
     const estimatedFare = normalizeNumber(payload?.fare ?? payload?.estimated_fare ?? payload?.estimatedFare);
     const distanceKm = normalizeNumber(payload?.distance_km ?? payload?.distanceKm);
-    const distanceToPickupKm = normalizeNumber(payload?.distance_to_pickup_km ?? payload?.distanceToPickupKm);
-    const etaToPickupMin = normalizeNumber(payload?.eta_to_pickup_min ?? payload?.etaToPickupMin);
+    // Backend socket sends distance in meters as `driver_distance_m`; push sends km as `distance_to_pickup_km`
+    const distanceToPickupKm = normalizeNumber(
+      payload?.distance_to_pickup_km ?? payload?.distanceToPickupKm
+      ?? (payload?.driver_distance_m != null ? payload.driver_distance_m / 1000 : null)
+    );
+    // Backend socket sends `total_wait_min`; push sends `eta_to_pickup_min`
+    const etaToPickupMin = normalizeNumber(
+      payload?.eta_to_pickup_min ?? payload?.etaToPickupMin ?? payload?.total_wait_min
+    );
     const riderRating = normalizeNumber(payload?.rider_rating ?? payload?.riderRating);
     const dropAddress = payload?.drop_address ?? payload?.dropAddress
       ?? payload?.dropoff_address ?? payload?.dropoffAddress;
@@ -140,7 +148,7 @@ export function SocketProvider({ children }) {
       estimated_fare: estimatedFare,
       fare: estimatedFare,
       distance_km: distanceKm,
-      distance_to_pickup_km: distanceToPickupKm ?? 0,
+      distance_to_pickup_km: distanceToPickupKm != null ? parseFloat(distanceToPickupKm.toFixed(1)) : 0,
       eta_to_pickup_min: etaToPickupMin ?? 0,
       rider_name: payload?.rider_name ?? payload?.riderName,
       rider_photo: payload?.rider_photo ?? payload?.riderPhoto ?? null,
@@ -206,8 +214,13 @@ export function SocketProvider({ children }) {
     });
 
     // ── Incoming ride request ─────────────────────────────────────────────
+    // Normalize field names via mapPushToIncomingRide so that the screen
+    // always receives a consistent shape regardless of whether the ride came
+    // from the live socket or a push-notification tap.
+    // Key difference: backend sends `estimated_fare` (not `fare`), `drop_address`
+    // (not `dropoff_address`), and flat pickup_lat/lng (not pickup_coords object).
     socket.on('ride_request', (rideData) => {
-      setIncomingRide(rideData);
+      setIncomingRide(mapPushToIncomingRide(rideData));
     });
 
     // ── Ride request expired (driver didn't respond in time) ──────────────
