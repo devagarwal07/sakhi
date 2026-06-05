@@ -162,8 +162,86 @@ export default function SupportChatScreen() {
     const [isTyping, setIsTyping]       = useState(false);
     const [escalated, setEscalated]     = useState(false);
     const [showChips, setShowChips]     = useState(true);
+    const [loadingHistory, setLoadingHistory] = useState(false);
     const inputRef                      = useRef(null);
     const chipFade                      = useRef(new Animated.Value(1)).current;
+
+    // Load existing active/escalated support session on mount
+    useEffect(() => {
+        const loadActiveSession = async () => {
+            setLoadingHistory(true);
+            try {
+                const { data } = await getSupportSessions();
+                const sessions = data?.sessions || [];
+                // Find first non-closed session
+                const active = sessions.find((s) => s.status !== 'closed');
+                if (active) {
+                    setSessionId(active.id);
+                    setEscalated(active.status === 'escalated' || active.status === 'urgent');
+                    setShowChips(false);
+
+                    // Fetch messages history
+                    const { data: histData } = await getSupportHistory(active.id);
+                    const histMsgs = histData?.messages || [];
+                    if (histMsgs.length > 0) {
+                        setMessages([...INTRO_MESSAGES, ...histMsgs]);
+                    }
+                }
+            } catch (err) {
+                console.warn('[SupportChat] Error loading active session:', err);
+            } finally {
+                setLoadingHistory(false);
+            }
+        };
+        loadActiveSession();
+    }, []);
+
+    // Poll active session messages every 4 seconds
+    useEffect(() => {
+        if (!sessionId) return;
+
+        let active = true;
+        const poll = async () => {
+            try {
+                const { data: histData } = await getSupportHistory(sessionId);
+                if (!active) return;
+
+                const histMsgs = histData?.messages || [];
+                setMessages((prev) => {
+                    const typingMsg = prev.find((m) => m.isTyping);
+                    const nonTypingPrev = prev.filter((m) => !m.isTyping);
+
+                    const lastHistMsg = histMsgs[histMsgs.length - 1];
+                    const lastPrevMsg = nonTypingPrev[nonTypingPrev.length - 1];
+
+                    if (
+                        histMsgs.length !== (nonTypingPrev.length - INTRO_MESSAGES.length) ||
+                        (lastHistMsg && lastPrevMsg && lastHistMsg.id !== lastPrevMsg.id)
+                    ) {
+                        if (typingMsg) {
+                            return [...INTRO_MESSAGES, ...histMsgs, typingMsg];
+                        }
+                        return [...INTRO_MESSAGES, ...histMsgs];
+                    }
+                    return prev;
+                });
+
+                if (histData?.session?.status) {
+                    setEscalated(
+                        histData.session.status === 'escalated' || histData.session.status === 'urgent'
+                    );
+                }
+            } catch (err) {
+                console.warn('[SupportChat] Poll error:', err);
+            }
+        };
+
+        const interval = setInterval(poll, 4000);
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, [sessionId]);
 
     // Scroll to bottom whenever messages change
     useEffect(() => {
@@ -275,16 +353,23 @@ export default function SupportChatScreen() {
                 keyboardVerticalOffset={keyboardVerticalOffset}
             >
                 {/* ── Message List ── */}
-                <FlatList
-                    ref={listRef}
-                    data={messages}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
-                    ListFooterComponent={<View style={{ height: 12 }} />}
-                />
+                {loadingHistory ? (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color="#9E7FC4" />
+                        <Text style={{ marginTop: 10, color: '#64748B', fontSize: 13 }}>Loading active chat...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        ref={listRef}
+                        data={messages}
+                        renderItem={renderItem}
+                        keyExtractor={keyExtractor}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
+                        ListFooterComponent={<View style={{ height: 12 }} />}
+                    />
+                )}
 
                 {/* ── Quick Chips ── */}
                 {showChips && (
