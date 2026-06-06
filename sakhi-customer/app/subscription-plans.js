@@ -144,11 +144,11 @@ export default function SubscriptionPlansScreen() {
                         <View style={styles.dotGreen} />
                         <Feather name="arrow-right" size={12} color="#BEA3D8" />
                         <View style={styles.pinPurple}><View style={styles.pinHole} /></View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4 }}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
                             <Text style={styles.routeText} numberOfLines={1}>{pickupName}</Text>
                             <Feather name="arrow-right" size={13} color="#BEA3D8" />
                             <Text style={styles.routeText} numberOfLines={1}>{dropoffName}</Text>
-                        </View>
+                        </ScrollView>
                     </View>
                 </View>
 
@@ -291,11 +291,12 @@ const styles = StyleSheet.create({
     },
 
     // Route Pill
-    routePillWrapper: { alignItems: 'center', marginBottom: 24 },
+    routePillWrapper: { alignItems: 'center', marginBottom: 24, paddingHorizontal: 16 },
     routePill: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: '#FFFFFF', paddingVertical: 8, paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF', paddingVertical: 8, paddingHorizontal: 12,
         borderRadius: 9999,
+        maxWidth: '100%',
         shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 6,
     },
     dotGreen: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#22C55E' },
