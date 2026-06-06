@@ -251,30 +251,33 @@ export default function ProfileScreen() {
                         </View>
                     </View>
 
-                    {/* Delete Account Button */}
-                    <TouchableOpacity 
-                        style={[styles.logoutCard, isDeleting && styles.logoutCardDisabled]} 
-                        onPress={confirmDeleteAccount}
-                        disabled={isDeleting}
-                        activeOpacity={0.8}
-                    >
-                        <View style={styles.logoutIconBg}>
-                            <Feather name="trash-2" size={18} color="#BA1A1A" />
-                        </View>
-                        <Text style={styles.logoutText}>
-                            {isDeleting ? 'Deleting Account...' : 'Delete Account'}
-                        </Text>
-                    </TouchableOpacity>
+                    {/* Danger Actions Group */}
+                    <View style={{ gap: 12, marginTop: -8 }}>
+                        {/* Delete Account Button */}
+                        <TouchableOpacity 
+                            style={[styles.logoutCard, isDeleting && styles.logoutCardDisabled]} 
+                            onPress={confirmDeleteAccount}
+                            disabled={isDeleting}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.logoutIconBg}>
+                                <Feather name="trash-2" size={18} color="#BA1A1A" />
+                            </View>
+                            <Text style={styles.logoutText}>
+                                {isDeleting ? 'Deleting Account...' : 'Delete Account'}
+                            </Text>
+                        </TouchableOpacity>
 
-                    {/* Logout Button */}
-                    <TouchableOpacity style={styles.logoutCard} onPress={() => setShowLogoutSheet(true)} activeOpacity={0.8}>
-                        <View style={styles.logoutIconBg}>
-                            <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                <Path d="M2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H9V2H2V16H9V18H2ZM13 14L11.625 12.55L14.175 10H6V8H14.175L11.625 5.45L13 4L18 9L13 14Z" fill="#BA1A1A"/>
-                            </Svg>
-                        </View>
-                        <Text style={styles.logoutText}>Log Out</Text>
-                    </TouchableOpacity>
+                        {/* Logout Button */}
+                        <TouchableOpacity style={styles.logoutCard} onPress={() => setShowLogoutSheet(true)} activeOpacity={0.8}>
+                            <View style={styles.logoutIconBg}>
+                                <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                    <Path d="M2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H9V2H2V16H9V18H2ZM13 14L11.625 12.55L14.175 10H6V8H14.175L11.625 5.45L13 4L18 9L13 14Z" fill="#BA1A1A"/>
+                                </Svg>
+                            </View>
+                            <Text style={styles.logoutText}>Log Out</Text>
+                        </TouchableOpacity>
+                    </View>
 
                 </ScrollView>
             </View>

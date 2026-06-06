@@ -192,7 +192,18 @@ class MatchingEngine extends EventEmitter {
         session.drivers = [];
         return this._findAndSend(rideId);
       }
-      return this._noDriversAvailable(rideId, ride.rider_id);
+      // Reached MAX_RADIUS with no candidates.
+      // Pause for 10s and restart search from INITIAL_RADIUS, until globalTimeout hits.
+      logger.info('MatchingEngine — max radius reached, waiting to retry', { rideId });
+      session.timeoutHandle = setTimeout(() => {
+        const checkSession = this.activeSearches.get(rideId);
+        if (!checkSession) return;
+        checkSession.radius = INITIAL_RADIUS;
+        checkSession.candidateIndex = 0;
+        checkSession.drivers = [];
+        this._findAndSend(rideId);
+      }, 10000);
+      return;
     }
 
     if (session.drivers.length === 0 || candidateIndex === 0) {
@@ -472,7 +483,16 @@ class MatchingEngine extends EventEmitter {
     if (index >= candidates.length) {
       const newRadius = session.radius + RADIUS_STEP;
       if (newRadius > MAX_RADIUS) {
-        return this._noDriversAvailable(rideId, session.ride.rider_id);
+        logger.info('MatchingEngine — all candidates exhausted at max radius, waiting to retry', { rideId });
+        session.timeoutHandle = setTimeout(() => {
+          const checkSession = this.activeSearches.get(rideId);
+          if (!checkSession) return;
+          checkSession.radius = INITIAL_RADIUS;
+          checkSession.candidateIndex = 0;
+          checkSession.drivers = [];
+          this._findAndSend(rideId);
+        }, 10000);
+        return;
       }
       session.radius = newRadius;
       session.candidateIndex = 0;

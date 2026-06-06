@@ -12,7 +12,6 @@ import { createCancellationFineOrder, verifyCancellationFine } from '../src/api/
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 
 const PHONEPE_ENV       = 'PRODUCTION';
-const PHONEPE_CLIENT_ID = 'SU2605301736448889015067';
 const FINE_AMOUNT       = 20;
 
 export default function CancellationFineScreen() {
@@ -28,9 +27,8 @@ export default function CancellationFineScreen() {
 
     // ── Init PhonePe SDK ────────────────────────────────────────────────────
     useEffect(() => {
-        PhonePePaymentSdk.init(PHONEPE_ENV, PHONEPE_CLIENT_ID, '', false)
-            .then(() => setSdkReady(true))
-            .catch(() => setSdkReady(false));
+        // SDK is initialized dynamically when paying
+        setSdkReady(true);
     }, []);
 
     // ── Pay fine via PhonePe ────────────────────────────────────────────────
@@ -39,11 +37,13 @@ export default function CancellationFineScreen() {
         try {
             // Step 1: Get PhonePe order token from backend
             const { data } = await createCancellationFineOrder();
-            const { transaction_id, base64_payload } = data;
+            const { transaction_id, base64_payload, merchant_id } = data;
 
-            if (!transaction_id || !base64_payload) {
+            if (!transaction_id || !base64_payload || !merchant_id) {
                 throw new Error('Failed to create payment order. Please try again.');
             }
+
+            await PhonePePaymentSdk.init(PHONEPE_ENV, merchant_id, '', false);
 
             if (!sdkReady) {
                 throw new Error('PhonePe is not available. Please update the app.');

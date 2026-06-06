@@ -61,7 +61,15 @@ async function createOrder(req, res, next) {
       base64_payload:  result.base64_payload,
       sdk_payload:     result.sdk_payload,
       amount:          amount, // INR
+      merchant_id:     process.env.PHONEPE_CLIENT_ID,
     });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ── GET /payments/config ──────────────────────────────────────────────────────
+async function getConfig(req, res, next) {
+  try {
+    return res.status(200).json({ merchant_id: process.env.PHONEPE_CLIENT_ID });
   } catch (err) { return handleError(err, res, next); }
 }
 
@@ -144,6 +152,7 @@ async function createCommissionOrder(req, res, next) {
       order_id:        result.order_id,
       base64_payload:  result.base64_payload,
       amount:          amount,
+      merchant_id:     process.env.PHONEPE_CLIENT_ID,
     });
   } catch (err) { return handleError(err, res, next); }
 }
@@ -247,6 +256,7 @@ async function createCancellationFineOrder(req, res, next) {
       order_id:        result.order_id,
       base64_payload:  result.base64_payload,
       amount:          fineAmount,
+      merchant_id:     process.env.PHONEPE_CLIENT_ID,
     });
   } catch (err) { return handleError(err, res, next); }
 }
@@ -292,5 +302,6 @@ module.exports = {
   phonePeCallback,
   createCancellationFineOrder,
   verifyCancellationFine,
+  getConfig,
 };
 

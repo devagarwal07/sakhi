@@ -488,7 +488,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
 
   // ── Render — identical to driver ───────────────────────────────────────────
   return (
-    <View style={[styles.container, style]} pointerEvents={pointerEvents}>
+    <View style={[styles.container, style, { opacity: 0.99 }]} pointerEvents={pointerEvents}>
       <WebView
         ref={webViewRef}
         source={{ html, baseUrl: 'https://apis.mappls.com/' }}
@@ -504,6 +504,8 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
         allowUniversalAccessFromFileURLs
         startInLoadingState
         onMessage={onMessage}
+        androidLayerType="software"
+        nestedScrollEnabled={true}
         renderLoading={() => (
           <View style={styles.loader}>
             <ActivityIndicator size="small" color="#8031CC" />

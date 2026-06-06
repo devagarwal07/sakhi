@@ -9,6 +9,9 @@ const { apiLimiter } = require('../middleware/rateLimiter');
 const router = Router();
 router.use(apiLimiter);
 
+/** GET /payments/config — gets phonepe dynamic config */
+router.get('/config', authMiddleware, paymentController.getConfig);
+
 /** POST /payments/order  — rider creates a PhonePe subscription payment order */
 router.post('/order',  authMiddleware, roleGuard('rider'), paymentController.createOrder);
 

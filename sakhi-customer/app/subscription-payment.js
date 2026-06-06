@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { useRide } from '../src/context/RideContext';
 import { useAuth } from '../src/context/AuthContext';
 import SakhiModal from '../src/components/SakhiModal';
-import { createSubscriptionOrder } from '../src/api/endpoints';
+import { createSubscriptionPaymentOrder, verifyPayment, getPaymentConfig } from '../src/api/endpoints';
 import apiClient from '../src/api/client';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import PhonePePaymentSdk from 'react-native-phonepe-pg';
@@ -18,7 +18,6 @@ const { width } = Dimensions.get('window');
 
 // PhonePe Production environment
 const PHONEPE_ENV = 'PRODUCTION';
-const PHONEPE_CLIENT_ID = 'SU2605301736448889015067'; // used as merchantId in SDK init
 
 export default function SubscriptionPaymentScreen() {
     const router = useRouter();
@@ -32,6 +31,28 @@ export default function SubscriptionPaymentScreen() {
     const [intentLoading, setIntentLoading] = useState(true);
     const [sdkReady, setSdkReady] = useState(false);
     const [selectedApp, setSelectedApp] = useState(null);
+
+    // ── Fetch PhonePe config and init SDK ────────────────────────────────────
+    useEffect(() => {
+        const initSdk = async () => {
+            try {
+                const { data } = await getPaymentConfig();
+                if (data?.merchant_id) {
+                    await PhonePePaymentSdk.init(
+                        PHONEPE_ENV,
+                        data.merchant_id,
+                        user?.id ? String(user.id) : 'sakhi_payment_flow',
+                        false
+                    );
+                    setSdkReady(true);
+                }
+            } catch (err) {
+                console.warn('PhonePe SDK init error:', err);
+                setSdkReady(false);
+            }
+        };
+        initSdk();
+    }, []);
 
     const insets = useSafeAreaInsets();
 
@@ -49,26 +70,6 @@ export default function SubscriptionPaymentScreen() {
     const daysRange = sub.days?.length > 3
         ? `${sub.days[0]}–${sub.days[sub.days.length - 1]}`
         : (sub.days?.join(', ') || 'Mon–Fri');
-
-    // ── Initialize PhonePe SDK ───────────────────────────────────────────────
-    useEffect(() => {
-        const initSdk = async () => {
-            try {
-                await PhonePePaymentSdk.init(
-                    PHONEPE_ENV,         // 'PRODUCTION'
-                    PHONEPE_CLIENT_ID,   // merchant/client ID
-                    user?.id ? String(user.id) : 'sakhi_payment_flow', // flowId — required by latest SDK
-                    false                // enableLogging (set true for debug builds only)
-                );
-                setSdkReady(true);
-            } catch (err) {
-                console.warn('PhonePe SDK init error:', err);
-                // Non-fatal — we can still try without the SDK
-                setSdkReady(false);
-            }
-        };
-        initSdk();
-    }, []);
 
     // ── Fetch subscription intent (pricing) ─────────────────────────────────
     useEffect(() => {
@@ -209,12 +210,12 @@ export default function SubscriptionPaymentScreen() {
 
         try {
             // Step 1: Create PhonePe order via backend (returns token + base64_payload)
-            const { data } = await createSubscriptionOrder({
-                amount: intentData.total_cost,  // INR
-                subscription_id_temp: intentData.subscription_id,
+            const { data } = await createSubscriptionPaymentOrder(
+                Math.round(intentData.total_cost), // INR
+                ride.subscription.id_temp,
                 paymentMode,
-                targetApp,
-            });
+                targetApp
+            );
 
             const { transaction_id, sdk_payload, base64_payload } = data;
             // sdk_payload is raw JSON string — the native iOS SDK parses it directly with JSONSerialization

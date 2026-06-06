@@ -35,11 +35,9 @@ export default function SubscriptionPlansScreen() {
                 if (data) {
                     // If this is the user's first ride, the API returns estimated_fare = 0
                     // However, subscriptions are NOT free. We must use the original un-discounted fare.
-                    let fareToUse = data.estimated_fare;
-                    if (data.free_ride) {
-                        const bd = data.breakdown || {};
-                        fareToUse = (bd.base_fare || 50) + (bd.distance_charge || 0) + (bd.pickup_surcharge || 0);
-                    }
+                    // subscriptions shouldn't be free or discounted by single-ride promos
+                    const promoDiscount = data.breakdown?.promo_discount || 0;
+                    const fareToUse = data.estimated_fare + promoDiscount;
                     setBaseRidePrice(fareToUse);
                 }
             } catch (err) {

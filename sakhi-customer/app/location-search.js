@@ -160,7 +160,10 @@ export default function LocationSearchScreen() {
     }, []);
 
     // ── Reverse geocode (called on drag end) ──────────────────────────────────
+    const latestGeoCoords = useRef(null);
+
     const reverseGeocode = async (lat, lng) => {
+        latestGeoCoords.current = { lat, lng };
         setGeoLoading(true);
         setDragAddress('');
         try {
@@ -173,8 +176,9 @@ export default function LocationSearchScreen() {
                 const data = await res.json();
                 const loc = data?.copResults;
                 if (loc?.formattedAddress) {
-                    setDragAddress(loc.formattedAddress);
-                    setDragCoords({ latitude: lat, longitude: lng });
+                    if (latestGeoCoords.current?.lat === lat && latestGeoCoords.current?.lng === lng) {
+                        setDragAddress(loc.formattedAddress);
+                    }
                     return;
                 }
             } catch (_) { }
@@ -187,16 +191,20 @@ export default function LocationSearchScreen() {
                 const osmData = await osmRes.json();
                 const addr = osmData?.display_name || osmData?.address?.road || '';
                 if (addr) {
-                    setDragAddress(addr);
-                    setDragCoords({ latitude: lat, longitude: lng });
+                    if (latestGeoCoords.current?.lat === lat && latestGeoCoords.current?.lng === lng) {
+                        setDragAddress(addr);
+                    }
                     return;
                 }
             } catch (_) { }
             // Last resort: show raw coordinates
-            setDragAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-            setDragCoords({ latitude: lat, longitude: lng });
+            if (latestGeoCoords.current?.lat === lat && latestGeoCoords.current?.lng === lng) {
+                setDragAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+            }
         } finally {
-            setGeoLoading(false);
+            if (latestGeoCoords.current?.lat === lat && latestGeoCoords.current?.lng === lng) {
+                setGeoLoading(false);
+            }
         }
     };
 

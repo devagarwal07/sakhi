@@ -163,6 +163,8 @@ export default function EditProfileScreen() {
             return;
         }
 
+
+
         // Validate not in the future
         const today = new Date();
         // Zero out time for accurate date comparison

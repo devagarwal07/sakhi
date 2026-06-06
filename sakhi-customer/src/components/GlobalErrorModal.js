@@ -69,7 +69,9 @@ export default function GlobalErrorModal() {
   if (!visible) return null;
 
   const isError = config.title?.toLowerCase().includes('error') || 
-                  config.title?.toLowerCase().includes('fail');
+                  config.title?.toLowerCase().includes('fail') ||
+                  config.title?.toLowerCase().includes('incorrect') ||
+                  config.title?.toLowerCase().includes('invalid');
   const iconName = isError ? 'error-outline' : 'info-outline';
   const iconColor = isError ? Colors.error : Colors.primary;
 
