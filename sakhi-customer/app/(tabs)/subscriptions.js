@@ -105,7 +105,7 @@ export default function SubscriptionsDashboard() {
     const [activeSubIdx, setActiveSubIdx] = useState(0);
     const sub = allSubs[activeSubIdx] || {};
 
-    const [isPaused, setIsPaused] = useState(false);
+    const [isPaused, setIsPaused] = useState(sub.status === 'paused');
     const [modal, setModal] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [calMonthOffset, setCalMonthOffset] = useState(0);
@@ -117,6 +117,10 @@ export default function SubscriptionsDashboard() {
         setCalMonthOffset(0);
         setIsPaused(false);
     };
+
+    React.useEffect(() => {
+        setIsPaused(sub.status === 'paused');
+    }, [sub.status]);
 
     const insets = useSafeAreaInsets();
     const topInset = Platform.OS === 'ios' ? insets.top : ANDROID_STATUS_BAR_HEIGHT;
@@ -178,7 +182,10 @@ export default function SubscriptionsDashboard() {
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handlePause = () => {
-        if (!sub.id) return;
+        if (!sub.id) {
+            setModal({ icon: '⚠️', title: 'Unavailable', message: 'No active subscription found to pause.', buttons: [{text: 'OK', onPress: () => setModal(null)}] });
+            return;
+        }
         setModal({
             icon: isPaused ? '▶️' : '⏸️',
             title: isPaused ? 'Resume Subscription' : 'Pause Subscription',
@@ -200,7 +207,10 @@ export default function SubscriptionsDashboard() {
     };
 
     const handleCancel = () => {
-        if (!sub.id) return;
+        if (!sub.id) {
+            setModal({ icon: '⚠️', title: 'Unavailable', message: 'No active subscription found to cancel.', buttons: [{text: 'OK', onPress: () => setModal(null)}] });
+            return;
+        }
         setModal({
             icon: '⚠️',
             title: 'Cancel Subscription?',
@@ -233,14 +243,27 @@ export default function SubscriptionsDashboard() {
                     )}
                     <Text style={s.title}>My Subscription</Text>
                 </View>
-                <TouchableOpacity style={s.menuBtn} onPress={() => router.push('/subscription-plans')}>
+                <TouchableOpacity style={s.menuBtn} onPress={() => router.push('/subscription-ride')}>
                     <Feather name="plus" size={22} color="#BEA3D8" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={[s.scrollContent, { paddingTop: scrollTopPadding }]} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={[s.scrollContent, { paddingTop: scrollTopPadding, flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
 
-                {/* Subscription Tabs — shown only when there are multiple subs */}
+                {!sub.id ? (
+                    <View style={s.emptyState}>
+                        <View style={s.emptyStateIconBadge}>
+                            <Feather name="calendar" size={32} color="#BEA3D8" />
+                        </View>
+                        <Text style={s.emptyStateTitle}>No Active Subscription</Text>
+                        <Text style={s.emptyStateText}>You don't have an active subscription right now. Book a plan to enjoy hassle-free daily rides!</Text>
+                        <TouchableOpacity style={s.emptyStateBtn} onPress={() => router.push('/subscription-ride')} activeOpacity={0.8}>
+                            <Text style={s.emptyStateBtnText}>Browse Plans</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        {/* Subscription Tabs — shown only when there are multiple subs */}
                 {allSubs.length > 1 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabsScroll} contentContainerStyle={s.tabsContent}>
                         {allSubs.map((item, idx) => {
@@ -377,6 +400,8 @@ export default function SubscriptionsDashboard() {
                 </View>
 
                 <View style={{ height: 120 }} />
+                </>
+                )}
             </ScrollView>
             {modal && <SakhiModal config={modal} onClose={() => setModal(null)} />}
         </View>
@@ -385,6 +410,14 @@ export default function SubscriptionsDashboard() {
 
 const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F0FF' },
+
+    // Empty state
+    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 60, paddingHorizontal: 20 },
+    emptyStateIconBadge: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E9D5FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+    emptyStateTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B2E', marginBottom: 8 },
+    emptyStateText: { fontSize: 14, color: '#64748B', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+    emptyStateBtn: { backgroundColor: '#BEA3D8', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 },
+    emptyStateBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 24,

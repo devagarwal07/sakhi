@@ -21,7 +21,7 @@ export default function SubscriptionPlansScreen() {
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
     const [modal, setModal] = useState(null);
-    const [baseRidePrice, setBaseRidePrice] = useState(70);
+    const [baseRidePrice, setBaseRidePrice] = useState(null);
     const [isLoadingFare, setIsLoadingFare] = useState(true);
 
     useEffect(() => {
@@ -32,12 +32,24 @@ export default function SubscriptionPlansScreen() {
             }
             try {
                 const { data } = await estimateFare(ride.pickup, ride.dropoff);
-                if (data?.estimated_fare) {
-                    // Base the subscription on the normal single ride price
-                    setBaseRidePrice(data.estimated_fare);
+                if (data) {
+                    // If this is the user's first ride, the API returns estimated_fare = 0
+                    // However, subscriptions are NOT free. We must use the original un-discounted fare.
+                    let fareToUse = data.estimated_fare;
+                    if (data.free_ride) {
+                        const bd = data.breakdown || {};
+                        fareToUse = (bd.base_fare || 50) + (bd.distance_charge || 0) + (bd.pickup_surcharge || 0);
+                    }
+                    setBaseRidePrice(fareToUse);
                 }
             } catch (err) {
                 console.warn('Failed to estimate fare for subscription:', err);
+                setModal({
+                    icon: '⚠️',
+                    title: 'Fare Estimate Failed',
+                    message: 'Could not calculate distance between pickup and dropoff. Please select valid locations.',
+                    buttons: [{ text: 'Go Back', onPress: () => { setModal(null); router.back(); } }]
+                });
             } finally {
                 setIsLoadingFare(false);
             }
@@ -56,8 +68,7 @@ export default function SubscriptionPlansScreen() {
     const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 24;
 
     // Actual per-ride price = estimated fare from backend (base + distance + etc.)
-    // If fetching fails, we use a reasonable default of ₹70/ride
-    const BASE_RIDE_PRICE = baseRidePrice;
+    const BASE_RIDE_PRICE = baseRidePrice || 0;
 
     // Multiplier for two-way rides
     const multiplier = sub.isTwoWay ? 2 : 1;

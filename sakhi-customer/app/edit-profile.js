@@ -151,8 +151,25 @@ export default function EditProfileScreen() {
             setModal({ icon: '⚠️', title: 'Invalid Month', message: 'Please enter a valid month (1-12).', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             return;
         }
-        if (!y || y < 1920 || y > new Date().getFullYear() - 5) {
+        if (!y || y < 1900) {
             setModal({ icon: '⚠️', title: 'Invalid Year', message: 'Please enter a valid birth year.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
+        }
+
+        // Validate exact calendar date (handles Feb 30, leap years, etc.)
+        const selectedDate = new Date(y, m - 1, d);
+        if (selectedDate.getFullYear() !== y || selectedDate.getMonth() !== m - 1 || selectedDate.getDate() !== d) {
+            setModal({ icon: '⚠️', title: 'Invalid Date', message: 'The date entered is not a valid calendar date.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
+            return;
+        }
+
+        // Validate not in the future
+        const today = new Date();
+        // Zero out time for accurate date comparison
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate > today) {
+            setModal({ icon: '⚠️', title: 'Invalid Date', message: 'Date of birth cannot be a future date.', buttons: [{ text: 'OK', onPress: () => setModal(null) }] });
             return;
         }
         setDobDay(String(d).padStart(2, '0'));

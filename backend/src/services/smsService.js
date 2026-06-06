@@ -38,10 +38,10 @@ function normalizePhone(phone) {
   if (!phone) return '';
   const clean = phone.replace(/\D/g, '');
   if (clean.length === 12 && clean.startsWith('91')) {
-    return clean.slice(2);
+    return clean;
   }
   if (clean.length === 10) {
-    return clean;
+    return `91${clean}`;
   }
   return clean;
 }

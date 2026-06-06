@@ -195,7 +195,10 @@ async function createSubscriptionIntent(riderId, payload) {
   const { estimated_fare: per_ride_fare } = fareService.calculateFare(distance_km, duration_min, fareConfig);
 
   const multiplier = payload.is_two_way ? 2 : 1;
-  const total_cost = parseFloat((per_ride_fare * payload.plan_rides * multiplier).toFixed(2));
+  const fullPrice = per_ride_fare * payload.plan_rides * multiplier;
+  
+  // Apply the same subscription discounts logic as frontend
+  const { discounted_fare: total_cost } = fareService.applySubscriptionDiscount(fullPrice, payload.plan_rides);
 
   // 4. Find a driver immediately
   const driver = await findSubscriptionDriver(

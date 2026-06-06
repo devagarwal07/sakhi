@@ -360,6 +360,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
   const webViewRef = useRef(null);
   const mapReady   = useRef(false);
   const pendingMsg = useRef(null);
+  const lastEmittedCenter = useRef(null); // Track center from map to prevent feedback loops
 
   // Build HTML once — identical to driver
   const html = useMemo(
@@ -440,6 +441,15 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
   useEffect(() => {
     const lat = center?.latitude  ?? DEFAULT_LAT;
     const lng = center?.longitude ?? DEFAULT_LNG;
+    
+    // Ignore updates that are just echoes of what the map just told us
+    if (lastEmittedCenter.current && 
+        lastEmittedCenter.current.lat === lat && 
+        lastEmittedCenter.current.lng === lng) {
+        return;
+    }
+    lastEmittedCenter.current = null; // Clear if it's an external update
+
     if (mapReady.current) {
       if (autoFitBounds && (polylines.length > 0 || markers.length > 1)) {
         sendFitBounds(markers, polylines, nearbyAutos);
@@ -470,6 +480,7 @@ const MapplsMapWebView = forwardRef(function MapplsMapWebView({
         }
         pendingMsg.current = null;
       } else if (msg.type === 'MAP_DRAG_END') {
+        lastEmittedCenter.current = { lat: msg.lat, lng: msg.lng };
         onDragEnd?.(msg.lat, msg.lng);
       }
     } catch (_) {}

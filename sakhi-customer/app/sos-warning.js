@@ -53,29 +53,38 @@ export default function SOSWarningScreen() {
         }
     }, [timeLeft]);
 
-    const doTriggerSOS = async () => {
+    const doTriggerSOS = () => {
         if (triggered) return;
         setTriggered(true);
-        // Vibrate urgently: 3 pulses
+        // Vibrate urgently: 3 pulses (total time: 1900ms)
         Vibration.vibrate([0, 500, 200, 500, 200, 500]);
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            let lat, lng;
-            if (status === 'granted') {
-                try {
-                    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-                    lat = pos.coords.latitude;
-                    lng = pos.coords.longitude;
-                } catch {
-                    const last = await Location.getLastKnownPositionAsync();
-                    if (last) { lat = last.coords.latitude; lng = last.coords.longitude; }
+        
+        // Wait for vibration to finish before navigating
+        setTimeout(() => {
+            router.replace('/sos-active');
+        }, 1900);
+
+        // Fetch location and hit API in the background
+        (async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                let lat, lng;
+                if (status === 'granted') {
+                    try {
+                        // Use Balanced accuracy to avoid 5-10s GPS lock delays
+                        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                        lat = pos.coords.latitude;
+                        lng = pos.coords.longitude;
+                    } catch {
+                        const last = await Location.getLastKnownPositionAsync();
+                        if (last) { lat = last.coords.latitude; lng = last.coords.longitude; }
+                    }
                 }
+                await triggerSOS({ lat, lng, ride_id: ride?.id });
+            } catch (_) {
+                // Fire-and-forget
             }
-            await triggerSOS({ lat, lng, ride_id: ride?.id });
-        } catch (_) {
-            // Fire-and-forget — still navigate to SOS active even if API fails
-        }
-        router.replace('/sos-active');
+        })();
     };
 
     const handleCancel = () => {
