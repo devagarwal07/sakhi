@@ -241,11 +241,14 @@ export default function SubscriptionPaymentScreen() {
                         response?.status === 'CANCELLED' ||
                         response?.error?.toLowerCase?.().includes('cancel')
                     ) {
-                        // User cancelled — silently exit
-                        setLoading(false);
+                        // User cancelled — silently exit, let them try again
                         return;
+                    } else if (response?.status === 'FAILURE') {
+                        // Explicit payment failure — show user-friendly message
+                        const failMsg = _friendlyPhonePeError(response?.error);
+                        throw new Error(failMsg);
                     } else {
-                        throw new Error(response?.error || response?.message || 'Payment was not successful. Please try again.');
+                        throw new Error(_friendlyPhonePeError(response?.error || response?.message) || 'Payment was not completed. Please try again.');
                     }
                 } catch (sdkErr) {
                     // Silently handle user-cancelled cases
@@ -293,21 +296,45 @@ export default function SubscriptionPaymentScreen() {
                 err?.message?.toLowerCase?.().includes('cancel') ||
                 err?.message?.toLowerCase?.().includes('dismiss')
             ) {
-                setLoading(false);
                 return;
             }
             const msg = err?.response?.data?.error?.message
                 || err?.message
-                || 'Payment initiation failed.';
+                || 'Payment could not be processed. Please try again.';
             setModal({
-                icon: '🔄',
+                icon: '💳',
                 title: 'Payment Failed',
                 message: msg,
-                buttons: [{ text: 'Try Again', onPress: () => setModal(null) }],
+                buttons: [
+                    {
+                        text: 'Try Again',
+                        style: 'primary',
+                        onPress: () => setModal(null),
+                    },
+                    {
+                        text: 'Try Different Method',
+                        style: 'cancel',
+                        onPress: () => { setModal(null); setSelectedApp(null); },
+                    },
+                ],
             });
         } finally {
             setLoading(false);
         }
+    };
+
+    // Map PhonePe SDK error codes/strings to user-friendly messages
+    const _friendlyPhonePeError = (code) => {
+        if (!code) return null;
+        const c = String(code).toUpperCase();
+        if (c.includes('INSUFFICIENT') || c.includes('LOW_BALANCE')) return 'Your bank account has insufficient funds. Please try a different payment method.';
+        if (c.includes('BANK_DECLINED') || c.includes('DECLINED')) return 'Your bank declined the payment. Please try again or use a different method.';
+        if (c.includes('INVALID_UPI') || c.includes('UPI_ID')) return 'Invalid UPI ID. Please check your UPI details and try again.';
+        if (c.includes('LIMIT') || c.includes('EXCEEDED')) return 'Transaction limit exceeded. Please try a smaller amount or contact your bank.';
+        if (c.includes('TIMEOUT') || c.includes('TIMED_OUT')) return 'Payment timed out. Please try again.';
+        if (c.includes('NETWORK') || c.includes('CONNECTION')) return 'Network error during payment. Please check your connection and try again.';
+        if (c.includes('AUTH') || c.includes('AUTHENTICATION')) return 'Authentication failed. Please try again.';
+        return 'Payment could not be processed. Please try again or use a different payment method.';
     };
 
     if (intentLoading) {
