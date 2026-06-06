@@ -32,9 +32,9 @@ export default function SubscriptionPlansScreen() {
             }
             try {
                 const { data } = await estimateFare(ride.pickup, ride.dropoff);
-                if (data?.fare?.estimated_fare) {
+                if (data?.estimated_fare) {
                     // Base the subscription on the normal single ride price
-                    setBaseRidePrice(data.fare.estimated_fare);
+                    setBaseRidePrice(data.estimated_fare);
                 }
             } catch (err) {
                 console.warn('Failed to estimate fare for subscription:', err);
