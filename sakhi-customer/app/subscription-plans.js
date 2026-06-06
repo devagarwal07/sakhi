@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Dimensions, ScrollView, Platform
+    Dimensions, ScrollView, Platform, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { useRide } from '../src/context/RideContext';
 import SakhiModal from '../src/components/SakhiModal';
 import { ANDROID_STATUS_BAR_HEIGHT } from '../src/utils/androidUtils';
 import { PRICING } from '../src/utils/fareCalculator';
+import { estimateFare } from '../src/api/endpoints';
 
 const SUBSCRIPTION_DISCOUNTS = PRICING.SUBSCRIPTION_DISCOUNTS;
 
@@ -20,6 +21,29 @@ export default function SubscriptionPlansScreen() {
     const { ride, updateSubscription } = useRide();
     const sub = ride.subscription || {};
     const [modal, setModal] = useState(null);
+    const [baseRidePrice, setBaseRidePrice] = useState(70);
+    const [isLoadingFare, setIsLoadingFare] = useState(true);
+
+    useEffect(() => {
+        const fetchFare = async () => {
+            if (!ride?.pickup || !ride?.dropoff) {
+                setIsLoadingFare(false);
+                return;
+            }
+            try {
+                const { data } = await estimateFare(ride.pickup, ride.dropoff);
+                if (data?.fare?.estimated_fare) {
+                    // Base the subscription on the normal single ride price
+                    setBaseRidePrice(data.fare.estimated_fare);
+                }
+            } catch (err) {
+                console.warn('Failed to estimate fare for subscription:', err);
+            } finally {
+                setIsLoadingFare(false);
+            }
+        };
+        fetchFare();
+    }, [ride?.pickup, ride?.dropoff]);
 
     const insets = useSafeAreaInsets();
 
@@ -31,25 +55,24 @@ export default function SubscriptionPlansScreen() {
     const footerPaddingBottom = Math.max(insets.bottom, 24) + (Platform.OS === 'ios' ? 10 : 0);
     const footerSpacerHeight = 56 + 16 + footerPaddingBottom + 24;
 
-    // ── Pricing calculation ─────────────────────────────────────────────────
-    // Base fare for the expected daily route (pickup → dropoff)
-    // For subscription we use the standard base fare as the per-ride price reference
-    // Actual per-ride price = base fare (₹50) + expected distance charge
-    // Without live distance, we use a reasonable default of ₹70/ride (avg 3km trip)
-    // The actual per-ride rate from the backend fare calculator is ₹50 base + (1 km × ₹20) = ₹70
-    const BASE_RIDE_PRICE = 70; // ₹70 per ride — based on avg 3 km trip
+    // Actual per-ride price = estimated fare from backend (base + distance + etc.)
+    // If fetching fails, we use a reasonable default of ₹70/ride
+    const BASE_RIDE_PRICE = baseRidePrice;
+
+    // Multiplier for two-way rides
+    const multiplier = sub.isTwoWay ? 2 : 1;
 
     const plans = [
         { days: 7,  rides: 7,  label: '7 Rides',  desc: '1 week · Mon–Fri' },
         { days: 14, rides: 14, label: '14 Rides', desc: '2 weeks · Mon–Fri' },
         { days: 30, rides: 30, label: '30 Rides', desc: '1 month · Mon–Fri' },
     ].map(p => {
-        const fullPrice = p.rides * BASE_RIDE_PRICE;
+        const fullPrice = p.rides * BASE_RIDE_PRICE * multiplier;
         const discount  = SUBSCRIPTION_DISCOUNTS[p.days];
         const rawSaving = parseFloat(((fullPrice * discount.pct) / 100).toFixed(0));
         const saving    = Math.min(rawSaving, discount.max_saving);
         const finalPrice = Math.round(Math.max(0, fullPrice - saving));
-        const perRide   = Math.round(finalPrice / p.rides);
+        const perRide   = Math.round(finalPrice / (p.rides * multiplier));
         return { ...p, fullPrice, saving, finalPrice, perRide, pct: discount.pct };
     });
 
@@ -132,7 +155,7 @@ export default function SubscriptionPlansScreen() {
                 {/* Pricing Note */}
                 <View style={styles.pricingNote}>
                     <Text style={styles.pricingNoteText}>
-                        ✦ Based on ₹{BASE_RIDE_PRICE}/ride (avg 3 km) · Sakhi Premium included
+                        ✦ Based on ₹{BASE_RIDE_PRICE}/ride (your route) · Sakhi Premium included
                     </Text>
                 </View>
 
@@ -144,7 +167,12 @@ export default function SubscriptionPlansScreen() {
                     </Text>
                 </View>
 
-                {/* Plans Stack */}
+                {isLoadingFare ? (
+                    <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color="#BEA3D8" />
+                        <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 14 }}>Calculating your best price...</Text>
+                    </View>
+                ) : (
                 <View style={styles.plansStack}>
                     {plans.map((plan, idx) => {
                         const isSelected = sub.plan === plan.days;
@@ -193,6 +221,7 @@ export default function SubscriptionPlansScreen() {
                         );
                     })}
                 </View>
+                )}
 
                 {/* Bottom Padding for Footer */}
                 <View style={{ height: footerSpacerHeight }} />
@@ -200,7 +229,12 @@ export default function SubscriptionPlansScreen() {
 
             {/* Footer Action Button */}
             <View style={[styles.footerOverlay, { paddingBottom: footerPaddingBottom }]}>
-                <TouchableOpacity style={styles.submitBtn} onPress={handleProceed} activeOpacity={0.8}>
+                <TouchableOpacity 
+                    style={[styles.submitBtn, isLoadingFare && { opacity: 0.7 }]} 
+                    onPress={handleProceed} 
+                    activeOpacity={0.8}
+                    disabled={isLoadingFare}
+                >
                     <Text style={styles.submitText}>Proceed to Payment</Text>
                 </TouchableOpacity>
             </View>
