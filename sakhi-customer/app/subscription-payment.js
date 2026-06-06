@@ -226,12 +226,11 @@ export default function SubscriptionPaymentScreen() {
 
             if (sdkReady && base64_payload) {
                 try {
-                    // PhonePe SDK startTransaction expects a base64-encoded JSON payload
-                    // base64_payload = base64({ orderId, merchantId, token, paymentMode })
-                    const response = await PhonePePaymentSdk.startTransaction(
-                        base64_payload,
-                        Platform.OS === 'ios' ? 'sakhi' : null  // iOS URL scheme for callback
-                    );
+                    // PhonePe SDK startTransaction expects { request: base64EncodedString, appSchema }
+                    const response = await PhonePePaymentSdk.startTransaction({
+                        request: base64_payload,
+                        appSchema: Platform.OS === 'ios' ? 'sakhi' : null,
+                    });
 
                     // SDK returns: { status: 'SUCCESS'|'FAILURE'|'INTERRUPTED', error?: string }
                     if (response?.status === 'SUCCESS' || response?.code === 'PAYMENT_SUCCESS') {
