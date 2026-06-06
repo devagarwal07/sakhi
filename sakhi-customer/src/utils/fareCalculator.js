@@ -32,9 +32,9 @@ export const PRICING = {
   NEW_DRIVER_FREE_TRIAL_DAYS: 7,
 
   SUBSCRIPTION_DISCOUNTS: {
-    7:  { pct: 5,  max_saving: 1500 },
-    14: { pct: 10, max_saving: 3000 },
-    30: { pct: 15, max_saving: 8000 },
+    7:  { pct: 5,  max_saving: 100 },
+    14: { pct: 10, max_saving: 150 },
+    30: { pct: 15, max_saving: 200 },
   },
 };
 
