@@ -2,7 +2,7 @@
   "expo": {
     "name": "sakhi-driver",
     "slug": "sakhi-driver",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.sakhi.partner.driver",
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -64,6 +65,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sakhi.partner.driver",
+      "buildNumber": "2",
       "appleTeamId": "88KNFT5Y5Z"
     },
     "web": {
