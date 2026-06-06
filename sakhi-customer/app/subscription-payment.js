@@ -216,21 +216,25 @@ export default function SubscriptionPaymentScreen() {
                 targetApp,
             });
 
-            const { transaction_id, base64_payload } = data;
-            if (!transaction_id || !base64_payload) {
+            const { transaction_id, sdk_payload, base64_payload } = data;
+            // sdk_payload is raw JSON string — the native iOS SDK parses it directly with JSONSerialization
+            // base64_payload is kept as fallback
+            const requestPayload = sdk_payload || base64_payload;
+            if (!transaction_id || !requestPayload) {
                 throw new Error('Failed to create payment order. Please try again.');
             }
 
             // Step 2: Launch PhonePe native SDK checkout
             let transactionSuccess = false;
 
-            if (sdkReady && base64_payload) {
+            if (sdkReady && requestPayload) {
                 try {
-                    // PhonePe SDK startTransaction expects { request: base64EncodedString, appSchema }
-                    const response = await PhonePePaymentSdk.startTransaction({
-                        request: base64_payload,
-                        appSchema: Platform.OS === 'ios' ? 'sakhi' : null,
-                    });
+                    // Native iOS SDK parses request as raw JSON string (not base64)
+                    // sdk_payload = JSON string: { orderId, merchantId, token, paymentMode }
+                    const response = await PhonePePaymentSdk.startTransaction(
+                        requestPayload,
+                        Platform.OS === 'ios' ? 'sakhi' : null
+                    );
 
                     // SDK returns: { status: 'SUCCESS'|'FAILURE'|'INTERRUPTED', error?: string }
                     if (response?.status === 'SUCCESS' || response?.code === 'PAYMENT_SUCCESS') {
