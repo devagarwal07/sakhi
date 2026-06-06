@@ -1,5 +1,5 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Image, KeyboardAvoidingView,
@@ -85,6 +85,9 @@ export default function EditProfileScreen() {
     const [tempDay, setTempDay] = useState(dobDay);
     const [tempMonth, setTempMonth] = useState(dobMonth);
     const [tempYear, setTempYear] = useState(dobYear);
+
+    const monthRef = useRef(null);
+    const yearRef = useRef(null);
 
     // Language state
     const [language, setLanguage] = useState(user?.preferred_language || 'English');
@@ -405,7 +408,7 @@ export default function EditProfileScreen() {
             <Modal visible={showDobPicker} transparent animationType="slide">
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
                     <Pressable style={styles.modalBackdrop} onPress={() => setShowDobPicker(false)} />
                     <View style={[styles.pickerSheet, { paddingBottom: pickerSheetPaddingBottom }]}>
@@ -418,7 +421,10 @@ export default function EditProfileScreen() {
                                 <TextInput
                                     style={styles.dobInput}
                                     value={tempDay}
-                                    onChangeText={setTempDay}
+                                    onChangeText={(val) => {
+                                        setTempDay(val);
+                                        if (val.length === 2) monthRef.current?.focus();
+                                    }}
                                     keyboardType="number-pad"
                                     maxLength={2}
                                     placeholder="DD"
@@ -429,9 +435,13 @@ export default function EditProfileScreen() {
                             <View style={styles.dobFieldWrap}>
                                 <Text style={styles.dobFieldLabel}>Month</Text>
                                 <TextInput
+                                    ref={monthRef}
                                     style={styles.dobInput}
                                     value={tempMonth}
-                                    onChangeText={setTempMonth}
+                                    onChangeText={(val) => {
+                                        setTempMonth(val);
+                                        if (val.length === 2) yearRef.current?.focus();
+                                    }}
                                     keyboardType="number-pad"
                                     maxLength={2}
                                     placeholder="MM"
@@ -442,6 +452,7 @@ export default function EditProfileScreen() {
                             <View style={[styles.dobFieldWrap, { flex: 2 }]}>
                                 <Text style={styles.dobFieldLabel}>Year</Text>
                                 <TextInput
+                                    ref={yearRef}
                                     style={styles.dobInput}
                                     value={tempYear}
                                     onChangeText={setTempYear}
