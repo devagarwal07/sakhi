@@ -103,7 +103,7 @@ export default {
       },
       router: {}
     },
-    owner: "devaga1"
+    owner: "shubh_up301"
   }
 };
 
