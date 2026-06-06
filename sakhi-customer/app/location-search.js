@@ -408,11 +408,15 @@ export default function LocationSearchScreen() {
     };
 
     const handleSelectSavedPlace = (place) => {
+        const displayName = place.address || place.name || place.label || 'Saved Place';
         handleSelectPlace({
             place_id: place.id || place.place_id || String(Math.random()),
             eLoc: place.eLoc || null,
-            main: place.name || place.label || 'Saved Place',
-            secondary: place.address || '',
+            main: displayName,
+            secondary: '',
+            // Pass coords directly — avoids all geocoding fallback round-trips
+            lat: place.lat || place.latitude || null,
+            lng: place.lng || place.longitude || null,
         });
     };
 
