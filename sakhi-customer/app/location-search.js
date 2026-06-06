@@ -614,7 +614,7 @@ export default function LocationSearchScreen() {
                     {/* Saved Places */}
                     <View style={styles.savedSection}>
                         <Text style={styles.sectionTitle}>SAVED PLACES</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow} keyboardShouldPersistTaps="handled">
                             {savedPlaces.map(place => (
                                 <TouchableOpacity key={place.id} style={styles.chip} onPress={() => handleSelectSavedPlace(place)}>
                                     {place.label === 'home' ? (
