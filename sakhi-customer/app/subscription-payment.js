@@ -216,20 +216,20 @@ export default function SubscriptionPaymentScreen() {
                 targetApp,
             });
 
-            const { transaction_id, base64_payload, sdk_payload } = data;
-            if (!transaction_id || (!base64_payload && !sdk_payload)) {
+            const { transaction_id, base64_payload } = data;
+            if (!transaction_id || !base64_payload) {
                 throw new Error('Failed to create payment order. Please try again.');
             }
 
             // Step 2: Launch PhonePe native SDK checkout
             let transactionSuccess = false;
 
-            if (sdkReady && (sdk_payload || base64_payload)) {
+            if (sdkReady && base64_payload) {
                 try {
-                    // PhonePe SDK v3: startTransaction(base64EncodedJsonPayload, appSchema)
-                    // Payload format (base64): { orderId, merchantId, token, paymentMode: { type: 'PAY_PAGE' } }
+                    // PhonePe SDK startTransaction expects a base64-encoded JSON payload
+                    // base64_payload = base64({ orderId, merchantId, token, paymentMode })
                     const response = await PhonePePaymentSdk.startTransaction(
-                        sdk_payload || base64_payload,
+                        base64_payload,
                         Platform.OS === 'ios' ? 'sakhi' : null  // iOS URL scheme for callback
                     );
 
@@ -264,14 +264,26 @@ export default function SubscriptionPaymentScreen() {
             }
 
             if (transactionSuccess) {
-                // Step 3: Verify payment state on backend + activate subscription
-                setLoading(true);
-                await apiClient.post(`/subscriptions/${intentData.subscription_id}/activate`, {
-                    transaction_id,
-                });
-
-                // Step 4: Navigate to success screen
-                router.replace('/payment-success');
+                // Step 3: Verify payment on backend + activate subscription
+                try {
+                    await apiClient.post(`/subscriptions/${intentData.subscription_id}/activate`, {
+                        transaction_id,
+                    });
+                    // Step 4: Navigate to success screen
+                    router.replace('/payment-success');
+                } catch (activateErr) {
+                    // Payment was captured but activation failed
+                    const activateMsg = activateErr?.response?.data?.error?.message
+                        || activateErr?.message
+                        || 'Payment received but subscription activation failed. Please contact support with your transaction ID: ' + transaction_id;
+                    setModal({
+                        icon: '⚠️',
+                        title: 'Activation Failed',
+                        message: activateMsg,
+                        buttons: [{ text: 'Contact Support', onPress: () => { setModal(null); router.push('/help-support'); } },
+                                  { text: 'OK', style: 'cancel', onPress: () => setModal(null) }],
+                    });
+                }
             }
 
         } catch (err) {
