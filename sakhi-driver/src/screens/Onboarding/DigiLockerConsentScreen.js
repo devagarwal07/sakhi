@@ -10,7 +10,7 @@ import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://sakhi-backend-pwej.onrender.com';
 const CALLBACK_URL = `${BACKEND_URL}/webhooks/signzy/digilocker-callback`;
 
 // ─ States of this screen ─────────────────────────────────────────────────────
