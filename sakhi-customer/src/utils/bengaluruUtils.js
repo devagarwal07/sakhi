@@ -23,6 +23,11 @@ const BENGALURU_BOUNDS = {
  * @returns {boolean}
  */
 export function isInBengaluru(latitude, longitude) {
-    // Temporarily disabled Bengaluru-only geofence for testing/development outside Bangalore (e.g. Surat)
-    return true;
+    if (latitude == null || longitude == null) return false;
+    return (
+        latitude >= BENGALURU_BOUNDS.minLat &&
+        latitude <= BENGALURU_BOUNDS.maxLat &&
+        longitude >= BENGALURU_BOUNDS.minLng &&
+        longitude <= BENGALURU_BOUNDS.maxLng
+    );
 }

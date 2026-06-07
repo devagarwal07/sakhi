@@ -97,5 +97,6 @@ const haversineKm = (a, b) => {
 };
 
 export const isWithinBengaluru = (coords) => {
-    return true; // Bypass geofence check for testing (allows Surat, etc.)
+    if (!coords || coords.latitude == null || coords.longitude == null) return false;
+    return haversineKm(BENGALURU_CENTER, coords) <= BENGALURU_RADIUS_KM;
 };
