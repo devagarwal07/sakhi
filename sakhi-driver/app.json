@@ -30,7 +30,8 @@
         "android.permission.VIBRATE",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.USE_FULL_SCREEN_INTENT"
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "plugins": [
@@ -44,6 +45,7 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Sakhi Driver needs your location to share your position with riders while you are online.",
+          "locationAlwaysPermission": "Sakhi Driver needs 'Always On' location access to track your position in the background while you are online and accepting rides.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
@@ -73,9 +75,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "3005a6aa-8e10-40d9-acab-9ded139ca4fd"
+        "projectId": "30600045-9556-49be-b2c0-89653781213c"
       }
     },
-    "owner": "shubh_up301"
+    "owner": "devaga1"
   }
 }

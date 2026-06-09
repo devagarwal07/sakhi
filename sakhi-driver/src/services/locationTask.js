@@ -33,38 +33,49 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
 });
 
 /**
- * Request foreground + background location permissions.
- * Returns true if both granted.
+ * Request foreground location permissions.
+ * Returns true if granted.
  */
 export async function requestLocationPermissions() {
   const { status: fg } = await Location.requestForegroundPermissionsAsync();
-  if (fg !== 'granted') return false;
-  const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-  return bg === 'granted';
+  return fg === 'granted';
 }
 
 /**
  * Start background location tracking with a dynamic notification message.
+ *
+ * IMPORTANT: On Android 10+ (API 29+), startLocationUpdatesAsync requires
+ * ACCESS_BACKGROUND_LOCATION permission (the "Allow all the time" option).
+ * Without it the native call throws a fatal exception and crashes the app.
+ * We request it here before proceeding so the driver sees the OS prompt.
  */
 export async function startLocationTracking(title = 'Sakhi Driver', body = 'Sharing location while online') {
   try {
+    // 1. Foreground permission must already be granted
     const { status: fg } = await Location.getForegroundPermissionsAsync();
     if (fg !== 'granted') {
       console.warn('[LocationTask] Foreground location permission not granted');
       return;
     }
 
-    const { status: bg } = await Location.getBackgroundPermissionsAsync();
+    // 2. Background location permission — required for startLocationUpdatesAsync.
+    //    This shows the "Allow all the time" system dialog on Android 10+.
+    //    The app.json must declare ACCESS_BACKGROUND_LOCATION and set
+    //    isAndroidBackgroundLocationEnabled: true for this API to work.
+    const { status: bg } = await Location.requestBackgroundPermissionsAsync();
     if (bg !== 'granted') {
-      console.warn('[LocationTask] Background location permission not granted');
+      console.warn('[LocationTask] Background location permission denied — background tracking skipped');
+      // Don't crash — the driver can still work without background tracking
+      // (foreground location updates will continue while the app is visible)
       return;
     }
 
     const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
     if (running) {
-      // Stop and restart to update the notification text
+      // Stop first so we can update the notification text
       await Location.stopLocationUpdatesAsync(LOCATION_TASK);
     }
+
     await Location.startLocationUpdatesAsync(LOCATION_TASK, {
       accuracy: Location.Accuracy.High,
       timeInterval: 10000,       // every 10 seconds
@@ -76,6 +87,7 @@ export async function startLocationTracking(title = 'Sakhi Driver', body = 'Shar
         notificationColor: '#BEA3D8',
       },
     });
+
     console.log('[LocationTask] Background location tracking started successfully.');
   } catch (err) {
     console.error('[LocationTask] Failed to start location tracking:', err?.message);

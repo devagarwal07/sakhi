@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Dimensions,  ActivityIndicator,
   PanResponder, Animated, Modal,
-  StatusBar as RNStatusBar} from 'react-native';
+  StatusBar as RNStatusBar, Platform, Linking} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Location from 'expo-location';
+import * as IntentLauncher from 'expo-intent-launcher';
 
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -25,7 +26,6 @@ import BottomNavBar from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import SmartMapView from '../../components/SmartMapView';
 import PendingSubscriptionRequestsScreen from './PendingSubscriptionRequestsScreen';
-import { requestOverlayPermission } from '../../services/notificationService';
 import CustomAlert from '../../utils/CustomAlert';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -59,7 +59,7 @@ const sc = StyleSheet.create({
 
 // ── Subscription Countdown strip ─────────────────────────────────────────────
 function SubscriptionCountdown({ expiry }) {
-  if (!expiry) return null;
+  if (!expiry || isNaN(expiry.getTime())) return null;
 
   const now = new Date();
   const msLeft = expiry - now;
@@ -101,7 +101,14 @@ function SubscriptionCountdown({ expiry }) {
         <View style={sub.expDateWrap}>
           <Text style={sub.expDateLbl}>{t('home.expires')}</Text>
           <Text style={[sub.expDateVal, { color: accent }]}>
-            {expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            {(() => {
+              try {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return `${expiry.getDate()} ${months[expiry.getMonth()]}`;
+              } catch (e) {
+                return '';
+              }
+            })()}
           </Text>
         </View>
       </View>
@@ -367,55 +374,121 @@ export default function DriverHomeScreen({ navigation }) {
     })
   ).current;
 
-  // ── Location permission & Prominent Disclosure ─────────────────────────────
+  // ── Unified permission flow ─────────────────────────────────────────────────
+  // Ask ALL permissions at app start in one sequential flow:
+  //   1. Show location disclosure → 2. Foreground location → 3. Background location
+  //   → 4. Overlay ("display over other apps")
+  // This way the driver sees all prompts together before they can toggle online.
+  // ─────────────────────────────────────────────────────────────────────────────
   const [showDisclosure, setShowDisclosure] = useState(false);
+  const [permissionsReady, setPermissionsReady] = useState(false);
 
   useEffect(() => {
     (async () => {
-      // Check if disclosure was already accepted
-      const { status } = await Location.getForegroundPermissionsAsync();
+      // Check if location already granted (returning user)
+      const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
       const hasAccepted = await AsyncStorage.getItem('location_disclosure_accepted');
-      
-      if (status !== 'granted' && !hasAccepted) {
-        // Show prominent disclosure first
+
+      if (fgStatus !== 'granted' && !hasAccepted) {
+        // First time — show our branded disclosure before the OS dialog
         setShowDisclosure(true);
         return;
       }
-      
-      // Already granted or accepted disclosure previously, proceed with request
-      requestAndStartLocation();
+
+      // Already granted or accepted disclosure — run the full permission sequence
+      await runPermissionSequence();
     })();
   }, []);
 
-  const requestAndStartLocation = async () => {
+  /**
+   * Runs the full permission sequence:
+   * foreground location → background location → overlay
+   * All in one shot so the user sees everything upfront.
+   */
+  const runPermissionSequence = async () => {
     try {
-      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-      if (fgStatus !== 'granted') return;
-      
+      // Step 1: Foreground location
+      const { status: fg } = await Location.requestForegroundPermissionsAsync();
+      if (fg !== 'granted') {
+        CustomAlert.alert(
+          'Location Required',
+          'Sakhi Driver needs location access to assign rides to you. Please enable it in Settings.',
+          [{ text: 'Open Settings', onPress: () => Linking.openSettings() }, { text: 'Cancel', style: 'cancel' }]
+        );
+        return;
+      }
       setLocGranted(true);
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setLocation(coord);
+
+      // Get initial position for the map
+      try {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      } catch (_) { /* emulator may fail — non-fatal */ }
+
+      // Step 2: Background location (needed for startLocationUpdatesAsync)
+      // On Android 10+, this shows a separate "Allow all the time" dialog.
+      const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+      if (bg !== 'granted') {
+        // Non-fatal: driver can still work (foreground-only tracking)
+        console.warn('[Permissions] Background location denied — driver will only be tracked while app is visible');
+      }
+
+      // Step 3: Overlay permission ("Display over other apps") — ask only once
+      // We ask here at startup so it isn't jarring when they first tap Go Online
+      if (Platform.OS === 'android') {
+        const OVERLAY_ASKED_KEY = 'sakhi_overlay_permission_asked';
+        const alreadyAsked = await AsyncStorage.getItem(OVERLAY_ASKED_KEY).catch(() => null);
+        if (alreadyAsked !== 'true') {
+          await AsyncStorage.setItem(OVERLAY_ASKED_KEY, 'true').catch(() => {});
+          CustomAlert.alert(
+            '🚗 Show Ride Requests Anywhere',
+            'Allow Sakhi Driver to display incoming ride requests over other apps — so you never miss a ride, even when your screen is on.',
+            [
+              { text: 'Not Now', style: 'cancel' },
+              {
+                text: 'Allow',
+                style: 'default',
+                onPress: async () => {
+                  try {
+                    await IntentLauncher.startActivityAsync(
+                      'android.settings.action.MANAGE_OVERLAY_PERMISSION',
+                      { data: 'package:com.sakhi.partner.driver' }
+                    );
+                  } catch (_) {
+                    Linking.openSettings().catch(() => {});
+                  }
+                },
+              },
+            ],
+            { cancelable: true }
+          );
+        }
+      }
+
+      setPermissionsReady(true);
     } catch (e) {
-      console.warn('[Location] Failed to request permissions:', e?.message);
+      console.warn('[Permissions] runPermissionSequence error:', e?.message);
     }
   };
+
+  const requestAndStartLocation = runPermissionSequence;
 
   const handleAcceptDisclosure = async () => {
     await AsyncStorage.setItem('location_disclosure_accepted', 'true');
     setShowDisclosure(false);
-    requestAndStartLocation();
+    await runPermissionSequence();
   };
 
   const handleDeclineDisclosure = () => {
     setShowDisclosure(false);
     CustomAlert.alert(
-      t('common.error', 'Permission Denied'), 
+      t('common.error', 'Permission Denied'),
       t('home.locationRequiredMsg', 'The Sakhi Driver app requires location access to assign rides to you. Please enable it in settings.')
     );
   };
 
-  // ── Keep location updated ──────────────────────────────────────────────────
+  // ── Keep location updated (foreground watch) ─────────────────────────────────
+
   useEffect(() => {
     if (!locGranted) return;
     let sub;
@@ -448,13 +521,11 @@ export default function DriverHomeScreen({ navigation }) {
   useEffect(() => {
     setIsOnline(driver?.is_online ?? false);
     if (driver?.is_online) {
-      // Safely start location tracking
+      // Safely start location tracking (bg permission is already requested at startup)
       startLocationTracking('Sakhi Driver', 'Searching for nearby rides...')
         .catch(err => console.warn('[Location] Failed to start location tracking:', err));
-
-      // Safely request overlay permissions
-      requestOverlayPermission()
-        .catch(err => console.warn('[Overlay] Failed to request overlay permission:', err));
+      // NOTE: Overlay permission is now requested at startup in runPermissionSequence,
+      // not here, so there's no surprise popup when toggling online.
     }
   }, [driver?.is_online]);
 
@@ -607,7 +678,7 @@ export default function DriverHomeScreen({ navigation }) {
   };
 
   // Days remaining on subscription
-  const daysLeft = subscriptionExpiry
+  const daysLeft = subscriptionExpiry && !isNaN(subscriptionExpiry.getTime())
     ? Math.max(0, Math.ceil((subscriptionExpiry - new Date()) / (1000 * 60 * 60 * 24)))
     : null;
   const subscriptionExpired = daysLeft !== null && daysLeft === 0;
