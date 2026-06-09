@@ -128,7 +128,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
     if (code.length < OTP_LENGTH) return;
     try {
       setLoading(true);
-      console.log('[OTP] Verifying', phone, 'with code', code);
+      if (__DEV__) console.log('[OTP] Verifying', phone);
       const result = await login(phone, code);
       if (!result.success) {
         CustomAlert.alert('Invalid OTP', result.message ?? 'Please try again.');
@@ -139,7 +139,7 @@ export default function DriverOtpVerificationScreen({ route, navigation }) {
       // login() updates isAuthenticated in AuthContext → RootNavigator
       // automatically swaps AuthStack → OnboardingStack or MainStack.
     } catch (err) {
-      console.error('[OTP] verify error:', err.message, err.response?.data);
+      if (__DEV__) console.error('[OTP] verify error:', err.message);
       CustomAlert.alert('Error', err.message ?? 'Verification failed. Please try again.');
       setOtp([]);
     } finally {

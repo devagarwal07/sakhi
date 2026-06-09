@@ -294,7 +294,7 @@ export default function DriverHomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
   const [isOnline, setIsOnline] = useState(driver?.is_online ?? false);
-  const [earnings, setEarnings] = useState({ today: 340, rides: 5, rating: 4.9 });
+  const [earnings, setEarnings] = useState({ today: 0, rides: 0, rating: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPendingSubModal, setShowPendingSubModal] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -579,19 +579,8 @@ export default function DriverHomeScreen({ navigation }) {
         .then(r => {
           const expStr = r.data?.expiry_date ?? r.data?.subscription_expiry;
           if (expStr) setSubscriptionExpiry(new Date(expStr));
-          else {
-            // Dev mock: 5 days from now for weekly plan demo
-            const mock = new Date();
-            mock.setDate(mock.getDate() + 5);
-            setSubscriptionExpiry(mock);
-          }
         })
-        .catch(() => {
-          // Dev mock fallback
-          const mock = new Date();
-          mock.setDate(mock.getDate() + 5);
-          setSubscriptionExpiry(mock);
-        });
+        .catch(() => {});
     }
   }, [driver]));
 

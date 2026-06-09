@@ -31,7 +31,7 @@ export default function DriverLoginScreen({ navigation }) {
     try {
       setLoading(true);
       const fullPhone = `+91${phone}`;
-      console.log('[Login] Sending OTP to', fullPhone, 'via', process.env.EXPO_PUBLIC_API_URL);
+      if (__DEV__) console.log('[Login] Sending OTP to', fullPhone);
       await client.post('/auth/send-otp', { phone: fullPhone, role: 'driver' });
       navigation.navigate('DriverOtp', { phone: fullPhone });
     } catch (err) {
@@ -39,7 +39,7 @@ export default function DriverLoginScreen({ navigation }) {
         ?? err.response?.data?.error?.message
         ?? err.message
         ?? 'Could not send OTP. Try again.';
-      console.error('[Login] sendOTP error:', err.message, err.response?.data);
+      if (__DEV__) console.error('[Login] sendOTP error:', err.message);
       CustomAlert.alert('Login Failed', msg);
     } finally {
       setLoading(false);
