@@ -603,5 +603,20 @@ router.get('/documents',          authMiddleware, roleGuard('driver'), driverCon
 // ── Subscription opt-in toggle ─────────────────────────────────────────────────────
 router.patch('/subscription/opt-in', authMiddleware, roleGuard('driver'), driverController.toggleSubscriptionOptIn);
 
+// ── Recent rides (for complaint picker) ────────────────────────────────────────────
+router.get('/rides/recent', authMiddleware, roleGuard('driver'), driverController.getRecentRides);
+
+// ── Payment details (GET) ──────────────────────────────────────────────────────────
+router.get('/payment-details', authMiddleware, roleGuard('driver'), driverController.getPaymentDetails);
+
+// ── Subscription schedule (today + upcoming week) ──────────────────────────────────
+router.get('/subscription/schedule', authMiddleware, roleGuard('driver'), driverController.getSubscriptionSchedule);
+
+// ── Subscription weekly calendar (7-day view) ──────────────────────────────────────
+router.get('/subscription/weekly-calendar', authMiddleware, roleGuard('driver'), driverController.getWeeklyCalendar);
+
+// ── Transaction export ─────────────────────────────────────────────────────────────
+router.post('/transactions/export', authMiddleware, roleGuard('driver'), driverController.exportTransactions);
+
 module.exports = router;
 

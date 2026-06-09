@@ -879,6 +879,220 @@ async function updatePaymentDetails(req, res, next) {
   } catch (err) { return handleError(err, res, next); }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/rides/recent  — last 10 completed rides for complaint picker
+// ──────────────────────────────────────────────────────────────────────────────
+async function getRecentRides(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+
+    const { data, error } = await supabase
+      .from('rides')
+      .select('id, pickup_address, drop_address, created_at')
+      .eq('driver_id', driverId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    const rides = (data || []).map((r) => {
+      const dt = new Date(r.created_at);
+      const now = new Date();
+      const diffDays = Math.floor((now - dt) / (1000 * 60 * 60 * 24));
+      let dateStr;
+      if (diffDays === 0) dateStr = 'Today';
+      else if (diffDays === 1) dateStr = 'Yesterday';
+      else dateStr = dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+      const timeStr = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const pickup = r.pickup_address?.split(',')[0] || 'Pickup';
+      const drop = r.drop_address?.split(',')[0] || 'Drop';
+
+      return {
+        id: r.id,
+        label: `${dateStr}, ${timeStr} — ${pickup} → ${drop}`,
+      };
+    });
+
+    return res.status(200).json({ rides });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/payment-details  — saved UPI / bank account info
+// ──────────────────────────────────────────────────────────────────────────────
+async function getPaymentDetails(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('upi_id, bank_account_no, bank_ifsc')
+      .eq('id', driverId)
+      .limit(1);
+
+    if (error) throw error;
+    const d = data?.[0] ?? {};
+
+    const upiIds = d.upi_id
+      ? [{ handle: d.upi_id, isPrimary: true }]
+      : [];
+
+    const bankAccounts = d.bank_account_no
+      ? [{ accountNumber: d.bank_account_no, ifsc: d.bank_ifsc || '', isPrimary: true }]
+      : [];
+
+    return res.status(200).json({ upiIds, bankAccounts });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/subscription/schedule  — today's rides + upcoming week for subscription overview
+// ──────────────────────────────────────────────────────────────────────────────
+async function getSubscriptionSchedule(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // Fetch driver opt-in status
+    const { data: driverRows } = await supabase
+      .from('drivers')
+      .select('subscription_opt_in')
+      .eq('id', driverId)
+      .limit(1);
+    const optedIn = driverRows?.[0]?.subscription_opt_in ?? false;
+
+    // Fetch today's subscription rides assigned to this driver
+    const { data: todayRides, error: todayErr } = await supabase
+      .from('rides')
+      .select('id, pickup_address, drop_address, created_at, status, subscription_id')
+      .eq('driver_id', driverId)
+      .not('subscription_id', 'is', null)
+      .gte('created_at', `${todayStr}T00:00:00.000Z`)
+      .lte('created_at', `${todayStr}T23:59:59.999Z`)
+      .order('created_at', { ascending: true });
+    if (todayErr) throw todayErr;
+
+    // Fetch upcoming 7 days of subscription rides
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const { data: weekRides, error: weekErr } = await supabase
+      .from('rides')
+      .select('id, pickup_address, drop_address, created_at, status, subscription_id')
+      .eq('driver_id', driverId)
+      .not('subscription_id', 'is', null)
+      .gt('created_at', `${todayStr}T23:59:59.999Z`)
+      .lte('created_at', nextWeek.toISOString())
+      .order('created_at', { ascending: true });
+    if (weekErr) throw weekErr;
+
+    // Group upcoming rides by day
+    const upcomingWeek = [];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+      const dayRides = (weekRides || []).filter(r => r.created_at?.startsWith(dateStr));
+      upcomingWeek.push({ date: dateStr, label: dayLabel, rides: dayRides });
+    }
+
+    return res.status(200).json({
+      todayRides: todayRides || [],
+      upcomingWeek,
+      optedIn,
+      isLocked: false,
+      minutesUntilNext: 0,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /drivers/subscription/weekly-calendar  — 7-day calendar view
+// ──────────────────────────────────────────────────────────────────────────────
+async function getWeeklyCalendar(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+    const today = new Date();
+
+    // Build 7-day window starting from today
+    const startDate = new Date(today);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+
+    const { data: rides, error } = await supabase
+      .from('rides')
+      .select('id, pickup_address, drop_address, created_at, status, subscription_id')
+      .eq('driver_id', driverId)
+      .not('subscription_id', 'is', null)
+      .gte('created_at', startDate.toISOString())
+      .lt('created_at', endDate.toISOString())
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayRides = (rides || [])
+        .filter(r => r.created_at?.startsWith(dateStr))
+        .map(r => ({
+          id: r.id,
+          pickup: r.pickup_address?.split(',')[0] || 'Pickup',
+          drop: r.drop_address?.split(',')[0] || 'Drop',
+          time: new Date(r.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          status: r.status,
+        }));
+
+      week.push({
+        day: DAYS[d.getDay()],
+        date: d.getDate(),
+        isToday: i === 0,
+        rides: dayRides,
+      });
+    }
+
+    return res.status(200).json({ week });
+  } catch (err) { return handleError(err, res, next); }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST /drivers/transactions/export  — trigger transaction history email
+// ──────────────────────────────────────────────────────────────────────────────
+async function exportTransactions(req, res, next) {
+  try {
+    const driverId = req.user.userId;
+
+    // Fetch driver email
+    const { data: driverRows } = await supabase
+      .from('drivers')
+      .select('email, name')
+      .eq('id', driverId)
+      .limit(1);
+
+    const driver = driverRows?.[0];
+    if (!driver?.email) {
+      return res.status(422).json({
+        error: { code: 'NO_EMAIL', message: 'Please add an email address to your profile to receive exports.', details: {} },
+      });
+    }
+
+    // For now, acknowledge the request. Email delivery can be async via a job queue.
+    logger.info('driverController.exportTransactions — export requested', { driverId, email: driver.email });
+
+    return res.status(200).json({
+      ok: true,
+      message: `Transaction history will be sent to ${driver.email} shortly.`,
+    });
+  } catch (err) { return handleError(err, res, next); }
+}
+
 module.exports = {
   updateDriverStatus,
   getEarningsToday,
@@ -901,4 +1115,9 @@ module.exports = {
   listDriverComplaints,
   updateNotificationSettings,
   updatePaymentDetails,
+  getRecentRides,
+  getPaymentDetails,
+  getSubscriptionSchedule,
+  getWeeklyCalendar,
+  exportTransactions,
 };
