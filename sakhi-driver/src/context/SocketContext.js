@@ -387,11 +387,17 @@ export function SocketProvider({ children }) {
   // ── Auto-connect while authenticated + online, disconnect on logout ────
   useEffect(() => {
     if (isAuthenticated && driver?.is_online) {
+      // Connect the socket for real-time ride dispatching
       connect().catch(err => console.warn('[Socket] auto-connect error:', err?.message));
-      startDriverForegroundService();
+      // NOTE: We do NOT call startDriverForegroundService() here.
+      // expo-location's startLocationUpdatesAsync already creates its own
+      // persistent foreground service notification. Starting a second one via
+      // notifee causes a native Android crash (uncaught Java exception) that
+      // bypasses JS try/catch entirely, killing the app when Go Online is tapped.
     } else {
       disconnect();
-      stopDriverForegroundService();
+      // Stop the notifee foreground service if it somehow got started
+      stopDriverForegroundService().catch(() => {});
     }
   }, [isAuthenticated, driver?.is_online]);
 
