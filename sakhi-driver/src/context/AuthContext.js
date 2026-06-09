@@ -116,8 +116,14 @@ export function AuthProvider({ children }) {
       setDriver(null);
       setIsAuthenticated(false);
     });
-    return () => sub.remove();
-  }, []);
+    const subRefresh = DeviceEventEmitter.addListener('REFRESH_AUTH', () => {
+      checkAuth();
+    });
+    return () => {
+      sub.remove();
+      subRefresh.remove();
+    };
+  }, [checkAuth]);
 
   // ─── login ────────────────────────────────────────────────────────────────
   const login = useCallback(async (phone, otp) => {

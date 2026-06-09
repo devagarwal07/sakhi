@@ -266,7 +266,7 @@ export default function App() {
       if (type === 'RIDE_ASSIGNED') {
         navigationRef.navigate('EnRouteToPickup');
       } else if (type === 'KYC_APPROVED' || type === 'KYC_REJECTED') {
-        navigationRef.navigate('DocumentUnderReview');
+        DeviceEventEmitter.emit('REFRESH_AUTH');
       }
     };
 

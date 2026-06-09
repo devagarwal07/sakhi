@@ -131,7 +131,7 @@ export default function VehicleDetailsEntryScreen({ navigation }) {
         model_name:          modelResult.clean,
       });
       updateDriver({ onboarding_status: 'vehicle_added' });
-      navigation.navigate('VerificationLoading');
+      navigation.navigate('DocumentUnderReview');
     } catch (err) {
       CustomAlert.alert('Error', err.response?.data?.message ?? 'Could not save vehicle details.');
     } finally {
