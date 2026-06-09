@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
    ActivityIndicator, Modal, TextInput, KeyboardAvoidingView} from 'react-native';
@@ -22,13 +22,7 @@ const BG       = '#F5F0FF';
 const WHITE    = '#FFFFFF';
 const CARD_SHD = { shadowColor: 'rgba(124, 58, 237, 1)', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 4 };
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-const SEED_UPI = [
-  { id: 'u1', handle: 'meena@okicici', isPrimary: true },
-];
-const SEED_BANK = [
-  { id: 'b1', bankName: 'HDFC Bank', accountMasked: '••••4521', ifsc: 'HDFC0001234' },
-];
+// ─── No seed data — fetched from API ──────────────────────────────────────────
 
 // ─── Icon bubble ─────────────────────────────────────────────────────────────
 function IconBubble({ children }) {
@@ -143,9 +137,26 @@ const BANK_FIELDS = [
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PaymentDetailsScreen({ navigation }) {
   const { t } = useTranslation();
-  const [upiList,  setUpiList]  = useState(SEED_UPI);
-  const [bankList, setBankList] = useState(SEED_BANK);
+  const [upiList,  setUpiList]  = useState([]);
+  const [bankList, setBankList] = useState([]);
   const [saving,   setSaving]   = useState(false);
+  const [loading,  setLoading]  = useState(true);
+
+  // ── Fetch payment details from API on mount ─────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get('/drivers/payment-details');
+        if (Array.isArray(data?.upiIds)) setUpiList(data.upiIds);
+        if (Array.isArray(data?.bankAccounts)) setBankList(data.bankAccounts);
+      } catch {
+        setUpiList([]);
+        setBankList([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   // Modal state
   const [upiModal,  setUpiModal]  = useState({ visible: false, editing: null });

@@ -128,7 +128,7 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
             </View>
 
             <Text style={styles.vehicleText}>
-              {t('sidebar.vehicle')}: {driver?.vehicle_number ?? 'KA-01-EF-1234'}
+              {t('sidebar.vehicle')}: {driver?.vehicle_number ?? ''}
             </Text>
           </View>
         </View>

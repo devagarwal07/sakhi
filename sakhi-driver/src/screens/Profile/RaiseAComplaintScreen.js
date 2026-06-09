@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput,  ActivityIndicator, Image, Modal,
@@ -50,12 +50,7 @@ const ISSUE_TYPES = [
   'Other',
 ];
 
-// Seed rides for "Select recent ride" picker
-const MOCK_RIDES = [
-  { id: 'r1', label: 'Today, 10:22 AM — Koramangala → HSR' },
-  { id: 'r2', label: 'Yesterday, 6:45 PM — Indiranagar → MG Road' },
-  { id: 'r3', label: '30 Mar, 9:10 AM — Bannerghatta → BTM' },
-];
+// Rides are now fetched from API — no seed data
 
 const MAX_DESC = 500;
 
@@ -105,6 +100,21 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
   const [description,   setDescription]  = useState('');
   const [screenshot,    setScreenshot]    = useState(null);
   const [submitting,    setSubmitting]    = useState(false);
+  const [recentRides,   setRecentRides]   = useState([]);
+
+  // ── Fetch recent rides for dropdown ─────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get('/drivers/rides/recent');
+        if (Array.isArray(data?.rides)) {
+          setRecentRides(data.rides);
+        }
+      } catch {
+        setRecentRides([]);
+      }
+    })();
+  }, []);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const toggleIssue = useCallback(() => {
@@ -227,10 +237,11 @@ export default function RaiseAComplaintScreen({ navigation, route }) {
               </TouchableOpacity>
               <InlineDropdown
                 open={showRides}
-                items={MOCK_RIDES.map(r => r.label)}
+                items={recentRides.length > 0 ? recentRides.map(r => r.label) : ['No recent rides']}
                 selected={relatedRide?.label ?? null}
                 onSelect={(label) => {
-                  const ride = MOCK_RIDES.find(r => r.label === label);
+                  if (label === 'No recent rides') { setShowRides(false); return; }
+                  const ride = recentRides.find(r => r.label === label);
                   setRelatedRide(ride ?? null);
                   setShowRides(false);
                 }}

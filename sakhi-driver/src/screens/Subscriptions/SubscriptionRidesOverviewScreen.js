@@ -11,28 +11,36 @@ import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-// Mock data to match Figma visual
-const MOCK_TODAY = [
-  { id: '1', time: '08:30 AM', route: 'Office Corridor - Tech Park', rider: 'Ananya Sharma', status: 'UPCOMING' },
-  { id: '2', time: '05:45 PM', route: 'Tech Park - Residency Area', rider: 'Ananya Sharma', status: 'UPCOMING' }
-];
-
-const MOCK_UPCOMING_WEEK = [
-  { id: 'w1', month: 'OCT', date: '24', dayTitle: 'Tomorrow, Tuesday', ridesCount: 2 },
-  { id: 'w2', month: 'OCT', date: '25', dayTitle: 'Wednesday', ridesCount: 4 },
-  { id: 'w3', month: 'OCT', date: '26', dayTitle: 'Thursday', ridesCount: 2 },
-];
+// No mock data — rides and schedule are fetched from API
 
 export default function SubscriptionRidesOverviewScreen({ navigation }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [optedIn, setOptedIn] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [rides, setRides] = useState(MOCK_TODAY);
+  const [optedIn, setOptedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [rides, setRides] = useState([]);
+  const [upcomingWeek, setUpcomingWeek] = useState([]);
+  const [isLocked, setIsLocked] = useState(false);
+  const [minutesUntilNext, setMinutesUntilNext] = useState(0);
 
-  // Example lock state for the banner
-  const isLocked = true;
-  const minutesUntilNext = 28;
+  // ── Fetch subscription schedule from API ────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get('/drivers/subscription/schedule');
+        if (Array.isArray(data?.todayRides)) setRides(data.todayRides);
+        if (Array.isArray(data?.upcomingWeek)) setUpcomingWeek(data.upcomingWeek);
+        if (typeof data?.optedIn === 'boolean') setOptedIn(data.optedIn);
+        if (typeof data?.isLocked === 'boolean') setIsLocked(data.isLocked);
+        if (typeof data?.minutesUntilNext === 'number') setMinutesUntilNext(data.minutesUntilNext);
+      } catch {
+        setRides([]);
+        setUpcomingWeek([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleOptToggle = async (val) => {
     const prev = optedIn;
@@ -90,6 +98,17 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
         {/* Today's Schedule Section */}
         <Text style={styles.sectionTitle}>{t('subscription.todaysSchedule')}</Text>
 
+        {loading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#BEA3D8" />
+          </View>
+        ) : rides.length === 0 ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Text style={{ fontFamily: 'Inter', fontSize: 14, color: '#64748B' }}>No rides scheduled for today</Text>
+          </View>
+        ) : null}
+
+        {!loading && rides.length > 0 && (
         <View style={styles.rideList}>
           {rides.map((ride, idx) => (
             <TouchableOpacity
@@ -116,12 +135,17 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+        )}
 
         {/* Upcoming Week Section */}
         <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('subscription.upcomingWeek')}</Text>
 
         <View style={styles.weekOverlay}>
-          {MOCK_UPCOMING_WEEK.map((day, idx) => (
+          {upcomingWeek.length === 0 && !loading ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <Text style={{ fontFamily: 'Inter', fontSize: 14, color: '#64748B' }}>No upcoming rides this week</Text>
+            </View>
+          ) : upcomingWeek.map((day, idx) => (
             <TouchableOpacity
               key={day.id}
               style={[

@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Shadows, Radius, Spacing } from '../../utils/theme';
+import client from '../../api/client';
 import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import { useTranslation } from 'react-i18next';
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
-// Dummy schedule structure — real data will come from navigation params or parent
-const DEFAULT_WEEK = (days) => days.map((d, i) => ({
+// No dummy data — weekly calendar fetched from API or navigation params
+const EMPTY_WEEK = (days) => days.map((d, i) => ({
   day: d,
   date: new Date(Date.now() + (i - TODAY_IDX) * 86400000).getDate(),
-  rides: i < 5 ? [
-    { time: '8:30 AM', route: 'Koramangala → MG Road', status: i < TODAY_IDX ? 'completed' : i === TODAY_IDX ? 'upcoming' : 'scheduled' },
-    { time: '6:00 PM', route: 'MG Road → Koramangala', status: i < TODAY_IDX ? 'completed' : 'scheduled' },
-  ] : [],
+  rides: [],
 }));
 
 const STATUS_STYLE = {
@@ -31,10 +30,30 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
   const days = Array.isArray(daysShort) && daysShort.length === 7
     ? daysShort
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const week = route.params?.week ?? DEFAULT_WEEK(days);
+  const [week, setWeek] = useState(route.params?.week ?? EMPTY_WEEK(days));
   const [selectedDay, setSelectedDay] = useState(TODAY_IDX);
+  const [loadingWeek, setLoadingWeek] = useState(!route.params?.week);
 
-  const dayData = week[selectedDay] ?? DEFAULT_WEEK(days)[selectedDay];
+  // ── Fetch weekly calendar from API if not passed via params ──────────────
+  useEffect(() => {
+    if (route.params?.week) return;
+    (async () => {
+      try {
+        const { data } = await client.get('/drivers/subscription/weekly-calendar');
+        if (Array.isArray(data?.week) && data.week.length === 7) {
+          setWeek(data.week);
+        } else {
+          setWeek(EMPTY_WEEK(days));
+        }
+      } catch {
+        setWeek(EMPTY_WEEK(days));
+      } finally {
+        setLoadingWeek(false);
+      }
+    })();
+  }, []);
+
+  const dayData = week[selectedDay] ?? { day: days[selectedDay], date: '', rides: [] };
 
   const statusLabels = {
     upcoming: t('subscription.statusUpcoming'),
@@ -54,7 +73,7 @@ export default function WeeklyCalendarViewScreen({ navigation, route }) {
         contentContainerStyle={styles.dayStripContent}
       >
         {days.map((d, i) => {
-          const dayInfo = week[i] ?? DEFAULT_WEEK(days)[i];
+          const dayInfo = week[i] ?? { day: d, date: i + 1, rides: [] };
           const isToday = i === TODAY_IDX;
           const isSel = i === selectedDay;
           const hasRides = (dayInfo.rides ?? []).length > 0;

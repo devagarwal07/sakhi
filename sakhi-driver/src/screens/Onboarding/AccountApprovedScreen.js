@@ -66,7 +66,7 @@ export default function AccountApprovedScreen({ navigation }) {
           <View style={styles.driverRow}>
             <View>
               <Text style={styles.labelSmall}>DRIVER NAME</Text>
-              <Text style={styles.driverVal}>{driver?.name ?? 'Priya Sharma'}</Text>
+              <Text style={styles.driverVal}>{driver?.name ?? ''}</Text>
             </View>
             <View style={styles.personIconBg}>
               <MaterialCommunityIcons name="account-check-outline" size={20} color="#BEA3D8" />
@@ -79,7 +79,7 @@ export default function AccountApprovedScreen({ navigation }) {
             <View style={styles.vehicleInfoRow}>
               <MaterialCommunityIcons name="train-car" size={16} color="#BEA3D8" />
               <Text style={styles.vehicleVal}>
-                {(driver?.vehicle_model || 'Auto') + ' ' + (driver?.registration_number || 'KA 05 AB 1234')}
+                {(driver?.vehicle_model || 'Auto') + ' ' + (driver?.registration_number || '')}
               </Text>
             </View>
           </View>

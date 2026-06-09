@@ -115,8 +115,8 @@ export default function MyDocumentsScreen({ navigation }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  const [docs,             setDocs]             = useState(MOCK_DOCS);
-  const [expiringSoon,     setExpiringSoon]      = useState(1);
+  const [docs,             setDocs]             = useState([]);
+  const [expiringSoon,     setExpiringSoon]      = useState(0);
   const [loading,          setLoading]           = useState(true);
 
   // ── Fetch real KYC document statuses from backend ─────────────────────
@@ -126,20 +126,14 @@ export default function MyDocumentsScreen({ navigation }) {
     (async () => {
       try {
         const { data } = await client.get('/drivers/documents');
-        if (data?.docs?.length) {
-          // Build a lookup: type → api doc
-          const apiMap = {};
-          data.docs.forEach((d) => { apiMap[d.type] = d; });
-
-          // Merge: for every base slot, overlay API fields if available
-          const merged = MOCK_DOCS.map((base) =>
-            apiMap[base.type] ? { ...base, ...apiMap[base.type] } : base
-          );
-          setDocs(merged);
+        if (Array.isArray(data?.docs)) {
+          setDocs(data.docs);
           setExpiringSoon(data.expiringSoonCount ?? 0);
+        } else {
+          setDocs([]);
         }
       } catch {
-        // keep mock data if API unavailable
+        setDocs([]);
       } finally {
         setLoading(false);
       }
@@ -215,6 +209,10 @@ export default function MyDocumentsScreen({ navigation }) {
         {loading ? (
           <View style={{ paddingVertical: 40, alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#BEA3D8" />
+          </View>
+        ) : docs.length === 0 ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Text style={{ fontFamily: 'Inter', fontSize: 16, color: '#64748B' }}>No documents found</Text>
           </View>
         ) : (
           <View style={styles.docList}>

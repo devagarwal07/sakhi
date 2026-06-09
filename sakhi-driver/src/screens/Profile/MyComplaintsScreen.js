@@ -318,7 +318,7 @@ export default function MyComplaintsScreen({ navigation }) {
   const { t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [complaints, setComplaints]     = useState(SEED);
+  const [complaints, setComplaints]     = useState([]);
   const [loading, setLoading]           = useState(false);
   const [refreshing, setRefreshing]     = useState(false);
 
@@ -327,12 +327,9 @@ export default function MyComplaintsScreen({ navigation }) {
     try {
       const params = filter !== 'all' ? { status: filter } : {};
       const { data } = await client.get('/drivers/complaints', { params });
-      if (Array.isArray(data?.complaints) && data.complaints.length > 0) {
-        setComplaints(data.complaints);
-      }
-      // if API returns empty keep seed for dev preview
+      setComplaints(Array.isArray(data?.complaints) ? data.complaints : []);
     } catch {
-      // silently keep seed data
+      setComplaints([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -423,8 +420,8 @@ export default function MyComplaintsScreen({ navigation }) {
               </View>
             )}
 
-            {/* Empty state — always shown below cards (or alone when filtered) */}
-            <EmptyState onRaise={handleNewComplaint} />
+            {/* Empty state — only shown when no complaints match the filter */}
+            {displayed.length === 0 && <EmptyState onRaise={handleNewComplaint} />}
           </>
         )}
       </ScrollView>
