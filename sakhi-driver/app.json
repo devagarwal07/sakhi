@@ -68,7 +68,16 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sakhi.partner.driver",
       "buildNumber": "2",
-      "appleTeamId": "88KNFT5Y5Z"
+      "appleTeamId": "88KNFT5Y5Z",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location to share your position with riders while you are online.",
+        "NSLocationAlwaysUsageDescription": "Sakhi Driver needs background location access to track your position while you are online and accepting rides.",
+        "NSLocationWhenInUseUsageDescription": "Sakhi Driver needs your location to show nearby ride requests.",
+        "NSCameraUsageDescription": "Sakhi Driver needs camera access for face verification and document scanning.",
+        "NSMicrophoneUsageDescription": "Sakhi Driver needs microphone access for in-app voice calls with riders.",
+        "NSPhotoLibraryUsageDescription": "Sakhi Driver needs photo access to upload documents and screenshots.",
+        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -2,17 +2,23 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Image, ScrollView, Dimensions, Platform, Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Location from 'expo-location';
 import Svg, { Path } from 'react-native-svg';
 
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import client from '../../api/client';
 import { getActiveRide } from '../../api/endpoints';
+import {
+  startLocationTracking,
+} from '../../services/locationTask';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import DriverSidebarMenu from '../../components/DriverSidebarMenu';
 import { useTranslation } from 'react-i18next';
@@ -103,12 +109,15 @@ function MiniSparkline() {
 }
 
 export default function DriverOnlineDashboardScreen({ navigation }) {
-  const { driver } = useAuth();
+  const { driver, updateDriver } = useAuth();
+  const { socket } = useSocket();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [earnings, setEarnings] = useState({ today: null, trips: 0, onlineMinutes: 0 });
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
 
   // ── Glow animation for the Go Online button ────────────────────────────────
   const glowAnim = useRef(new Animated.Value(0.6)).current;
@@ -143,24 +152,40 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
 
       client.get('/drivers/earnings/today').then(r => {
         setEarnings({
-          today: r.data?.today_earnings ?? null,
-          trips: r.data?.today_trips ?? 0,
+          today: r.data?.net_earnings ?? r.data?.today_earnings ?? null,
+          trips: r.data?.rides_completed ?? r.data?.today_trips ?? 0,
           onlineMinutes: r.data?.online_minutes ?? 0,
         });
       }).catch(() => { });
+
+      // Fetch subscription expiry
+      const expiryFromCtx = driver?.subscription_expiry;
+      if (expiryFromCtx) {
+        setSubscriptionExpiry(new Date(expiryFromCtx));
+      } else {
+        client.get('/drivers/subscription').then(r => {
+          const expStr = r.data?.expiry_date ?? r.data?.subscription_expiry;
+          if (expStr) setSubscriptionExpiry(new Date(expStr));
+        }).catch(() => {});
+      }
     }, [driver])
   );
 
   const handleGoOnline = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
-    
-    // Check Android Permissions for Full Screen Popups
+
+    // If subscription has expired, send to payment plans
+    if (subscriptionExpiry && new Date() > subscriptionExpiry) {
+      navigation.navigate('PaymentPlans');
+      return;
+    }
+
+    // Check Android Permissions for Full Screen Popups (non-blocking)
     if (Platform.OS === 'android') {
       try {
         const notifee = require('@notifee/react-native').default;
         const settings = await notifee.getNotificationSettings();
-        if (settings.android?.fullScreenIntent === false) {
-          const { Alert } = require('react-native');
+        if (settings?.android?.fullScreenIntent === false) {
           CustomAlert.alert(
             'Action Required',
             'To see incoming ride requests instantly, please allow full-screen notifications for Sakhi Driver.',
@@ -172,16 +197,62 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
           return;
         }
       } catch (e) {
-        console.warn('Failed to check permissions:', e);
+        // Notifee not ready — non-fatal, proceed with going online
+        if (__DEV__) console.warn('Notifee check skipped:', e?.message);
       }
     }
 
-    navigation.navigate('PaymentPlans');
+    try {
+      setStatusLoading(true);
+
+      // Get current location
+      let currentCoords = null;
+      try {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          timeout: 5000,
+        });
+        currentCoords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      } catch (gpsErr) {
+        if (__DEV__) console.warn('handleGoOnline — GPS unavailable:', gpsErr?.message);
+      }
+
+      // Call API to go online
+      const body = { is_online: true };
+      if (currentCoords) {
+        body.lat = currentCoords.latitude;
+        body.lng = currentCoords.longitude;
+      }
+      await client.patch('/drivers/status', body);
+      updateDriver({ is_online: true });
+
+      // Emit location via socket for immediate driver_locations seed
+      if (socket?.connected && currentCoords) {
+        socket.emit('driver:location_update', {
+          lat: currentCoords.latitude,
+          lng: currentCoords.longitude,
+          heading: 0,
+          speed: 0,
+        });
+      }
+
+      // Start background location tracking
+      startLocationTracking('Sakhi Driver', 'Searching for nearby rides...')
+        .catch(err => console.warn('[Location] Failed to start tracking:', err?.message));
+
+      // Navigate to the map-based home screen
+      navigation.navigate('DriverHome');
+    } catch (err) {
+      const msg = err.response?.data?.error?.message ?? 'Could not go online. Please try again.';
+      CustomAlert.alert(t('common.error'), msg);
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const driverName = driver?.name
     ?? [driver?.first_name, driver?.last_name].filter(Boolean).join(' ')
-    ?? 'Priya';
+    ?? '';
 
   const firstName = driverName.split(' ')[0];
 
@@ -242,7 +313,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
                 <View style={s.earningsSkeleton} />
               ) : (
                 <Text style={s.earningsAmount}>
-                  ₹{(earnings.today || 1250).toLocaleString('en-IN')}
+                  ₹{(earnings.today || 0).toLocaleString('en-IN')}
                 </Text>
               )}
             </View>
@@ -256,14 +327,14 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
           <View style={s.earningsStatsRow}>
             <View style={s.statBox}>
               <Text style={s.statLabel}>{t('home.completed')}</Text>
-              <Text style={s.statValue}>{earnings.trips || 8} {t('home.ridesCount')}</Text>
+              <Text style={s.statValue}>{earnings.trips || 0} {t('home.ridesCount')}</Text>
             </View>
             <View style={s.statBox}>
               <Text style={s.statLabel}>{t('home.onlineTime')}</Text>
               <Text style={s.statValue}>
                 {earnings.onlineMinutes > 0
                   ? `${Math.floor(earnings.onlineMinutes / 60)}h ${earnings.onlineMinutes % 60}m`
-                  : '5h 20m'}
+                  : '0h 0m'}
               </Text>
             </View>
             <TouchableOpacity
@@ -283,14 +354,21 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
 
           {/* Main button */}
           <TouchableOpacity
-            style={s.goOnlineBtn}
+            style={[s.goOnlineBtn, statusLoading && { opacity: 0.7 }]}
             onPress={handleGoOnline}
             activeOpacity={0.85}
+            disabled={statusLoading}
           >
             {/* Button shadow */}
             <View style={s.goOnlineBtnShadow} />
-            <Feather name="power" size={40} color={WHITE} />
-            <Text style={s.goOnlineText}>GO ONLINE</Text>
+            {statusLoading ? (
+              <ActivityIndicator size="large" color={WHITE} />
+            ) : (
+              <>
+                <Feather name="power" size={40} color={WHITE} />
+                <Text style={s.goOnlineText}>GO ONLINE</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Offline text */}
