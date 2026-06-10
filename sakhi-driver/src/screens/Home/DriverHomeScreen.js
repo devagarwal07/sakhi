@@ -839,7 +839,10 @@ export default function DriverHomeScreen({ navigation }) {
           ) : (
             <>
               <Text style={s.statusHeading}>{t('home.goodDay')}</Text>
-              <Text style={s.statusSub}>{t('home.allSet')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24, gap: 6 }}>
+                <Text style={[s.statusSub, { marginBottom: 0 }]}>{t('home.allSet')}</Text>
+                <Feather name="heart" size={14} color="#BEA3D8" />
+              </View>
               {/* Stats (offline summary) */}
               <View style={s.statsRow}>
                 <StatCard value={`₹${earnings.today}`} label={t('earnings.today')} />

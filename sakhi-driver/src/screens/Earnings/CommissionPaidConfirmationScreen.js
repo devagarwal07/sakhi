@@ -12,6 +12,7 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import SakhiModal from '../../components/SakhiModal';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 
 // ── Receipt Row ───────────────────────────────────────────────────────────────
 function ReceiptRow({ label, value, valuePurple }) {
@@ -143,7 +144,10 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
         {/* ── INFO BOX: bg #EDE9FE, radius 12, padding 16 ── */}
         <View style={s.infoBox}>
           {/* Text: 14px 500w #BEA3D8, centered, line-height 20 */}
-          <Text style={s.infoText}>{infoText}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Text style={s.infoText}>{infoText}</Text>
+            <Feather name="heart" size={14} color="#BEA3D8" />
+          </View>
         </View>
 
         {/* ── GO ONLINE BUTTON: #BEA3D8, radius 12, h:56 ── */}
