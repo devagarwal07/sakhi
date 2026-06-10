@@ -6,7 +6,7 @@ import {
   StatusBar as RNStatusBar, Platform, Linking} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -841,7 +841,7 @@ export default function DriverHomeScreen({ navigation }) {
               <Text style={s.statusHeading}>{t('home.goodDay')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24, gap: 6 }}>
                 <Text style={[s.statusSub, { marginBottom: 0 }]}>{t('home.allSet')}</Text>
-                <Feather name="heart" size={14} color="#BEA3D8" />
+                <Ionicons name="heart" size={14} color="#BEA3D8" />
               </View>
               {/* Stats (offline summary) */}
               <View style={s.statsRow}>

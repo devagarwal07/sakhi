@@ -12,7 +12,7 @@ import ScreenHeader, { HEADER_HEIGHT } from '../../components/ScreenHeader';
 import BottomNavBar, { NAV_HEIGHT } from '../../components/BottomNavBar';
 import SakhiModal from '../../components/SakhiModal';
 import { useTranslation } from 'react-i18next';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 
 // ── Receipt Row ───────────────────────────────────────────────────────────────
 function ReceiptRow({ label, value, valuePurple }) {
@@ -146,7 +146,7 @@ export default function CommissionPaidConfirmationScreen({ navigation, route }) 
           {/* Text: 14px 500w #BEA3D8, centered, line-height 20 */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <Text style={s.infoText}>{infoText}</Text>
-            <Feather name="heart" size={14} color="#BEA3D8" />
+            <Ionicons name="heart" size={14} color="#BEA3D8" />
           </View>
         </View>
 
