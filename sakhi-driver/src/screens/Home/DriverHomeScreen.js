@@ -382,6 +382,7 @@ export default function DriverHomeScreen({ navigation }) {
   // ─────────────────────────────────────────────────────────────────────────────
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
+  const [showOnlineConfirm, setShowOnlineConfirm] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
 
   useEffect(() => {
@@ -621,8 +622,21 @@ export default function DriverHomeScreen({ navigation }) {
       navigation.navigate('PaymentPlans');
       return;
     }
+    // Show confirmation popup instead of going online immediately
+    setShowOnlineConfirm(true);
+  };
+
+  const _doGoOnline = async () => {
     try {
       setStatusLoading(true);
+
+      // Verify location permissions before going online
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setStatusLoading(false);
+        CustomAlert.alert('Permission Denied', 'Please enable Location Services in your phone settings to go online.');
+        return;
+      }
 
       // Get best available location — wait for GPS if not ready
       let currentCoords = location;
@@ -922,6 +936,32 @@ export default function DriverHomeScreen({ navigation }) {
                 _doGoOffline();
               }} activeOpacity={0.7}>
                 <Text style={s.disclosureBtnPrimaryText}>Go Offline</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── ONLINE CONFIRMATION MODAL ── */}
+      <Modal visible={showOnlineConfirm} transparent animationType="fade">
+        <View style={s.disclosureOverlay}>
+          <View style={s.disclosureCard}>
+            <View style={[s.disclosureIconBg, { backgroundColor: '#ECFDF5' }]}>
+              <Feather name="check-circle" size={24} color="#059669" />
+            </View>
+            <Text style={s.disclosureTitle}>Ready to Drive?</Text>
+            <Text style={s.disclosureText}>
+              You will start receiving ride requests. Please ensure you are ready to accept trips.
+            </Text>
+            <View style={s.disclosureActions}>
+              <TouchableOpacity style={s.disclosureBtnSecondary} onPress={() => setShowOnlineConfirm(false)} activeOpacity={0.7}>
+                <Text style={s.disclosureBtnSecondaryText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#059669' }]} onPress={() => {
+                setShowOnlineConfirm(false);
+                _doGoOnline();
+              }} activeOpacity={0.7}>
+                <Text style={s.disclosureBtnPrimaryText}>Go Online</Text>
               </TouchableOpacity>
             </View>
           </View>
