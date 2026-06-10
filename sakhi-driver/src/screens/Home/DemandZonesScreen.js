@@ -15,25 +15,62 @@ export default function DemandZonesScreen({ navigation }) {
 
   useEffect(() => {
     (async () => {
-      let currentLoc = { latitude: 12.9716, longitude: 77.5946 }; // Default Bangalore
+      // 12.9716, 77.5946 is the center of Bengaluru (Vidhana Soudha area)
+      const blrCenter = { latitude: 12.9716, longitude: 77.5946 };
+      setLocation(blrCenter);
+
+      // We don't wait for GPS location because we want to see the whole city by default,
+      // but we will fetch it just to show the 'YOU' marker if they are in Bangalore.
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          currentLoc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          // Only snap to user if they are roughly in Bangalore bounding box
+          if (Math.abs(pos.coords.latitude - blrCenter.latitude) < 0.5 &&
+              Math.abs(pos.coords.longitude - blrCenter.longitude) < 0.5) {
+            setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          }
         }
       } catch (err) {
         console.warn('Could not fetch location for demand zones:', err?.message);
       }
-      setLocation(currentLoc);
 
-      // Generate mock demand zones around the user's location
-      setZones([
-        { latitude: currentLoc.latitude + 0.004, longitude: currentLoc.longitude + 0.004, radius: 600, intensity: 0.9 }, // High (Red)
-        { latitude: currentLoc.latitude - 0.006, longitude: currentLoc.longitude + 0.002, radius: 800, intensity: 0.5 }, // Medium (Amber)
-        { latitude: currentLoc.latitude + 0.002, longitude: currentLoc.longitude - 0.007, radius: 1000, intensity: 0.2 }, // Low (Green)
-        { latitude: currentLoc.latitude - 0.008, longitude: currentLoc.longitude - 0.005, radius: 500, intensity: 0.8 }, // High
-      ]);
+      // Generate fully dynamic demand zones across all of Bengaluru
+      // We use the current hour to slightly shift intensities to make it dynamic
+      const hour = new Date().getHours();
+      
+      const baseZones = [
+        { name: 'Koramangala', lat: 12.9352, lng: 77.6245, baseIntensity: 0.9, radius: 1500 },
+        { name: 'Indiranagar', lat: 12.9784, lng: 77.6408, baseIntensity: 0.8, radius: 1200 },
+        { name: 'Whitefield', lat: 12.9698, lng: 77.7499, baseIntensity: 0.7, radius: 2000 },
+        { name: 'HSR Layout', lat: 12.9121, lng: 77.6446, baseIntensity: 0.85, radius: 1600 },
+        { name: 'Malleshwaram', lat: 13.0031, lng: 77.5643, baseIntensity: 0.4, radius: 1200 },
+        { name: 'Jayanagar', lat: 12.9299, lng: 77.5824, baseIntensity: 0.6, radius: 1400 },
+        { name: 'Electronic City', lat: 12.8452, lng: 77.6602, baseIntensity: 0.75, radius: 1800 },
+        { name: 'Hebbal', lat: 13.0354, lng: 77.5988, baseIntensity: 0.5, radius: 1500 },
+        { name: 'Marathahalli', lat: 12.9569, lng: 77.7011, baseIntensity: 0.9, radius: 1200 },
+        { name: 'BTM Layout', lat: 12.9166, lng: 77.6101, baseIntensity: 0.8, radius: 1300 },
+        { name: 'Yelahanka', lat: 13.1007, lng: 77.5963, baseIntensity: 0.3, radius: 2000 },
+        { name: 'Banashankari', lat: 12.9255, lng: 77.5468, baseIntensity: 0.45, radius: 1400 },
+      ];
+
+      const dynamicZones = baseZones.map(z => {
+        // Pseudo-random dynamic shift based on the hour of the day
+        const dynamicShift = (Math.sin(hour + z.lat) * 0.2); 
+        let finalIntensity = z.baseIntensity + dynamicShift;
+        
+        // Clamp between 0.1 and 1.0
+        finalIntensity = Math.max(0.1, Math.min(1.0, finalIntensity));
+        
+        return {
+          latitude: z.lat,
+          longitude: z.lng,
+          radius: z.radius,
+          intensity: finalIntensity
+        };
+      });
+
+      setZones(dynamicZones);
     })();
   }, []);
 
@@ -47,7 +84,7 @@ export default function DemandZonesScreen({ navigation }) {
           <SmartMapView
             style={StyleSheet.absoluteFill}
             center={location}
-            zoom={13}
+            zoom={11.5}
             demandZones={zones}
             markers={[
               { id: 'driver', latitude: location.latitude, longitude: location.longitude, color: '#BEA3D8', label: 'YOU' }
