@@ -710,7 +710,7 @@ export default function DriverHomeScreen({ navigation }) {
 
         ) : (
           <View style={s.mapLoading}>
-            <ActivityIndicator size="large" color="#5B21B6" />
+            <ActivityIndicator size="large" color="#BEA3D8" />
             <Text style={s.mapLoadingText}>{t('home.gettingLocation')}</Text>
           </View>
         )}
@@ -718,7 +718,7 @@ export default function DriverHomeScreen({ navigation }) {
         {/* Top bar overlay on map */}
         <View style={[s.topBar, { paddingTop: Math.max(statusBarH, insets.top) + 8 }]}>
           <TouchableOpacity style={s.hamburgerBtn} onPress={() => setSidebarOpen(true)} activeOpacity={0.8}>
-            <Feather name="menu" size={20} color="#5B21B6" />
+            <Feather name="menu" size={20} color="#BEA3D8" />
           </TouchableOpacity>
           {/* Commission expiry pill */}
           {daysLeft !== null && (
@@ -799,7 +799,7 @@ export default function DriverHomeScreen({ navigation }) {
               activeOpacity={0.9}
             >
               {statusLoading && !isOnline
-                ? <ActivityIndicator size="small" color="#5B21B6" />
+                ? <ActivityIndicator size="small" color="#BEA3D8" />
                 : (
                   <>
                     <View style={[s.toggleDot, !isOnline && s.toggleDotOffline]} />
@@ -994,9 +994,9 @@ const s = StyleSheet.create({
 
   // Driver marker
   driverMarker: { alignItems: 'center' },
-  driverMarkerInner: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#5B21B6', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
-  driverMarkerOnline: { backgroundColor: '#5B21B6', borderColor: '#5B21B6' },
-  markerLabel: { backgroundColor: '#5B21B6', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
+  driverMarkerInner: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#BEA3D8', shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
+  driverMarkerOnline: { backgroundColor: '#BEA3D8', borderColor: '#BEA3D8' },
+  markerLabel: { backgroundColor: '#BEA3D8', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 9999, marginTop: 4 },
   markerLabelOnline: { backgroundColor: '#BEA3D8' },
 
   markerLabelText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1.5 },
@@ -1007,10 +1007,10 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     paddingHorizontal: 20, paddingBottom: 12, zIndex: 10,
   },
-  hamburgerBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
-  earningsPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 9999, maxWidth: 220, shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+  hamburgerBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+  earningsPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 9999, maxWidth: 220, shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
   earningsPillLabel: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
-  earningsPillValue: { fontSize: 16, fontWeight: '800', color: '#5B21B6' },
+  earningsPillValue: { fontSize: 16, fontWeight: '800', color: '#BEA3D8' },
 
   // ── Bottom sheet ──────────────────────────────────────────────────────────
   sheet: {
@@ -1019,7 +1019,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    shadowColor: '#5B21B6',
+    shadowColor: '#BEA3D8',
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
@@ -1052,7 +1052,7 @@ const s = StyleSheet.create({
   // Toggle
   toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 20 },
   toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+  toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
   toggleBtnOnline: { backgroundColor: '#BEA3D8' },
 
   toggleDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#9CA3AF' },
