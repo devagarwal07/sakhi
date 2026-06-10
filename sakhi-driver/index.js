@@ -4,6 +4,16 @@ import notifee, { EventType } from '@notifee/react-native';
 import { DeviceEventEmitter } from 'react-native';
 import './global.css';
 
+// Suppress noisy Firebase namespaced API deprecation warnings from Metro console
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('React Native Firebase namespaced API')) {
+    return;
+  }
+  originalWarn(...args);
+};
+
+
 // ⚠️ Location background task MUST be imported at the top level before App mounts.
 import './src/services/locationTask';
 
