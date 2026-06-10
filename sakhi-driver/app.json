@@ -60,6 +60,14 @@
         }
       ],
       "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "./plugins/withAdiRegistration",
       "./plugins/withManifestFixes",
       "./plugins/withRideRequestBridge"
@@ -67,6 +75,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sakhi.partner.driver",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "buildNumber": "2",
       "appleTeamId": "88KNFT5Y5Z",
       "infoPlist": {
