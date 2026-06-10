@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Linking
+  Linking, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
@@ -17,7 +17,6 @@ const PURPLE = '#BEA3D8';
 const DEEP = '#BEA3D8';
 const DARK = '#1E1B2E';
 const MUTED = '#6B7280';
-const GREEN = '#3A7D44';
 
 const CARD_SHADOW = {
   shadowColor: 'rgba(124, 58, 237, 1)',
@@ -31,8 +30,8 @@ const CARD_SHADOW = {
 function AppLogo() {
   return (
     <View style={logo.shell}>
-      <View style={logo.bg}>
-        <Text style={logo.text}>SAKHI</Text>
+      <View style={logo.imageContainer}>
+        <Image source={require('../../../assets/icon.png')} style={logo.image} />
       </View>
     </View>
   );
@@ -47,20 +46,17 @@ const logo = StyleSheet.create({
     justifyContent: 'center',
     ...CARD_SHADOW,
   },
-  bg: {
+  imageContainer: {
     width: 64,
     height: 64,
     borderRadius: 14,
-    backgroundColor: GREEN,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: DARK,
+    overflow: 'hidden',
   },
-  text: {
-    fontFamily: 'Inter',
-    fontWeight: '800',
-    fontSize: 11,
-    color: WHITE,
-    letterSpacing: 1.5,
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
 
@@ -402,7 +398,10 @@ export default function AboutSakhiScreen({ navigation }) {
 
         {/* Rate CTA */}
         <TouchableOpacity style={s.rateBtn} onPress={handleRate} activeOpacity={0.8}>
-          <Text style={s.rateBtnText}>Rate Sakhi on Play Store ⭐</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={s.rateBtnText}>Rate Sakhi on Play Store</Text>
+            <MaterialCommunityIcons name="star" size={20} color={PURPLE} />
+          </View>
         </TouchableOpacity>
 
         {/* Build info */}
