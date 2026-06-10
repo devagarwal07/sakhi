@@ -491,30 +491,29 @@ export default function DriverHomeScreen({ navigation }) {
 
   useEffect(() => {
     if (!locGranted) return;
-    let sub;
-    const startWatch = async () => {
-      sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 20 },
-        (pos) => {
-          const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          setLocation(coord);
-          mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 800);
+    
+    let subPromise = Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 20 },
+      (pos) => {
+        const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setLocation(coord);
+        mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 800);
 
-          // Emit live location to backend via socket whenever online
-          // This keeps driver_locations fresh so matching engine can find the driver
-          if (socket?.connected && isOnline) {
-            socket.emit('driver:location_update', {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              heading: pos.coords.heading || 0,
-              speed: pos.coords.speed || 0,
-            });
-          }
+        // Emit live location to backend via socket whenever online
+        if (socket?.connected && isOnline) {
+          socket.emit('driver:location_update', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            heading: pos.coords.heading || 0,
+            speed: pos.coords.speed || 0,
+          });
         }
-      );
+      }
+    );
+
+    return () => { 
+      subPromise.then(sub => sub?.remove?.()).catch(() => {}); 
     };
-    startWatch();
-    return () => { sub?.then(s => s?.remove()); };
   }, [locGranted, isOnline, socket]);
 
   // ── Sync online state whenever AuthContext changes ─────────────────────────
