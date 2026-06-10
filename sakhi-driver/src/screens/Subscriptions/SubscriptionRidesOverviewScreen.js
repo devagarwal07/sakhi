@@ -110,30 +110,39 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
 
         {!loading && rides.length > 0 && (
         <View style={styles.rideList}>
-          {rides.map((ride, idx) => (
-            <TouchableOpacity
-              key={ride.id}
-              style={[styles.rideCard, idx === 1 && { opacity: 0.9 }]}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('SubscriptionAssignmentDetails', { subscription: ride })}
-            >
-              <View style={styles.rideMarkerLine} />
+          {rides.map((ride, idx) => {
+            const rideTime = ride.created_at 
+              ? new Date(ride.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+              : 'N/A';
+            const pickup = (ride.pickup_address || 'Pickup').split(',')[0];
+            const drop = (ride.drop_address || 'Drop').split(',')[0];
+            const routeStr = `${pickup} → ${drop}`;
 
-              <View style={styles.rideCardInner}>
-                <View style={styles.rideCardTopRow}>
-                  <Text style={styles.rideTime}>{ride.time}</Text>
-                  <View style={styles.upcomingBadge}>
-                    <Text style={styles.upcomingBadgeText}>{t('subscription.statusUpcoming')}</Text>
+            return (
+              <TouchableOpacity
+                key={`ride_${ride.id || idx}`}
+                style={[styles.rideCard, idx === 1 && { opacity: 0.9 }]}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SubscriptionAssignmentDetails', { subscription: ride })}
+              >
+                <View style={styles.rideMarkerLine} />
+
+                <View style={styles.rideCardInner}>
+                  <View style={styles.rideCardTopRow}>
+                    <Text style={styles.rideTime}>{rideTime}</Text>
+                    <View style={styles.upcomingBadge}>
+                      <Text style={styles.upcomingBadgeText}>{t('subscription.statusUpcoming')}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rideCardDetails}>
+                    <Text style={styles.rideRoute} numberOfLines={1}>{routeStr}</Text>
+                    <Text style={styles.rideRider}>{t('subscription.riderLabel', { name: 'Customer' })}</Text>
                   </View>
                 </View>
-
-                <View style={styles.rideCardDetails}>
-                  <Text style={styles.rideRoute}>{ride.route}</Text>
-                  <Text style={styles.rideRider}>{t('subscription.riderLabel', { name: ride.rider })}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
         </View>
         )}
 
@@ -145,31 +154,42 @@ export default function SubscriptionRidesOverviewScreen({ navigation }) {
             <View style={{ paddingVertical: 24, alignItems: 'center' }}>
               <Text style={{ fontFamily: 'Inter', fontSize: 14, color: '#64748B' }}>No upcoming rides this week</Text>
             </View>
-          ) : upcomingWeek.map((day, idx) => (
-            <TouchableOpacity
-              key={day.id}
-              style={[
-                styles.weekRowItem,
-                idx > 0 && { marginTop: 8 }
-              ]}
-              onPress={() => navigation.navigate('WeeklyCalendarView', { day })}
-              activeOpacity={0.7}
-            >
-              <View style={styles.weekDateBadge}>
-                <Text style={styles.weekMonthText}>{day.month}</Text>
-                <Text style={styles.weekDateText}>{day.date}</Text>
-              </View>
+          ) : upcomingWeek.map((day, idx) => {
+            const dateObj = new Date(day.date);
+            const monthStr = isNaN(dateObj) ? '' : dateObj.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase();
+            const dateNum = isNaN(dateObj) ? '' : dateObj.getDate().toString();
+            const dayTitle = isNaN(dateObj) ? day.label : dateObj.toLocaleDateString('en-IN', { weekday: 'long' });
+            const ridesCount = day.rides ? day.rides.length : 0;
 
-              <View style={styles.weekInfoCol}>
-                <Text style={styles.weekDayTitle}>{day.dayTitle}</Text>
-                <Text style={styles.weekRidesCount}>
-                  {t('subscription.subscriptionRidesCount', { count: day.ridesCount })}
-                </Text>
-              </View>
+            return (
+              <TouchableOpacity
+                key={`week_${day.date}_${idx}`}
+                style={[
+                  styles.weekRowItem,
+                  idx > 0 && { marginTop: 8 },
+                  ridesCount === 0 && { opacity: 0.6 }
+                ]}
+                onPress={() => {
+                  if (ridesCount > 0) navigation.navigate('WeeklyCalendarView', { day });
+                }}
+                activeOpacity={ridesCount > 0 ? 0.7 : 1}
+              >
+                <View style={styles.weekDateBadge}>
+                  <Text style={styles.weekMonthText}>{monthStr}</Text>
+                  <Text style={styles.weekDateText}>{dateNum}</Text>
+                </View>
 
-              <Feather name="chevron-right" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          ))}
+                <View style={styles.weekInfoCol}>
+                  <Text style={styles.weekDayTitle}>{dayTitle}</Text>
+                  <Text style={styles.weekRidesCount}>
+                    {t('subscription.subscriptionRidesCount', { count: ridesCount })}
+                  </Text>
+                </View>
+
+                {ridesCount > 0 && <Feather name="chevron-right" size={16} color="#94A3B8" />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
