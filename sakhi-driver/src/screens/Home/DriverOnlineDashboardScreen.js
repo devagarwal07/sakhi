@@ -205,9 +205,16 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
     try {
       setStatusLoading(true);
 
-      // Get current location
+      // Request and Get current location
       let currentCoords = null;
       try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setStatusLoading(false);
+          CustomAlert.alert('Permission Denied', 'Please enable Location Services in your phone settings to go online.');
+          return;
+        }
+
         const pos = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
           timeout: 5000,
