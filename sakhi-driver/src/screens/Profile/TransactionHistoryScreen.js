@@ -276,14 +276,7 @@ const pm = StyleSheet.create({
 
 // ─── Export Bottom Sheet ──────────────────────────────────────────────────────
 function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
-  const [emailSending, setEmailSending] = useState(false);
-  const [emailDone,    setEmailDone]    = useState(false);
-  const [emailError,   setEmailError]   = useState(null);
 
-  // Reset state each time sheet opens
-  useEffect(() => {
-    if (visible) { setEmailSending(false); setEmailDone(false); setEmailError(null); }
-  }, [visible]);
 
   // Build a plain-text summary of visible transactions for Share
   const buildShareText = () => {
@@ -314,23 +307,7 @@ function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
     onClose();
   };
 
-  const handleEmailExport = async () => {
-    setEmailSending(true);
-    setEmailError(null);
-    try {
-      const params = {};
-      if (customStart) {
-        params.start_date = customStart.toISOString().split('T')[0];
-        params.end_date   = (customEnd ?? customStart).toISOString().split('T')[0];
-      }
-      await client.post('/drivers/transactions/export', params);
-      setEmailDone(true);
-    } catch {
-      setEmailError('Could not send email. Please try again.');
-    } finally {
-      setEmailSending(false);
-    }
-  };
+
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -355,39 +332,7 @@ function ExportSheet({ visible, onClose, sections, customStart, customEnd }) {
             </View>
           </TouchableOpacity>
 
-          <View style={ex.divider} />
 
-          {/* ── Option 2: Email ── */}
-          <TouchableOpacity
-            style={ex.option}
-            onPress={emailDone ? undefined : handleEmailExport}
-            activeOpacity={emailDone ? 1 : 0.75}
-            disabled={emailSending}
-          >
-            <View style={[ex.iconBubble, { backgroundColor: emailDone ? '#ECFDF5' : '#F5F0FF' }]}>
-              {emailSending
-                ? <ActivityIndicator size="small" color="#BEA3D8" />
-                : <Feather name={emailDone ? 'check-circle' : 'mail'} size={22} color={emailDone ? '#059669' : '#BEA3D8'} />
-              }
-            </View>
-            <View style={ex.optText}>
-              <Text style={ex.optTitle}>
-                {emailDone ? 'Email sent!' : 'Send to Registered Email'}
-              </Text>
-              <Text style={[ex.optSub, emailError && { color: '#EF4444' }]}>
-                {emailError
-                  ? emailError
-                  : emailDone
-                    ? 'Check your inbox in a few minutes.'
-                    : 'Receive a CSV/PDF to your account email'}
-              </Text>
-            </View>
-            {!emailDone && !emailSending && (
-              <View style={ex.chevron}>
-                <View style={ex.chevLine} />
-              </View>
-            )}
-          </TouchableOpacity>
 
           {/* Close */}
           <TouchableOpacity style={ex.closeBtn} onPress={onClose}>
