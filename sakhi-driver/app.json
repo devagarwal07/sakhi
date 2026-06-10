@@ -77,17 +77,21 @@
         "NSCameraUsageDescription": "Sakhi Driver needs camera access for face verification and document scanning.",
         "NSMicrophoneUsageDescription": "Sakhi Driver needs microphone access for in-app voice calls with riders.",
         "NSPhotoLibraryUsageDescription": "Sakhi Driver needs photo access to upload documents and screenshots.",
-        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "owner": "shubh_up301",
     "extra": {
       "eas": {
-        "projectId": "30600045-9556-49be-b2c0-89653781213c"
+        "projectId": "3005a6aa-8e10-40d9-acab-9ded139ca4fd"
       }
-    },
-    "owner": "shubh_up301"
+    }
   }
 }
