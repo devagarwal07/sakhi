@@ -946,8 +946,8 @@ export default function DriverHomeScreen({ navigation }) {
       <Modal visible={showOnlineConfirm} transparent animationType="fade">
         <View style={s.disclosureOverlay}>
           <View style={s.disclosureCard}>
-            <View style={[s.disclosureIconBg, { backgroundColor: '#ECFDF5' }]}>
-              <Feather name="check-circle" size={24} color="#059669" />
+            <View style={[s.disclosureIconBg, { backgroundColor: '#F5F0FF' }]}>
+              <Feather name="check-circle" size={24} color="#BEA3D8" />
             </View>
             <Text style={s.disclosureTitle}>Ready to Drive?</Text>
             <Text style={s.disclosureText}>
@@ -957,7 +957,7 @@ export default function DriverHomeScreen({ navigation }) {
               <TouchableOpacity style={s.disclosureBtnSecondary} onPress={() => setShowOnlineConfirm(false)} activeOpacity={0.7}>
                 <Text style={s.disclosureBtnSecondaryText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#059669' }]} onPress={() => {
+              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#BEA3D8' }]} onPress={() => {
                 setShowOnlineConfirm(false);
                 _doGoOnline();
               }} activeOpacity={0.7}>
