@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { setLanguage } from '../i18n';
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', native: 'English', flag: '🇬🇧' },
-  { code: 'kn', label: 'Kannada', native: 'ಕನ್ನಡ', flag: '🇮🇳' },
+  { code: 'en', label: 'English', native: 'English' },
+  { code: 'kn', label: 'Kannada', native: 'ಕನ್ನಡ' },
 ];
 
 /**
@@ -49,7 +49,6 @@ export default function LanguageSwitcher({ visible, onClose }) {
                 onPress={() => handleSelect(lang.code)}
                 activeOpacity={0.75}
               >
-                <Text style={s.flag}>{lang.flag}</Text>
                 <View style={s.textCol}>
                   <Text style={[s.langName, isActive && s.langNameActive]}>
                     {lang.native}
@@ -105,12 +104,11 @@ const s = StyleSheet.create({
     borderColor: '#BEA3D8',
     backgroundColor: '#EDE9FE',
   },
-  flag: { fontSize: 24 },
   textCol: { flex: 1, gap: 1 },
   langName: {
     fontSize: 15, fontWeight: '700', color: '#1E1B2E', letterSpacing: -0.2,
   },
-  langNameActive: { color: '#5B21B6' },
+  langNameActive: { color: '#BEA3D8' },
   langSub: { fontSize: 12, fontWeight: '400', color: '#94A3B8' },
   checkCircle: {
     width: 26, height: 26, borderRadius: 13,
