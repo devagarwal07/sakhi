@@ -46,6 +46,7 @@ import AccountApprovedScreen           from './src/screens/Onboarding/AccountApp
 // Main screens
 import DriverHomeScreen from './src/screens/Home/DriverHomeScreen';
 import DriverOnlineDashboardScreen from './src/screens/Home/DriverOnlineDashboardScreen';
+import DemandZonesScreen from './src/screens/Home/DemandZonesScreen';
 import IncomingRideRequestScreen from './src/screens/Home/IncomingRideRequestScreen';
 import PaymentPlansScreen from './src/screens/Home/PaymentPlansScreen';
 import SOSWarningScreen from './src/screens/Home/SOSWarningScreen';
@@ -132,6 +133,7 @@ function MainStack({ initialRoute = 'DriverOnlineDashboard' }) {
         <Stack.Screen name="WeeklyCommissionPayment" component={WeeklyCommissionPaymentScreen} />
         <Stack.Screen name="CommissionPaidConfirmation" component={CommissionPaidConfirmationScreen} />
         <Stack.Screen name="DriverOnlineDashboard" component={DriverOnlineDashboardScreen} />
+        <Stack.Screen name="DemandZones" component={DemandZonesScreen} />
         <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
         <Stack.Screen name="PaymentPlans" component={PaymentPlansScreen} />
         <Stack.Screen name="ActiveTrip" component={EnRouteToPickupScreen} options={{ gestureEnabled: false }} />

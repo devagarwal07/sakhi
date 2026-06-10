@@ -427,7 +427,7 @@ export default function DriverOnlineDashboardScreen({ navigation }) {
         <TouchableOpacity
           style={s.mapHintCard}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('DriverHome')}
+          onPress={() => navigation.navigate('DemandZones')}
         >
           {/* Faded map background with road-like pattern */}
           <View style={s.mapBgPlaceholder}>
