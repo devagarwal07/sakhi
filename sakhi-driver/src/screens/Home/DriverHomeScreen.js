@@ -52,8 +52,8 @@ function StatCard({ value, label }) {
   );
 }
 const sc = StyleSheet.create({
-  card: { flex: 1, backgroundColor: '#EDE9FE', borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
-  value: { fontSize: 22, fontWeight: '800', color: '#5B21B6', letterSpacing: -0.5 },
+  card: { flex: 1, backgroundColor: '#F5F0FF', borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
+  value: { fontSize: 22, fontWeight: '800', color: '#BEA3D8', letterSpacing: -0.5 },
   label: { fontSize: 10, fontWeight: '700', color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase' },
 });
 
