@@ -2,7 +2,7 @@
   "expo": {
     "name": "sakhi-driver",
     "slug": "sakhi-driver",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.sakhi.partner.driver",
-      "versionCode": 2,
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -68,7 +68,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sakhi.partner.driver",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "appleTeamId": "88KNFT5Y5Z",
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Sakhi Driver needs your location to share your position with riders while you are online.",
