@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Animated, Dimensions, TouchableWithoutFeedback, ScrollView,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -45,15 +46,57 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 120,
+        mass: 0.8,
+      }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
     ]).start();
   }, []);
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Interactively drag the sidebar to the left
+        if (gestureState.dx < 0) {
+          slideAnim.setValue(gestureState.dx);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx < -SIDEBAR_W / 3 || gestureState.vx < -0.5) {
+          handleClose();
+        } else {
+          // Snap back if swipe was too short
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            damping: 20,
+            stiffness: 120,
+            mass: 0.8,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   const handleClose = () => {
     Animated.parallel([
-      Animated.timing(slideAnim, { toValue: -SIDEBAR_W, duration: 250, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+      Animated.spring(slideAnim, {
+        toValue: -SIDEBAR_W,
+        useNativeDriver: true,
+        damping: 25,
+        stiffness: 150,
+        mass: 0.8,
+        restSpeedThreshold: 5,
+        restDisplacementThreshold: 5,
+      }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(onClose);
   };
 
@@ -91,7 +134,10 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
   // No hardcoded heights needed — sidebar uses flex layout
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 100, flexDirection: 'row' }]}>
+    <View 
+      style={[StyleSheet.absoluteFill, { zIndex: 100, flexDirection: 'row' }]}
+      {...panResponder.panHandlers}
+    >
 
       {/* ── Sidebar Drawer ──────────────────────────────────────────── */}
       <Animated.View style={[
