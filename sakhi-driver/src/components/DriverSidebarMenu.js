@@ -144,9 +144,9 @@ export default function DriverSidebarMenu({ navigation, onClose, activeRoute = '
         >
           {MENU_ITEMS_CONFIG.map((item) => {
             const isActive = activeRoute === item.id;
-            const fgColor  = isActive ? '#590DA2' : '#475569';
+            const fgColor  = isActive ? '#BEA3D8' : '#475569';
             const iconBg   = isActive ? '#FFFFFF'  : '#F5F3FF';
-            const iconColor = isActive ? '#590DA2' : '#BEA3D8';
+            const iconColor = isActive ? '#BEA3D8' : '#BEA3D8';
             const label    = t(item.labelKey);
 
             return (
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: 'rgba(124, 58, 237, 1)',
+    shadowColor: '#BEA3D8',
     shadowOffset: { width: 16, height: 0 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   menuLabelActive: {
     fontWeight: '600',
-    color: '#590DA2',
+    color: '#BEA3D8',
   },
   badgeWrap: {
     backgroundColor: '#EDE9FE',
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 11,
-    color: '#5B21B6',
+    color: '#BEA3D8',
   },
   footerDivider: {
     height: 1,
