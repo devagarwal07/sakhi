@@ -46,7 +46,7 @@ export default function DriverReferralsScreen({ navigation }) {
             {/* Header */}
             <View style={s.header}>
                 <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-                    <Feather name="arrow-left" size={20} color="#590DA2" />
+                    <Feather name="arrow-left" size={20} color="#BEA3D8" />
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Referrals & Rewards</Text>
                 <View style={{ width: 40 }} />
@@ -128,7 +128,7 @@ export default function DriverReferralsScreen({ navigation }) {
     );
 }
 
-const PURPLE = '#590DA2';
+const PURPLE = '#BEA3D8';
 const LPURPLE = '#BEA3D8';
 const DARK = '#1E1B2E';
 const MID = '#64748B';
