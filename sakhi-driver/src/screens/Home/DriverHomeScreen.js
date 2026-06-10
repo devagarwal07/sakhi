@@ -839,7 +839,7 @@ export default function DriverHomeScreen({ navigation }) {
           ) : (
             <>
               <Text style={s.statusHeading}>{t('home.goodDay')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24, gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32, gap: 6 }}>
                 <Text style={[s.statusSub, { marginBottom: 0 }]}>{t('home.allSet')}</Text>
                 <Ionicons name="heart" size={14} color="#BEA3D8" />
               </View>
@@ -1053,7 +1053,7 @@ const s = StyleSheet.create({
   sheetContent: { paddingHorizontal: 24, paddingBottom: 24 },
 
   // Toggle
-  toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 20 },
+  toggleWrap: { flexDirection: 'row', backgroundColor: '#F3F0FA', borderRadius: 9999, padding: 3, marginBottom: 24 },
   toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 9999, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   toggleBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
   toggleBtnOnline: { backgroundColor: '#BEA3D8' },
@@ -1066,14 +1066,14 @@ const s = StyleSheet.create({
   toggleTextOnline: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
 
   // Status
-  statusHeading: { fontSize: 26, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 },
+  statusHeading: { fontSize: 26, fontWeight: '800', color: '#1E1B2E', textAlign: 'center', letterSpacing: -0.5, marginBottom: 8 },
   statusSub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginBottom: 24 },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10 },
 
   // Upcoming Subscription Preview
-  upcomingSubCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 16, marginTop: 16, borderWidth: 1, borderColor: '#EDE9FE', shadowColor: '#5B21B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  upcomingSubCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 16, marginTop: 24, borderWidth: 1, borderColor: '#EDE9FE', shadowColor: '#BEA3D8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   upcomingSubIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BEA3D8', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   upcomingSubTextCol: { flex: 1, gap: 2 },
   upcomingSubTitle: { fontSize: 14, fontWeight: '700', color: '#1E1B2E' },
