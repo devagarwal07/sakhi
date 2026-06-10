@@ -40,3 +40,16 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase Configurations
+GoogleService-Info.plist
+google-services.json
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
