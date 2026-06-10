@@ -73,7 +73,11 @@ export async function startLocationTracking(title = 'Sakhi Driver', body = 'Shar
     const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
     if (running) {
       // Stop first so we can update the notification text
-      await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+      try {
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+      } catch (e) {
+        console.warn('[LocationTask] stopLocationUpdatesAsync warning:', e.message);
+      }
     }
 
     await Location.startLocationUpdatesAsync(LOCATION_TASK, {
