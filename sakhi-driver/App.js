@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, DeviceEventEmitter } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, DeviceEventEmitter, LogBox } from 'react-native';
+
+// Ignore Firebase namespaced API deprecation warnings
+LogBox.ignoreLogs([
+  'This method is deprecated (as well as all React Native Firebase namespaced API)',
+]);
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
