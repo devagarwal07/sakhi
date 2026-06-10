@@ -568,6 +568,9 @@ router.patch('/payment-details',       authMiddleware, roleGuard('driver'), driv
 // ── Online / Offline ──────────────────────────────────────────────────────────
 router.patch('/status',          authMiddleware, roleGuard('driver'), driverController.updateDriverStatus);
 
+// ── Demand Zones ──────────────────────────────────────────────────────────────
+router.get('/demand-zones',      authMiddleware, roleGuard('driver'), driverController.getDemandZones);
+
 // ── Earnings ──────────────────────────────────────────────────────────────────
 router.get('/earnings/today',    authMiddleware, roleGuard('driver'), driverController.getEarningsToday);
 router.get('/earnings/weekly',   authMiddleware, roleGuard('driver'), driverController.getEarningsWeekly);
