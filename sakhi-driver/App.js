@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, DeviceEventEmitter, LogBox } from 'react-native';
 
+// ⚠️ Register Location Task globally before any UI renders
+import './src/services/locationTask';
+
 // Ignore Firebase namespaced API deprecation warnings
 LogBox.ignoreLogs([
   'This method is deprecated (as well as all React Native Firebase namespaced API)',
