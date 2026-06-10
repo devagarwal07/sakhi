@@ -906,8 +906,8 @@ export default function DriverHomeScreen({ navigation }) {
       <Modal visible={showOfflineConfirm} transparent animationType="fade">
         <View style={s.disclosureOverlay}>
           <View style={s.disclosureCard}>
-            <View style={[s.disclosureIconBg, { backgroundColor: '#F3E8FF' }]}>
-              <Feather name="power" size={24} color="#7C3AED" />
+            <View style={[s.disclosureIconBg, { backgroundColor: '#F5F0FF' }]}>
+              <Feather name="power" size={24} color="#BEA3D8" />
             </View>
             <Text style={s.disclosureTitle}>Go Offline?</Text>
             <Text style={s.disclosureText}>
@@ -917,7 +917,7 @@ export default function DriverHomeScreen({ navigation }) {
               <TouchableOpacity style={s.disclosureBtnSecondary} onPress={() => setShowOfflineConfirm(false)} activeOpacity={0.7}>
                 <Text style={s.disclosureBtnSecondaryText}>Stay Online</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#7C3AED' }]} onPress={() => {
+              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#BEA3D8' }]} onPress={() => {
                 setShowOfflineConfirm(false);
                 _doGoOffline();
               }} activeOpacity={0.7}>
