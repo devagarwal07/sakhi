@@ -133,7 +133,7 @@ const LPURPLE = '#BEA3D8';
 const DARK = '#1E1B2E';
 const MID = '#64748B';
 const WHITE = '#FFFFFF';
-const BG = '#F5F3FF';
+const BG = '#F5F0FF';
 
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: BG },
@@ -152,12 +152,12 @@ const s = StyleSheet.create({
     scroll: { paddingHorizontal: 20, paddingBottom: 48 },
 
     hero: {
-        backgroundColor: DARK, borderRadius: 20, padding: 28, alignItems: 'center', marginBottom: 20,
-        shadowColor: DARK, shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.18, shadowRadius: 32, elevation: 8,
+        backgroundColor: WHITE, borderRadius: 20, padding: 28, alignItems: 'center', marginBottom: 20,
+        shadowColor: PURPLE, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.1, shadowRadius: 24, elevation: 6,
     },
     heroEmoji: { fontSize: 44, marginBottom: 12 },
-    heroTitle: { fontSize: 24, fontWeight: '900', color: WHITE, textAlign: 'center', letterSpacing: -0.6, lineHeight: 32, marginBottom: 10 },
-    heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 20 },
+    heroTitle: { fontSize: 24, fontWeight: '900', color: DARK, textAlign: 'center', letterSpacing: -0.6, lineHeight: 32, marginBottom: 10 },
+    heroSub: { fontSize: 13, color: MID, textAlign: 'center', lineHeight: 20 },
 
     codeCard: {
         backgroundColor: WHITE, borderRadius: 16, padding: 20, marginBottom: 24,
