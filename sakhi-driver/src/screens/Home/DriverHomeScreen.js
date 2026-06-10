@@ -381,6 +381,7 @@ export default function DriverHomeScreen({ navigation }) {
   // This way the driver sees all prompts together before they can toggle online.
   // ─────────────────────────────────────────────────────────────────────────────
   const [showDisclosure, setShowDisclosure] = useState(false);
+  const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
 
   useEffect(() => {
@@ -590,7 +591,8 @@ export default function DriverHomeScreen({ navigation }) {
       setShowPendingSubModal(true);
       return;
     }
-    await _doGoOffline();
+    // Show confirmation popup instead of going offline immediately
+    setShowOfflineConfirm(true);
   };
 
   const _doGoOffline = async () => {
@@ -894,6 +896,32 @@ export default function DriverHomeScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity style={s.disclosureBtnPrimary} onPress={handleAcceptDisclosure}>
                 <Text style={s.disclosureBtnPrimaryText}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── OFFLINE CONFIRMATION MODAL ── */}
+      <Modal visible={showOfflineConfirm} transparent animationType="fade">
+        <View style={s.disclosureOverlay}>
+          <View style={s.disclosureCard}>
+            <View style={[s.disclosureIconBg, { backgroundColor: '#F3E8FF' }]}>
+              <Feather name="power" size={24} color="#7C3AED" />
+            </View>
+            <Text style={s.disclosureTitle}>Go Offline?</Text>
+            <Text style={s.disclosureText}>
+              You will stop receiving new ride requests until you go back online.
+            </Text>
+            <View style={s.disclosureActions}>
+              <TouchableOpacity style={s.disclosureBtnSecondary} onPress={() => setShowOfflineConfirm(false)} activeOpacity={0.7}>
+                <Text style={s.disclosureBtnSecondaryText}>Stay Online</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.disclosureBtnPrimary, { backgroundColor: '#7C3AED' }]} onPress={() => {
+                setShowOfflineConfirm(false);
+                _doGoOffline();
+              }} activeOpacity={0.7}>
+                <Text style={s.disclosureBtnPrimaryText}>Go Offline</Text>
               </TouchableOpacity>
             </View>
           </View>
