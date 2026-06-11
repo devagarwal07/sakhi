@@ -41,9 +41,6 @@ yarn-error.*
 /ios
 /android
 
-# Firebase Configurations
-GoogleService-Info.plist
-google-services.json
 
 # IDEs
 .idea/
