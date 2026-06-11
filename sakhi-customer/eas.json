@@ -34,7 +34,8 @@
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5Z3ZhcHlwdnJzZWl3cXZ3Y2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjY2NjcsImV4cCI6MjA5MTI0MjY2N30.yo78rTxEmO7fxC2b5JVbvoLDGnlpc6Bwz17oNEBW7o0"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "credentialsSource": "local"
       }
     }
   },
