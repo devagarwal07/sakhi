@@ -85,15 +85,26 @@ export function AuthProvider({ children }) {
                 }
             } catch (profileErr) {
                 const httpStatus = profileErr?.response?.status;
-                const isAuthRejection = httpStatus === 401 || httpStatus === 403;
+                const errCode =
+                    profileErr?.response?.data?.error?.code ??
+                    profileErr?.response?.data?.code;
+                // Only treat it as a real auth rejection if the backend
+                // explicitly says the token is dead — not a generic proxy 401/403
+                // that Render can return during cold starts.
+                const isRealAuthRejection =
+                    (httpStatus === 401 || httpStatus === 403) &&
+                    (errCode === 'UNAUTHORIZED' ||
+                     errCode === 'TOKEN_EXPIRED' ||
+                     errCode === 'TOKEN_REVOKED');
 
                 console.warn(
                     '[Auth] Profile sync failed:',
                     profileErr?.message,
-                    '| status:', httpStatus
+                    '| status:', httpStatus,
+                    '| code:', errCode,
                 );
 
-                if (isAuthRejection) {
+                if (isRealAuthRejection) {
                     // Backend explicitly rejected the session — clear everything
                     await clearTokens();
                     await deleteCachedUser();
